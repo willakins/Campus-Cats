@@ -3,7 +3,7 @@ import { useRouter } from "expo-router";
 
 
 export default function Index() {
-    router = useRouter();
+    const router = useRouter();
 
     function validate() {
         router.push('/logged-in/')
