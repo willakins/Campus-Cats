@@ -49,7 +49,7 @@ export default function RootLayout() {
         }}
       />
       <Tabs.Screen
-        name="chat" // Maps to the `catalog.tsx` file
+        name="catalog" // Maps to the `catalog.tsx` file
         options={{
           tabBarLabel: 'Catalog',
           tabBarIcon: ({ color, size }) => (
