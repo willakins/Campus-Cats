@@ -6,7 +6,7 @@ export default function Index() {
     const router = useRouter();
 
     function validate() {
-        router.push('/logged-in/')
+        router.push('/logged-in/announcements')
         return;
     }
 
