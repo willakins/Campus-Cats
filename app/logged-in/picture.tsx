@@ -37,7 +37,7 @@ export default function Picture() {
         Alert.alert('Error', 'Failed to capture photo.');
         return;
       }
-      
+
       const folderPath = FileSystem.documentDirectory + 'photos/';
         const filePath = folderPath + `photo_${Date.now()}.jpg`;
 
@@ -52,10 +52,7 @@ export default function Picture() {
 
         // Alert success and navigate
         Alert.alert('Success', 'Photo saved successfully!');
-        router.push({
-          pathname: '/picture-taken',
-          params: { photoUri: filePath },
-        });
+        router.push('/after-picture/picture-taken');
     }
   };
 
