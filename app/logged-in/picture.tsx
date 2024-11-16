@@ -3,8 +3,9 @@ import { useState, useRef } from 'react';
 import { Button, StyleSheet, Text, TouchableOpacity, View, Image, Alert } from 'react-native';
 import { Camera } from 'expo-camera';
 import { Ionicons } from '@expo/vector-icons';
-import * as FileSystem from 'expo-file-system';
 import { useRouter } from 'expo-router';
+import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
+import { storage, db } from "./firebase";  // Your firebase.js file
 
 export default function Picture() {
   const [facing, setFacing] = useState<CameraType>('back');
@@ -12,6 +13,8 @@ export default function Picture() {
   const [photoUri, setPhotoUri] = useState<string | null>(null);
   const cameraRef = useRef<CameraView | null>(null);
   const router = useRouter();
+  const [isUploading, setIsUploading] = useState(false);
+  const [photoUrl, setPhotoUrl] = useState<string | null>(null);
 
   if (!permission) {
     // Camera permissions are still loading.
@@ -29,30 +32,46 @@ export default function Picture() {
   }
 
   const takePicture = async () => {
-    if (cameraRef.current) {
-      const photo = await cameraRef.current.takePictureAsync();
+    if(cameraRef.current) {
+      try{
+        const photo = await cameraRef.current.takePictureAsync();
 
-      // Check if photo is undefined or null
-      if (!photo?.uri) {
-        Alert.alert('Error', 'Failed to capture photo.');
-        return;
-      }
+        // Check if photo is undefined or null
+        if (!photo?.uri) {
+          Alert.alert('Error', 'Failed to capture photo.');
+          return;
+        }
 
-      const folderPath = FileSystem.documentDirectory + 'photos/';
-        const filePath = folderPath + `photo_${Date.now()}.jpg`;
+        // Upload photo to Firebase Storage
+        const uri = photo.uri;
+        const filename = uri.substring(uri.lastIndexOf("/") + 1);
+        const storageRef = ref(storage, `photos/${filename}`);
+        const response = await fetch(uri);
+        const blob = await response.blob();
 
-        // Ensure the folder exists
-        await FileSystem.makeDirectoryAsync(folderPath, { intermediates: true });
+        const uploadTask = uploadBytesResumable(storageRef, blob);
 
-        // Save the photo
-        await FileSystem.moveAsync({
-          from: photo.uri,
-          to: filePath,
-        });
-
+        uploadTask.on(
+          "state_changed",
+          null,
+          (error) => {
+            console.error("Error uploading photo: ", error);
+          },
+          () => {
+            // Get download URL after upload is complete
+            getDownloadURL(uploadTask.snapshot.ref).then((downloadURL) => {
+              setPhotoUrl(downloadURL); // Store URL in state
+              console.log("File available at: ", downloadURL);
+              // You can save the download URL in Firestore if needed
+            });
+          }
+        );
         // Alert success and navigate
         Alert.alert('Success', 'Photo saved successfully!');
         router.push('/after-picture/picture-taken');
+      } catch (error) {
+        console.error("Error taking picture:", error);
+      }
     }
   };
 
