@@ -21,3 +21,9 @@ For the first version of the app, we have implemented the "Cat-alog" feature. Us
 - The app currently does not support uploading existing photos. Photos can only be uploaded through using the in-app camera screen.
 - There is no way to delete or edit photos. After taking, they are immediately uploaded to firebase and displayed in the catalog.
 
+# Technology Stack
+
+- **Frontend**: React Native (for cross-platform support on iOS and Android)
+- **Backend**: NodeJS (for scalable server-side logic)
+- **Database**: Firebase (for simple and secure storage of photos and data)
+- **Additional Services**: Google Maps API (planned for future releases for map-based cat sightings)
