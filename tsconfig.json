@@ -4,8 +4,8 @@
     "allowJs": true,
     "checkJs": false,
     "jsx": "react-native",
-    "typeRoots": ["node_modules/@types", "src/types"],
-    "types": ["react", "react-native"],
+    "typeRoots": ["node_modules/@types"],
+    "types": ["react"],
     "esModuleInterop": true,
     "strict": true,
     "paths": {
