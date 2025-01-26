@@ -1,33 +1,33 @@
-import React, { useEffect } from 'react';
-import { View, Image, StyleSheet, TouchableOpacity, TextInput, Text, SafeAreaView, Button } from 'react-native';
-import { createStackNavigator, StackScreenProps } from '@react-navigation/stack';
-import { SafeAreaProvider } from 'react-native-safe-area-context';
-import { Link, useRouter } from 'expo-router';
+import { Link, Stack } from "expo-router";
+import { Button, TextInput, TouchableOpacity, View, Image, Text } from "react-native";
+import { StyleSheet } from 'react-native';
 
-const SplashScreen = () => {
-  const router = useRouter();
-
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      router.push('/login')
-    }, 1000);
-
-    return () => clearTimeout(timer);
-  });
-  
-  return (
-    <SafeAreaProvider>
-    <SafeAreaView style={styles.splashContainer}>
-      <Image
-        style={styles.splashImage}
-        source={require('../assets/images/app-icon.png')}
-      />
-    </SafeAreaView>
-  </SafeAreaProvider>
-  );
+const Login = () => {
+    return (
+        <View style={styles.container}>
+          <Image source={require('../assets/images/campus_cats_logo.png')} style={styles.logo}/>
+          <View style={styles.inputContainer}>
+            <TextInput placeholder="Email" style={styles.input} keyboardType="email-address" />
+            <TextInput placeholder="Password" style={styles.input} secureTextEntry />
+            <TouchableOpacity style={styles.button}>
+              <Text style={styles.buttonText}>Sign In</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.button}>
+                <Link href="/create-account">
+                    <Text style={styles.buttonText}>Create Account</Text>
+                </Link>
+            </TouchableOpacity>
+            <TouchableOpacity>
+              <Text style={styles.forgotPassword}>Forgot password?</Text>
+            </TouchableOpacity>
+            
+          </View>
+        </View>
+      );
 }
 
-export default SplashScreen;
+export default Login;
+
 
 const styles = StyleSheet.create({
   splashContainer: {
@@ -88,6 +88,7 @@ const styles = StyleSheet.create({
     padding: 12,
     borderRadius: 5,
     alignItems: 'center',
+    margin: 5,
   },
   buttonText: {
     color: '#fff',

@@ -1,6 +1,6 @@
-import { useRouter } from 'expo-router';
+import { Link, useRouter } from 'expo-router';
 import React, { useState } from 'react';
-import { View, Text, SafeAreaView, ScrollView, TextInput, Button } from 'react-native';
+import { View, Text, SafeAreaView, ScrollView, TextInput, Button, TouchableOpacity, Image } from 'react-native';
 import { StyleSheet } from 'react-native';
 
 const CreateAccount = () => {
@@ -34,42 +34,36 @@ const CreateAccount = () => {
   };
 
   return (
-    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-    <TextInput
-        style={styles.input}
-        value={username}
-        placeholder='Enter your email'
-        onChangeText={(text) => setUsername(text)}
-      />
-      <TextInput
-        style={styles.input}
-        onChangeText={(text) => setPassword(text)}
-        value={password}
-        placeholder="Enter your password"
-      />
-      {error ? <Text style={styles.errorText}>{error}</Text> : null}
-      <Button title="Register" onPress={validateNewUser} />
-  </View>
+    <View style={styles.container}>
+      <Image source={require('../assets/images/campus_cats_logo.png')} style={styles.logo}/>
+        <View style={styles.inputContainer}>
+          <TextInput 
+            placeholder="Email" 
+            onChangeText={(text) => setUsername(text)}
+            style={styles.input} 
+            keyboardType="email-address" />
+          <TextInput 
+            placeholder="Password" 
+            onChangeText={(text) => setPassword(text)}
+            style={styles.input} 
+            secureTextEntry />
+          <TouchableOpacity style={styles.button}>
+            <Link href="/create-account">
+              <Text style={styles.buttonText}>Create Account</Text>
+            </Link>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.button}>
+            <Link href="/login">
+              <Text style={styles.buttonText}>Go Back</Text>
+            </Link>
+          </TouchableOpacity>
+        </View>
+    </View>
   );
 }
 
 export default CreateAccount;
-
 const styles = StyleSheet.create({
-  errorText: {
-    color: 'red',
-    marginBottom: 10,
-  },
-  input: {
-    justifyContent: 'center',
-    alignItems: 'center',
-    height: 40,
-    margin: 12,
-    borderWidth: 1,
-    padding: 10,
-    fontSize: 12,
-    fontWeight: 'bold',
-  },
   splashContainer: {
     flex: 1,
     justifyContent: 'center',
@@ -87,4 +81,61 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: '#f0f0f0',
   },
+  homeText: {
+    fontSize: 24,
+    fontWeight: 'bold',
+  },
+  container: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#fff',
+  },
+  logo: {
+    width: 250,
+    height: 250,
+    resizeMode: 'contain',
+    marginBottom: 20,
+  },
+  inputContainer: {
+    width: '80%',
+    backgroundColor: '#f9f9f9',
+    padding: 20,
+    borderRadius: 10,
+    elevation: 3,  // Adds shadow on Android
+    shadowColor: '#000',  // Adds shadow on iOS
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+  },
+  input: {
+    height: 40,
+    borderColor: '#ccc',
+    borderWidth: 1,
+    borderRadius: 5,
+    marginBottom: 15,
+    paddingHorizontal: 10,
+    backgroundColor: '#fff',
+  },
+  button: {
+    backgroundColor: '#333',
+    padding: 12,
+    borderRadius: 5,
+    alignItems: 'center',
+    margin: 5,
+  },
+  buttonText: {
+    color: '#fff',
+    fontWeight: 'bold',
+  },
+  forgotPassword: {
+    marginTop: 10,
+    color: '#007BFF',
+    textAlign: 'center',
+  },
+  errorText: {
+    color: 'red',
+    marginBottom: 10,
+  },
+  
 });
