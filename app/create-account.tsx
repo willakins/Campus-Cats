@@ -2,6 +2,8 @@ import { Link, useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import { View, Text, SafeAreaView, ScrollView, TextInput, Button, TouchableOpacity, Image } from 'react-native';
 import { StyleSheet } from 'react-native';
+import { createUserWithEmailAndPassword } from "firebase/auth";
+import { auth } from "./logged-in/firebase";
 
 const CreateAccount = () => {
   const [username, setUsername] = useState('');
@@ -17,6 +19,9 @@ const CreateAccount = () => {
     }
   
     try {
+      await createUserWithEmailAndPassword(auth, username, password);
+      
+      setError('ok so we should have logged in i think')
       router.push('/logged-in');
       /** This is where you would register the user in database
   
@@ -28,7 +33,7 @@ const CreateAccount = () => {
       }
         */
     } catch (error) {
-      setError('An error occurred. Please try again later.');
+      setError(error.message);
     }
       
   };

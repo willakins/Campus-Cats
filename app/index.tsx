@@ -26,6 +26,36 @@ const SplashScreen = () => {
     </SafeAreaView>
   </SafeAreaProvider>
   );
+};
+
+const HomeScreen: React.FC = () => {
+  return (
+    <View style={styles.container}>
+      <Image
+        source={require('../assets/images/campus_cats_logo.png')}
+        style={styles.logo}
+      />
+      <View style={styles.inputContainer}>
+        <TextInput placeholder="Email" style={styles.input} keyboardType="email-address" />
+        <TextInput placeholder="Password" style={styles.input} secureTextEntry />
+        <TouchableOpacity style={styles.button}>
+          <Text style={styles.buttonText}>Sign In</Text>
+        </TouchableOpacity>
+        <TouchableOpacity>
+          <Text style={styles.forgotPassword}>Forgot password?</Text>
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
+};
+
+export default function App() {
+  return ( 
+      <Stack.Navigator screenOptions={{ headerShown: false }}>
+        <Stack.Screen name="Splash" component={SplashScreen} />
+        <Stack.Screen name="Home" component={HomeScreen} />
+      </Stack.Navigator>
+  );
 }
 
 export default SplashScreen;
