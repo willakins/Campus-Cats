@@ -33,6 +33,10 @@ const CreateAccount = () => {
       
   };
 
+  const goBack = () => {
+    router.push('/login')
+  };
+
   return (
     <View style={styles.container}>
       <Image source={require('../assets/images/campus_cats_logo.png')} style={styles.logo}/>
@@ -50,11 +54,9 @@ const CreateAccount = () => {
           <TouchableOpacity style={styles.button} onPress={validateNewUser}>
             <Text style={styles.buttonText}>Create Account</Text>
           </TouchableOpacity>
-          <Link href="/login" style={styles.button}>
-            <TouchableOpacity>
-              <Text style={styles.buttonText}>Go Back</Text>
-            </TouchableOpacity>
-          </Link>
+          <TouchableOpacity style={styles.button} onPress = {goBack}>
+            <Text style={styles.buttonText}>Go Back</Text>
+          </TouchableOpacity>
           {error ? <Text style={styles.errorText}>{error}</Text> : null}
         </View>
     </View>

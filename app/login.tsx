@@ -38,6 +38,10 @@ const Login = () => {
       const createAnAccount = () => {
         router.push('/create-account')
       };
+
+      const forgotPassword = () => {
+        setError('Forgot password has not been implemented yet');
+      };
     return (
         <View style={styles.container}>
           <Image source={require('../assets/images/campus_cats_logo.png')} style={styles.logo}/>
@@ -59,7 +63,7 @@ const Login = () => {
                 <Text style={styles.buttonText}>Create Account</Text>
             </TouchableOpacity>
                 
-            <TouchableOpacity>
+            <TouchableOpacity onPress={forgotPassword}>
               <Text style={styles.forgotPassword}>Forgot password?</Text>
             </TouchableOpacity>
             {error ? <Text style={styles.errorText}>{error}</Text> : null}
