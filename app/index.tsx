@@ -51,6 +51,9 @@ const LoginScreen: React.FC = () => {
         <TouchableOpacity>
           <Text style={styles.forgotPassword}>Forgot password?</Text>
         </TouchableOpacity>
+        <Link href="/create-account">
+        <Button title="Create an account" />
+        </Link>
       </View>
     </View>
   );
