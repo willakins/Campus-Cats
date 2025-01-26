@@ -3,25 +3,19 @@ import { View, Image, StyleSheet, TouchableOpacity, TextInput, Text, SafeAreaVie
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator, StackScreenProps } from '@react-navigation/stack';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { Link, useRouter } from 'expo-router';
 
-type RootStackParamList = {
-  Splash: undefined;
-  Home: undefined;
-};
+const SplashScreen = () => {
+  const router = useRouter();
 
-type SplashScreenProps = StackScreenProps<RootStackParamList, 'Splash'>;
-
-const Stack = createStackNavigator<RootStackParamList>();
-
-const SplashScreen: React.FC<SplashScreenProps> = ({ navigation }) => {
   useEffect(() => {
     const timer = setTimeout(() => {
-      navigation.replace('Home');
+      router.push('/login')
     }, 1000);
 
     return () => clearTimeout(timer);
-  }, [navigation]);
-
+  });
+  
   return (
     <SafeAreaProvider>
     <SafeAreaView style={styles.splashContainer}>
@@ -32,37 +26,9 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ navigation }) => {
     </SafeAreaView>
   </SafeAreaProvider>
   );
-};
-
-const HomeScreen: React.FC = () => {
-  return (
-    <View style={styles.container}>
-      <Image
-        source={require('../assets/images/campus_cats_logo.png')}
-        style={styles.logo}
-      />
-      <View style={styles.inputContainer}>
-        <TextInput placeholder="Email" style={styles.input} keyboardType="email-address" />
-        <TextInput placeholder="Password" style={styles.input} secureTextEntry />
-        <TouchableOpacity style={styles.button}>
-          <Text style={styles.buttonText}>Sign In</Text>
-        </TouchableOpacity>
-        <TouchableOpacity>
-          <Text style={styles.forgotPassword}>Forgot password?</Text>
-        </TouchableOpacity>
-      </View>
-    </View>
-  );
-};
-
-export default function App() {
-  return ( 
-      <Stack.Navigator screenOptions={{ headerShown: false }}>
-        <Stack.Screen name="Splash" component={SplashScreen} />
-        <Stack.Screen name="Home" component={HomeScreen} />
-      </Stack.Navigator>
-  );
 }
+
+export default SplashScreen;
 
 const styles = StyleSheet.create({
   splashContainer: {
