@@ -2,6 +2,8 @@ import { Link, Stack, useRouter } from "expo-router";
 import { useState } from "react";
 import { Button, TextInput, TouchableOpacity, View, Image, Text } from "react-native";
 import { StyleSheet } from 'react-native';
+import { signInWithEmailAndPassword } from "firebase/auth";
+import { auth } from "./logged-in/firebase"; // Ensure you have the firebase.js file configured
 
 
 
@@ -19,6 +21,7 @@ const Login = () => {
         }
       
         try {
+          await signInWithEmailAndPassword(auth, username, password);
           router.push('/logged-in');
           /** This is where you would register the user in database
       
@@ -30,7 +33,7 @@ const Login = () => {
           }
             */
         } catch (error) {
-          setError('An error occurred. Please try again later.');
+          setError(error.message);
         }
           
       };
