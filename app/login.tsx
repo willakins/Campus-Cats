@@ -1,26 +1,68 @@
-import { Link, Stack } from "expo-router";
+import { Link, Stack, useRouter } from "expo-router";
+import { useState } from "react";
 import { Button, TextInput, TouchableOpacity, View, Image, Text } from "react-native";
 import { StyleSheet } from 'react-native';
 
+
+
 const Login = () => {
+    const [username, setUsername] = useState('');
+      const [password, setPassword] = useState('');
+      const [error, setError] = useState('');
+      const router = useRouter();
+    
+      const validateUser = async () => {
+        // Simple validation
+        if (!username || !password) {
+          setError('Please enter both username and password');
+          return;
+        }
+      
+        try {
+          router.push('/logged-in');
+          /** This is where you would register the user in database
+      
+          if (response.data.success) {
+            // On success, navigate to the Home screen
+            router.push('/logged-in');
+          } else {
+            setError('Registration failed: ' + response.data.message);
+          }
+            */
+        } catch (error) {
+          setError('An error occurred. Please try again later.');
+        }
+          
+      };
+
+      const createAnAccount = () => {
+        router.push('/create-account')
+      };
     return (
         <View style={styles.container}>
           <Image source={require('../assets/images/campus_cats_logo.png')} style={styles.logo}/>
           <View style={styles.inputContainer}>
-            <TextInput placeholder="Email" style={styles.input} keyboardType="email-address" />
-            <TextInput placeholder="Password" style={styles.input} secureTextEntry />
-            <TouchableOpacity style={styles.button}>
+            <TextInput 
+            placeholder="Email" 
+            onChangeText={(text) => setUsername(text)}
+            style={styles.input} 
+            keyboardType="email-address" />
+            <TextInput 
+            placeholder="Password" 
+            onChangeText={(text) => setPassword(text)}
+            style={styles.input} 
+            secureTextEntry />
+            <TouchableOpacity style={styles.button} onPress = {validateUser}>
               <Text style={styles.buttonText}>Sign In</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={styles.button}>
-                <Link href="/create-account">
-                    <Text style={styles.buttonText}>Create Account</Text>
-                </Link>
+            <TouchableOpacity style={styles.button} onPress = {createAnAccount}>
+                <Text style={styles.buttonText}>Create Account</Text>
             </TouchableOpacity>
+                
             <TouchableOpacity>
               <Text style={styles.forgotPassword}>Forgot password?</Text>
             </TouchableOpacity>
-            
+            {error ? <Text style={styles.errorText}>{error}</Text> : null}
           </View>
         </View>
       );
@@ -30,26 +72,9 @@ export default Login;
 
 
 const styles = StyleSheet.create({
-  splashContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#fff',
-  },
-  splashImage: {
-    width: 200,
-    height: 200,
-    resizeMode: 'contain',
-  },
-  homeContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#f0f0f0',
-  },
-  homeText: {
-    fontSize: 24,
-    fontWeight: 'bold',
+  errorText: {
+    color: 'red',
+    marginBottom: 10,
   },
   container: {
     flex: 1,
@@ -89,10 +114,15 @@ const styles = StyleSheet.create({
     borderRadius: 5,
     alignItems: 'center',
     margin: 5,
+    display: 'flex',
+    justifyContent: 'center',
   },
   buttonText: {
+    flex: 1,
     color: '#fff',
     fontWeight: 'bold',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   forgotPassword: {
     marginTop: 10,

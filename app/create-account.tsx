@@ -47,16 +47,15 @@ const CreateAccount = () => {
             onChangeText={(text) => setPassword(text)}
             style={styles.input} 
             secureTextEntry />
-          <TouchableOpacity style={styles.button}>
-            <Link href="/create-account">
-              <Text style={styles.buttonText}>Create Account</Text>
-            </Link>
+          <TouchableOpacity style={styles.button} onPress={validateNewUser}>
+            <Text style={styles.buttonText}>Create Account</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.button}>
-            <Link href="/login">
+          <Link href="/login" style={styles.button}>
+            <TouchableOpacity>
               <Text style={styles.buttonText}>Go Back</Text>
-            </Link>
-          </TouchableOpacity>
+            </TouchableOpacity>
+          </Link>
+          {error ? <Text style={styles.errorText}>{error}</Text> : null}
         </View>
     </View>
   );
