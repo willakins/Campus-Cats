@@ -1,12 +1,12 @@
 import React, { useEffect } from 'react';
-import { View, Image, StyleSheet, TouchableOpacity, TextInput, Text, SafeAreaView } from 'react-native';
-import { NavigationContainer } from '@react-navigation/native';
+import { View, Image, StyleSheet, TouchableOpacity, TextInput, Text, SafeAreaView, Button } from 'react-native';
 import { createStackNavigator, StackScreenProps } from '@react-navigation/stack';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { Link } from 'expo-router';
 
 type RootStackParamList = {
   Splash: undefined;
-  Home: undefined;
+  Login: undefined;
 };
 
 type SplashScreenProps = StackScreenProps<RootStackParamList, 'Splash'>;
@@ -16,7 +16,7 @@ const Stack = createStackNavigator<RootStackParamList>();
 const SplashScreen: React.FC<SplashScreenProps> = ({ navigation }) => {
   useEffect(() => {
     const timer = setTimeout(() => {
-      navigation.replace('Home');
+      navigation.replace('Login');
     }, 1000);
 
     return () => clearTimeout(timer);
@@ -34,7 +34,8 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ navigation }) => {
   );
 };
 
-const HomeScreen: React.FC = () => {
+
+const LoginScreen: React.FC = () => {
   return (
     <View style={styles.container}>
       <Image
@@ -50,6 +51,9 @@ const HomeScreen: React.FC = () => {
         <TouchableOpacity>
           <Text style={styles.forgotPassword}>Forgot password?</Text>
         </TouchableOpacity>
+        <Link href="/create-account">
+        <Button title="Create an account" />
+        </Link>
       </View>
     </View>
   );
@@ -59,7 +63,7 @@ export default function App() {
   return ( 
       <Stack.Navigator screenOptions={{ headerShown: false }}>
         <Stack.Screen name="Splash" component={SplashScreen} />
-        <Stack.Screen name="Home" component={HomeScreen} />
+        <Stack.Screen name="Login" component={LoginScreen} />
       </Stack.Navigator>
   );
 }
