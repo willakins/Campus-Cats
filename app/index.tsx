@@ -17,7 +17,7 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ navigation }) => {
   useEffect(() => {
     const timer = setTimeout(() => {
       navigation.replace('Home');
-    }, 1000);
+    }, 1500);
 
     return () => clearTimeout(timer);
   }, [navigation]);
@@ -29,6 +29,7 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ navigation }) => {
         style={styles.splashImage}
         source={require('../assets/images/app-icon.png')}
       />
+    <Text style={styles.splashText}>Georgia Tech Campus Cats</Text>
     </SafeAreaView>
   </SafeAreaProvider>
   );
@@ -56,21 +57,29 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#fff',
+    backgroundColor: '#F3E5F5',
   },
   splashImage: {
-    width: 200,
-    height: 200,
+    width: 400,
+    height: 400,
     resizeMode: 'contain',
+  },
+  splashText: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#4B0082', 
   },
   homeContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#f0f0f0',
+    backgroundColor: '#F3E5F5',
   },
   homeText: {
     fontSize: 24,
     fontWeight: 'bold',
+    color: '#4B0082',
   },
 });
+
+

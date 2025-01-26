@@ -4,6 +4,27 @@
 
 # Release Notes
 
+## Version 0.1.0
+
+### Features
+
+In this second version of the app, we have introduced a Splash Screen, begun implementing account creation functionality, and set up the databases to store user information. Key features include:
+
+- **Splash Screen**: Added a welcoming splash screen to enhance the user experience during app launch.
+- **Account Creation**: Began work on enabling users to create accounts for personalized app usage.
+- **Firebase Storage Integration**: Photos taken in the app are uploaded seamlessly to Firebase Storage.
+- **UI Framework**: Initial setup of the login screen and navigation bar, including tabs for the map, announcements, camera, chat, and catalog.
+
+
+### Bug Fixes
+- N/A
+
+### Known Issues
+- The app currently does not support uploading existing photos. Photos can only be uploaded through using the in-app camera screen.
+- There is no way to delete or edit photos. After taking, they are immediately uploaded to firebase and displayed in the catalog.
+-The camera does not request permissions for IOS/Android app, only works on the WEB. 
+
+
 ## Version 0.0.0
 
 ### Features
