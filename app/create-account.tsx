@@ -33,7 +33,7 @@ const CreateAccount = () => {
       }
         */
     } catch (error) {
-      setError('An error occurred. Please try again later.');
+      setError(error.message);
     }
       
   };
