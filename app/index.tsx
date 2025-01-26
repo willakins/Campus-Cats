@@ -37,7 +37,7 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ navigation }) => {
 const HomeScreen: React.FC = () => {
   return (
     <View style={styles.homeContainer}>
-      <Text style={styles.homeText}>We</Text>
+      <Text style={styles.homeText}>Log in here</Text>
     </View>
   );
 };
