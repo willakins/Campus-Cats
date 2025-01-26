@@ -1,93 +1,76 @@
-import { Text, TouchableOpacity, View, StyleSheet } from "react-native";
-import { useRouter } from "expo-router";
+import React, { useEffect } from 'react';
+import { View, Image, StyleSheet, Text, SafeAreaView } from 'react-native';
+import { NavigationContainer } from '@react-navigation/native';
+import { createStackNavigator, StackScreenProps } from '@react-navigation/stack';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 
+type RootStackParamList = {
+  Splash: undefined;
+  Home: undefined;
+};
 
-export default function Index() {
-    const router = useRouter();
+type SplashScreenProps = StackScreenProps<RootStackParamList, 'Splash'>;
 
-    function validate() {
-        router.push('/logged-in')
-        return;
-    }
+const Stack = createStackNavigator<RootStackParamList>();
+
+const SplashScreen: React.FC<SplashScreenProps> = ({ navigation }) => {
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      navigation.replace('Home');
+    }, 1000);
+
+    return () => clearTimeout(timer);
+  }, [navigation]);
 
   return (
-    <View
-      style={{
-        flex: 1,
-        justifyContent: "center",
-        alignItems: "center",
-      }}
-    >
-      <Text> Log-in</Text>
-      <TouchableOpacity style={styles.captureButton} onPress={validate}>
-        <View style={styles.innerCircle} />
-          </TouchableOpacity>
+    <SafeAreaProvider>
+    <SafeAreaView style={styles.splashContainer}>
+      <Image
+        style={styles.splashImage}
+        source={require('../assets/images/app-icon.png')}
+      />
+    </SafeAreaView>
+  </SafeAreaProvider>
+  );
+};
+
+const HomeScreen: React.FC = () => {
+  return (
+    <View style={styles.homeContainer}>
+      <Text style={styles.homeText}>We</Text>
     </View>
   );
+};
+
+export default function App() {
+  return ( 
+      <Stack.Navigator screenOptions={{ headerShown: false }}>
+        <Stack.Screen name="Splash" component={SplashScreen} />
+        <Stack.Screen name="Home" component={HomeScreen} />
+      </Stack.Navigator>
+  );
 }
+
 const styles = StyleSheet.create({
-    container: {
-      flex: 1,
-      justifyContent: 'center',
-    },
-    message: {
-      textAlign: 'center',
-      paddingBottom: 10,
-    },
-    topBar: {
-      position: 'absolute',
-      top: 40,
-      left: 20,
-      flexDirection: 'row',
-      justifyContent: 'flex-start',
-      alignItems: 'center',
-    },
-    flipButton: {
-      backgroundColor: 'rgba(0, 0, 0, 0.5)',
-      padding: 10,
-      borderRadius: 20,
-    },
-    bottomBar: {
-      position: 'absolute',
-      bottom: 40,
-      left: 0,
-      right: 0,
-      justifyContent: 'center',
-      alignItems: 'center',
-    },
-    captureButton: {
-      width: 70,
-      height: 70,
-      backgroundColor: '#fff',
-      borderRadius: 35,
-      justifyContent: 'center',
-      alignItems: 'center',
-      borderWidth: 5,
-      borderColor: '#d9d9d9',
-    },
-    innerCircle: {
-      width: 55,
-      height: 55,
-      backgroundColor: '#fff',
-      borderRadius: 27.5,
-    },
-    preview: {
-      position: 'absolute',
-      bottom: 10,
-      left: 10,
-      right: 10,
-      alignItems: 'center',
-      backgroundColor: '#000',
-      padding: 10,
-      borderRadius: 10,
-    },
-    previewText: {
-      color: '#fff',
-      marginBottom: 10,
-    },
-    image: {
-      width: 200,
-      height: 300,
-      resizeMode: 'contain',
-    },
-  });
+  splashContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#fff',
+  },
+  splashImage: {
+    width: 200,
+    height: 200,
+    resizeMode: 'contain',
+  },
+  homeContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#f0f0f0',
+  },
+  homeText: {
+    fontSize: 24,
+    fontWeight: 'bold',
+  },
+});
