@@ -1,5 +1,6 @@
 import React, { useEffect } from 'react';
-import { View, Image, StyleSheet, TouchableOpacity, TextInput, Text, SafeAreaView, Button } from 'react-native';
+import { View, Image, StyleSheet, TouchableOpacity, TextInput, Text, SafeAreaView } from 'react-native';
+import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator, StackScreenProps } from '@react-navigation/stack';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { Link, useRouter } from 'expo-router';
