@@ -23,39 +23,8 @@ const SplashScreen = () => {
         style={styles.splashImage}
         source={require('../assets/images/app-icon.png')}
       />
-    <Text style={styles.splashText}>Georgia Tech Campus Cats!</Text>
     </SafeAreaView>
   </SafeAreaProvider>
-  );
-};
-
-const HomeScreen: React.FC = () => {
-  return (
-    <View style={styles.container}>
-      <Image
-        source={require('../assets/images/campus_cats_logo.png')}
-        style={styles.logo}
-      />
-      <View style={styles.inputContainer}>
-        <TextInput placeholder="Email" style={styles.input} keyboardType="email-address" />
-        <TextInput placeholder="Password" style={styles.input} secureTextEntry />
-        <TouchableOpacity style={styles.button}>
-          <Text style={styles.buttonText}>Sign In</Text>
-        </TouchableOpacity>
-        <TouchableOpacity>
-          <Text style={styles.forgotPassword}>Forgot password?</Text>
-        </TouchableOpacity>
-      </View>
-    </View>
-  );
-};
-
-export default function App() {
-  return ( 
-      <Stack.Navigator screenOptions={{ headerShown: false }}>
-        <Stack.Screen name="Splash" component={SplashScreen} />
-        <Stack.Screen name="Home" component={HomeScreen} />
-      </Stack.Navigator>
   );
 }
 
@@ -66,28 +35,22 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#F3E5F5',
+    backgroundColor: '#fff',
   },
   splashImage: {
-    width: 400,
-    height: 400,
+    width: 200,
+    height: 200,
     resizeMode: 'contain',
-  },
-  splashText: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#4B0082', 
   },
   homeContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#F3E5F5',
+    backgroundColor: '#f0f0f0',
   },
   homeText: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#4B0082',
   },
   container: {
     flex: 1,
@@ -138,5 +101,3 @@ const styles = StyleSheet.create({
   },
   
 });
-
-
