@@ -29,7 +29,7 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ navigation }) => {
         style={styles.splashImage}
         source={require('../assets/images/app-icon.png')}
       />
-    <Text style={styles.splashText}>Georgia Tech Campus Cats</Text>
+    <Text style={styles.splashText}>Georgia Tech Campus Cats!</Text>
     </SafeAreaView>
   </SafeAreaProvider>
   );
