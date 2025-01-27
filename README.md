@@ -51,5 +51,3 @@ For the first version of the app, we have implemented the "Cat-alog" feature. Us
 - **Backend**: NodeJS (for scalable server-side logic)
 - **Database**: Firebase (for simple and secure storage of photos and data)
 - **Additional Services**: Google Maps API (planned for future releases for map-based cat sightings)
-
-
