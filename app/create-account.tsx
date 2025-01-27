@@ -3,7 +3,8 @@ import React, { useState } from 'react';
 import { View, Text, SafeAreaView, ScrollView, TextInput, Button, TouchableOpacity, Image } from 'react-native';
 import { StyleSheet } from 'react-native';
 import { createUserWithEmailAndPassword } from "firebase/auth";
-import { auth } from "./logged-in/firebase";
+import { doc, setDoc } from 'firebase/firestore';
+import { auth, db } from "./logged-in/firebase";
 
 const CreateAccount = () => {
   const [username, setUsername] = useState('');
@@ -19,19 +20,12 @@ const CreateAccount = () => {
     }
   
     try {
-      await createUserWithEmailAndPassword(auth, username, password);
-      
-      setError('ok so we should have logged in i think')
+      const userCredential = await createUserWithEmailAndPassword(auth, username, password);
+      const { uid } = userCredential.user;
+
+      await setDoc(doc(db, 'users', uid), { role: 0 }); // Default role: 0 (regular user)
+
       router.push('/logged-in');
-      /** This is where you would register the user in database
-  
-      if (response.data.success) {
-        // On success, navigate to the Home screen
-        router.push('/logged-in');
-      } else {
-        setError('Registration failed: ' + response.data.message);
-      }
-        */
     } catch (error) {
       setError(error.message);
     }
