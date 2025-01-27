@@ -1,20 +1,10 @@
-import { Ionicons } from '@expo/vector-icons';
 import { View, Text } from 'react-native';
 import { StyleSheet } from 'react-native';
 
 const Chat = () => {
-  const shouldShowLockIcon = true;
   return (
     <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
       <Text>Chat Screen</Text>
-      {shouldShowLockIcon ? (
-                <Ionicons
-                  name="lock-closed"
-                  size={24}
-                  color="black"
-                  style={styles.lockIcon}
-                />
-              ) : null}
     </View>
   );
 }

@@ -23,16 +23,7 @@ const Login = () => {
         try {
           await signInWithEmailAndPassword(auth, username, password);
           router.push('/logged-in');
-          /** This is where you would register the user in database
-      
-          if (response.data.success) {
-            // On success, navigate to the Home screen
-            router.push('/logged-in');
-          } else {
-            setError('Registration failed: ' + response.data.message);
-          }
-            */
-        } catch (error) {
+        } catch (error: any) {
           setError(error.message);
         }
           
@@ -40,10 +31,6 @@ const Login = () => {
 
       const createAnAccount = () => {
         router.push('/create-account')
-      };
-
-      const forgotPassword = () => {
-        setError('Forgot password has not been implemented yet');
       };
     return (
         <View style={styles.container}>
@@ -66,7 +53,7 @@ const Login = () => {
                 <Text style={styles.buttonText}>Create Account</Text>
             </TouchableOpacity>
                 
-            <TouchableOpacity onPress={forgotPassword}>
+            <TouchableOpacity>
               <Text style={styles.forgotPassword}>Forgot password?</Text>
             </TouchableOpacity>
             {error ? <Text style={styles.errorText}>{error}</Text> : null}
