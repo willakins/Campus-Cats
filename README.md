@@ -24,6 +24,8 @@ The second release introduces enhancements to usability and functionality, impro
 - Push notifications for updates or new sightings are still under development.
 - The authentication doesn't work with IOS/Android (don't have the packages yet)
 - Requesting permissions for camera only work on web browser, not on IOS/Android
+- Firebase API key is hardcoded, and Firebase security currently allows all
+reads and write (time limited).
 
 
 ## Version 0.0.0
@@ -49,4 +51,3 @@ For the first version of the app, we have implemented the "Cat-alog" feature. Us
 - **Backend**: NodeJS (for scalable server-side logic)
 - **Database**: Firebase (for simple and secure storage of photos and data)
 - **Additional Services**: Google Maps API (planned for future releases for map-based cat sightings)
-

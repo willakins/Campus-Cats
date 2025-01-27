@@ -1,29 +1,54 @@
-# Campus Cats
+# JDE-4331-ScrapCats
 
-**Campus Cats** is a mobile app for Georgia Tech’s Campus Cats club, enabling users to report cat sightings, upload photos, chat with members, and access information about campus cats. The app aims to foster communication and engagement within the Campus Cats community while helping track and care for stray cats on campus.
+This is the repository for team ScrapCat's Capstone project. Created Fall 2024-Spring 2025
 
-# Release Notes
+# Welcome to your Expo app 👋
 
-## Version 0.0.0
+This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
 
-### Features
-For the first version of the app, we have implemented the "Cat-alog" feature. Users can take photos of cats they encounter, and these photos are then uploaded to Firebase storage and displayed in a catalog showing all previously sighted cats. We have chosen this feature to showcase our database implementation and how it works with the primary use case for our app -- cataloging cat sightings.
+## Get started
 
-- **Camera Screen**: Users can capture photos of cats directly within the app.
-- **Firebase Storage Integration**: Photos taken in the app are uploaded to Firebase Storage.
-- **Cat-alog Screen**: Displays photos of all uploaded cat sightings in a scrolling catalog
-- **UI Framework**: Login screen and navbar including the map, announcements, camera, chat, and catalog
+1. Install dependencies
 
-### Bug Fixes
-- N/A
+   ```bash
+   npm install
+   ```
 
-### Known Issues
-- The app currently does not support uploading existing photos. Photos can only be uploaded through using the in-app camera screen.
-- There is no way to delete or edit photos. After taking, they are immediately uploaded to firebase and displayed in the catalog.
+2. Start the app
 
-# Technology Stack
+   ```bash
+    npx expo start
+   ```
 
-- **Frontend**: React Native (for cross-platform support on iOS and Android)
-- **Backend**: NodeJS (for scalable server-side logic)
-- **Database**: Firebase (for simple and secure storage of photos and data)
-- **Additional Services**: Google Maps API (planned for future releases for map-based cat sightings)
+In the output, you'll find options to open the app in a
+
+- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
+- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
+- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
+- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+
+You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+
+## Get a fresh project
+
+When you're ready, run:
+
+```bash
+npm run reset-project
+```
+
+This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+
+## Learn more
+
+To learn more about developing your project with Expo, look at the following resources:
+
+- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
+- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+
+## Join the community
+
+Join our community of developers creating universal apps.
+
+- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
+- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
