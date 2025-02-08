@@ -53,7 +53,7 @@ const Login = () => {
                 <Text style={styles.buttonText}>Create Account</Text>
             </TouchableOpacity>
                 
-            <TouchableOpacity>
+            <TouchableOpacity onPress={() => alert("Contact an Administrator")}>
               <Text style={styles.forgotPassword}>Forgot password?</Text>
             </TouchableOpacity>
             {error ? <Text style={styles.errorText}>{error}</Text> : null}
@@ -74,7 +74,7 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#fff',
+    backgroundColor: '#fff', 
   },
   logo: {
     width: 250,

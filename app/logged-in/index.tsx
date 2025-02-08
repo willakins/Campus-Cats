@@ -19,7 +19,7 @@ const HomeScreen = () => {
           coordinate={{ latitude: pin.latitude, longitude: pin.longitude }}
           title={pin.name}
           onPress={() => router.push({ 
-            pathname: '/logged-in/sighting', 
+            pathname: '/sighting', 
             params: { isEditable: isAdmin, cat: JSON.stringify(pin) },
            })}
         />
