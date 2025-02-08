@@ -63,11 +63,13 @@ const CatSightingScreen = () => {
         <View style={styles.container}>
           <Image source={{ uri: cat.image }} style={styles.catImage} />
           <View style={styles.inputContainer}>
+            <Text style={styles.sliderText}>Cat's Name</Text>
             <TextInput 
             value={name} 
             onChangeText={setName} 
             editable={isAdmin} 
             style={styles.input} />
+            <Text style={styles.sliderText}>Additional Info</Text>
             <TextInput 
             value={info} 
             onChangeText={setInfo} 
