@@ -10,7 +10,6 @@ const HomeScreen = () => {
     { id: 2, latitude:  33.774097234804785, longitude: -84.39870972057157, name: "Shadow", image: "https://www.google.com/url?sa=i&url=https%3A%2F%2Fwww.balisafarimarinepark.com%2Fbengal-tiger-the-power-beauty-and-more%2F&psig=AOvVaw13dz9FMTgVtbiSTQpJ-Gnh&ust=1739118990838000&source=images&cd=vfe&opi=89978449&ved=0CBQQjRxqFwoTCICMpqHBtIsDFQAAAAAdAAAAABAE", info: "Shy cat", health: false, fed: true },
   ]);
   
-  const isAdmin = "true"; // Example role check
   return (
     <MapView style={{ flex: 1 }} 
     initialRegion={{ latitude: 33.77607705084073, longitude:  -84.39619917316841, latitudeDelta: 0.01, longitudeDelta: 0.01 }}>
@@ -21,7 +20,7 @@ const HomeScreen = () => {
           title={pin.name}
           onPress={() => router.push({ 
             pathname: '/sighting', 
-            params: { isEditable: isAdmin, cat: JSON.stringify(pin) },
+            params: {cat: JSON.stringify(pin) },
            })}
         />
       ))}

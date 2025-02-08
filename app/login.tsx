@@ -95,7 +95,7 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   inputContainer: {
-    width: '80%',
+    width: '100%',
     backgroundColor: '#f9f9f9',
     padding: 20,
     borderRadius: 10,
@@ -125,8 +125,10 @@ const styles = StyleSheet.create({
   },
   buttonText: {
     color: '#fff',
-    fontSize: 18,
+    fontSize: 12,
     fontWeight: 'bold',
+    textAlign: 'center',
+
   },
   forgotPassword: {
     marginTop: 10,
