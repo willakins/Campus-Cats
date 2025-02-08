@@ -4,10 +4,7 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { doc, getDoc } from "firebase/firestore";
 import { auth, db } from "../logged-in/firebase";
 
-const CatSightingScreen = () => {
-  //Check if admin, then set passed parameters from map screen
-  const [isAdmin, setIsAdmin] = useState(false);
-  const [loading, setLoading] = useState(true);
+const CatReportScreen = () => {
   const router = useRouter();
 
   const params = useLocalSearchParams();
@@ -17,42 +14,6 @@ const CatSightingScreen = () => {
   const [health, setHealth] = useState(cat.health);
   const [fed, setFed] = useState(cat.fed);
 
-  useEffect(() => {
-    const checkUserRole = async () => {
-      try {
-        // Get current user ID
-        const user = auth.currentUser;
-        if (!user) {
-          console.error('User not logged in');
-          setLoading(false);
-          return;
-        }
-
-        // Fetch user role from Firestore
-        const userDoc = await getDoc(doc(db, 'users', user.uid));
-        if (userDoc.exists()) {
-          const { role } = userDoc.data();
-          setIsAdmin(role === 1 || role === 2); // Admin roles are 1 or 2
-        } else {
-          console.error('User document does not exist');
-        }
-      } catch (error) {
-        console.error('Error fetching user role:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    checkUserRole();
-  }, []);
-
-  if (loading) {
-    return (
-      <View style={styles.screen}>
-        <ActivityIndicator size="large" color="#000" />
-      </View>
-    );
-  }
   // Now display the sighting for either admin or general user
   return (
     <KeyboardAvoidingView
@@ -66,24 +27,22 @@ const CatSightingScreen = () => {
             <TextInput 
             value={name} 
             onChangeText={setName} 
-            editable={isAdmin} 
             style={styles.input} />
             <TextInput 
             value={info} 
             onChangeText={setInfo} 
-            editable={isAdmin} 
             style={styles.input} />
             <View style={styles.slider}>
-              <Switch value={health} onValueChange={setHealth} disabled={!isAdmin}/>
+              <Switch value={health} onValueChange={setHealth}/>
               <Text style={styles.sliderText}>Has been fed</Text> 
             </View>
             <View style={styles.slider}>
-              <Switch value={fed} onValueChange={setFed} disabled={!isAdmin} />
+              <Switch value={fed} onValueChange={setFed} />
               <Text style={styles.sliderText}>Is in good health</Text>
             </View>
-            {isAdmin && <TouchableOpacity style={styles.button} onPress={() => alert("Saved!")}>
+            <TouchableOpacity style={styles.button} onPress={() => alert("Saved!")}>
               <Text style = {styles.buttonText}>Save</Text>
-            </TouchableOpacity>}
+            </TouchableOpacity>
             <TouchableOpacity style={styles.button} onPress={() => router.back()}>
               <Text style={styles.buttonText}>Back</Text>
             </TouchableOpacity>
@@ -95,7 +54,7 @@ const CatSightingScreen = () => {
 };
 
 
-export default CatSightingScreen;
+export default CatReportScreen;
 
 const styles = StyleSheet.create({
   sliderText: {
