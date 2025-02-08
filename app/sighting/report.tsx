@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from "react";
 import { View, Text, TextInput, Image, Switch, Button, ActivityIndicator, StyleSheet, KeyboardAvoidingView, ScrollView, Platform, TouchableOpacity, Alert } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { doc, getDoc } from "firebase/firestore";
-import { auth, db } from "../logged-in/firebase";
-import { launchCamera, launchImageLibrary } from 'react-native-image-picker';
+import { addDoc, collection, doc, getDoc } from "firebase/firestore";
+import { auth, db, storage } from "../logged-in/firebase";
+import { Asset, launchCamera, launchImageLibrary } from 'react-native-image-picker';
 import { Ionicons } from "@expo/vector-icons";
+import { getDownloadURL, ref, uploadBytes } from "firebase/storage";
 
 const CatReportScreen = () => {
   const router = useRouter();
@@ -12,6 +13,7 @@ const CatReportScreen = () => {
   const [info, setInfo] = useState('');
   const [health, setHealth] = useState(false);
   const [fed, setFed] = useState(false);
+  const [photo, setPhoto] = useState<Asset | null>(null);
   const [error, setError] = useState('');
   
   const handleTakePhoto = () => {
@@ -45,7 +47,8 @@ const CatReportScreen = () => {
           console.log('User cancelled image picker');
         } else if (response.errorCode) {
           console.log('Image Picker Error: ', response.errorMessage);
-        } else {
+        } else if(response.assets && response.assets[0]){
+          setPhoto(response.assets[0]);
           console.log('Selected photo: ', response.assets);
           // Handle the selected image (response.assets[0].uri)
         }
@@ -73,6 +76,29 @@ const CatReportScreen = () => {
       ],
       { cancelable: true }
     );
+  };
+  const handleSubmission = async () => {
+    if (photo && photo.uri) {
+      alert("Cat submitted!")
+      // Upload the image to Firebase Storage
+      const photoRef = ref(storage, 'cat_photos/' + photo.fileName);
+      const response = await fetch(photo.uri);
+      const blob = await response.blob();
+      await uploadBytes(photoRef, blob);
+
+      // Store the photo URL and other data in Firestore
+      const photoURL = await getDownloadURL(photoRef);
+      await addDoc(collection(db, 'cat_sightings'), {
+        name,
+        info,
+        health,
+        fed,
+        photoURL,
+        createdAt: new Date(),
+      });
+    } else {
+      alert('Please select a photo.');
+    }
   };
 
   return (
@@ -106,8 +132,8 @@ const CatReportScreen = () => {
               </TouchableOpacity>
             </View>
             
-            <TouchableOpacity style={styles.button} onPress={() => alert("Saved!")}>
-              <Text style = {styles.buttonText}>Save</Text>
+            <TouchableOpacity style={styles.button} onPress={handleSubmission}>
+              <Text style = {styles.buttonText}>Submit Sighting</Text>
             </TouchableOpacity>
             <TouchableOpacity style={styles.button} onPress={() => router.back()}>
               <Text style={styles.buttonText}>Back</Text>
