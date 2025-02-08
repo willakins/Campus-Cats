@@ -56,6 +56,9 @@ const Settings = () => {
             <Ionicons name="log-out-outline" size={25} color="#fff" />
         </TouchableOpacity>
         <Text>Setting Screen</Text>
+        <TouchableOpacity style={styles.button} onPress={() => setIsAdmin(true)}>
+          <Text style={styles.buttonText}>Make yourself an administrator</Text>
+        </TouchableOpacity>
         {isAdmin ? (
                 <Ionicons
                   name="lock-closed"
@@ -91,7 +94,7 @@ const styles = StyleSheet.create({
     },
     logoutButton: {
       position: 'absolute',
-      top: -10,
+      top: 10,
       left: 20,
       flexDirection: 'row',
       alignItems: 'center',
@@ -109,5 +112,21 @@ const styles = StyleSheet.create({
       justifyContent: 'flex-end',
       bottom: 0,
       backgroundColor: '#333',
-    }
+    },
+    button: {
+      backgroundColor: '#333',
+      padding: 12,
+      borderRadius: 5,
+      alignItems: 'center',
+      margin: 5,
+      display: 'flex',
+      justifyContent: 'center',
+    },
+    buttonText: {
+      color: '#fff',
+      fontSize: 12,
+      fontWeight: 'bold',
+      textAlign: 'center',
+  
+    },
   });
