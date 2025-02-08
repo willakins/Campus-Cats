@@ -1,12 +1,21 @@
 import React, { useEffect, useState } from "react";
-import { View, Text, TextInput, Image, Switch, Button, ActivityIndicator, StyleSheet } from "react-native";
+import { View, Text, TextInput, Image, Switch, Button, ActivityIndicator, StyleSheet, KeyboardAvoidingView, ScrollView, Platform, TouchableOpacity } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { doc, getDoc } from "firebase/firestore";
 import { auth, db } from "../logged-in/firebase";
 
 const CatSightingScreen = () => {
+  //Check if admin, then set passed parameters from map screen
   const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
+  const router = useRouter();
+
+  const params = useLocalSearchParams();
+  const cat = JSON.parse(params.cat as string);
+  const [name, setName] = useState(cat.name);
+  const [info, setInfo] = useState(cat.info);
+  const [health, setHealth] = useState(cat.health);
+  const [fed, setFed] = useState(cat.fed);
 
   useEffect(() => {
     const checkUserRole = async () => {
@@ -44,40 +53,44 @@ const CatSightingScreen = () => {
       </View>
     );
   }
-  const router = useRouter();
-  const params = useLocalSearchParams();
-  const edit = params.isEditable;
-  var isEditable:boolean = false;
-  if (edit === "true") {
-    var isEditable = true;
-  } else {
-    var isEditable = false;
-  }
-  const cat = JSON.parse(params.cat as string);
-
-  const [name, setName] = useState(cat.name);
-  const [info, setInfo] = useState(cat.info);
-  const [health, setHealth] = useState(cat.health);
-  const [fed, setFed] = useState(cat.fed);
-
+  // Now display the sighting for either admin or general user
   return (
-    <View style={{ padding: 20 }}>
-      <Image source={{ uri: cat.image }} style={{ width: "100%", height: 200, borderRadius: 10 }} />
-      <Text>Name:</Text>
-      <TextInput value={name} onChangeText={setName} editable={isEditable} style={{ borderBottomWidth: 1, marginBottom: 10 }} />
-      <Text>Additional Info:</Text>
-      <TextInput value={info} onChangeText={setInfo} editable={isEditable} style={{ borderBottomWidth: 1, marginBottom: 10 }} />
-      <View style={{ flexDirection: "row", alignItems: "center" }}>
-        <Text>Healthy:</Text>
-        <Switch value={health} onValueChange={setHealth} disabled={!isEditable} />
-      </View>
-      <View style={{ flexDirection: "row", alignItems: "center" }}>
-        <Text>Fed:</Text>
-        <Switch value={fed} onValueChange={setFed} disabled={!isEditable} />
-      </View>
-      {isEditable && <Button title="Save" onPress={() => alert("Saved!")} />}
-      <Button title="Back" onPress={() => router.back()} />
-    </View>
+    <KeyboardAvoidingView
+          style={styles.container}
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined} // iOS specific behavior
+          >
+      <ScrollView contentContainerStyle={styles.scrollView}>
+        <View style={styles.container}>
+          <Image source={{ uri: cat.image }} style={styles.catImage} />
+          <View style={styles.inputContainer}>
+            <TextInput 
+            value={name} 
+            onChangeText={setName} 
+            editable={isAdmin} 
+            style={styles.input} />
+            <TextInput 
+            value={info} 
+            onChangeText={setInfo} 
+            editable={isAdmin} 
+            style={styles.input} />
+            <View style={styles.slider}>
+              <Switch value={health} onValueChange={setHealth} disabled={!isAdmin}/>
+              <Text style={styles.sliderText}>Has been fed</Text> 
+            </View>
+            <View style={styles.slider}>
+              <Switch value={fed} onValueChange={setFed} disabled={!isAdmin} />
+              <Text style={styles.sliderText}>Is in good health</Text>
+            </View>
+            {isAdmin && <TouchableOpacity style={styles.button} onPress={() => alert("Saved!")}>
+              <Text style = {styles.buttonText}>Save</Text>
+            </TouchableOpacity>}
+            <TouchableOpacity style={styles.button} onPress={() => router.back()}>
+              <Text style={styles.buttonText}>Back</Text>
+            </TouchableOpacity>
+            </View>
+        </View>
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 };
 
@@ -85,9 +98,87 @@ const CatSightingScreen = () => {
 export default CatSightingScreen;
 
 const styles = StyleSheet.create({
+  sliderText: {
+    color: 'black',
+    fontSize: 12,
+    fontWeight: 'bold',
+    textAlign: 'center',
+  },
+  slider: { 
+    flexDirection: "row", 
+    alignItems: "center",
+  },
+  catImage: { 
+    width: "100%", 
+    height: 200, 
+    borderRadius: 10,
+  },
+  errorText: {
+    color: 'red',
+    marginBottom: 10,
+  },
   screen: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
   },
+  scrollView: {
+    flexGrow: 1,
+    justifyContent: 'center',
+    padding: 20,
+  },
+  container: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#fff', 
+  },
+  logo: {
+    width: 250,
+    height: 250,
+    resizeMode: 'contain',
+    marginBottom: 20,
+  },
+  inputContainer: {
+    width: '100%',
+    backgroundColor: '#f9f9f9',
+    padding: 20,
+    borderRadius: 10,
+    elevation: 3,  // Adds shadow on Android
+    shadowColor: '#000',  // Adds shadow on iOS
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+  },
+  input: {
+    height: 40,
+    borderColor: '#ccc',
+    borderWidth: 1,
+    borderRadius: 5,
+    marginBottom: 15,
+    paddingHorizontal: 10,
+    backgroundColor: '#fff',
+  },
+  button: {
+    backgroundColor: '#333',
+    padding: 12,
+    borderRadius: 5,
+    alignItems: 'center',
+    margin: 5,
+    display: 'flex',
+    justifyContent: 'center',
+  },
+  buttonText: {
+    color: '#fff',
+    fontSize: 12,
+    fontWeight: 'bold',
+    textAlign: 'center',
+
+  },
+  forgotPassword: {
+    marginTop: 10,
+    color: '#007BFF',
+    textAlign: 'center',
+  },
+  
 });
