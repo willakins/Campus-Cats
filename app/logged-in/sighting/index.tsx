@@ -2,10 +2,18 @@ import React, { useState } from "react";
 import { View, Text, TextInput, Image, Switch, Button } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 
-const CatSightingScreen = ({ isEditable }) => {
+
+const CatSightingScreen = () => {
   const router = useRouter();
   const params = useLocalSearchParams();
-  const cat = JSON.parse(params.cat);
+  const edit = params.isEditable;
+  var isEditable:boolean;
+  if (edit === "true") {
+    var isEditable = true;
+  } else {
+    var isEditable = false;
+  }
+  const cat = JSON.parse(params.cat as string);
 
   const [name, setName] = useState(cat.name);
   const [info, setInfo] = useState(cat.info);
@@ -33,7 +41,5 @@ const CatSightingScreen = ({ isEditable }) => {
   );
 };
 
-const ViewCatSighting = () => <CatSightingScreen isEditable={false} />;
-const EditCatSighting = () => <CatSightingScreen isEditable={true} />;
 
-export { ViewCatSighting, EditCatSighting };
+export default CatSightingScreen;
