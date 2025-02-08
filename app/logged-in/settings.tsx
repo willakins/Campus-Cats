@@ -2,13 +2,50 @@ import React, { useState, useEffect } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import { View, Text, ActivityIndicator, TouchableOpacity} from 'react-native';
 import { StyleSheet } from 'react-native';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, getFirestore, updateDoc } from 'firebase/firestore';
 import { auth, db } from './firebase';
 import { useRouter } from 'expo-router';
+import { getAuth } from 'firebase/auth';
 
 const Settings = () => {
   const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [userId, setUserId] = useState<string | null>(null);
+  const [message, setMessage] = useState<string>("");
+
+  // Fetch current logged-in user ID on mount
+  useEffect(() => {
+    const auth = getAuth();
+    const user = auth.currentUser;
+
+    if (user) {
+      setUserId(user.uid);  // Store user ID in state
+    } else {
+      setMessage("No user is logged in.");
+    }
+  }, []);
+
+  // Handle updating the document
+  const handleUpdateField = async () => {
+    if (userId) {
+      const db = getFirestore();
+      const userDocRef = doc(db, 'users', userId); // Reference to the user's document
+
+      try {
+        // Update the field in the user's document
+        await updateDoc(userDocRef, {
+          Admin: true,  // Replace with the field you want to update
+        });
+
+        alert("You are now an admin!");
+        setIsAdmin(true)
+      } catch (error) {
+        setMessage("Error updating field: " + error);
+      }
+    } else {
+      setMessage("No user is logged in.");
+    }
+  };
 
     const router = useRouter();
     const handleLogout = () => {
@@ -56,7 +93,7 @@ const Settings = () => {
             <Ionicons name="log-out-outline" size={25} color="#fff" />
         </TouchableOpacity>
         <Text>Setting Screen</Text>
-        <TouchableOpacity style={styles.button} onPress={() => setIsAdmin(true)}>
+        <TouchableOpacity style={styles.button} onPress={handleUpdateField}>
           <Text style={styles.buttonText}>Make yourself an administrator</Text>
         </TouchableOpacity>
         {isAdmin ? (
