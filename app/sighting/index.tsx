@@ -7,7 +7,7 @@ const CatSightingScreen = () => {
   const router = useRouter();
   const params = useLocalSearchParams();
   const edit = params.isEditable;
-  var isEditable:boolean;
+  var isEditable:boolean = false;
   if (edit === "true") {
     var isEditable = true;
   } else {
