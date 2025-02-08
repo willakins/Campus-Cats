@@ -4,6 +4,7 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { doc, getDoc } from "firebase/firestore";
 import { auth, db } from "../logged-in/firebase";
 import { launchCamera, launchImageLibrary } from 'react-native-image-picker';
+import { Ionicons } from "@expo/vector-icons";
 
 const CatReportScreen = () => {
   const router = useRouter();
@@ -99,11 +100,9 @@ const CatReportScreen = () => {
               <Switch value={fed} onValueChange={setFed} />
               <Text style={styles.sliderText}>Is in good health</Text>
             </View>
-            <View style={styles.container}>
-              <TouchableOpacity style={styles.button} onPress={handlePress}>
-                <Text style={styles.buttonText}>Select Photo</Text>
-              </TouchableOpacity>
-            </View>
+            <TouchableOpacity style={styles.cameraButton} onPress={handlePress}>
+              <Ionicons name="camera-outline" size={29} color={'#fff'} />
+            </TouchableOpacity>
             <TouchableOpacity style={styles.button} onPress={() => alert("Saved!")}>
               <Text style = {styles.buttonText}>Save</Text>
             </TouchableOpacity>
@@ -121,6 +120,19 @@ const CatReportScreen = () => {
 export default CatReportScreen;
 
 const styles = StyleSheet.create({
+  cameraButton: {
+    width: 70,  // Width of the circle
+    height: 70, // Height of the circle (same as width to make it circular)
+    borderRadius: 35, // Half of width/height to make it circular
+    backgroundColor: '#007bff', // Button color (blue)
+    justifyContent: 'center', // Center the icon vertically
+    alignItems: 'center', // Center the icon horizontally
+    elevation: 5,  // Shadow for Android
+    shadowColor: '#000', // Shadow for iOS
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 3.5,
+  },
   sliderText: {
     color: 'black',
     fontSize: 12,
