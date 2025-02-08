@@ -1,9 +1,49 @@
-import React, { useState } from "react";
-import { View, Text, TextInput, Image, Switch, Button } from "react-native";
+import React, { useEffect, useState } from "react";
+import { View, Text, TextInput, Image, Switch, Button, ActivityIndicator, StyleSheet } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
-
+import { doc, getDoc } from "firebase/firestore";
+import { auth, db } from "../logged-in/firebase";
 
 const CatSightingScreen = () => {
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const checkUserRole = async () => {
+      try {
+        // Get current user ID
+        const user = auth.currentUser;
+        if (!user) {
+          console.error('User not logged in');
+          setLoading(false);
+          return;
+        }
+
+        // Fetch user role from Firestore
+        const userDoc = await getDoc(doc(db, 'users', user.uid));
+        if (userDoc.exists()) {
+          const { role } = userDoc.data();
+          setIsAdmin(role === 1 || role === 2); // Admin roles are 1 or 2
+        } else {
+          console.error('User document does not exist');
+        }
+      } catch (error) {
+        console.error('Error fetching user role:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    checkUserRole();
+  }, []);
+
+  if (loading) {
+    return (
+      <View style={styles.screen}>
+        <ActivityIndicator size="large" color="#000" />
+      </View>
+    );
+  }
   const router = useRouter();
   const params = useLocalSearchParams();
   const edit = params.isEditable;
@@ -43,3 +83,11 @@ const CatSightingScreen = () => {
 
 
 export default CatSightingScreen;
+
+const styles = StyleSheet.create({
+  screen: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+});
