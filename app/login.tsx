@@ -1,6 +1,6 @@
 import { Link, Stack, useRouter } from "expo-router";
 import { useState } from "react";
-import { Button, TextInput, TouchableOpacity, View, Image, Text } from "react-native";
+import { Button, TextInput, TouchableOpacity, View, Image, Text, ScrollView, KeyboardAvoidingView, Platform } from "react-native";
 import { StyleSheet } from 'react-native';
 import { signInWithEmailAndPassword } from "firebase/auth";
 import { auth } from "./logged-in/firebase"; // Ensure you have the firebase.js file configured
@@ -33,6 +33,11 @@ const Login = () => {
         router.push('/create-account')
       };
     return (
+      <KeyboardAvoidingView
+      style={styles.container}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined} // iOS specific behavior
+      >
+      <ScrollView contentContainerStyle={styles.scrollView}>
         <View style={styles.container}>
           <Image source={require('../assets/images/campus_cats_logo.png')} style={styles.logo}/>
           <View style={styles.inputContainer}>
@@ -59,6 +64,8 @@ const Login = () => {
             {error ? <Text style={styles.errorText}>{error}</Text> : null}
           </View>
         </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
       );
 }
 
@@ -69,6 +76,11 @@ const styles = StyleSheet.create({
   errorText: {
     color: 'red',
     marginBottom: 10,
+  },
+  scrollView: {
+    flexGrow: 1,
+    justifyContent: 'center',
+    padding: 20,
   },
   container: {
     flex: 1,
@@ -112,11 +124,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   buttonText: {
-    flex: 1,
     color: '#fff',
+    fontSize: 18,
     fontWeight: 'bold',
-    alignItems: 'center',
-    justifyContent: 'center',
   },
   forgotPassword: {
     marginTop: 10,
