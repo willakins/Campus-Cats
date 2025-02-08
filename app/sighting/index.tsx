@@ -102,7 +102,8 @@ const styles = StyleSheet.create({
     color: 'black',
     fontSize: 12,
     fontWeight: 'bold',
-    textAlign: 'center',
+    textAlign: 'left',
+    padding: 10,
   },
   slider: { 
     flexDirection: "row", 
@@ -128,22 +129,15 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   container: {
-    flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: '#fff', 
   },
-  logo: {
-    width: 250,
-    height: 250,
-    resizeMode: 'contain',
-    marginBottom: 20,
-  },
   inputContainer: {
     width: '100%',
     backgroundColor: '#f9f9f9',
-    padding: 20,
-    borderRadius: 10,
+    paddingHorizontal: 20,
+    paddingVertical: 10,
     elevation: 3,  // Adds shadow on Android
     shadowColor: '#000',  // Adds shadow on iOS
     shadowOffset: { width: 0, height: 2 },
@@ -152,6 +146,7 @@ const styles = StyleSheet.create({
   },
   input: {
     height: 40,
+    width: 300,
     borderColor: '#ccc',
     borderWidth: 1,
     borderRadius: 5,
