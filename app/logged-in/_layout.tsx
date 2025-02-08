@@ -32,11 +32,11 @@ export default function RootLayout() {
         }}
       />
       <Tabs.Screen
-        name="picture" // Maps to the `picture.tsx` file
+        name="logout" // Used to map to the `picture.tsx` file, now logs user out
         options={{
           tabBarLabel: '',
           tabBarIcon: ({ color, size }) => (
-            <Ionicons name="camera-outline" size={29} color={color} />
+            <Ionicons name="log-out" size={29} color={color} />
           ),
         }}
       />
