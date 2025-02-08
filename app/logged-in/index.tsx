@@ -6,13 +6,14 @@ import { useRouter } from "expo-router";
 const HomeScreen = () => {
   const router = useRouter();
   const [pins, setPins] = useState([
-    { id: 1, latitude: 37.78825, longitude: -122.4324, name: "Whiskers", image: "https://example.com/cat1.jpg", info: "Friendly cat", health: true, fed: false },
-    { id: 2, latitude: 37.78925, longitude: -122.4354, name: "Shadow", image: "https://example.com/cat2.jpg", info: "Shy cat", health: false, fed: true },
+    { id: 1, latitude: 33.77780712288718, longitude: -84.39873117824166, name: "Whiskers", image: "https://www.google.com/url?sa=i&url=https%3A%2F%2Fwww.discoverwildlife.com%2Fanimal-facts%2Fmammals%2F6-key-behaviours-that-reveal-the-wild-ancestry-of-your-cat&psig=AOvVaw3Zoo2XOuw7Qmww1KtAy0f1&ust=1739118966851000&source=images&cd=vfe&opi=89978449&ved=0CBQQjRxqFwoTCJjU35PBtIsDFQAAAAAdAAAAABAE", info: "Friendly cat", health: true, fed: false },
+    { id: 2, latitude:  33.774097234804785, longitude: -84.39870972057157, name: "Shadow", image: "https://www.google.com/url?sa=i&url=https%3A%2F%2Fwww.balisafarimarinepark.com%2Fbengal-tiger-the-power-beauty-and-more%2F&psig=AOvVaw13dz9FMTgVtbiSTQpJ-Gnh&ust=1739118990838000&source=images&cd=vfe&opi=89978449&ved=0CBQQjRxqFwoTCICMpqHBtIsDFQAAAAAdAAAAABAE", info: "Shy cat", health: false, fed: true },
   ]);
   
   const isAdmin = "true"; // Example role check
   return (
-    <MapView style={{ flex: 1 }} initialRegion={{ latitude: 37.78825, longitude: -122.4324, latitudeDelta: 0.01, longitudeDelta: 0.01 }}>
+    <MapView style={{ flex: 1 }} 
+    initialRegion={{ latitude: 33.77607705084073, longitude:  -84.39619917316841, latitudeDelta: 0.01, longitudeDelta: 0.01 }}>
       {pins.map((pin) => (
         <Marker
           key={pin.id}
