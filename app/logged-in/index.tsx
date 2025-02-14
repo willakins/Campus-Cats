@@ -5,24 +5,47 @@ import { useRouter } from "expo-router";
 
 const HomeScreen = () => {
   const router = useRouter();
+  const [filter, setFilter] = useState('all');
   const [pins, setPins] = useState([
-    { id: 1, latitude: 33.77780712288718, longitude: -84.39873117824166, name: "Whiskers", image: "https://www.google.com/url?sa=i&url=https%3A%2F%2Fwww.discoverwildlife.com%2Fanimal-facts%2Fmammals%2F6-key-behaviours-that-reveal-the-wild-ancestry-of-your-cat&psig=AOvVaw3Zoo2XOuw7Qmww1KtAy0f1&ust=1739118966851000&source=images&cd=vfe&opi=89978449&ved=0CBQQjRxqFwoTCJjU35PBtIsDFQAAAAAdAAAAABAE", info: "Friendly cat", health: true, fed: false },
-    { id: 2, latitude:  33.774097234804785, longitude: -84.39870972057157, name: "Shadow", image: "https://www.google.com/url?sa=i&url=https%3A%2F%2Fwww.balisafarimarinepark.com%2Fbengal-tiger-the-power-beauty-and-more%2F&psig=AOvVaw13dz9FMTgVtbiSTQpJ-Gnh&ust=1739118990838000&source=images&cd=vfe&opi=89978449&ved=0CBQQjRxqFwoTCICMpqHBtIsDFQAAAAAdAAAAABAE", info: "Shy cat", health: false, fed: true },
+    { id: 1, latitude: 33.77780712288718, longitude: -84.39873117824166, name: "Whiskers", image: "https://www.google.com/url?sa=i&url=https%3A%2F%2Fwww.discoverwildlife.com%2Fanimal-facts%2Fmammals%2F6-key-behaviours-that-reveal-the-wild-ancestry-of-your-cat&psig=AOvVaw3Zoo2XOuw7Qmww1KtAy0f1&ust=1739118966851000&source=images&cd=vfe&opi=89978449&ved=0CBQQjRxqFwoTCJjU35PBtIsDFQAAAAAdAAAAABAE", info: "Friendly cat", health: true, fed: false, date: '2025-02-10' },
+    { id: 2, latitude:  33.774097234804785, longitude: -84.39870972057157, name: "Shadow", image: "https://www.google.com/url?sa=i&url=https%3A%2F%2Fwww.balisafarimarinepark.com%2Fbengal-tiger-the-power-beauty-and-more%2F&psig=AOvVaw13dz9FMTgVtbiSTQpJ-Gnh&ust=1739118990838000&source=images&cd=vfe&opi=89978449&ved=0CBQQjRxqFwoTCICMpqHBtIsDFQAAAAAdAAAAABAE", info: "Shy cat", health: false, fed: true, date: '2023-11-15'},
   ]);
+
+  const filteredPins = pins.filter(pin => {
+    if (filter === 'all') return true;
+    const days = parseInt(filter);
+    const cutoffDate = new Date();
+    cutoffDate.setDate(cutoffDate.getDate() - days);
+    return new Date(pin.date) >= cutoffDate;
+  });
+
   
   return (
+
+  
     <View style={styles.container}>
-      <MapView style={{ flex: 1 }} 
-      initialRegion={{ latitude: 33.77607705084073, longitude:  -84.39619917316841, latitudeDelta: 0.01, longitudeDelta: 0.01 }}>
-        {pins.map((pin) => (
+      <View style={styles.buttonGroup}>
+        {['7', '30', '90', '365', 'all'].map(range => (
+          <TouchableOpacity
+            key={range}
+            style={[styles.filterButton, filter === range && styles.activeButton]}
+            onPress={() => setFilter(range)}
+          >
+            <Text style={[styles.buttonText, filter === range && styles.activeText]}>
+              {range === '365' ? '1Y' : range === 'all' ? 'All' : `${range}D`}
+            </Text>
+          </TouchableOpacity>
+        ))}
+      </View>
+
+      <MapView style={{ flex: 1 }} initialRegion={{ latitude: 33.776077, longitude: -84.396199, latitudeDelta: 0.01, longitudeDelta: 0.01 }}>
+        {filteredPins.map(pin => (
           <Marker
             key={pin.id}
             coordinate={{ latitude: pin.latitude, longitude: pin.longitude }}
             title={pin.name}
-            onPress={() => router.push({ 
-              pathname: '/sighting', 
-              params: {cat: JSON.stringify(pin) },
-            })}
+            description={pin.info}
+            onPress={() => router.push({ pathname: '/sighting', params: { cat: JSON.stringify(pin) } })}
           />
         ))}
       </MapView>
@@ -42,6 +65,7 @@ const styles = StyleSheet.create({
   map: {
     flex: 1, // Map takes up the entire screen
   },
+  buttonGroup: { flexDirection: 'row', justifyContent: 'center', paddingVertical: 10, backgroundColor: '#f0f0f0' },
   reportButton: {
     position: 'absolute', // Position the button absolutely
     bottom: 20,           // Adjust distance from the bottom of the screen
@@ -57,9 +81,9 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.3,
     shadowRadius: 3.5,
   },
-  buttonText: {
-    color: '#fff',        // Text color
-    fontSize: 18,         // Text size
-    fontWeight: 'bold',   // Text boldness
-  },
+  
+  filterButton: { paddingVertical: 8, paddingHorizontal: 15, marginHorizontal: 5, borderRadius: 20, backgroundColor: '#e0e0e0' },
+  activeButton: { backgroundColor: '#007bff' },
+  buttonText: { fontSize: 18, fontWeight: 'bold', color: '#fff' },
+  activeText: { color: '#fff' }
 });
