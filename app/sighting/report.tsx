@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { View, Text, TextInput, Image, Switch, StyleSheet, KeyboardAvoidingView, ScrollView, Platform, TouchableOpacity, Alert } from "react-native";
 import { useRouter } from "expo-router";
-import { addDoc, collection } from "firebase/firestore";
+import { addDoc, collection, doc, getFirestore, serverTimestamp } from "firebase/firestore";
 import { db, storage } from "../logged-in/firebase";
 import { Ionicons } from "@expo/vector-icons";
 import { getStorage, getDownloadURL, ref, uploadBytes } from "firebase/storage";
@@ -18,9 +18,6 @@ const CatReportScreen = () => {
 
   // Get photo
   const [photo, setPhoto] = useState<string | null>(null);
-  const [mediaStatus, requestMediaPermission] = ImagePicker.useMediaLibraryPermissions();
-
-  const [error, setError] = useState('');
 
   const handleTakePhoto = async () => {
     const { status, } = await ImagePicker.requestCameraPermissionsAsync();
@@ -81,41 +78,46 @@ const CatReportScreen = () => {
         alert("Cat submission started...")
 
         // Create a blob from the image URI
-        // Why are we using XMLHttpRequest? See:
-        // https://github.com/expo/expo/issues/2402#issuecomment-443726662
-        const blob = await new Promise((resolve, reject) => {
-          const xhr = new XMLHttpRequest();
-          xhr.onload = function () {
-            resolve(xhr.response);
-          };
-          xhr.onerror = function (e) {
-            console.log(e);
-            reject(new TypeError("Network request failed"));
-          };
-          xhr.responseType = "blob";
-          xhr.open("GET", photo, true);
-          xhr.send(null);
-        });
+
+        const response = await fetch(photo);
+        const blob = response.blob();
+
+        // // Why are we using XMLHttpRequest? See:
+        // // https://github.com/expo/expo/issues/2402#issuecomment-443726662
+        // const blob = await new Promise((resolve, reject) => {
+        //   const xhr = new XMLHttpRequest();
+        //   xhr.onload = function () {
+        //     resolve(xhr.response);
+        //   };
+        //   xhr.onerror = function (e) {
+        //     console.log(e);
+        //     reject(new TypeError("Network request failed"));
+        //   };
+        //   xhr.responseType = "blob";
+        //   xhr.open("GET", photo, true);
+        //   xhr.send(null);
+        // });
 
         console.log('Blob created:', blob);
 
         // Generate a unique filename for the image
-        const fileName = uuidv4();
-        const photoRef = ref(getStorage(), "photos/" + fileName);
+        const filename = uuidv4();
+        const filepath = "photos/" + filename
+        const photoRef = ref(getStorage(), filepath);
 
         console.log('Photo reference created:', photoRef);
 
-        // Upload the blob with proper metadata
-        const metadata = {
-          contentType: 'image/jpeg',
-        };
+        // // Upload the blob with proper metadata
+        // const metadata = {
+        //   contentType: 'image/jpeg',
+        // };
 
         // Upload the file
-        await uploadBytes(photoRef, blob, metadata);
+        await uploadBytes(photoRef, blob);
         console.log('Upload successful');
 
-        // We're done with the blob, close and release it
-        blob.close();
+        // // We're done with the blob, close and release it
+        // blob.close();
 
         // Get the download URL
         const photoURL = await getDownloadURL(photoRef);
@@ -133,6 +135,31 @@ const CatReportScreen = () => {
           photoURL,
           createdAt: new Date(),
         });
+
+        const time_now = 0;
+        const time = time_now;
+        const lat = 0; // TODO: Actually add location
+        const lng = 0;
+
+        try {
+          await addDoc(collection(db, 'cat-sightings'), {
+            id: 2,
+            timestamp: serverTimestamp(),
+            spotted_time: time, // currently unused, but we may want to distinguish
+                                // upload and sighting time in the future
+            latitude: lat,
+            longitude: lng,
+            name: name,
+            image: filepath,
+            info: info,
+            healthy: health,
+            fed: fed,
+          });
+        } catch (error) {
+          console.error("Error during upload:", error);
+          alert(`Upload failed: ${error.message}`);
+        }
+
       } catch (error) {
         console.error("Error during upload:", error);
         alert(`Upload failed: ${error.message}`);
@@ -150,6 +177,7 @@ const CatReportScreen = () => {
       <ScrollView contentContainerStyle={styles.scrollView}>
         <View style={styles.container}>
           <View style={styles.inputContainer}>
+            { false && <Text>hi</Text> }
             <TextInput 
               placeholder="Cat's name"
               onChangeText={setName} 
