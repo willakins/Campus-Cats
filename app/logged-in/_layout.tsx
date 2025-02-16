@@ -1,12 +1,17 @@
 import { Ionicons } from "@expo/vector-icons";
 import { Tabs } from 'expo-router';
 import React from "react";
-import { TouchableOpacity, View, StyleSheet, Text, StatusBar } from "react-native";
+import { TouchableOpacity, View, StyleSheet, Text, StatusBar, Platform } from "react-native";
 import { Link, useRouter } from 'expo-router';
 
 export default function RootLayout() {
   const size2 = 29;
   const color2 = '#333'
+  const bar_height: number = Platform.select({
+    ios: 0,
+    android: 60,
+    default: 90
+  });
 
   return (
     <View style={styles.container}>
@@ -15,7 +20,7 @@ export default function RootLayout() {
         <Tabs
         screenOptions={{
           headerShown: false, // Hide the default header
-          tabBarStyle: { backgroundColor: 'white', height: 0 },
+          tabBarStyle: { backgroundColor: 'white', height: bar_height },
           tabBarActiveTintColor: 'tomato',
           tabBarInactiveTintColor: 'gray',
         }}
