@@ -143,7 +143,6 @@ const CatReportScreen = () => {
 
         try {
           await addDoc(collection(db, 'cat-sightings'), {
-            id: 2,
             timestamp: serverTimestamp(),
             spotted_time: time, // currently unused, but we may want to distinguish
                                 // upload and sighting time in the future
