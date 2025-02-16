@@ -1,24 +1,50 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { TouchableOpacity, View, StyleSheet, Text } from "react-native";
-import MapView, { Marker } from "react-native-maps";
+import MapView, { LatLng, Marker } from "react-native-maps";
 import { useRouter } from "expo-router";
+import { getDownloadURL, listAll, ref } from "firebase/storage";
+import { db, storage } from "./firebase";
+import { collection, DocumentData, getDocs } from "firebase/firestore";
+
+interface CatSighting {
+  date: Date;
+  fed: boolean;
+  health: boolean;
+  catId: string;
+  photoUri: string;
+  info: string;
+  location: LatLng;
+  name: string;
+}
 
 const HomeScreen = () => {
   const router = useRouter();
   const [filter, setFilter] = useState('all');
-  const [pins, setPins] = useState([
-    { id: 1, latitude: 33.77780712288718, longitude: -84.39873117824166, name: "Whiskers", image: "https://www.google.com/url?sa=i&url=https%3A%2F%2Fwww.discoverwildlife.com%2Fanimal-facts%2Fmammals%2F6-key-behaviours-that-reveal-the-wild-ancestry-of-your-cat&psig=AOvVaw3Zoo2XOuw7Qmww1KtAy0f1&ust=1739118966851000&source=images&cd=vfe&opi=89978449&ved=0CBQQjRxqFwoTCJjU35PBtIsDFQAAAAAdAAAAABAE", info: "Friendly cat", health: true, fed: false, date: '2025-02-10' },
-    { id: 2, latitude:  33.774097234804785, longitude: -84.39870972057157, name: "Shadow", image: "https://www.google.com/url?sa=i&url=https%3A%2F%2Fwww.balisafarimarinepark.com%2Fbengal-tiger-the-power-beauty-and-more%2F&psig=AOvVaw13dz9FMTgVtbiSTQpJ-Gnh&ust=1739118990838000&source=images&cd=vfe&opi=89978449&ved=0CBQQjRxqFwoTCICMpqHBtIsDFQAAAAAdAAAAABAE", info: "Shy cat", health: false, fed: true, date: '2023-11-15'},
-  ]);
+  const [pins, setPins] = useState<CatSighting[] | null>([]);
 
-  const filteredPins = pins.filter(pin => {
-    if (filter === 'all') return true;
-    const days = parseInt(filter);
-    const cutoffDate = new Date();
-    cutoffDate.setDate(cutoffDate.getDate() - days);
-    return new Date(pin.date) >= cutoffDate;
-  });
+  const fetchPins = async () => {
+    const querySnapshot = await getDocs(collection(db, 'cat-sightings'));
+    const pinsData: CatSighting[] = querySnapshot.docs.map(doc => ({
+      ...(doc.data() as CatSighting),
+      id: doc.id, // Include the document ID
+    }));
+    setPins(pinsData);
+  };
 
+  useEffect(() => {
+    fetchPins(); // Fetch pins when the screen is loaded
+  }, []);
+
+  var filteredPins:DocumentData[] = [];
+  if (pins) {
+    filteredPins = pins.filter(pin => {
+      if (filter === 'all') return true;
+      const days = parseInt(filter);
+      const cutoffDate = new Date();
+      cutoffDate.setDate(cutoffDate.getDate() - days);
+      return new Date(pin.date) >= cutoffDate;
+    });
+  }
   
   return (
 
@@ -45,7 +71,9 @@ const HomeScreen = () => {
             coordinate={{ latitude: pin.latitude, longitude: pin.longitude }}
             title={pin.name}
             description={pin.info}
-            onPress={() => router.push({ pathname: '/sighting', params: { cat: JSON.stringify(pin) } })}
+            onPress={() => router.push({ pathname: '/sighting', params: { docId: pin.id, catID: pin.catId,  catName: pin.name, 
+              catInfo: pin.info, catHealth: pin.health, catFed: pin.fed, catLocation: JSON.stringify(pin.location), 
+              catDate: JSON.stringify(pin.date), catPhoto: pin.photoUri} })}
           />
         ))}
       </MapView>

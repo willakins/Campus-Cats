@@ -1,22 +1,41 @@
 import React, { useEffect, useState } from "react";
 import { View, Text, TextInput, Image, Switch, Button, ActivityIndicator, StyleSheet, KeyboardAvoidingView, ScrollView, Platform, TouchableOpacity } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { doc, getDoc } from "firebase/firestore";
+import { doc, getDoc, updateDoc } from "firebase/firestore";
 import { auth, db } from "../logged-in/firebase";
+import MapView, { LatLng, Marker } from "react-native-maps";
 
 const CatSightingScreen = () => {
   //Check if admin, then set passed parameters from map screen
   const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
+  // Pull params from router
+  const { docId, catIdPassed, catName, catInfo, catHealth, catFed, catLocation, catDate, catPhoto } = useLocalSearchParams();
 
-  const params = useLocalSearchParams();
-  const cat = JSON.parse(params.cat as string);
-  const [name, setName] = useState(cat.name);
-  const [info, setInfo] = useState(cat.info);
-  const [health, setHealth] = useState(cat.health);
-  const [fed, setFed] = useState(cat.fed);
+  // Convert params to right type (Frick you Typescript!!)
+  const catName2:string = catName as string;
+  const catInfo2:string = catInfo as string;
+  const catHealth2:boolean = catHealth ? JSON.parse(catHealth as string) : false;
+  const catId2:string = catIdPassed as string;
+  const catFed2:boolean = catFed ? JSON.parse(catFed as string) : false;
+  const catLocation2:LatLng = catLocation ? JSON.parse(catLocation as string) : null;
+  const catDate2:Date = catDate ? JSON.parse(catDate as string) : null;
+  const catPhoto2:string = catPhoto as string;
+  const docRef:string = docId as string;
 
+  //Create consts
+  const [date, setDate] = useState(catDate2);
+  const [fed, setFed] = useState(catFed2);
+  const [health, setHealth] = useState(catHealth2);
+  const [catId, setCatId] = useState(catId2);
+  const [photo, setPhoto] = useState(catPhoto2);
+  const [info, setInfo] = useState(catInfo2);
+  const [name, setName] = useState(catName2);
+  const [location, setLocation] = useState<LatLng | null>(catLocation2);
+  
+
+  // Check user role
   useEffect(() => {
     const checkUserRole = async () => {
       try {
@@ -46,6 +65,20 @@ const CatSightingScreen = () => {
     checkUserRole();
   }, []);
 
+  const saveSighting = async () => {
+    await updateDoc(doc(db, 'cat_sightings', docRef), {
+      date,
+      fed,
+      health,
+      catId,
+      photo,
+      info,
+      location,
+      name
+    });
+    alert("Saved!");
+  };
+
   if (loading) {
     return (
       <View style={styles.screen}>
@@ -61,8 +94,21 @@ const CatSightingScreen = () => {
           >
       <ScrollView contentContainerStyle={styles.scrollView}>
         <View style={styles.container}>
-          <Image source={{ uri: cat.image }} style={styles.catImage} />
+          <Image source={{ uri: photo }} style={styles.catImage} />
           <View style={styles.inputContainer}>
+            <Text style={styles.headline}>Edit A Cat Sighting</Text>
+            {isAdmin && <MapView
+            style={{ width: '100%', height: 200, marginVertical: 10 }}
+            initialRegion={{
+              latitude: 33.7756,
+              longitude: -84.3963,
+              latitudeDelta: 0.01,
+              longitudeDelta: 0.01,
+            }}
+            onPress={(e) => setLocation(e.nativeEvent.coordinate)} // This updates the location correctly
+          >
+            {location && <Marker coordinate={location} />}
+          </MapView>}
             <Text style={styles.sliderText}>Cat's Name</Text>
             <TextInput 
             value={name} 
@@ -83,7 +129,7 @@ const CatSightingScreen = () => {
               <Switch value={fed} onValueChange={setFed} disabled={!isAdmin} />
               <Text style={styles.sliderText}>Is in good health</Text>
             </View>
-            {isAdmin && <TouchableOpacity style={styles.button} onPress={() => alert("Saved!")}>
+            {isAdmin && <TouchableOpacity style={styles.button} onPress={saveSighting}>
               <Text style = {styles.buttonText}>Save</Text>
             </TouchableOpacity>}
             <TouchableOpacity style={styles.button} onPress={() => router.back()}>
@@ -100,6 +146,13 @@ const CatSightingScreen = () => {
 export default CatSightingScreen;
 
 const styles = StyleSheet.create({
+  headline: {
+    color: 'black',
+    fontSize: 20,
+    fontWeight: 'bold',
+    textAlign: 'center',
+    padding: 10,
+  },
   sliderText: {
     color: 'black',
     fontSize: 12,
