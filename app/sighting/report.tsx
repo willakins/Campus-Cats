@@ -6,15 +6,18 @@ import { auth, db, storage } from "../logged-in/firebase";
 import { Asset, launchCamera, launchImageLibrary } from 'react-native-image-picker';
 import { Ionicons } from "@expo/vector-icons";
 import { getDownloadURL, ref, uploadBytes } from "firebase/storage";
+import MapView, { LatLng, Marker } from "react-native-maps";
 
 const CatReportScreen = () => {
   const router = useRouter();
-  const [name, setName] = useState('');
-  const [info, setInfo] = useState('');
-  const [health, setHealth] = useState(false);
+  const [date, setDate] = useState(null)
   const [fed, setFed] = useState(false);
+  const [health, setHealth] = useState(false);
+  const [catId, setId] = useState(null);
   const [photo, setPhoto] = useState<Asset | null>(null);
-  const [error, setError] = useState('');
+  const [info, setInfo] = useState('');
+  const [location, setLocation] = useState<LatLng | null>(null);
+  const [name, setName] = useState('');
   
   const handleTakePhoto = () => {
     launchCamera(
@@ -89,12 +92,14 @@ const CatReportScreen = () => {
       // Store the photo URL and other data in Firestore
       const photoURL = await getDownloadURL(photoRef);
       await addDoc(collection(db, 'cat_sightings'), {
-        name,
-        info,
-        health,
+        date: new Date(),
         fed,
-        photoURL,
-        createdAt: new Date(),
+        health,
+        catId,
+        photo,
+        info,
+        location,
+        name,
       });
     } else {
       alert('Please select a photo.');
@@ -109,6 +114,19 @@ const CatReportScreen = () => {
       <ScrollView contentContainerStyle={styles.scrollView}>
         <View style={styles.container}>
           <View style={styles.inputContainer}>
+          <Text style={styles.headline}>Report A New Cat Sighting</Text>
+          <MapView
+            style={{ width: '100%', height: 200, marginVertical: 10 }}
+            initialRegion={{
+              latitude: 33.7756,
+              longitude: -84.3963,
+              latitudeDelta: 0.01,
+              longitudeDelta: 0.01,
+            }}
+            onPress={(e) => setLocation(e.nativeEvent.coordinate)} // This updates the location correctly
+          >
+            {location && <Marker coordinate={location} />}
+          </MapView>
             <TextInput 
             placeholder="Cat's name"
             onChangeText={setName} 
@@ -149,6 +167,13 @@ const CatReportScreen = () => {
 export default CatReportScreen;
 
 const styles = StyleSheet.create({
+  headline: {
+    color: 'black',
+    fontSize: 20,
+    fontWeight: 'bold',
+    textAlign: 'center',
+    padding: 10,
+  },
   cameraView: {
     alignItems: 'center',
     paddingVertical: 20,  // Vertical padding
