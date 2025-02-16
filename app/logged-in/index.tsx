@@ -1,7 +1,7 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { TouchableOpacity, View, StyleSheet, Text } from "react-native";
 import MapView, { Marker } from "react-native-maps";
-import { useRouter } from "expo-router";
+import { useNavigation, useRouter } from "expo-router";
 
 const HomeScreen = () => {
   const router = useRouter();
@@ -19,7 +19,14 @@ const HomeScreen = () => {
     return new Date(pin.date) >= cutoffDate;
   });
 
-  
+  // Prevent going back to login page after logging in by using back button
+  const navigation = useNavigation();
+  useEffect(() => { 
+    navigation.addListener('beforeRemove', (e) => {
+      e.preventDefault();
+    });
+  }, []);
+
   return (
 
   
