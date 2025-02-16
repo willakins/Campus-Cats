@@ -1,11 +1,13 @@
-import React, { useEffect, useState } from "react";
-import { View, Text, TextInput, Image, Switch, Button, ActivityIndicator, StyleSheet, KeyboardAvoidingView, ScrollView, Platform, TouchableOpacity, Alert } from "react-native";
-import { useLocalSearchParams, useRouter } from "expo-router";
-import { addDoc, collection, doc, getDoc } from "firebase/firestore";
-import { auth, db, storage } from "../logged-in/firebase";
-import { Asset, launchCamera, launchImageLibrary } from 'react-native-image-picker';
+import React, { useState } from "react";
+import { View, Text, TextInput, Image, Switch, StyleSheet, KeyboardAvoidingView, ScrollView, Platform, TouchableOpacity, Alert } from "react-native";
+import { useRouter } from "expo-router";
+import { addDoc, collection } from "firebase/firestore";
+import { db, storage } from "../logged-in/firebase";
 import { Ionicons } from "@expo/vector-icons";
-import { getDownloadURL, ref, uploadBytes } from "firebase/storage";
+import { getStorage, getDownloadURL, ref, uploadBytes } from "firebase/storage";
+import * as ImagePicker from 'expo-image-picker';
+import 'react-native-get-random-values';
+import { v4 as uuidv4 } from 'uuid';
 
 const CatReportScreen = () => {
   const router = useRouter();
@@ -13,47 +15,42 @@ const CatReportScreen = () => {
   const [info, setInfo] = useState('');
   const [health, setHealth] = useState(false);
   const [fed, setFed] = useState(false);
-  const [photo, setPhoto] = useState<Asset | null>(null);
+
+  // Get photo
+  const [photo, setPhoto] = useState<string | null>(null);
+  const [mediaStatus, requestMediaPermission] = ImagePicker.useMediaLibraryPermissions();
+
   const [error, setError] = useState('');
-  
-  const handleTakePhoto = () => {
-    launchCamera(
-      {
-        mediaType: 'photo',
-        cameraType: 'back', // You can specify front or back camera
-        quality: 0.5, // Camera quality (1.0 is the highest)
-      },
-      (response) => {
-        if (response.didCancel) {
-          console.log('User cancelled camera picker');
-        } else if (response.errorCode) {
-          console.log('Camera Error: ', response.errorMessage);
-        } else {
-          console.log('Photo taken: ', response.assets);
-          // Handle the selected image (response.assets[0].uri)
-        }
-      }
-    );
+
+  const handleTakePhoto = async () => {
+    const { status, } = await ImagePicker.requestCameraPermissionsAsync();
+    if (status !== "granted") {
+      alert("Sorry, we need camera roll permissions to make this work!");
+    }
+
+    let result = await ImagePicker.launchCameraAsync({
+      quality: 1.0, // 100% quality, do not compress
+    });
+
+    if (!result.canceled) {
+      setPhoto(result.assets[0].uri);
+    }
   };
 
-  const handleSelectPhoto = () => {
-    launchImageLibrary(
-      {
-        mediaType: 'photo',
-        quality: 0.5, // Image quality (1.0 is the highest)
-      },
-      (response) => {
-        if (response.didCancel) {
-          console.log('User cancelled image picker');
-        } else if (response.errorCode) {
-          console.log('Image Picker Error: ', response.errorMessage);
-        } else if(response.assets && response.assets[0]){
-          setPhoto(response.assets[0]);
-          console.log('Selected photo: ', response.assets);
-          // Handle the selected image (response.assets[0].uri)
-        }
-      }
-    );
+  const handleSelectPhoto = async () => {
+    // Permissions check only needed for iOS 10
+    const { status, } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== "granted") {
+      alert("Sorry, we need media library permissions to make this work!");
+    }
+
+    let result = await ImagePicker.launchImageLibraryAsync({
+      quality: 1.0, // 100% quality, do not compress
+    });
+
+    if (!result.canceled) {
+      setPhoto(result.assets[0].uri);
+    }
   };
 
   const handlePress = () => {
@@ -77,25 +74,69 @@ const CatReportScreen = () => {
       { cancelable: true }
     );
   };
-  const handleSubmission = async () => {
-    if (photo && photo.uri) {
-      alert("Cat submitted!")
-      // Upload the image to Firebase Storage
-      const photoRef = ref(storage, 'cat_photos/' + photo.fileName);
-      const response = await fetch(photo.uri);
-      const blob = await response.blob();
-      await uploadBytes(photoRef, blob);
 
-      // Store the photo URL and other data in Firestore
-      const photoURL = await getDownloadURL(photoRef);
-      await addDoc(collection(db, 'cat_sightings'), {
-        name,
-        info,
-        health,
-        fed,
-        photoURL,
-        createdAt: new Date(),
-      });
+  const handleSubmission = async () => {
+    if (photo) {
+      try {
+        alert("Cat submission started...")
+
+        // Create a blob from the image URI
+        // Why are we using XMLHttpRequest? See:
+        // https://github.com/expo/expo/issues/2402#issuecomment-443726662
+        const blob = await new Promise((resolve, reject) => {
+          const xhr = new XMLHttpRequest();
+          xhr.onload = function () {
+            resolve(xhr.response);
+          };
+          xhr.onerror = function (e) {
+            console.log(e);
+            reject(new TypeError("Network request failed"));
+          };
+          xhr.responseType = "blob";
+          xhr.open("GET", photo, true);
+          xhr.send(null);
+        });
+
+        console.log('Blob created:', blob);
+
+        // Generate a unique filename for the image
+        const fileName = uuidv4();
+        const photoRef = ref(getStorage(), "photos/" + fileName);
+
+        console.log('Photo reference created:', photoRef);
+
+        // Upload the blob with proper metadata
+        const metadata = {
+          contentType: 'image/jpeg',
+        };
+
+        // Upload the file
+        await uploadBytes(photoRef, blob, metadata);
+        console.log('Upload successful');
+
+        // We're done with the blob, close and release it
+        blob.close();
+
+        // Get the download URL
+        const photoURL = await getDownloadURL(photoRef);
+        console.log('Download URL:', photoURL);
+
+        // Further processing with the photoURL...
+
+        alert("Cat submitted successfully!");
+
+        await addDoc(collection(db, 'cat_sightings'), {
+          name,
+          info,
+          health,
+          fed,
+          photoURL,
+          createdAt: new Date(),
+        });
+      } catch (error) {
+        console.error("Error during upload:", error);
+        alert(`Upload failed: ${error.message}`);
+      }
     } else {
       alert('Please select a photo.');
     }
@@ -103,21 +144,21 @@ const CatReportScreen = () => {
 
   return (
     <KeyboardAvoidingView
-          style={styles.container}
-          behavior={Platform.OS === 'ios' ? 'padding' : undefined} // iOS specific behavior
-          >
+      style={styles.container}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined} // iOS specific behavior
+    >
       <ScrollView contentContainerStyle={styles.scrollView}>
         <View style={styles.container}>
           <View style={styles.inputContainer}>
             <TextInput 
-            placeholder="Cat's name"
-            onChangeText={setName} 
-            style={styles.input} />
+              placeholder="Cat's name"
+              onChangeText={setName} 
+              style={styles.input} />
             <TextInput
-            placeholder='Additional Info' 
-            value={info} 
-            onChangeText={setInfo} 
-            style={styles.input} />
+              placeholder='Additional Info' 
+              value={info} 
+              onChangeText={setInfo} 
+              style={styles.input} />
             <View style={styles.slider}>
               <Switch value={health} onValueChange={setHealth}/>
               <Text style={styles.sliderText}>Has been fed</Text> 
@@ -131,7 +172,8 @@ const CatReportScreen = () => {
                 <Ionicons name="camera-outline" size={29} color={'#fff'} />
               </TouchableOpacity>
             </View>
-            
+            {photo && <Image source={{ uri: photo }} style={styles.selectedPreview} />}
+
             <TouchableOpacity style={styles.button} onPress={handleSubmission}>
               <Text style = {styles.buttonText}>Submit Sighting</Text>
             </TouchableOpacity>
@@ -245,9 +287,16 @@ const styles = StyleSheet.create({
     color: '#007BFF',
     textAlign: 'center',
   },
-  
+  selectedPreview: {
+    margin: 'auto', // Center the image
+    objectFit: 'scale-down', // Don't clip the image
+    width: 240,
+    height: 180,
+  },
+
 });
- /** Old code for picture.tsx removed to improve navigation
+
+/** Old code for picture.tsx removed to improve navigation
 import React, { useEffect } from 'react';
 import { CameraView, CameraType, useCameraPermissions } from 'expo-camera';
 import { useState, useRef } from 'react';
