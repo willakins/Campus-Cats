@@ -153,7 +153,7 @@ const CatReportScreen = () => {
             <TouchableOpacity style={styles.button} onPress={handleSubmission}>
               <Text style = {styles.buttonText}>Submit Sighting</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={styles.button} onPress={() => router.back()}>
+            <TouchableOpacity style={styles.button} onPress={() => router.push('/logged-in')}>
               <Text style={styles.buttonText}>Back</Text>
             </TouchableOpacity>
           </View>

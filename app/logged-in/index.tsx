@@ -1,34 +1,48 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { TouchableOpacity, View, StyleSheet, Text } from "react-native";
 import MapView, { LatLng, Marker } from "react-native-maps";
-import { useRouter, useNavigation } from "expo-router";
+import { useFocusEffect, useRouter, useNavigation } from "expo-router";
 import { getDownloadURL, listAll, ref } from "firebase/storage";
 import { db, storage } from "./firebase";
 import { collection, DocumentData, getDocs } from "firebase/firestore";
 
 interface CatSighting {
+  id: string;
   date: Date;
   fed: boolean;
   health: boolean;
-  catId: string;
   photoUri: string;
   info: string;
-  location: LatLng;
+  latitude: number;
+  longitude: number;
   name: string;
 }
 
 const HomeScreen = () => {
   const router = useRouter();
   const [filter, setFilter] = useState('all');
-  const [pins, setPins] = useState<CatSighting[] | null>([]);
+  const [mapKey, setMapKey] = useState(0);
+  const [pins, setPins] = useState<CatSighting[]>([
+    { id: "1", date: new Date('2025-02-10'), fed: true, health: true, info: "Friendly cat", latitude: 33.77780712288718, longitude: -84.39873117824166, photoUri: "https://www.google.com/url?sa=i&url=https%3A%2F%2Fwww.discoverwildlife.com%2Fanimal-facts%2Fmammals%2F6-key-behaviours-that-reveal-the-wild-ancestry-of-your-cat&psig=AOvVaw3Zoo2XOuw7Qmww1KtAy0f1&ust=1739118966851000&source=images&cd=vfe&opi=89978449&ved=0CBQQjRxqFwoTCJjU35PBtIsDFQAAAAAdAAAAABAE", name: "Whiskers"},
+    { id: "2", date: new Date('2023-11-15'), fed: true, health: false, info: "Shy cat", latitude:  33.774097234804785, longitude: -84.39870972057157, photoUri: "https://www.google.com/url?sa=i&url=https%3A%2F%2Fwww.balisafarimarinepark.com%2Fbengal-tiger-the-power-beauty-and-more%2F&psig=AOvVaw13dz9FMTgVtbiSTQpJ-Gnh&ust=1739118990838000&source=images&cd=vfe&opi=89978449&ved=0CBQQjRxqFwoTCICMpqHBtIsDFQAAAAAdAAAAABAE", name: "Shadow"},
+  ]);
 
-  const fetchPins = async () => {
+  const fetchPins = async  () => {
     const querySnapshot = await getDocs(collection(db, 'cat-sightings'));
     const pinsData: CatSighting[] = querySnapshot.docs.map(doc => ({
-      ...(doc.data() as CatSighting),
-      id: doc.id, // Include the document ID
+      id: doc.id,
+      date: new Date(doc.data().date),
+      fed: doc.data().fed,
+      health: doc.data().health,
+      photoUri: doc.data().image,
+      info: doc.data().info,
+      latitude: doc.data().latitude,
+      longitude: doc.data().longitude,
+      name: doc.data().name
+       // Include the document ID
     }));
     setPins(pinsData);
+    setMapKey(prev => prev + 1);
   };
 
   // Prevent going back to login page after logging in by using back button
@@ -39,20 +53,21 @@ const HomeScreen = () => {
     });
   }, []);
 
-  useEffect(() => {
-    fetchPins(); // Fetch pins when the screen is loaded
-  }, []);
+  useFocusEffect(
+    useCallback(() => {
+      fetchPins();
+    }, [])
+  );
 
-  var filteredPins:DocumentData[] = [];
-  if (pins) {
-    filteredPins = pins.filter(pin => {
-      if (filter === 'all') return true;
-      const days = parseInt(filter);
-      const cutoffDate = new Date();
-      cutoffDate.setDate(cutoffDate.getDate() - days);
-      return new Date(pin.date) >= cutoffDate;
-    });
-  }
+  const filteredPins = pins.filter(pin => {
+    if (filter === 'all') return true;
+    const days = parseInt(filter);
+    const cutoffDate = new Date();
+    cutoffDate.setDate(cutoffDate.getDate() - days);
+    return new Date(pin.date) >= cutoffDate;
+  });
+  
+  
   
   return (
 
@@ -72,21 +87,21 @@ const HomeScreen = () => {
         ))}
       </View>
 
-      <MapView style={{ flex: 1 }} initialRegion={{ latitude: 33.776077, longitude: -84.396199, latitudeDelta: 0.01, longitudeDelta: 0.01 }}>
+      <MapView key = {mapKey} style={{ flex: 1 }} initialRegion={{ latitude: 33.776077, longitude: -84.396199, latitudeDelta: 0.01, longitudeDelta: 0.01 }}>
         {filteredPins.map(pin => (
           <Marker
             key={pin.id}
             coordinate={{ latitude: pin.latitude, longitude: pin.longitude }}
             title={pin.name}
             description={pin.info}
-            onPress={() => router.push({ pathname: '/sighting', params: { docId: pin.id, catID: pin.catId,  catName: pin.name, 
-              catInfo: pin.info, catHealth: pin.health, catFed: pin.fed, catLocation: JSON.stringify(pin.location), 
-              catDate: JSON.stringify(pin.date), catPhoto: pin.photoUri} })}
+            onPress={() => router.push({ pathname: '/sighting', params: { docId: pin.id,  catName: pin.name, catInfo: pin.info, 
+              catHealth: pin.health ? "true":"false", catFed: pin.fed ? "true":"false", catLongitude: JSON.stringify(pin.longitude), 
+              catLatitude: JSON.stringify(pin.latitude), catDate: JSON.stringify(pin.date), catPhoto: pin.photoUri} })}
           />
         ))}
       </MapView>
       <TouchableOpacity style={styles.reportButton} onPress={() => router.push('/sighting/report')}>
-        <Text style={styles.buttonText}>Report</Text>
+        <Text style={styles.buttonText}>Report </Text>
       </TouchableOpacity>
     </View>
   );

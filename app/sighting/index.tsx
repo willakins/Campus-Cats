@@ -132,7 +132,7 @@ const CatSightingScreen = () => {
             {isAdmin && <TouchableOpacity style={styles.button} onPress={saveSighting}>
               <Text style = {styles.buttonText}>Save</Text>
             </TouchableOpacity>}
-            <TouchableOpacity style={styles.button} onPress={() => router.back()}>
+            <TouchableOpacity style={styles.button} onPress={() => router.push('/logged-in')}>
               <Text style={styles.buttonText}>Back</Text>
             </TouchableOpacity>
             </View>
