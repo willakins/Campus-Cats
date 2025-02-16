@@ -1,11 +1,17 @@
+
 import React, { useEffect, useState } from "react";
-import { View, Text, TextInput, Image, Switch, Button, ActivityIndicator, StyleSheet, KeyboardAvoidingView, ScrollView, Platform, TouchableOpacity, Alert } from "react-native";
+import { View, Text, TextInput, Image, Switch, Button, ActivityIndicator, PermissionsAndroid, StyleSheet, KeyboardAvoidingView, ScrollView, Platform, TouchableOpacity, Alert } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { addDoc, collection, doc, getDoc } from "firebase/firestore";
 import { auth, db, storage } from "../logged-in/firebase";
 import { Asset, launchCamera, launchImageLibrary } from 'react-native-image-picker';
 import { Ionicons } from "@expo/vector-icons";
 import { getDownloadURL, ref, uploadBytes } from "firebase/storage";
+import MapView, { LatLng, Marker } from "react-native-maps";
+import { check, request, PERMISSIONS, RESULTS } from 'react-native-permissions';
+import DateTimePicker from '@react-native-community/datetimepicker';
+import * as MediaLibrary from 'expo-media-library';
+
 
 const CatReportScreen = () => {
   const router = useRouter();
@@ -15,6 +21,27 @@ const CatReportScreen = () => {
   const [fed, setFed] = useState(false);
   const [photo, setPhoto] = useState<Asset | null>(null);
   const [error, setError] = useState('');
+  const [location, setLocation] = useState<LatLng | null>(null);
+  const [date, setDate] = useState<Date | null>(null);
+  const [showPicker, setShowPicker] = useState(false);
+
+  const requestCameraPermission = async () => {
+    if (Platform.OS === 'android') {
+      const granted = await PermissionsAndroid.request(PermissionsAndroid.PERMISSIONS.CAMERA);
+      if (granted !== PermissionsAndroid.RESULTS.GRANTED) {
+        Alert.alert('Permission Denied', 'Camera access is required to take photos.');
+      }
+    } else if (Platform.OS === 'ios') {
+      const result = await request(PERMISSIONS.IOS.CAMERA);
+      if (result !== RESULTS.GRANTED) {
+        Alert.alert('Permission Denied', 'Camera access is required to take photos.');
+      }
+    }
+  };
+
+  useEffect(() => {
+    requestCameraPermission();
+  }, []);
   
   const handleTakePhoto = () => {
     launchCamera(
@@ -51,6 +78,7 @@ const CatReportScreen = () => {
           setPhoto(response.assets[0]);
           console.log('Selected photo: ', response.assets);
           // Handle the selected image (response.assets[0].uri)
+          
         }
       }
     );
@@ -77,6 +105,26 @@ const CatReportScreen = () => {
       { cancelable: true }
     );
   };
+
+  const retrieveMetadata = async (uri: string, type: 'date' | 'location') => {
+    try {
+      const asset = await MediaLibrary.createAssetAsync(uri);
+      const metadata = await MediaLibrary.getAssetInfoAsync(asset);
+
+      if (type === 'date' && metadata.creationTime) {
+        setDate(new Date(metadata.creationTime));
+      }
+
+      if (type === 'location' && metadata.location) {
+        const { latitude, longitude } = metadata.location;
+        setLocation({ latitude, longitude });
+      }
+    } catch (error) {
+      console.error(`Error retrieving ${type} metadata:`, error);
+    }
+  };
+  
+
   const handleSubmission = async () => {
     if (photo && photo.uri) {
       alert("Cat submitted!")
@@ -85,6 +133,11 @@ const CatReportScreen = () => {
       const response = await fetch(photo.uri);
       const blob = await response.blob();
       await uploadBytes(photoRef, blob);
+      await retrieveMetadata(photo.uri,'date');
+      await retrieveMetadata(photo.uri,'location');
+
+
+      
 
       // Store the photo URL and other data in Firestore
       const photoURL = await getDownloadURL(photoRef);
@@ -94,7 +147,7 @@ const CatReportScreen = () => {
         health,
         fed,
         photoURL,
-        createdAt: new Date(),
+        date,
       });
     } else {
       alert('Please select a photo.');
@@ -109,6 +162,42 @@ const CatReportScreen = () => {
       <ScrollView contentContainerStyle={styles.scrollView}>
         <View style={styles.container}>
           <View style={styles.inputContainer}>
+          <Text style={styles.headline}>Report A Cat Sighting</Text>
+          <MapView
+            style={{ width: '100%', height: 200, marginVertical: 10 }}
+            initialRegion={{
+              latitude: 33.7756, // Default location (e.g., Georgia Tech)
+              longitude: -84.3963,
+              latitudeDelta: 0.01,
+              longitudeDelta: 0.01,
+            }}
+            onPress={(e) => setLocation(e.nativeEvent.coordinate)}
+          >
+            {location && <Marker coordinate={location} />}
+          </MapView>
+
+          
+  
+      <Text style={styles.input}>Select Sighting Date:</Text>
+      <TouchableOpacity
+        style={styles.dateButton}
+        onPress={() => setShowPicker(true)}
+      >
+        <Text style={styles.input}>{date ? date.toDateString() : 'Select Date'}</Text>
+      </TouchableOpacity>
+
+      {showPicker && (
+        <DateTimePicker
+          value={date || new Date()}
+          mode="date"
+          display="default"
+          onChange={(_: any, selectedDate?: Date | undefined) => {
+            setShowPicker(false);
+            if (selectedDate) setDate(selectedDate);
+          }}
+        />
+      )}
+   
             <TextInput 
             placeholder="Cat's name"
             onChangeText={setName} 
@@ -149,6 +238,13 @@ const CatReportScreen = () => {
 export default CatReportScreen;
 
 const styles = StyleSheet.create({
+  headline: {
+    color: 'black',
+    fontSize: 20,
+    fontWeight: 'bold',
+    textAlign: 'left',
+    padding: 10,
+  },
   cameraView: {
     alignItems: 'center',
     paddingVertical: 20,  // Vertical padding
@@ -233,6 +329,8 @@ const styles = StyleSheet.create({
     display: 'flex',
     justifyContent: 'center',
   },
+  dateButton: { padding: 12, backgroundColor: '#007bff', borderRadius: 5 },
+
   buttonText: {
     color: '#fff',
     fontSize: 12,
@@ -247,6 +345,7 @@ const styles = StyleSheet.create({
   },
   
 });
+
  /** Old code for picture.tsx removed to improve navigation
 import React, { useEffect } from 'react';
 import { CameraView, CameraType, useCameraPermissions } from 'expo-camera';
