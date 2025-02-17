@@ -19,16 +19,13 @@ const CreateAccount = () => {
       return;
     }
   
-    try {
-      const userCredential = await createUserWithEmailAndPassword(auth, username, password);
-      const { uid } = userCredential.user;
+    const userCredential = await createUserWithEmailAndPassword(auth, username, password);
+    const { uid } = userCredential.user;
 
-      await setDoc(doc(db, 'users', uid), { role: 0 }); // Default role: 0 (regular user)
+    await setDoc(doc(db, 'users', uid), { role: 0, name:username }); // Default role: 0 (regular user)
 
-      router.push('/logged-in');
-    } catch (error) {
-      setError(error.message);
-    }
+    router.push('/logged-in');
+  
       
   };
 
