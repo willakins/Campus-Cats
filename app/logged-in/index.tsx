@@ -31,7 +31,7 @@ const HomeScreen = () => {
     const querySnapshot = await getDocs(collection(db, 'cat-sightings'));
     const pinsData: CatSighting[] = querySnapshot.docs.map(doc => ({
       id: doc.id,
-      date: new Date(doc.data().date),
+      date: doc.data().spotted_time.toDate(),
       fed: doc.data().fed,
       health: doc.data().health,
       photoUri: doc.data().image,
