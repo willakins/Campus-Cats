@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { TouchableOpacity, View, StyleSheet, Text } from "react-native";
 import MapView, { LatLng, Marker } from "react-native-maps";
-import { useFocusEffect, useRouter } from "expo-router";
+import { useFocusEffect, useRouter, useNavigation } from "expo-router";
 import { getDownloadURL, listAll, ref } from "firebase/storage";
 import { db, storage } from "./firebase";
 import { collection, DocumentData, getDocs } from "firebase/firestore";
@@ -45,6 +45,14 @@ const HomeScreen = () => {
     setMapKey(prev => prev + 1);
   };
 
+  // Prevent going back to login page after logging in by using back button
+  const navigation = useNavigation();
+  useEffect(() => { 
+    navigation.addListener('beforeRemove', (e) => {
+      e.preventDefault();
+    });
+  }, []);
+
   useFocusEffect(
     useCallback(() => {
       fetchPins();
@@ -58,8 +66,6 @@ const HomeScreen = () => {
     cutoffDate.setDate(cutoffDate.getDate() - days);
     return new Date(pin.date) >= cutoffDate;
   });
-  
-  
   
   return (
 
