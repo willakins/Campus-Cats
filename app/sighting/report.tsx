@@ -1,17 +1,23 @@
-import React, { useState } from "react";
-import { View, Text, TextInput, Image, Switch, StyleSheet, KeyboardAvoidingView, ScrollView, Platform, TouchableOpacity, Alert } from "react-native";
-import { router, useRouter } from "expo-router";
-import { addDoc, collection, doc, getFirestore, serverTimestamp } from "firebase/firestore";
-import { db, storage } from "../logged-in/firebase";
+import React, { useEffect, useState } from "react";
+import { View, Text, TextInput, Image, Switch, Button, ActivityIndicator, PermissionsAndroid, StyleSheet, KeyboardAvoidingView, ScrollView, Platform, TouchableOpacity, Alert } from "react-native";
+import { useLocalSearchParams, useRouter } from "expo-router";
+import { auth, db, storage } from "../logged-in/firebase";
+import { Asset, launchCamera, launchImageLibrary } from 'react-native-image-picker';
 import { Ionicons } from "@expo/vector-icons";
 import { getStorage, getDownloadURL, ref, uploadBytes } from "firebase/storage";
 import MapView, { LatLng, Marker } from "react-native-maps";
+import { check, request, PERMISSIONS, RESULTS } from 'react-native-permissions';
+import DateTimePicker from '@react-native-community/datetimepicker';
+import * as MediaLibrary from 'expo-media-library';
+import { router, useRouter } from "expo-router";
+import { addDoc, collection, doc, getDoc, getFirestore, serverTimestamp } from "firebase/firestore";
 import * as ImagePicker from 'expo-image-picker';
 import 'react-native-get-random-values';
 import { v4 as uuidv4 } from 'uuid';
 
 const CatReportScreen = () => {
     const [date, setDate] = useState<Date | null>(null);
+    const [showPicker, setShowPicker] = useState(false);
     const [fed, setFed] = useState<boolean>(false);
     const [health, setHealth] = useState<boolean>(false);
     const [photoURL, setPhotoURL] = useState<string>('');
@@ -19,6 +25,7 @@ const CatReportScreen = () => {
     const [longitude, setLongitude] = useState<number>(-84.3963);
     const [latitude, setLatitude] = useState<number>(33.7756);
     const [name, setName] = useState<string>('');
+    const router = useRouter();
 
     var location:LatLng = {
       latitude: latitude,
@@ -78,6 +85,24 @@ const CatReportScreen = () => {
     );
   };
 
+  const retrieveMetadata = async (uri: string, type: 'date' | 'location') => {
+    try {
+      const asset = await MediaLibrary.createAssetAsync(uri);
+      const metadata = await MediaLibrary.getAssetInfoAsync(asset);
+
+      if (type === 'date' && metadata.creationTime) {
+        setDate(new Date(metadata.creationTime));
+      }
+
+      if (type === 'location' && metadata.location) {
+        const { latitude, longitude } = metadata.location;
+        setLocation({ latitude, longitude });
+      }
+    } catch (error) {
+      console.error(`Error retrieving ${type} metadata:`, error);
+    }
+  };
+  
   const handleSubmission = async () => {
     if (photoURL) {
       try {
@@ -178,11 +203,11 @@ const CatReportScreen = () => {
       <ScrollView contentContainerStyle={styles.scrollView}>
         <View style={styles.container}>
           <View style={styles.inputContainer}>
-          <Text style={styles.headline}>Report A New Cat Sighting</Text>
+          <Text style={styles.headline}>Report A Cat Sighting</Text>
           <MapView
             style={{ width: '100%', height: 200, marginVertical: 10 }}
             initialRegion={{
-              latitude: 33.7756,
+              latitude: 33.7756, // Default location (e.g., Georgia Tech)
               longitude: -84.3963,
               latitudeDelta: 0.01,
               longitudeDelta: 0.01,
@@ -191,6 +216,29 @@ const CatReportScreen = () => {
           >
             {location && <Marker coordinate={location} />}
           </MapView>
+
+          
+  
+      <Text style={styles.input}>Select Sighting Date:</Text>
+      <TouchableOpacity
+        style={styles.dateButton}
+        onPress={() => setShowPicker(true)}
+      >
+        <Text style={styles.input}>{date ? date.toDateString() : 'Select Date'}</Text>
+      </TouchableOpacity>
+
+      {showPicker && (
+        <DateTimePicker
+          value={date || new Date()}
+          mode="date"
+          display="default"
+          onChange={(_: any, selectedDate?: Date | undefined) => {
+            setShowPicker(false);
+            if (selectedDate) setDate(selectedDate);
+          }}
+        />
+      )}
+   
             <TextInput 
               placeholder="Cat's name"
               onChangeText={setName} 
@@ -236,7 +284,7 @@ const styles = StyleSheet.create({
     color: 'black',
     fontSize: 20,
     fontWeight: 'bold',
-    textAlign: 'center',
+    textAlign: 'left',
     padding: 10,
   },
   cameraView: {
@@ -323,6 +371,8 @@ const styles = StyleSheet.create({
     display: 'flex',
     justifyContent: 'center',
   },
+  dateButton: { padding: 12, backgroundColor: '#007bff', borderRadius: 5 },
+
   buttonText: {
     color: '#fff',
     fontSize: 12,
@@ -335,12 +385,4 @@ const styles = StyleSheet.create({
     color: '#007BFF',
     textAlign: 'center',
   },
-  selectedPreview: {
-    margin: 'auto', // Center the image
-    objectFit: 'scale-down', // Don't clip the image
-    width: 240,
-    height: 180,
-  },
-
 });
-
