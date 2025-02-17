@@ -1,10 +1,10 @@
 import React, { useEffect, useState } from "react";
 import { View, Text, TextInput, Image, Switch, Button, ActivityIndicator, StyleSheet, KeyboardAvoidingView, ScrollView, Platform, TouchableOpacity } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { doc, getDoc, Timestamp, updateDoc } from "firebase/firestore";
+import { deleteDoc, doc, getDoc, Timestamp, updateDoc } from "firebase/firestore";
 import { auth, db, storage } from "../logged-in/firebase";
 import MapView, { LatLng, Marker } from "react-native-maps";
-import { getDownloadURL, ref } from "firebase/storage";
+import { deleteObject, getDownloadURL, ref } from "firebase/storage";
 
 const CatSightingScreen = () => {
   //Check if admin, then set passed parameters from map screen
@@ -25,6 +25,7 @@ const CatSightingScreen = () => {
   const [longitude, setLongitude] = useState<number>(parseFloat(catLongitude as string));
   const [latitude, setLatitude] = useState<number>(parseFloat(catLatitude as string));
   const [name, setName] = useState<string>(catName as string);
+  const [photoImage, setPhotoImage] = useState<string | null>(null);
 
   var location:LatLng = {
     latitude: latitude,
@@ -49,8 +50,9 @@ const CatSightingScreen = () => {
   const fetchImage = async () => {
     if (photoURL){
       const url = await getImageUrl(photoURL); // Get the image URL
-      setPhotoURL(url); // Update the state with the image URL
+      setPhotoImage(url); // Update the state with the image URL
     }
+    
   };
 
   
@@ -106,7 +108,7 @@ const CatSightingScreen = () => {
         timestamp: stamp,
         fed,
         health,
-        photoURL,
+        image: photoURL,
         info,
         longitude,
         latitude,
@@ -134,6 +136,24 @@ const CatSightingScreen = () => {
       </View>
     );
   }
+  const deleteSighting = async () => {
+    try {
+      if (photoURL) {
+        // Reference to the file in Firebase Storage
+        const imageRef = ref(storage, photoURL);
+  
+        // Delete the image from storage
+        await deleteObject(imageRef);
+        console.log("Image deleted successfully.");
+      }
+      await deleteDoc(doc(db, "cat-sightings", docRef));
+      alert("Cat sighting deleted successfully!");
+      router.push('/logged-in');
+    } catch (error) {
+      console.error("Error deleting sighting:", error);
+      alert("Failed to delete sighting.");
+    }
+  };
 
   const handleMapPress = (event: { nativeEvent: { coordinate: { latitude: any; longitude: any; }; }; }) => {
     const { latitude, longitude } = event.nativeEvent.coordinate;
@@ -147,10 +167,14 @@ const CatSightingScreen = () => {
           behavior={Platform.OS === 'ios' ? 'padding' : undefined} // iOS specific behavior
           >
       <ScrollView contentContainerStyle={styles.scrollView}>
-        <Text style={styles.headline}>Edit A Cat Sighting</Text>
+        {isAdmin && <TouchableOpacity style={styles.deleteButton} onPress={deleteSighting}>
+            <Text style={styles.buttonText}>Delete</Text>
+        </TouchableOpacity>}
+        {!isAdmin && <Text style={styles.headline}>View A Cat Sighting</Text>}
+        {isAdmin && <Text style={styles.headline}>Edit A Cat Sighting</Text>}
         <View style={styles.container}>
-          {photoURL ? (
-            <Image source={{ uri: photoURL }} style={styles.catImage} />
+          {photoImage ? (
+            <Image source={{ uri: photoImage }} style={styles.catImage} />
           ) : (
             <Text style={styles.catImage}>Loading image...</Text>
           )}
@@ -210,6 +234,17 @@ const CatSightingScreen = () => {
 export default CatSightingScreen;
 
 const styles = StyleSheet.create({
+  deleteButton: {
+    position: 'absolute',
+    top: 10,
+    left: 20,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#333',
+    padding: 5,
+    borderRadius: 5,
+    zIndex: 10, // Ensure the logout button is on top
+  },
   headline: {
     color: 'black',
     fontSize: 20,
@@ -231,7 +266,7 @@ const styles = StyleSheet.create({
   },
   catImage: { 
     width: "100%", 
-    height: 180, 
+    height: 200, 
     borderRadius: 10,
     justifyContent: 'center',
     textAlign: 'center',
