@@ -133,27 +133,14 @@ const CatReportScreen = () => {
 
         alert("Cat submitted successfully!");
 
-        await addDoc(collection(db, 'cat_sightings'), {
-          name,
-          info,
-          health,
-          fed,
-          photoURL,
-          createdAt: new Date(),
-        });
-
-        const time_now = 0;
-        const time = time_now;
-        const lat = 0; // TODO: Actually add location
-        const lng = 0;
-
+        const time = 0; // Matthew's metadata should go here.
         try {
           await addDoc(collection(db, 'cat-sightings'), {
             timestamp: serverTimestamp(),
             spotted_time: time, // currently unused, but we may want to distinguish
                                 // upload and sighting time in the future
-            latitude: lat,
-            longitude: lng,
+            latitude: latitude,
+            longitude: longitude,
             name: name,
             image: filepath,
             info: info,
