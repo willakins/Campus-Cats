@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, StatusBar, FlatList, TextInput, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
-import { collection, doc, getDoc, getDocs, getFirestore, query, updateDoc, where } from 'firebase/firestore';
+import { collection, doc, DocumentData, getDoc, getDocs, getFirestore, query, updateDoc, where } from 'firebase/firestore';
 import { db } from '@/app/logged-in/firebase';
 import { getAuth } from 'firebase/auth';
 
@@ -50,7 +50,7 @@ const CreateAdmins = () => {
         try {
           // Update the field in the user's document
           const selfData = await getDoc(selfDocRef);
-          return selfData.data().role == 2;
+          return selfData.data()?.role == 2;
 
         } catch (error) {
           Alert.alert("Error getting field: " + error);
@@ -65,7 +65,7 @@ const CreateAdmins = () => {
         return;
       }
 
-      const [userId, userData] = await queryEmail(email);
+      const [userId, userData] = await queryEmail(email) as [string, DocumentData];;
 
       if (userId) {
         const db = getFirestore();
@@ -90,7 +90,7 @@ const CreateAdmins = () => {
   };
 
   return (
-    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: '100' }}>
+    <View style={styles.profileContainer}>
       <TouchableOpacity style={styles.logoutButton} onPress={handleBack}>
         <Text style={styles.buttonText}>Back</Text>
       </TouchableOpacity>
@@ -111,6 +111,12 @@ const CreateAdmins = () => {
 export default CreateAdmins;
 
 const styles = StyleSheet.create({
+  profileContainer: { 
+    flex: 1, 
+    justifyContent: 'center', 
+    alignItems: 'center', 
+    padding: 20 
+  },
   screen: {
     flex: 1,
     justifyContent: 'center',
