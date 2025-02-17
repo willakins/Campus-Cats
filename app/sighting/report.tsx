@@ -19,10 +19,6 @@ const CatReportScreen = () => {
   const [info, setInfo] = useState('');
   const [location, setLocation] = useState<LatLng | null>(null);
   const [name, setName] = useState('');
-  const [info, setInfo] = useState('');
-  const [health, setHealth] = useState(false);
-  const [fed, setFed] = useState(false);
-  const [photo, setPhoto] = useState<Asset | null>(null);
   const [error, setError] = useState('');
   
   // Get photo
