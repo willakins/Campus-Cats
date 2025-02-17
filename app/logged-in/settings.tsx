@@ -25,28 +25,6 @@ const Settings = () => {
     }
   }, []);
 
-  // Handle updating the document
-  const handleUpdateField = async () => {
-    if (userId) {
-      const db = getFirestore();
-      const userDocRef = doc(db, 'users', userId); // Reference to the user's document
-
-      try {
-        // Update the field in the user's document
-        await updateDoc(userDocRef, {
-          role: 1
-        });
-
-        alert("You are now an admin!");
-        setIsAdmin(true)
-      } catch (error) {
-        setMessage("Error updating field: " + error);
-      }
-    } else {
-      setMessage("No user is logged in.");
-    }
-  };
-
     const router = useRouter();
     const handleLogout = () => {
       router.push('/login')
@@ -96,9 +74,6 @@ const Settings = () => {
             <Ionicons name="log-out-outline" size={25} color="#fff" />
         </TouchableOpacity>
         <Text>Setting Screen</Text>
-        <TouchableOpacity style={styles.button} onPress={handleUpdateField}>
-          <Text style={styles.buttonText}>Make yourself an administrator</Text>
-        </TouchableOpacity>
         {isAdmin && (<>
           <TouchableOpacity style={styles.button} onPress={handleCreateAdmins}>
             <Text style={styles.buttonText}>Make someone else an admin</Text>
