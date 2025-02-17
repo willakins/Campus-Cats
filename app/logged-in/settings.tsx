@@ -3,7 +3,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { View, Text, ActivityIndicator, TouchableOpacity} from 'react-native';
 import { StyleSheet } from 'react-native';
 import { doc, getDoc, getFirestore, updateDoc } from 'firebase/firestore';
-import { auth, db } from './firebase';
+import { auth, db } from '@/app/logged-in/firebase';
 import { useRouter } from 'expo-router';
 import { getAuth } from 'firebase/auth';
 
@@ -34,7 +34,7 @@ const Settings = () => {
       try {
         // Update the field in the user's document
         await updateDoc(userDocRef, {
-          Admin: true,  // Replace with the field you want to update
+          role: 1
         });
 
         alert("You are now an admin!");
@@ -50,6 +50,9 @@ const Settings = () => {
     const router = useRouter();
     const handleLogout = () => {
       router.push('/login')
+    };
+    const handleCreateAdmins = () => {
+      router.push('/settings/create_admins');
     };
     useEffect(() => {
         const checkUserRole = async () => {
@@ -96,14 +99,17 @@ const Settings = () => {
         <TouchableOpacity style={styles.button} onPress={handleUpdateField}>
           <Text style={styles.buttonText}>Make yourself an administrator</Text>
         </TouchableOpacity>
-        {isAdmin ? (
-                <Ionicons
-                  name="lock-closed"
-                  size={24}
-                  color="black"
-                  style={styles.lockIcon}
-                />
-              ) : null}
+        {isAdmin && (<>
+          <TouchableOpacity style={styles.button} onPress={handleCreateAdmins}>
+            <Text style={styles.buttonText}>Make someone else an admin</Text>
+          </TouchableOpacity>
+          <Ionicons
+            name="lock-closed"
+            size={24}
+            color="black"
+            style={styles.lockIcon}
+          />
+        </>)}
     </View>
   );
 }
