@@ -11,30 +11,24 @@ const CatSightingScreen = () => {
   const [loading, setLoading] = useState(true);
   const router = useRouter();
   // Pull params from router
-  const { docId, catIdPassed, catName, catInfo, catHealth, catFed, catLocation, catDate, catPhoto } = useLocalSearchParams();
+  const { docId, catDate, catFed, catHealth, catPhoto, catInfo, catLongitude, catLatitude, catName} = useLocalSearchParams();
 
   // Convert params to right type (Frick you Typescript!!)
-  const catName2:string = catName as string;
-  const catInfo2:string = catInfo as string;
-  const catHealth2:boolean = catHealth ? JSON.parse(catHealth as string) : false;
-  const catId2:string = catIdPassed as string;
-  const catFed2:boolean = catFed ? JSON.parse(catFed as string) : false;
-  const catLocation2:LatLng = catLocation ? JSON.parse(catLocation as string) : null;
-  const catDate2:Date = catDate ? JSON.parse(catDate as string) : null;
-  const catPhoto2:string = catPhoto as string;
   const docRef:string = docId as string;
+  const [date, setDate] = useState<Date>(new Date(catDate as string));
+  const [fed, setFed] = useState<boolean>(JSON.parse(catFed as string));
+  const [health, setHealth] = useState<boolean>(JSON.parse(catHealth as string));
+  const [photo, setPhoto] = useState<string>(catPhoto as string);
+  const [info, setInfo] = useState<string>(catInfo as string);
+  const [longitude, setLongitude] = useState<number>(parseFloat(catLongitude as string));
+  const [latitude, setLatitude] = useState<number>(parseFloat(catLatitude as string));
+  const [name, setName] = useState<string>(catName as string);
 
-  //Create consts
-  const [date, setDate] = useState(catDate2);
-  const [fed, setFed] = useState(catFed2);
-  const [health, setHealth] = useState(catHealth2);
-  const [catId, setCatId] = useState(catId2);
-  const [photo, setPhoto] = useState(catPhoto2);
-  const [info, setInfo] = useState(catInfo2);
-  const [name, setName] = useState(catName2);
-  const [location, setLocation] = useState<LatLng | null>(catLocation2);
+  var location:LatLng = {
+    latitude: latitude,
+    longitude: longitude,
+  };
   
-
   // Check user role
   useEffect(() => {
     const checkUserRole = async () => {
@@ -70,10 +64,10 @@ const CatSightingScreen = () => {
       date,
       fed,
       health,
-      catId,
       photo,
       info,
-      location,
+      longitude,
+      latitude,
       name
     });
     alert("Saved!");
@@ -86,6 +80,12 @@ const CatSightingScreen = () => {
       </View>
     );
   }
+
+  const handleMapPress = (event: { nativeEvent: { coordinate: { latitude: any; longitude: any; }; }; }) => {
+    const { latitude, longitude } = event.nativeEvent.coordinate;
+    setLatitude(latitude);
+    setLongitude(longitude);
+  };
   // Now display the sighting for either admin or general user
   return (
     <KeyboardAvoidingView
@@ -105,7 +105,7 @@ const CatSightingScreen = () => {
               latitudeDelta: 0.01,
               longitudeDelta: 0.01,
             }}
-            onPress={(e) => setLocation(e.nativeEvent.coordinate)} // This updates the location correctly
+            onPress={handleMapPress} // This updates the location correctly
           >
             {location && <Marker coordinate={location} />}
           </MapView>}
