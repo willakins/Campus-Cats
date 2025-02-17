@@ -81,25 +81,6 @@ const CatReportScreen = () => {
       { cancelable: true }
     );
   };
-
-  const retrieveMetadata = async (uri: string, type: 'date' | 'location') => {
-    try {
-      const asset = await MediaLibrary.createAssetAsync(uri);
-      const metadata = await MediaLibrary.getAssetInfoAsync(asset);
-
-      if (type === 'date' && metadata.creationTime) {
-        setDate(new Date(metadata.creationTime));
-      }
-
-      if (type === 'location' && metadata.location) {
-        const { latitude, longitude } = metadata.location;
-        setLongitude(longitude);
-        setLatitude(latitude);
-      }
-    } catch (error) {
-      console.error(`Error retrieving ${type} metadata:`, error);
-    }
-  };
   
   const handleSubmission = async () => {
     if (photoURL) {
@@ -153,7 +134,7 @@ const CatReportScreen = () => {
         
 
         try {
-          if (info == '' || name == '' || !date || !filepath) {
+          if (name == '' || !date || !filepath) {
             alert('please enter all necessary information');
           } else {
             await uploadBytes(photoRef, await blob);
@@ -175,6 +156,7 @@ const CatReportScreen = () => {
               healthy: health,
               fed: fed,
             });
+            router.push('/logged-in')
           }
           
         } catch (error) {
