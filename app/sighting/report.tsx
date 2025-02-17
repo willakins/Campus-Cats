@@ -2,14 +2,11 @@ import React, { useEffect, useState } from "react";
 import { View, Text, TextInput, Image, Switch, Button, ActivityIndicator, PermissionsAndroid, StyleSheet, KeyboardAvoidingView, ScrollView, Platform, TouchableOpacity, Alert } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { auth, db, storage } from "../logged-in/firebase";
-import { Asset, launchCamera, launchImageLibrary } from 'react-native-image-picker';
 import { Ionicons } from "@expo/vector-icons";
 import { getStorage, getDownloadURL, ref, uploadBytes } from "firebase/storage";
 import MapView, { LatLng, Marker } from "react-native-maps";
-import { check, request, PERMISSIONS, RESULTS } from 'react-native-permissions';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import * as MediaLibrary from 'expo-media-library';
-import { router, useRouter } from "expo-router";
 import { addDoc, collection, doc, getDoc, getFirestore, serverTimestamp } from "firebase/firestore";
 import * as ImagePicker from 'expo-image-picker';
 import 'react-native-get-random-values';
@@ -96,7 +93,8 @@ const CatReportScreen = () => {
 
       if (type === 'location' && metadata.location) {
         const { latitude, longitude } = metadata.location;
-        setLocation({ latitude, longitude });
+        setLongitude(longitude);
+        setLatitude(latitude);
       }
     } catch (error) {
       console.error(`Error retrieving ${type} metadata:`, error);
@@ -384,5 +382,11 @@ const styles = StyleSheet.create({
     marginTop: 10,
     color: '#007BFF',
     textAlign: 'center',
+  },
+  selectedPreview: {
+    margin: 'auto', // Center the image
+    objectFit: 'scale-down', // Don't clip the image
+    width: 240,
+    height: 180,
   },
 });
