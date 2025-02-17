@@ -66,15 +66,7 @@ const HomeScreen = () => {
     cutoffDate.setDate(cutoffDate.getDate() - days);
     return new Date(pin.date) >= cutoffDate;
   });
-
-  // Prevent going back to login page after logging in by using back button
-  const navigation = useNavigation();
-  useEffect(() => { 
-    navigation.addListener('beforeRemove', (e) => {
-      e.preventDefault();
-    });
-  }, []);
-
+  
   return (
 
   
