@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { View, Text, TextInput, Image, Switch, StyleSheet, KeyboardAvoidingView, ScrollView, Platform, TouchableOpacity, Alert } from "react-native";
-import { useRouter } from "expo-router";
+import { router, useRouter } from "expo-router";
 import { addDoc, collection, doc, getFirestore, serverTimestamp } from "firebase/firestore";
 import { db, storage } from "../logged-in/firebase";
 import { Ionicons } from "@expo/vector-icons";
@@ -9,18 +9,21 @@ import MapView, { LatLng, Marker } from "react-native-maps";
 import * as ImagePicker from 'expo-image-picker';
 import 'react-native-get-random-values';
 import { v4 as uuidv4 } from 'uuid';
-import MapView, { LatLng, Marker } from "react-native-maps";
 
 const CatReportScreen = () => {
-  const router = useRouter();
-  const [date, setDate] = useState(null)
-  const [fed, setFed] = useState(false);
-  const [health, setHealth] = useState(false);
-  const [catId, setId] = useState(null);
-  const [info, setInfo] = useState('');
-  const [location, setLocation] = useState<LatLng | null>(null);
-  const [name, setName] = useState('');
-  const [photo, setPhoto] = useState<Asset | null>(null);
+    const [date, setDate] = useState<Date | null>(null);
+    const [fed, setFed] = useState<boolean>(false);
+    const [health, setHealth] = useState<boolean>(false);
+    const [photoURL, setPhotoURL] = useState<string>('');
+    const [info, setInfo] = useState<string>('');
+    const [longitude, setLongitude] = useState<number>(-84.3963);
+    const [latitude, setLatitude] = useState<number>(33.7756);
+    const [name, setName] = useState<string>('');
+
+    var location:LatLng = {
+      latitude: latitude,
+      longitude: longitude,
+    };
 
   const handleTakePhoto = async () => {
     const { status, } = await ImagePicker.requestCameraPermissionsAsync();
@@ -33,7 +36,7 @@ const CatReportScreen = () => {
     });
 
     if (!result.canceled) {
-      setPhoto(result.assets[0].uri);
+      setPhotoURL(result.assets[0].uri);
     }
   };
 
@@ -49,7 +52,7 @@ const CatReportScreen = () => {
     });
 
     if (!result.canceled) {
-      setPhoto(result.assets[0].uri);
+      setPhotoURL(result.assets[0].uri);
     }
   };
 
@@ -76,13 +79,13 @@ const CatReportScreen = () => {
   };
 
   const handleSubmission = async () => {
-    if (photo) {
+    if (photoURL) {
       try {
         alert("Cat submission started...")
 
         // Create a blob from the image URI
 
-        const response = await fetch(photo);
+        const response = await fetch(photoURL);
         const blob = response.blob();
 
         // // Why are we using XMLHttpRequest? See:
@@ -116,41 +119,28 @@ const CatReportScreen = () => {
         // };
 
         // Upload the file
-        await uploadBytes(photoRef, blob);
+        await uploadBytes(photoRef, await blob);
         console.log('Upload successful');
 
         // // We're done with the blob, close and release it
         // blob.close();
 
         // Get the download URL
-        const photoURL = await getDownloadURL(photoRef);
-        console.log('Download URL:', photoURL);
+        const photoUri = await getDownloadURL(photoRef);
+        console.log('Download URL:', photoUri);
 
         // Further processing with the photoURL...
 
         alert("Cat submitted successfully!");
 
-        await addDoc(collection(db, 'cat_sightings'), {
-          name,
-          info,
-          health,
-          fed,
-          photoURL,
-          createdAt: new Date(),
-        });
-
-        const time_now = 0;
-        const time = time_now;
-        const lat = 0; // TODO: Actually add location
-        const lng = 0;
-
+        const time = 0; // Matthew's metadata should go here.
         try {
           await addDoc(collection(db, 'cat-sightings'), {
             timestamp: serverTimestamp(),
             spotted_time: time, // currently unused, but we may want to distinguish
                                 // upload and sighting time in the future
-            latitude: lat,
-            longitude: lng,
+            latitude: latitude,
+            longitude: longitude,
             name: name,
             image: filepath,
             info: info,
@@ -158,17 +148,26 @@ const CatReportScreen = () => {
             fed: fed,
           });
         } catch (error) {
-          console.error("Error during upload:", error);
-          alert(`Upload failed: ${error.message}`);
+          if (error instanceof Error) {
+            console.error("Error during upload:", error);
+            alert(`Upload failed: ${error.message}`);
+          }
         }
 
       } catch (error) {
-        console.error("Error during upload:", error);
-        alert(`Upload failed: ${error.message}`);
+        if (error instanceof Error) {
+          console.error("Error during upload:", error);
+          alert(`Upload failed: ${error.message}`);
+        }
       }
     } else {
       alert('Please select a photo.');
     }
+  };
+  const handleMapPress = (event: { nativeEvent: { coordinate: { latitude: any; longitude: any; }; }; }) => {
+    const { latitude, longitude } = event.nativeEvent.coordinate;
+    setLatitude(latitude);
+    setLongitude(longitude);
   };
 
   return (
@@ -188,7 +187,7 @@ const CatReportScreen = () => {
               latitudeDelta: 0.01,
               longitudeDelta: 0.01,
             }}
-            onPress={(e) => setLocation(e.nativeEvent.coordinate)} // This updates the location correctly
+            onPress={handleMapPress} // This updates the location correctly
           >
             {location && <Marker coordinate={location} />}
           </MapView>
@@ -214,7 +213,7 @@ const CatReportScreen = () => {
                 <Ionicons name="camera-outline" size={29} color={'#fff'} />
               </TouchableOpacity>
             </View>
-            {photo && <Image source={{ uri: photo }} style={styles.selectedPreview} />}
+            {photoURL && <Image source={{ uri: photoURL }} style={styles.selectedPreview} />}
 
             <TouchableOpacity style={styles.button} onPress={handleSubmission}>
               <Text style = {styles.buttonText}>Submit Sighting</Text>
