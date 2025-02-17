@@ -86,9 +86,10 @@ const HomeScreen = () => {
             coordinate={{ latitude: pin.latitude, longitude: pin.longitude }}
             title={pin.name}
             description={pin.info}
-            onPress={() => router.push({ pathname: '/sighting', params: { docId: pin.id,  catName: pin.name, catInfo: pin.info, 
-              catHealth: pin.health ? "true":"false", catFed: pin.fed ? "true":"false", catLongitude: JSON.stringify(pin.longitude), 
-              catLatitude: JSON.stringify(pin.latitude), catDate: JSON.stringify(pin.date), catPhoto: pin.photoUri} })}
+            onPress={() => router.push({ pathname: '/sighting', params: { docId: pin.id, catDate: JSON.stringify(pin.date),
+              catFed: pin.fed ? "true":"false", catHealth: pin.health ? "true":"false", catPhoto: pin.photoUri, 
+              catInfo: pin.info, catLongitude: JSON.stringify(pin.longitude), catLatitude: JSON.stringify(pin.latitude),
+              catName: pin.name} })}
           />
         ))}
       </MapView>
