@@ -114,6 +114,7 @@ const CatSightingScreen = () => {
       });
 
       alert("Saved!");
+      router.push('/logged-in')
     } catch (error: unknown) {
       if (error instanceof Error) {
         alert("Error saving sighting: " + error.message);

@@ -2,22 +2,19 @@ import React, { useEffect, useState } from "react";
 import { View, Text, TextInput, Image, Switch, Button, ActivityIndicator, PermissionsAndroid, StyleSheet, KeyboardAvoidingView, ScrollView, Platform, TouchableOpacity, Alert } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { auth, db, storage } from "../logged-in/firebase";
-import { Asset, launchCamera, launchImageLibrary } from 'react-native-image-picker';
 import { Ionicons } from "@expo/vector-icons";
 import { getStorage, getDownloadURL, ref, uploadBytes } from "firebase/storage";
 import MapView, { LatLng, Marker } from "react-native-maps";
-import { check, request, PERMISSIONS, RESULTS } from 'react-native-permissions';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import * as MediaLibrary from 'expo-media-library';
-import { router, useRouter } from "expo-router";
-import { addDoc, collection, doc, getDoc, getFirestore, serverTimestamp } from "firebase/firestore";
+import { addDoc, collection, doc, getDoc, getFirestore, serverTimestamp, Timestamp } from "firebase/firestore";
 import * as ImagePicker from 'expo-image-picker';
 import 'react-native-get-random-values';
 import { v4 as uuidv4 } from 'uuid';
 
 const CatReportScreen = () => {
     const [date, setDate] = useState<Date | null>(null);
-    const [showPicker, setShowPicker] = useState(false);
+    const [showPicker, setShowPicker] = useState(true);
     const [fed, setFed] = useState<boolean>(false);
     const [health, setHealth] = useState<boolean>(false);
     const [photoURL, setPhotoURL] = useState<string>('');
@@ -84,30 +81,10 @@ const CatReportScreen = () => {
       { cancelable: true }
     );
   };
-
-  const retrieveMetadata = async (uri: string, type: 'date' | 'location') => {
-    try {
-      const asset = await MediaLibrary.createAssetAsync(uri);
-      const metadata = await MediaLibrary.getAssetInfoAsync(asset);
-
-      if (type === 'date' && metadata.creationTime) {
-        setDate(new Date(metadata.creationTime));
-      }
-
-      if (type === 'location' && metadata.location) {
-        const { latitude, longitude } = metadata.location;
-        setLocation({ latitude, longitude });
-      }
-    } catch (error) {
-      console.error(`Error retrieving ${type} metadata:`, error);
-    }
-  };
   
   const handleSubmission = async () => {
     if (photoURL) {
       try {
-        alert("Cat submission started...")
-
         // Create a blob from the image URI
 
         const response = await fetch(photoURL);
@@ -144,34 +121,44 @@ const CatReportScreen = () => {
         // };
 
         // Upload the file
-        await uploadBytes(photoRef, await blob);
-        console.log('Upload successful');
+        
 
         // // We're done with the blob, close and release it
         // blob.close();
 
         // Get the download URL
-        const photoUri = await getDownloadURL(photoRef);
-        console.log('Download URL:', photoUri);
+        
 
         // Further processing with the photoURL...
 
-        alert("Cat submitted successfully!");
+        
 
-        const time = 0; // Matthew's metadata should go here.
         try {
-          await addDoc(collection(db, 'cat-sightings'), {
-            timestamp: serverTimestamp(),
-            spotted_time: time, // currently unused, but we may want to distinguish
-                                // upload and sighting time in the future
-            latitude: latitude,
-            longitude: longitude,
-            name: name,
-            image: filepath,
-            info: info,
-            healthy: health,
-            fed: fed,
-          });
+          if (name == '' || !date || !filepath) {
+            alert('please enter all necessary information');
+          } else {
+            await uploadBytes(photoRef, await blob);
+            console.log('Upload successful');
+            const photoUri = await getDownloadURL(photoRef);
+            console.log('Download URL:', photoUri);
+
+            alert("Cat submitted successfully!");
+
+            await addDoc(collection(db, 'cat-sightings'), {
+              timestamp: serverTimestamp(),
+              spotted_time: Timestamp.fromDate(date), // currently unused, but we may want to distinguish
+                                  // upload and sighting time in the future
+              latitude: latitude,
+              longitude: longitude,
+              name: name,
+              image: filepath,
+              info: info,
+              healthy: health,
+              fed: fed,
+            });
+            router.push('/logged-in')
+          }
+          
         } catch (error) {
           if (error instanceof Error) {
             console.error("Error during upload:", error);
@@ -195,6 +182,12 @@ const CatReportScreen = () => {
     setLongitude(longitude);
   };
 
+  const handleDateChange = (event: any, selectedDate: any) => {
+    // If a date is selected, immediately update the date state
+    setDate(selectedDate || date);
+    setShowPicker(false); // Close the picker once a date is selected
+  };
+
   return (
     <KeyboardAvoidingView
       style={styles.container}
@@ -216,35 +209,26 @@ const CatReportScreen = () => {
           >
             {location && <Marker coordinate={location} />}
           </MapView>
-
-          
-  
-      <Text style={styles.input}>Select Sighting Date:</Text>
-      <TouchableOpacity
-        style={styles.dateButton}
-        onPress={() => setShowPicker(true)}
-      >
-        <Text style={styles.input}>{date ? date.toDateString() : 'Select Date'}</Text>
-      </TouchableOpacity>
-
-      {showPicker && (
-        <DateTimePicker
-          value={date || new Date()}
-          mode="date"
-          display="default"
-          onChange={(_: any, selectedDate?: Date | undefined) => {
-            setShowPicker(false);
-            if (selectedDate) setDate(selectedDate);
-          }}
-        />
-      )}
-   
+            <View style={styles.dateInput}>
+            
+            <Text style={styles.sliderText}>{date ? date.toDateString() : 'Select Sighting Date'}</Text>
+              <TouchableOpacity  onPress={() => setShowPicker(true)}>
+              {showPicker && <DateTimePicker
+                value={date || new Date()}
+                mode="date"
+                display="default"
+                onChange={handleDateChange}/>}
+              </TouchableOpacity>
+              
+            </View>
             <TextInput 
               placeholder="Cat's name"
+              placeholderTextColor = '#888'
               onChangeText={setName} 
               style={styles.input} />
             <TextInput
               placeholder='Additional Info' 
+              placeholderTextColor = '#888'
               value={info} 
               onChangeText={setInfo} 
               style={styles.input} />
@@ -313,6 +297,14 @@ const styles = StyleSheet.create({
     textAlign: 'left',
     padding: 10,
   },
+  dateText: {
+    color: 'black',
+    fontSize: 12,
+    fontWeight: 'bold',
+    textAlign: 'left',
+    justifyContent: 'flex-start',
+    padding: 10,
+  },
   slider: { 
     flexDirection: "row", 
     alignItems: "center",
@@ -361,6 +353,30 @@ const styles = StyleSheet.create({
     marginBottom: 15,
     paddingHorizontal: 10,
     backgroundColor: '#fff',
+    color: '#000',
+  },
+  dinput: {
+    height: 40,
+    width: 300,
+    borderColor: '#ccc',
+    borderWidth: 1,
+    borderRadius: 5,
+    marginBottom: 15,
+    paddingHorizontal: 10,
+    backgroundColor: '#fff',
+    color: '#000',
+    flexDirection: "row", 
+  },
+  dateInput: {
+    height: 40,
+    width: 300,
+    borderColor: '#ccc',
+    borderWidth: 1,
+    borderRadius: 5,
+    marginBottom: 15,
+    paddingHorizontal: 10,
+    backgroundColor: '#fff',
+    flexDirection: "row", 
   },
   button: {
     backgroundColor: '#333',
@@ -374,7 +390,7 @@ const styles = StyleSheet.create({
   dateButton: { padding: 12, backgroundColor: '#007bff', borderRadius: 5 },
 
   buttonText: {
-    color: '#fff',
+    color: '#ffff',
     fontSize: 12,
     fontWeight: 'bold',
     textAlign: 'center',
@@ -384,5 +400,11 @@ const styles = StyleSheet.create({
     marginTop: 10,
     color: '#007BFF',
     textAlign: 'center',
+  },
+  selectedPreview: {
+    margin: 'auto', // Center the image
+    objectFit: 'scale-down', // Don't clip the image
+    width: 240,
+    height: 180,
   },
 });

@@ -23,8 +23,8 @@ const HomeScreen = () => {
   const [filter, setFilter] = useState('all');
   const [mapKey, setMapKey] = useState(0);
   const [pins, setPins] = useState<CatSighting[]>([
-    { id: "1", date: new Date('2025-02-10'), fed: true, health: true, info: "Friendly cat", latitude: 33.77780712288718, longitude: -84.39873117824166, photoUri: "https://www.google.com/url?sa=i&url=https%3A%2F%2Fwww.discoverwildlife.com%2Fanimal-facts%2Fmammals%2F6-key-behaviours-that-reveal-the-wild-ancestry-of-your-cat&psig=AOvVaw3Zoo2XOuw7Qmww1KtAy0f1&ust=1739118966851000&source=images&cd=vfe&opi=89978449&ved=0CBQQjRxqFwoTCJjU35PBtIsDFQAAAAAdAAAAABAE", name: "Whiskers"},
-    { id: "2", date: new Date('2023-11-15'), fed: true, health: false, info: "Shy cat", latitude:  33.774097234804785, longitude: -84.39870972057157, photoUri: "https://www.google.com/url?sa=i&url=https%3A%2F%2Fwww.balisafarimarinepark.com%2Fbengal-tiger-the-power-beauty-and-more%2F&psig=AOvVaw13dz9FMTgVtbiSTQpJ-Gnh&ust=1739118990838000&source=images&cd=vfe&opi=89978449&ved=0CBQQjRxqFwoTCICMpqHBtIsDFQAAAAAdAAAAABAE", name: "Shadow"},
+    { id: "1", date: new Date('2025-02-10'), fed: true, health: true, info: "Error cat", latitude: 33.77780712288718, longitude: -84.39873117824166, photoUri: "https://www.google.com/url?sa=i&url=https%3A%2F%2Fwww.discoverwildlife.com%2Fanimal-facts%2Fmammals%2F6-key-behaviours-that-reveal-the-wild-ancestry-of-your-cat&psig=AOvVaw3Zoo2XOuw7Qmww1KtAy0f1&ust=1739118966851000&source=images&cd=vfe&opi=89978449&ved=0CBQQjRxqFwoTCJjU35PBtIsDFQAAAAAdAAAAABAE", name: "Whiskers"},
+    { id: "2", date: new Date('2023-11-15'), fed: true, health: false, info: "Bug cat", latitude:  33.774097234804785, longitude: -84.39870972057157, photoUri: "https://www.google.com/url?sa=i&url=https%3A%2F%2Fwww.balisafarimarinepark.com%2Fbengal-tiger-the-power-beauty-and-more%2F&psig=AOvVaw13dz9FMTgVtbiSTQpJ-Gnh&ust=1739118990838000&source=images&cd=vfe&opi=89978449&ved=0CBQQjRxqFwoTCICMpqHBtIsDFQAAAAAdAAAAABAE", name: "Shadow"},
   ]);
 
   const fetchPins = async  () => {
