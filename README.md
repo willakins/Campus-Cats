@@ -4,32 +4,29 @@
 
 # Release Notes
 
-### Version 2.0.0
+## Version 0.2.0
 
-## Features
+### Features
 
 The second release introduces enhancements to usability and functionality, improving the experience for users. Key updates include:
 
-- **User Authentication & Profiles:** Users can now create and manage personal profiles with secure authentication.
-- **Advanced Mapping System:** Enhanced map with filtering options based on time, location, and user-submitted categories.
-- **Push Notifications:** Users receive real-time alerts for new sightings in their selected areas.
-- **Admin Dashboard:** Moderators can manage reports, verify sightings, and ensure content quality.
-- **Improved UI & UX:** Revamped design for a more intuitive experience, with dark mode support.
+- **Cat Reporting Capabilities:** Users can now upload pictures in a cat sighting report, marking their name, condition, and location! Furthermore, admin users may edit each sighting.
+- **Cat Sighting Map:** Created a map with pins representing the location of sightings, and provided a filtering option based on time.
+- **Make Admins:** Admins can now make new admins.
+- **Improved UI & UX:** Revamped design for a more intuitive experience and improved performance by reducing the number of network queries necessary.
 
-## Bug Fixes
+### Bug Fixes
 
-- Resolved syncing issue where some user submissions were not appearing on the map.
-- Fixed authentication errors preventing some users from logging in on Android.
-- Improved app stability and performance when handling large numbers of sightings.
-- Adjusted button responsiveness to ensure consistent interaction across all devices.
-- Eliminated duplicate photo uploads caused by unstable connections.
+- Fixed permissions issue when the user tries to select a photo for the report. Previously, this caused the selection to fail silently.
+- Disable back navigation from the home screen. Previously, this allowed android and web users to return to the login screen without logging out.
+- Show status bar on Android. Due to rendering differences between platforms, different stylings are required.
 
-## Known Issues
+### Known Issues
 
-- Some Android users may experience delayed push notifications.
 - The filtering system does not yet support multi-criteria selection.
-- Offline mode sync may occasionally duplicate submissions if the app is restarted before syncing.
-- User profile pictures do not always update immediately after upload.
+- On Android, the login button requires two clicks to login.
+- Some users may encounter authentication errors due to not being properly synced in the backend.
+- Attempting to navigate back from a submenu of the settings page redirects to the home page instead of the settings page.
 
 
 ## Version 0.1.0
