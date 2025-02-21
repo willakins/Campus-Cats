@@ -16,7 +16,6 @@ export default function Catalog() {
         id: doc.id,
         name: doc.data().name,
         info: doc.data().info,
-        profilePhoto: doc.data().profilePhoto,
         extraPhotos: doc.data().extraPhotos,
         most_recent_sighting: doc.data().mostRecentSighting
       }));
@@ -39,7 +38,6 @@ export default function Catalog() {
             key={entry.id}
             id={entry.id}
             name={entry.name}
-            profilePhoto={entry.profilePhoto}
             info={entry.info}
             most_recent_sighting={entry.most_recent_sighting}
             />
