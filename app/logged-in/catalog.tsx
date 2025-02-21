@@ -1,51 +1,64 @@
 import React, { useEffect, useState } from "react";
 import { getStorage, ref, listAll, getDownloadURL } from "firebase/storage";
-import { storage } from "./firebase"; // Import your firebase config
-import { FlatList, Text, StyleSheet, View, Image } from 'react-native';
+import { db, storage } from "./firebase"; // Import your firebase config
+import { FlatList, Text, StyleSheet, View, Image, ScrollView } from 'react-native';
+import CatalogEntry from '../../components/CatalogEntry';
+import { collection, getDocs } from "firebase/firestore";
+
+interface CatalogEntryObject {
+  id: string;
+  name: string;
+  profilePhoto: string; //path to storage with photo
+  info: string;
+  most_recent_sighting: string; // document id for a cat sighting 
+  extraPhotos: string; //path to a storage folder with other photos
+  
+}
 
 export default function Catalog() {
-  const [photoUrls, setPhotoUrls] = useState<string[] | null>([]);
+  const [catalogEntries, setCatalogEntries] = useState<CatalogEntryObject[]>([]);
 
-    // Function to retrieve photos from Firebase Storage
-    const fetchPhotos = async () => {
-      const folderPath = "photos"; // Specify your folder in Firebase Storage
-      const folderRef = ref(storage, folderPath);
+  const fetchCatalogData = async () => {
+    try {
+      const querySnapshot = await getDocs(collection(db, 'catalog'));
+      const entries: CatalogEntryObject[] = querySnapshot.docs.map((doc) => ({
+        id: doc.id,
+        name: doc.data().name,
+        info: doc.data().info,
+        profilePhoto: doc.data().profilePhoto,
+        extraPhotos: doc.data().extraPhotos,
+        most_recent_sighting: doc.data().mostRecentSighting
+      }));
+      setCatalogEntries(entries);
+    } catch (error) {
+      console.error('Error fetching catalog data: ', error);
+    }
+  };
 
-      try {
-        // List all files in the folder
-        const result = await listAll(folderRef);
+  useEffect(() => {
+    fetchCatalogData()
+  }, []);
 
-        // Get download URLs for all the files
-        const urls = await Promise.all(
-          result.items.map((itemRef) => getDownloadURL(itemRef))
-        );
-
-        // Update state with the list of photo URLs
-        setPhotoUrls(urls);
-      } catch (error) {
-        console.error("Error fetching photos from Firebase Storage: ", error);
-      }
-    };
-
-    useEffect(() => {
-      fetchPhotos(); // Fetch photos when the screen is loaded
-    }, []);
-    const data = Array.from({ length: 50 }, (_, i) => `Item ${i + 1}`);
   return (
-    <FlatList
-      data={photoUrls}
-      keyExtractor={(_item, index) => index.toString()}
-      renderItem={({ item }) => (
-        <View style={styles.item}>
-          <Image source={{ uri: item }} style={styles.image} />
-          <Text style={styles.text}>Grumpus the cat</Text>
-        </View>
-      )}
-      contentContainerStyle={styles.list}
-    />
+    <ScrollView style={styles.scrollView}>
+      {catalogEntries.map((entry) => (
+        <CatalogEntry
+          key={entry.id}
+          name={entry.name}
+          profilePhoto={entry.profilePhoto}
+          info={entry.info}
+          recentSighting={entry.most_recent_sighting}
+          extraPhotos={entry.extraPhotos}
+        />
+      ))}
+    </ScrollView>
   );
 }
 const styles = StyleSheet.create({
+  scrollView: {
+    flex: 1,
+    paddingTop: 20,
+  },
     list: {
       padding: 16,
     },
