@@ -36,6 +36,7 @@ export default function Catalog() {
       <ScrollView contentContainerStyle={styles.scrollView}>
         {catalogEntries.map((entry) => (
           <CatalogItem
+            key={entry.id}
             id={entry.id}
             name={entry.name}
             profilePhoto={entry.profilePhoto}
