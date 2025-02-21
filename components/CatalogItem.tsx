@@ -1,51 +1,53 @@
 // CatalogItem.js
 import React, { useEffect, useState } from "react";
 import { Text, StyleSheet, Image, TouchableOpacity } from 'react-native';
-import { getDownloadURL, ref } from "firebase/storage";
+import { getDownloadURL, listAll, ref } from "firebase/storage";
 import { storage } from "@/app/logged-in/firebase";
 import { useRouter } from "expo-router";
 import { CatalogEntryObject } from "@/types/CatalogEntryObject";
 
-const CatalogItem: React.FC<CatalogEntryObject> = ({ id, name, profilePhoto, info, most_recent_sighting }) => {
-    const [profileURL, setProfile] = useState<string | null>(null);
+const CatalogItem: React.FC<CatalogEntryObject> = ({ id, name, info, most_recent_sighting }) => {
     const router = useRouter();
     const latitude = JSON.stringify(most_recent_sighting.latitude);
     const longitude = JSON.stringify(most_recent_sighting.longitude);
+    const [profileURL, setProfile] = useState<string | null>(null);
+    
+    const fetchCatImages = async (catName: string) => {
+      try {
+        const folderRef = ref(storage, `cats/${catName}/`);
+        
+        // List all images in the folder
+        const result = await listAll(folderRef);
+        
+        let profilePicUrl = "";
+    
+        for (const itemRef of result.items) {
+          const url = await getDownloadURL(itemRef);
+          
+          // Check if this is the profile picture
+          if (itemRef.name.includes("_profile")) {
+            profilePicUrl = url;
+            break;
+          }
+        }
+        setProfile(profilePicUrl);
+      } catch (error) {
+        console.error("Error fetching images: ", error);
+      }
+    };
+        
+    useEffect(() => {
+      fetchCatImages(name);
+    }, []);
 
     // Handle onPress and navigate to the detail page
     const handlePress = () => {
       router.push({
         pathname: "/catalog/view-entry", // Dynamically navigate to the details page
-        params: { paramId:id, paramName:name, paramProfile:profilePhoto, paramInfo:info, paramLatitude:latitude, 
+        params: { paramId:id, paramName:name, paramInfo:info, paramLatitude:latitude, 
           paramLongitude:longitude}, // Pass the details as query params
       });
     };
-
-    const getImageUrl = async (imagePath: string) => {
-      try {
-        // Create a reference to the file in Firebase Storage
-        const imageRef = ref(storage, imagePath);  // The path to the image in Storage
-        
-        // Get the download URL of the image
-        const url = await getDownloadURL(imageRef);
-        
-        // Return the image URL
-        return url;
-      } catch (error) {
-        console.error("Error getting image URL:", error);
-        return null;
-      }
-    };
-    
-    const fetchImage = async () => {
-        if (profilePhoto){
-          const url = await getImageUrl(profilePhoto); // Get the image URL
-          setProfile(url); // Update the state with the image URL
-        }
-    };
-    useEffect(() => {
-      fetchImage();
-    }, []);
 
     return (
         <TouchableOpacity style={styles.entryContainer} onPress={handlePress}>
