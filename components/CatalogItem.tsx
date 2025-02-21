@@ -1,12 +1,12 @@
 // CatalogItem.js
 import React, { useEffect, useState } from "react";
-import { View, Text, StyleSheet, Image, TouchableOpacity } from 'react-native';
-import { deleteObject, getDownloadURL, ref } from "firebase/storage";
+import { Text, StyleSheet, Image, TouchableOpacity } from 'react-native';
+import { getDownloadURL, ref } from "firebase/storage";
 import { storage } from "@/app/logged-in/firebase";
 import { useRouter } from "expo-router";
 import { CatalogEntryObject } from "@/types/CatalogEntryObject";
 
-const CatalogItem: React.FC<CatalogEntryObject> = ({ id, name, profilePhoto, info, most_recent_sighting, extraPhotos }) => {
+const CatalogItem: React.FC<CatalogEntryObject> = ({ id, name, profilePhoto, info, most_recent_sighting }) => {
     const [profileURL, setProfile] = useState<string | null>(null);
     const router = useRouter();
     const latitude = JSON.stringify(most_recent_sighting.latitude);
@@ -17,7 +17,7 @@ const CatalogItem: React.FC<CatalogEntryObject> = ({ id, name, profilePhoto, inf
       router.push({
         pathname: "/catalog/view-entry", // Dynamically navigate to the details page
         params: { paramId:id, paramName:name, paramProfile:profilePhoto, paramInfo:info, paramLatitude:latitude, 
-          paramLongitude:longitude, paramExtraPhotos:extraPhotos}, // Pass the details as query params
+          paramLongitude:longitude}, // Pass the details as query params
       });
     };
 

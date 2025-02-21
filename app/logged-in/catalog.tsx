@@ -42,7 +42,6 @@ export default function Catalog() {
             profilePhoto={entry.profilePhoto}
             info={entry.info}
             most_recent_sighting={entry.most_recent_sighting}
-            extraPhotos={entry.extraPhotos}
             />
         ))}
       </ScrollView>
