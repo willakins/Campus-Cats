@@ -47,7 +47,6 @@ const view_entry = () =>{
                 profilePhoto={profilePhoto}
                 info={info}
                 most_recent_sighting={most_recent_sighting}
-                extraPhotos={extraPhotos}
                 />
         </View>
     );

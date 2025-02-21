@@ -6,7 +6,7 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, Image, ScrollView } from 'react-native';
 import MapView, { Marker } from "react-native-maps";
 
-const CatalogEntry: React.FC<CatalogEntryObject> = ({ id, name, profilePhoto, info, most_recent_sighting, extraPhotos  }) => {
+const CatalogEntry: React.FC<CatalogEntryObject> = ({ id, name, profilePhoto, info, most_recent_sighting }) => {
   const [profileURL, setProfile] = useState<string | null>(null);
   const [imageUrls, setImageUrls] = useState<string[]>([]);
 
