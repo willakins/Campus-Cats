@@ -6,6 +6,4 @@ export interface CatalogEntryObject {
     profilePhoto: string; //path to storage with photo
     info: string;
     most_recent_sighting: LatLng; // document id for a cat sighting 
-    extraPhotos: string; //path to a storage folder with other photos
-    
 }
