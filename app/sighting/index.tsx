@@ -33,20 +33,18 @@ const CatSightingScreen = () => {
     longitude: longitude,
   };
 
-  const [adminStatus, setAdminStatus] = useState<boolean>(false); 
-  
   const getImageUrl = async (imagePath: string) => {
     try {
       // Create a reference to the file in Firebase Storage
       const imageRef = ref(storage, imagePath);  // The path to the image in Storage
-      
+
       // Get the download URL of the image
       const url = await getDownloadURL(imageRef);
-      
+
       // Return the image URL
       return url;
     } catch (error) {
-      console.error("Error getting image URL:", error);
+      console.error('Error getting image URL:', error);
       return null;
     }
   };
@@ -55,45 +53,26 @@ const CatSightingScreen = () => {
       const url = await getImageUrl(photoURL); // Get the image URL
       setPhotoImage(url); // Update the state with the image URL
     }
-    
   };
 
-  
+  // Check user role
   useEffect(() => {
     fetchImage();
   }, []);
 
-  // Following function checks for admin status
-  useEffect(() => {
-    setUserRole();
-  }, []);
-  const setUserRole = async () => {
-    const auth = getAuth();
-    const user = auth.currentUser;
-    if (user) {
-      const userDoc = await getDoc(doc(db, "users", user.uid));
-      if (userDoc.exists()) {
-        const userRole = userDoc.data().role;
-        setAdminStatus(userRole === 1 || userRole === 2);
-      } else {
-        console.log("No user document found!");
-      }
-    }
-  };
-
   const saveSighting = async () => {
     const stamp = Timestamp.fromDate(date);
     if (!docRef) {
-      alert("Error: docRef is undefined!");
+      alert('Error: docRef is undefined!');
       return;
     }
 
-    const sightingRef = doc(db, "cat-sightings", docRef);
+    const sightingRef = doc(db, 'cat-sightings', docRef);
 
     try {
       const docSnap = await getDoc(sightingRef);
       if (!docSnap.exists()) {
-        alert("Error: Document does not exist!");
+        alert('Error: Document does not exist!');
         return;
       }
 
@@ -108,19 +87,18 @@ const CatSightingScreen = () => {
         name,
       });
 
-      alert("Saved!");
-      router.push('/logged-in')
+      alert('Saved!');
+      router.push('/home')
     } catch (error: unknown) {
       if (error instanceof Error) {
-        alert("Error saving sighting: " + error.message);
-        console.error("Firestore update error:", error);
+        alert('Error saving sighting: ' + error.message);
+        console.error('Firestore update error:', error);
       } else {
-        alert("Unknown error occurred.");
-        console.error("Unknown error:", error);
+        alert('Unknown error occurred.');
+        console.error('Unknown error:', error);
       }
     }
   };
-
 
   if (loading) {
     return (
@@ -134,17 +112,17 @@ const CatSightingScreen = () => {
       if (photoURL) {
         // Reference to the file in Firebase Storage
         const imageRef = ref(storage, photoURL);
-  
+
         // Delete the image from storage
         await deleteObject(imageRef);
-        console.log("Image deleted successfully.");
+        console.log('Image deleted successfully.');
       }
-      await deleteDoc(doc(db, "cat-sightings", docRef));
-      alert("Cat sighting deleted successfully!");
-      router.push('/logged-in');
+      await deleteDoc(doc(db, 'cat-sightings', docRef));
+      alert('Cat sighting deleted successfully!');
+      router.push('/home');
     } catch (error) {
-      console.error("Error deleting sighting:", error);
-      alert("Failed to delete sighting.");
+      console.error('Error deleting sighting:', error);
+      alert('Failed to delete sighting.');
     }
   };
 
@@ -156,73 +134,73 @@ const CatSightingScreen = () => {
   // Now display the sighting for either admin or general user
   return (
     <KeyboardAvoidingView
-          style={styles.container}
-          behavior={Platform.OS === 'ios' ? 'padding' : undefined} // iOS specific behavior
-          >
+      style={styles.container}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined} // iOS specific behavior
+    >
       <ScrollView contentContainerStyle={styles.scrollView}>
-        {isAdmin && <TouchableOpacity style={styles.deleteButton} onPress={deleteSighting}>
-            <Text style={styles.buttonText}>Delete</Text>
-        </TouchableOpacity>}
-        {!isAdmin && <Text style={styles.headline}>View A Cat Sighting</Text>}
-        {isAdmin && <Text style={styles.headline}>Edit A Cat Sighting</Text>}
+        {isAdmin && <Button style={styles.deleteButton} onPress={deleteSighting}>
+          Delete
+        </Button>}
+        <Text style={styles.headline}>
+          {isAdmin ? 'View' : 'Edit'} A Cat Sighting
+        </Text>
         <View style={styles.container}>
           {photoImage ? (
             <Image source={{ uri: photoImage }} style={styles.catImage} />
           ) : (
-            <Text style={styles.catImage}>Loading image...</Text>
-          )}
+              <Text style={styles.catImage}>Loading image...</Text>
+            )}
           <View style={styles.inputContainer}>
             {isAdmin && <MapView
-            style={{ width: '100%', height: 150, marginVertical: 10 }}
-            initialRegion={{
-              latitude: 33.7756,
-              longitude: -84.3963,
-              latitudeDelta: 0.01,
-              longitudeDelta: 0.01,
-            }}
-            onPress={handleMapPress} // This updates the location correctly
-          >
-            {location && <Marker coordinate={location} />}
-          </MapView>}
+              style={{ width: '100%', height: 150, marginVertical: 10 }}
+              initialRegion={{
+                latitude: 33.7756,
+                longitude: -84.3963,
+                latitudeDelta: 0.01,
+                longitudeDelta: 0.01,
+              }}
+              onPress={handleMapPress} // This updates the location correctly
+            >
+              {location && <Marker coordinate={location} />}
+            </MapView>}
             <Text style={styles.sliderText}>Cat's Name</Text>
-            <TextInput 
-            value={name} 
-            onChangeText={setName} 
-            editable={isAdmin} 
-            style={styles.input} />
+            <TextInput
+              value={name}
+              onChangeText={setName}
+              editable={isAdmin}
+            />
             <Text style={styles.sliderText}>Additional Info</Text>
-            <TextInput 
-            value={info} 
-            onChangeText={setInfo} 
-            editable={isAdmin} 
-            style={styles.input} />
+            <TextInput
+              value={info}
+              onChangeText={setInfo}
+              editable={isAdmin}
+            />
             <Text style={styles.sliderText}>Date Sighted</Text>
-            <TextInput 
-            value={date.toString()} 
-            onChangeText={setInfo} 
-            editable={isAdmin} 
-            style={styles.input} />
+            <TextInput
+              value={date.toString()}
+              onChangeText={setInfo}
+              editable={isAdmin}
+            />
             <View style={styles.slider}>
               <Switch value={health} onValueChange={setHealth} disabled={!isAdmin}/>
-              <Text style={styles.sliderText}>Has been fed</Text> 
+              <Text style={styles.sliderText}>Has been fed</Text>
             </View>
             <View style={styles.slider}>
               <Switch value={fed} onValueChange={setFed} disabled={!isAdmin} />
               <Text style={styles.sliderText}>Is in good health</Text>
             </View>
-            </View>
+          </View>
         </View>
       </ScrollView>
-      {isAdmin && <TouchableOpacity style={styles.button} onPress={saveSighting}>
-              <Text style = {styles.buttonText}>Save</Text>
-            </TouchableOpacity>}
-            <TouchableOpacity style={styles.button} onPress={() => router.push('/logged-in')}>
-              <Text style={styles.buttonText}>Back</Text>
-            </TouchableOpacity>
+      {isAdmin && <Button onPress={saveSighting}>
+        Save
+      </Button>}
+      <Button onPress={() => router.push('/home')}>
+        Back
+      </Button>
     </KeyboardAvoidingView>
   );
 };
-
 
 export default CatSightingScreen;
 
@@ -252,22 +230,18 @@ const styles = StyleSheet.create({
     textAlign: 'left',
     padding: 5,
   },
-  slider: { 
-    flexDirection: "row", 
-    alignItems: "center",
+  slider: {
+    flexDirection: 'row',
+    alignItems: 'center',
     padding: 3
   },
-  catImage: { 
-    width: "100%", 
-    height: 200, 
+  catImage: {
+    width: '100%',
+    height: 200,
     borderRadius: 10,
     justifyContent: 'center',
     textAlign: 'center',
     flex: 1,
-  },
-  errorText: {
-    color: 'red',
-    marginBottom: 10,
   },
   screen: {
     flex: 1,
@@ -279,7 +253,7 @@ const styles = StyleSheet.create({
   },
   container: {
     justifyContent: 'center',
-    backgroundColor: '#fff', 
+    backgroundColor: '#fff',
     padding: 5
   },
   inputContainer: {
@@ -293,36 +267,4 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 4,
   },
-  input: {
-    height: 30,
-    width: 300,
-    borderColor: '#ccc',
-    borderWidth: 1,
-    borderRadius: 5,
-    marginBottom: 15,
-    paddingHorizontal: 10,
-    backgroundColor: '#fff',
-  },
-  button: {
-    backgroundColor: '#333',
-    padding: 12,
-    borderRadius: 5,
-    alignItems: 'center',
-    margin: 5,
-    display: 'flex',
-    justifyContent: 'center',
-  },
-  buttonText: {
-    color: '#fff',
-    fontSize: 12,
-    fontWeight: 'bold',
-    textAlign: 'center',
-
-  },
-  forgotPassword: {
-    marginTop: 10,
-    color: '#007BFF',
-    textAlign: 'center',
-  },
-  
 });

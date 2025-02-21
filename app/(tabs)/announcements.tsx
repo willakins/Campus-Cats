@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
+import { ActivityIndicator, Text, StyleSheet, View } from 'react-native';
+
 import { Ionicons } from '@expo/vector-icons';
-import { View, Text, ActivityIndicator} from 'react-native';
-import { StyleSheet } from 'react-native';
 import { doc, getDoc } from 'firebase/firestore';
-import { auth, db } from './firebase';
+
+import { auth, db } from '@/services/firebase';
 
 const Announcements = () => {
   const [isAdmin, setIsAdmin] = useState(false);
@@ -49,16 +50,16 @@ const Announcements = () => {
     <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
       <Text>Announcements Screen</Text>
       {isAdmin ? (
-                <Ionicons
-                  name="lock-closed"
-                  size={24}
-                  color="black"
-                  style={styles.lockIcon}
-                />
-              ) : null}
+        <Ionicons
+          name="lock-closed"
+          size={24}
+          color="black"
+          style={styles.lockIcon}
+        />
+      ) : null}
     </View>
   );
-}
+};
 
 export default Announcements;
 

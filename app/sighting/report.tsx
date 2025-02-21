@@ -1,38 +1,40 @@
-import React, { useEffect, useState } from "react";
-import { View, Text, TextInput, Image, Switch, Button, ActivityIndicator, PermissionsAndroid, StyleSheet, KeyboardAvoidingView, ScrollView, Platform, TouchableOpacity, Alert } from "react-native";
-import { useLocalSearchParams, useRouter } from "expo-router";
-import { auth, db, storage } from "../logged-in/firebase";
-import { Ionicons } from "@expo/vector-icons";
-import { getStorage, getDownloadURL, ref, uploadBytes } from "firebase/storage";
-import MapView, { LatLng, Marker } from "react-native-maps";
-import DateTimePicker from '@react-native-community/datetimepicker';
-import * as MediaLibrary from 'expo-media-library';
-import { addDoc, collection, doc, getDoc, getFirestore, serverTimestamp, Timestamp } from "firebase/firestore";
+import React, { useState } from 'react';
+import { Alert, Image, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Switch, Text, TouchableOpacity, View, } from 'react-native';
+
+import { useRouter } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
-import 'react-native-get-random-values';
+import { Ionicons } from '@expo/vector-icons';
+import { addDoc, collection, serverTimestamp, Timestamp } from 'firebase/firestore';
+import { getStorage, getDownloadURL, ref, uploadBytes } from 'firebase/storage';
+// import DateTimePicker from '@react-native-community/datetimepicker';
+import 'react-native-get-random-values'; // Needed for uuid
+import MapView, { LatLng, Marker } from 'react-native-maps';
 import { v4 as uuidv4 } from 'uuid';
 
-const CatReportScreen = () => {
-    const [date, setDate] = useState<Date | null>(null);
-    const [showPicker, setShowPicker] = useState(true);
-    const [fed, setFed] = useState<boolean>(false);
-    const [health, setHealth] = useState<boolean>(false);
-    const [photoURL, setPhotoURL] = useState<string>('');
-    const [info, setInfo] = useState<string>('');
-    const [longitude, setLongitude] = useState<number>(-84.3963);
-    const [latitude, setLatitude] = useState<number>(33.7756);
-    const [name, setName] = useState<string>('');
-    const router = useRouter();
+import { Button, TextInput } from '@/components';
+import { db } from '@/services/firebase';
 
-    var location:LatLng = {
-      latitude: latitude,
-      longitude: longitude,
-    };
+const CatReportScreen = () => {
+  const [date, setDate] = useState<Date | null>(null);
+  const [showPicker, setShowPicker] = useState(true);
+  const [fed, setFed] = useState<boolean>(false);
+  const [health, setHealth] = useState<boolean>(false);
+  const [photoURL, setPhotoURL] = useState<string>('');
+  const [info, setInfo] = useState<string>('');
+  const [longitude, setLongitude] = useState<number>(-84.3963);
+  const [latitude, setLatitude] = useState<number>(33.7756);
+  const [name, setName] = useState<string>('');
+  const router = useRouter();
+
+  var location:LatLng = {
+    latitude: latitude,
+    longitude: longitude,
+  };
 
   const handleTakePhoto = async () => {
     const { status, } = await ImagePicker.requestCameraPermissionsAsync();
-    if (status !== "granted") {
-      alert("Sorry, we need camera roll permissions to make this work!");
+    if (status !== 'granted') {
+      alert('Sorry, we need camera roll permissions to make this work!');
     }
 
     let result = await ImagePicker.launchCameraAsync({
@@ -47,8 +49,8 @@ const CatReportScreen = () => {
   const handleSelectPhoto = async () => {
     // Permissions check only needed for iOS 10
     const { status, } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (status !== "granted") {
-      alert("Sorry, we need media library permissions to make this work!");
+    if (status !== 'granted') {
+      alert('Sorry, we need media library permissions to make this work!');
     }
 
     let result = await ImagePicker.launchImageLibraryAsync({
@@ -81,7 +83,7 @@ const CatReportScreen = () => {
       { cancelable: true }
     );
   };
-  
+
   const handleSubmission = async () => {
     if (photoURL) {
       try {
@@ -90,48 +92,14 @@ const CatReportScreen = () => {
         const response = await fetch(photoURL);
         const blob = response.blob();
 
-        // // Why are we using XMLHttpRequest? See:
-        // // https://github.com/expo/expo/issues/2402#issuecomment-443726662
-        // const blob = await new Promise((resolve, reject) => {
-        //   const xhr = new XMLHttpRequest();
-        //   xhr.onload = function () {
-        //     resolve(xhr.response);
-        //   };
-        //   xhr.onerror = function (e) {
-        //     console.log(e);
-        //     reject(new TypeError("Network request failed"));
-        //   };
-        //   xhr.responseType = "blob";
-        //   xhr.open("GET", photo, true);
-        //   xhr.send(null);
-        // });
-
         console.log('Blob created:', blob);
 
         // Generate a unique filename for the image
         const filename = uuidv4();
-        const filepath = "photos/" + filename
+        const filepath = 'photos/' + filename
         const photoRef = ref(getStorage(), filepath);
 
         console.log('Photo reference created:', photoRef);
-
-        // // Upload the blob with proper metadata
-        // const metadata = {
-        //   contentType: 'image/jpeg',
-        // };
-
-        // Upload the file
-        
-
-        // // We're done with the blob, close and release it
-        // blob.close();
-
-        // Get the download URL
-        
-
-        // Further processing with the photoURL...
-
-        
 
         try {
           if (name == '' || !date || !filepath) {
@@ -142,12 +110,12 @@ const CatReportScreen = () => {
             const photoUri = await getDownloadURL(photoRef);
             console.log('Download URL:', photoUri);
 
-            alert("Cat submitted successfully!");
+            alert('Cat submitted successfully!');
 
             await addDoc(collection(db, 'cat-sightings'), {
               timestamp: serverTimestamp(),
               spotted_time: Timestamp.fromDate(date), // currently unused, but we may want to distinguish
-                                  // upload and sighting time in the future
+              // upload and sighting time in the future
               latitude: latitude,
               longitude: longitude,
               name: name,
@@ -156,19 +124,18 @@ const CatReportScreen = () => {
               healthy: health,
               fed: fed,
             });
-            router.push('/logged-in')
+            router.push('/home')
           }
-          
         } catch (error) {
           if (error instanceof Error) {
-            console.error("Error during upload:", error);
+            console.error('Error during upload:', error);
             alert(`Upload failed: ${error.message}`);
           }
         }
 
       } catch (error) {
         if (error instanceof Error) {
-          console.error("Error during upload:", error);
+          console.error('Error during upload:', error);
           alert(`Upload failed: ${error.message}`);
         }
       }
@@ -176,6 +143,7 @@ const CatReportScreen = () => {
       alert('Please select a photo.');
     }
   };
+
   const handleMapPress = (event: { nativeEvent: { coordinate: { latitude: any; longitude: any; }; }; }) => {
     const { latitude, longitude } = event.nativeEvent.coordinate;
     setLatitude(latitude);
@@ -196,70 +164,67 @@ const CatReportScreen = () => {
       <ScrollView contentContainerStyle={styles.scrollView}>
         <View style={styles.container}>
           <View style={styles.inputContainer}>
-          <Text style={styles.headline}>Report A Cat Sighting</Text>
-          <MapView
-            style={{ width: '100%', height: 200, marginVertical: 10 }}
-            initialRegion={{
-              latitude: 33.7756, // Default location (e.g., Georgia Tech)
-              longitude: -84.3963,
-              latitudeDelta: 0.01,
-              longitudeDelta: 0.01,
-            }}
-            onPress={handleMapPress} // This updates the location correctly
-          >
-            {location && <Marker coordinate={location} />}
-          </MapView>
+            <Text style={styles.headline}>Report A Cat Sighting</Text>
+            <MapView
+              style={{ width: '100%', height: 200, marginVertical: 10 }}
+              initialRegion={{
+                latitude: 33.7756, // Default location (e.g., Georgia Tech)
+                longitude: -84.3963,
+                latitudeDelta: 0.01,
+                longitudeDelta: 0.01,
+              }}
+              onPress={handleMapPress} // This updates the location correctly
+            >
+              {location && <Marker coordinate={location} />}
+            </MapView>
             <View style={styles.dateInput}>
-            
-            <Text style={styles.sliderText}>{date ? date.toDateString() : 'Select Sighting Date'}</Text>
+              <Text style={styles.sliderText}>{date ? date.toDateString() : 'Select Sighting Date'}</Text>
               <TouchableOpacity  onPress={() => setShowPicker(true)}>
-              {showPicker && <DateTimePicker
-                value={date || new Date()}
-                mode="date"
-                display="default"
-                onChange={handleDateChange}/>}
+                {false && showPicker && <DateTimePicker
+                  value={date || new Date()}
+                  mode="date"
+                  display="default"
+                  onChange={handleDateChange}/>}
               </TouchableOpacity>
-              
             </View>
-            <TextInput 
-              placeholder="Cat's name"
-              placeholderTextColor = '#888'
-              onChangeText={setName} 
-              style={styles.input} />
             <TextInput
-              placeholder='Additional Info' 
-              placeholderTextColor = '#888'
-              value={info} 
-              onChangeText={setInfo} 
-              style={styles.input} />
+              placeholder="Cat's name"
+              placeholderTextColor = "#888"
+              onChangeText={setName}
+            />
+            <TextInput
+              placeholder="Additional Info"
+              placeholderTextColor = "#888"
+              value={info}
+              onChangeText={setInfo}
+            />
             <View style={styles.slider}>
               <Switch value={health} onValueChange={setHealth}/>
-              <Text style={styles.sliderText}>Has been fed</Text> 
+              <Text style={styles.sliderText}>Has been fed</Text>
             </View>
             <View style={styles.slider}>
               <Switch value={fed} onValueChange={setFed} />
               <Text style={styles.sliderText}>Is in good health</Text>
             </View>
             <View style={styles.cameraView}>
-              <TouchableOpacity style={styles.cameraButton} onPress={handlePress}>
-                <Ionicons name="camera-outline" size={29} color={'#fff'} />
-              </TouchableOpacity>
+              <Button style={styles.cameraButton} onPress={handlePress}>
+                <Ionicons name="camera-outline" size={29} color="#fff" />
+              </Button>
             </View>
             {photoURL && <Image source={{ uri: photoURL }} style={styles.selectedPreview} />}
 
-            <TouchableOpacity style={styles.button} onPress={handleSubmission}>
-              <Text style = {styles.buttonText}>Submit Sighting</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.button} onPress={() => router.push('/logged-in')}>
-              <Text style={styles.buttonText}>Back</Text>
-            </TouchableOpacity>
+            <Button onPress={handleSubmission}>
+              Submit Sighting
+            </Button>
+            <Button onPress={() => router.push('/home')}>
+              Back
+            </Button>
           </View>
         </View>
       </ScrollView>
     </KeyboardAvoidingView>
   );
 };
-
 
 export default CatReportScreen;
 
@@ -297,30 +262,8 @@ const styles = StyleSheet.create({
     textAlign: 'left',
     padding: 10,
   },
-  dateText: {
-    color: 'black',
-    fontSize: 12,
-    fontWeight: 'bold',
-    textAlign: 'left',
-    justifyContent: 'flex-start',
-    padding: 10,
-  },
-  slider: { 
-    flexDirection: "row", 
-    alignItems: "center",
-  },
-  catImage: { 
-    width: "100%", 
-    height: 200, 
-    borderRadius: 10,
-  },
-  errorText: {
-    color: 'red',
-    marginBottom: 10,
-  },
-  screen: {
-    flex: 1,
-    justifyContent: 'center',
+  slider: {
+    flexDirection: 'row',
     alignItems: 'center',
   },
   scrollView: {
@@ -331,7 +274,7 @@ const styles = StyleSheet.create({
   container: {
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#fff', 
+    backgroundColor: '#fff',
   },
   inputContainer: {
     width: '100%',
@@ -344,29 +287,6 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 4,
   },
-  input: {
-    height: 40,
-    width: 300,
-    borderColor: '#ccc',
-    borderWidth: 1,
-    borderRadius: 5,
-    marginBottom: 15,
-    paddingHorizontal: 10,
-    backgroundColor: '#fff',
-    color: '#000',
-  },
-  dinput: {
-    height: 40,
-    width: 300,
-    borderColor: '#ccc',
-    borderWidth: 1,
-    borderRadius: 5,
-    marginBottom: 15,
-    paddingHorizontal: 10,
-    backgroundColor: '#fff',
-    color: '#000',
-    flexDirection: "row", 
-  },
   dateInput: {
     height: 40,
     width: 300,
@@ -376,30 +296,7 @@ const styles = StyleSheet.create({
     marginBottom: 15,
     paddingHorizontal: 10,
     backgroundColor: '#fff',
-    flexDirection: "row", 
-  },
-  button: {
-    backgroundColor: '#333',
-    padding: 12,
-    borderRadius: 5,
-    alignItems: 'center',
-    margin: 5,
-    display: 'flex',
-    justifyContent: 'center',
-  },
-  dateButton: { padding: 12, backgroundColor: '#007bff', borderRadius: 5 },
-
-  buttonText: {
-    color: '#ffff',
-    fontSize: 12,
-    fontWeight: 'bold',
-    textAlign: 'center',
-
-  },
-  forgotPassword: {
-    marginTop: 10,
-    color: '#007BFF',
-    textAlign: 'center',
+    flexDirection: 'row',
   },
   selectedPreview: {
     margin: 'auto', // Center the image
