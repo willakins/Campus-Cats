@@ -1,10 +1,10 @@
-import { Ionicons } from "@expo/vector-icons";
-import { Tabs } from 'expo-router';
-import React from "react";
-import { TouchableOpacity, View, StyleSheet, Text, StatusBar, Platform } from "react-native";
-import { Link, useRouter } from 'expo-router';
+import React from 'react';
+import { Platform, StatusBar, StyleSheet, View } from 'react-native';
 
-export default function RootLayout() {
+import { Tabs } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
+
+const RootLayout = () => {
   const size2 = 29;
   const color2 = '#333'
   const bar_height: number = Platform.select({
@@ -18,15 +18,15 @@ export default function RootLayout() {
       <StatusBar backgroundColor="#333" />
       <View style={styles.tabs}>
         <Tabs
-        screenOptions={{
-          headerShown: false, // Hide the default header
-          tabBarStyle: { backgroundColor: 'white', height: bar_height },
-          tabBarActiveTintColor: 'tomato',
-          tabBarInactiveTintColor: 'gray',
-        }}
+          screenOptions={{
+            headerShown: false, // Hide the default header
+            tabBarStyle: { backgroundColor: 'white', height: bar_height },
+            tabBarActiveTintColor: 'tomato',
+            tabBarInactiveTintColor: 'gray',
+          }}
         >
           <Tabs.Screen
-            name="index" // Maps to the `index.tsx` file - this is the map of GTech
+            name="home" // Maps to the `home.tsx` file - this is the map of GTech
             options={{
               tabBarLabel: '',
               tabBarIcon: ({ color, size }) => (
@@ -73,34 +73,15 @@ export default function RootLayout() {
         </Tabs>
       </View>
     </View>
-    
   );
-}
+};
+
+export default RootLayout;
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     justifyContent: 'flex-end', // Tab navigator will sit at the bottom
-  },
-  screenContainer: {
-    flex: 1,
-    top: -50,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  logoutButton: {
-    position: 'absolute',
-    top: -10,
-    left: 20,
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#333',
-    padding: 5,
-    borderRadius: 5,
-    zIndex: 10, // Ensure the logout button is on top
-  },
-  logoutText: {
-    color: '#fff',
-    marginLeft: 5,
   },
   tabs: {
     flex: 1,

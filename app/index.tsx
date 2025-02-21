@@ -1,11 +1,60 @@
-import React, { useEffect } from 'react';
-import { View, Image, StyleSheet, TouchableOpacity, TextInput, Text, SafeAreaView } from 'react-native';
-import { NavigationContainer } from '@react-navigation/native';
-import { createStackNavigator, StackScreenProps } from '@react-navigation/stack';
-import { SafeAreaProvider } from 'react-native-safe-area-context';
-import { Link, useRouter } from 'expo-router';
+import React, { useCallback, useEffect, useState } from 'react';
+import { Image, SafeAreaView, StyleSheet } from 'react-native';
 
-const SplashScreen = () => {
+import { useRouter } from 'expo-router';
+import * as SplashScreen from 'expo-splash-screen';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
+
+// Instruct SplashScreen not to hide yet, we want to do this manually
+SplashScreen.preventAutoHideAsync().catch(() => {
+  /* reloading the app might trigger some race conditions, ignore them */
+});
+
+// Set the animation options. This is optional.
+SplashScreen.setOptions({
+  duration: 1000,
+  fade: true,
+});
+
+const App = () => {
+  const [isAppReady, setAppReady] = useState<boolean>(false);
+
+  useEffect(() => {
+    async function prepare() {
+      /* If we need to load anything, do so here */
+      setAppReady(true);
+    }
+
+    prepare();
+  }, []);
+
+  const onLayoutRootView = useCallback(() => {
+    if (isAppReady) {
+      // This tells the splash screen to hide immediately! If we call this after
+      // `setAppIsReady`, then we may see a blank screen while the app is
+      // loading its initial state and rendering its first pixels. So instead,
+      // we hide the splash screen once we know the root view has already
+      // performed layout.
+      SplashScreen.hide();
+    }
+  }, [isAppReady]);
+
+  if (!isAppReady) {
+    return null;
+  }
+
+  return (
+    <SafeAreaProvider>
+      <SafeAreaView onLayout={onLayoutRootView} style={styles.splashContainer}>
+        <AppSplashScreen />
+      </SafeAreaView>
+    </SafeAreaProvider>
+  );
+};
+
+export default App;
+
+const AppSplashScreen: React.FC<{}> = () => {
   const router = useRouter();
 
   useEffect(() => {
@@ -14,21 +63,15 @@ const SplashScreen = () => {
     }, 1000);
 
     return () => clearTimeout(timer);
-  });
-  
-  return (
-    <SafeAreaProvider>
-    <SafeAreaView style={styles.splashContainer}>
-      <Image
-        style={styles.splashImage}
-        source={require('../assets/images/app-icon.png')}
-      />
-    </SafeAreaView>
-  </SafeAreaProvider>
-  );
-}
+  }, []);
 
-export default SplashScreen;
+  return(
+    <Image
+      style={styles.splashImage}
+      source={require('../assets/images/app-icon.png')}
+    />
+  );
+};
 
 const styles = StyleSheet.create({
   splashContainer: {
@@ -42,62 +85,4 @@ const styles = StyleSheet.create({
     height: 200,
     resizeMode: 'contain',
   },
-  homeContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#f0f0f0',
-  },
-  homeText: {
-    fontSize: 24,
-    fontWeight: 'bold',
-  },
-  container: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#fff',
-  },
-  logo: {
-    width: 250,
-    height: 250,
-    resizeMode: 'contain',
-    marginBottom: 20,
-  },
-  inputContainer: {
-    width: '80%',
-    backgroundColor: '#f9f9f9',
-    padding: 20,
-    borderRadius: 10,
-    elevation: 3,  // Adds shadow on Android
-    shadowColor: '#000',  // Adds shadow on iOS
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-  },
-  input: {
-    height: 40,
-    borderColor: '#ccc',
-    borderWidth: 1,
-    borderRadius: 5,
-    marginBottom: 15,
-    paddingHorizontal: 10,
-    backgroundColor: '#fff',
-  },
-  button: {
-    backgroundColor: '#333',
-    padding: 12,
-    borderRadius: 5,
-    alignItems: 'center',
-  },
-  buttonText: {
-    color: '#fff',
-    fontWeight: 'bold',
-  },
-  forgotPassword: {
-    marginTop: 10,
-    color: '#007BFF',
-    textAlign: 'center',
-  },
-  
 });
