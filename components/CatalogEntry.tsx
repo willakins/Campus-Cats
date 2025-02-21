@@ -6,51 +6,41 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, Image, ScrollView } from 'react-native';
 import MapView, { Marker } from "react-native-maps";
 
-const CatalogEntry: React.FC<CatalogEntryObject> = ({ id, name, profilePhoto, info, most_recent_sighting }) => {
+const CatalogEntry: React.FC<CatalogEntryObject> = ({ id, name, info, most_recent_sighting }) => {
   const [profileURL, setProfile] = useState<string | null>(null);
   const [imageUrls, setImageUrls] = useState<string[]>([]);
 
-  const fetchImages = async () => {
+  const fetchCatImages = async (catName: string) => {
     try {
-      const imagesRef = ref(storage, `cats/${name}`);  // Path to the cat's folder
-      const result = await listAll(imagesRef); // List all files in the folder
-
-      // Fetch the download URLs of all the images in the folder
-      const urls = await Promise.all(
-        result.items.map(itemRef => getDownloadURL(itemRef)) // Get URL for each image
-      );
-      setImageUrls(urls);
+      const folderRef = ref(storage, `cats/${catName}/`);
+      
+      // List all images in the folder
+      const result = await listAll(folderRef);
+      
+      let profilePicUrl = "";
+      let extraPicUrls: string[] = [];
+  
+      for (const itemRef of result.items) {
+        const url = await getDownloadURL(itemRef);
+        
+        // Check if this is the profile picture
+        if (itemRef.name.includes("_profile")) {
+          profilePicUrl = url;
+        } else {
+          extraPicUrls.push(url);
+        }
+      }
+      setProfile(profilePicUrl);
+      setImageUrls(extraPicUrls);
     } catch (error) {
-      console.error("Error fetching images:", error);
+      console.error("Error fetching images: ", error);
     }
   };
+    
+useEffect(() => {
+  fetchCatImages(name);
+}, []);
 
-  const getImageUrl = async (imagePath: string) => {
-        try {
-          // Create a reference to the file in Firebase Storage
-          const imageRef = ref(storage, imagePath);  // The path to the image in Storage
-          
-          // Get the download URL of the image
-          const url = await getDownloadURL(imageRef);
-          
-          // Return the image URL
-          return url;
-        } catch (error) {
-          console.error("Error getting image URL:", error);
-          return null;
-        }
-      };
-      
-  const fetchImage = async () => {
-      if (profilePhoto){
-        const url = await getImageUrl(profilePhoto); // Get the image URL
-        setProfile(url); // Update the state with the image URL
-      }
-  };
-  useEffect(() => {
-    fetchImage();
-    fetchImages();
-  }, []);
 
   return (
     <ScrollView contentContainerStyle={styles.entryContainer}>
