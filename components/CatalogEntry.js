@@ -1,6 +1,7 @@
 // CatalogEntry.js
 import React from 'react';
 import { View, Text, StyleSheet, Image } from 'react-native';
+import MapView, { Marker } from "react-native-maps";
 
 const CatalogEntry = ({ name, profilePhoto, info, recentSighting, extraPhotos  }) => {
   return (

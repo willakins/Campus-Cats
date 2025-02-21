@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { getStorage, ref, listAll, getDownloadURL } from "firebase/storage";
 import { db, storage } from "./firebase"; // Import your firebase config
 import { FlatList, Text, StyleSheet, View, Image, ScrollView } from 'react-native';
-import CatalogEntry from '../../components/CatalogEntry';
+import CatalogItem from '../../components/CatalogEntry';
 import { collection, getDocs } from "firebase/firestore";
 
 interface CatalogEntryObject {
@@ -42,14 +42,11 @@ export default function Catalog() {
   return (
     <ScrollView style={styles.scrollView}>
       {catalogEntries.map((entry) => (
-        <CatalogEntry
+        <CatalogItem
           key={entry.id}
           name={entry.name}
           profilePhoto={entry.profilePhoto}
-          info={entry.info}
-          recentSighting={entry.most_recent_sighting}
-          extraPhotos={entry.extraPhotos}
-        />
+          info={entry.info}/>
       ))}
     </ScrollView>
   );
