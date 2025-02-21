@@ -9,13 +9,15 @@ import { CatalogEntryObject } from "@/types/CatalogEntryObject";
 const CatalogItem: React.FC<CatalogEntryObject> = ({ id, name, profilePhoto, info, most_recent_sighting, extraPhotos }) => {
     const [profileURL, setProfile] = useState<string | null>(null);
     const router = useRouter();
-    const coord_string = JSON.stringify(most_recent_sighting)
+    const latitude = JSON.stringify(most_recent_sighting.latitude);
+    const longitude = JSON.stringify(most_recent_sighting.longitude);
 
     // Handle onPress and navigate to the detail page
     const handlePress = () => {
       router.push({
         pathname: "/catalog/view-entry", // Dynamically navigate to the details page
-        params: { id, name, profilePhoto, info, coord_string, extraPhotos}, // Pass the details as query params
+        params: { paramId:id, paramName:name, paramProfile:profilePhoto, paramInfo:info, paramLatitude:latitude, 
+          paramLongitude:longitude, paramExtraPhotos:extraPhotos}, // Pass the details as query params
       });
     };
 
