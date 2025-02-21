@@ -56,7 +56,7 @@ const edit_entry = () =>{
     )
 }
 
-export default edit_entry();
+export default edit_entry;
 
 const styles = StyleSheet.create({
   logoutButton: {
