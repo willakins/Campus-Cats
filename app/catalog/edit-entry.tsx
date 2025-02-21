@@ -1,12 +1,10 @@
 import CatalogEntry from "@/components/CatalogEntry";
+import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { StyleSheet, ScrollView, Text, View, TouchableOpacity} from 'react-native';
-import { CatalogEntryObject } from '@/types/CatalogEntryObject';
 import { LatLng } from "react-native-maps";
-import { useEffect } from "react";
-import { Ionicons } from "@expo/vector-icons";
 
-const view_entry = () =>{
+const edit_entry = () =>{
     const router = useRouter();
     const { paramId, paramName, paramProfile, paramInfo, paramLatitude, paramLongitude, paramExtraPhotos} = useLocalSearchParams();
     const id = paramId as string;
@@ -22,24 +20,29 @@ const view_entry = () =>{
       };
 
     const handleBack = () => {
-      router.push('/logged-in/catalog');
+        router.push({
+            pathname: "/catalog/view-entry", // Dynamically navigate to the details page
+            params: { paramId:id, paramName:name, paramProfile:profilePhoto, paramInfo:info, paramLatitude:latitude, 
+              paramLongitude:longitude, paramExtraPhotos:extraPhotos}, // Pass the details as query params
+          });
     };
 
-    const handleEdit = () => {
-      router.push({
-        pathname: "/catalog/edit-entry", // Dynamically navigate to the details page
-        params: { paramId:id, paramName:name, paramProfile:profilePhoto, paramInfo:info, paramLatitude:latitude, 
-          paramLongitude:longitude, paramExtraPhotos:extraPhotos}, // Pass the details as query params
-      });
+    const handleSave = () => {
+        //Todo: connect to database to update stuff
+        router.push({
+            pathname: "/catalog/view-entry", // Dynamically navigate to the details page
+            params: { paramId:id, paramName:name, paramProfile:profilePhoto, paramInfo:info, paramLatitude:latitude, 
+              paramLongitude:longitude, paramExtraPhotos:extraPhotos}, // Pass the details as query params
+          });
     };
 
     return (
         <View>
             <TouchableOpacity style={styles.logoutButton} onPress={handleBack}>
-            <Ionicons name="arrow-back-outline" size={25} color="#fff" />
+                <Ionicons name="arrow-back-outline" size={25} color="#fff" />
             </TouchableOpacity>
-            <TouchableOpacity style={styles.editButton} onPress={handleEdit}>
-            <Text style ={styles.editText}> Edit Entry</Text>
+            <TouchableOpacity style={styles.editButton} onPress={handleSave}>
+                <Text style ={styles.editText}> Save Entry</Text>
             </TouchableOpacity>
             <CatalogEntry
                 id={id}
@@ -50,10 +53,10 @@ const view_entry = () =>{
                 extraPhotos={extraPhotos}
                 />
         </View>
-    );
+    )
 }
 
-export default view_entry;
+export default edit_entry();
 
 const styles = StyleSheet.create({
   logoutButton: {
