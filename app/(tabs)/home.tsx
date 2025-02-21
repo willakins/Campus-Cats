@@ -35,7 +35,7 @@ const HomeScreen = () => {
       latitude: doc.data().latitude,
       longitude: doc.data().longitude,
       name: doc.data().name
-       // Include the document ID
+      // Include the document ID
     }));
     setPins(pinsData);
     setMapKey(prev => prev + 1);
@@ -43,7 +43,7 @@ const HomeScreen = () => {
 
   // Prevent going back to login page after logging in by using back button
   const navigation = useNavigation();
-  useEffect(() => { 
+  useEffect(() => {
     navigation.addListener('beforeRemove', (e) => {
       e.preventDefault();
     });
@@ -61,22 +61,21 @@ const HomeScreen = () => {
     cutoffDate.setDate(cutoffDate.getDate() - days);
     return new Date(pin.date) >= cutoffDate;
   });
-  
-  return (
 
-  
+  // TODO: Create a Google Cloud API Project
+  // https://docs.expo.dev/versions/latest/sdk/map-view/#deploy-app-with-google-maps
+  return (
     <View style={styles.container}>
       <View style={styles.buttonGroup}>
         {['7', '30', '90', '365', 'all'].map(range => (
-          <TouchableOpacity
+          <Button
             key={range}
             style={[styles.filterButton, filter === range && styles.activeButton]}
             onPress={() => setFilter(range)}
+            textStyle={[styles.buttonText, filter === range && styles.activeText]}
           >
-            <Text style={[styles.buttonText, filter === range && styles.activeText]}>
-              {range === '365' ? '1Y' : range === 'all' ? 'All' : `${range}D`}
-            </Text>
-          </TouchableOpacity>
+            {range === '365' ? '1Y' : range === 'all' ? 'All' : `${range}D`}
+          </Button>
         ))}
       </View>
 
@@ -87,16 +86,27 @@ const HomeScreen = () => {
             coordinate={{ latitude: pin.latitude, longitude: pin.longitude }}
             title={pin.name}
             description={pin.info}
-            onPress={() => router.push({ pathname: '/sighting', params: { docId: pin.id, catDate: JSON.stringify(pin.date),
-              catFed: pin.fed ? "true":"false", catHealth: pin.health ? "true":"false", catPhoto: pin.photoUri, 
-              catInfo: pin.info, catLongitude: JSON.stringify(pin.longitude), catLatitude: JSON.stringify(pin.latitude),
-              catName: pin.name} })}
+            onPress={() => router.push({ pathname: '/sighting', params: {
+              docId: pin.id,
+              catDate: JSON.stringify(pin.date),
+              catFed: pin.fed ? 'true':'false',
+              catHealth: pin.health ? 'true':'false',
+              catPhoto: pin.photoUri,
+              catInfo: pin.info,
+              catLongitude: JSON.stringify(pin.longitude),
+              catLatitude: JSON.stringify(pin.latitude),
+              catName: pin.name
+            }})}
           />
         ))}
       </MapView>
-      <TouchableOpacity style={styles.reportButton} onPress={() => router.push('/sighting/report')}>
-        <Text style={styles.buttonText}>Report </Text>
-      </TouchableOpacity>
+      <Button
+        style={styles.reportButton}
+        onPress={() => router.push('/sighting/report')}
+        textStyle={styles.buttonText}
+      >
+        Report
+      </Button>
     </View>
   );
 };
@@ -107,10 +117,12 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  map: {
-    flex: 1, // Map takes up the entire screen
+  buttonGroup: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    paddingVertical: 10,
+    backgroundColor: '#f0f0f0'
   },
-  buttonGroup: { flexDirection: 'row', justifyContent: 'center', paddingVertical: 10, backgroundColor: '#f0f0f0' },
   reportButton: {
     position: 'absolute', // Position the button absolutely
     bottom: 20,           // Adjust distance from the bottom of the screen
@@ -126,13 +138,26 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.3,
     shadowRadius: 3.5,
   },
-  
-  filterButton: { paddingVertical: 8, paddingHorizontal: 15, marginHorizontal: 5, borderRadius: 20, backgroundColor: '#e0e0e0' },
-  activeButton: { backgroundColor: '#007bff' },
-  buttonText: { fontSize: 18, fontWeight: 'bold', color: '#fff' },
-  activeText: { color: '#fff' }
+  filterButton: {
+    paddingHorizontal: 15,
+    paddingVertical: 8,
+    marginHorizontal: 5,
+    marginVertical: 0,
+    borderRadius: 20,
+    backgroundColor: '#e0e0e0',
+  },
+  activeButton: {
+    backgroundColor: '#007bff'
+  },
+  activeText: {
+    color: '#fff'
+  },
+  buttonText: {
+    fontSize: 18,
+  },
 });
 
+// TODO: Remove dead code
 // code for changing pins on the map-only can change if you created the pin
 // import React, { useState, useEffect } from "react";
 // import { TouchableOpacity, View, StyleSheet, Text, Alert } from "react-native";
@@ -140,7 +165,7 @@ const styles = StyleSheet.create({
 // import { useRouter } from "expo-router";
 // import AsyncStorage from "@react-native-async-storage/async-storage";
 // import { getAuth } from "firebase/auth"; // Assuming Firebase authentication
-
+//
 // const HomeScreen = () => {
 //   const router = useRouter();
 //   const [filter, setFilter] = useState("all");
@@ -169,7 +194,7 @@ const styles = StyleSheet.create({
 //       createdBy: "user456",
 //     },
 //   ]);
-
+//
 //   // Fetch the logged-in user’s identifier
 //   useEffect(() => {
 //     const getUserId = async () => {
@@ -180,15 +205,15 @@ const styles = StyleSheet.create({
 //     };
 //     getUserId();
 //   }, []);
-
+//
 //   const handleDragEnd = (id, event, createdBy) => {
 //     if (createdBy !== userId) {
 //       Alert.alert("Permission Denied", "You can only move pins that you created.");
 //       return;
 //     }
-
+//
 //     const { latitude, longitude } = event.nativeEvent.coordinate;
-
+//
 //     Alert.alert(
 //       "Confirm Location Change",
 //       "Are you sure you want to update this pin's location?",
@@ -206,7 +231,7 @@ const styles = StyleSheet.create({
 //       { cancelable: true }
 //     );
 //   };
-
+//
 // =======
 // import React, { useCallback, useEffect, useState } from "react";
 // import { TouchableOpacity, View, StyleSheet, Text } from "react-native";
@@ -215,7 +240,7 @@ const styles = StyleSheet.create({
 // import { getDownloadURL, listAll, ref } from "firebase/storage";
 // import { db, storage } from "./firebase";
 // import { collection, DocumentData, getDocs } from "firebase/firestore";
-
+//
 // interface CatSighting {
 //   id: string;
 //   date: Date;
@@ -227,7 +252,7 @@ const styles = StyleSheet.create({
 //   longitude: number;
 //   name: string;
 // }
-
+//
 // const HomeScreen = () => {
 //   const router = useRouter();
 //   const [filter, setFilter] = useState('all');
@@ -236,7 +261,7 @@ const styles = StyleSheet.create({
 //     { id: "1", date: new Date('2025-02-10'), fed: true, health: true, info: "Friendly cat", latitude: 33.77780712288718, longitude: -84.39873117824166, photoUri: "https://www.google.com/url?sa=i&url=https%3A%2F%2Fwww.discoverwildlife.com%2Fanimal-facts%2Fmammals%2F6-key-behaviours-that-reveal-the-wild-ancestry-of-your-cat&psig=AOvVaw3Zoo2XOuw7Qmww1KtAy0f1&ust=1739118966851000&source=images&cd=vfe&opi=89978449&ved=0CBQQjRxqFwoTCJjU35PBtIsDFQAAAAAdAAAAABAE", name: "Whiskers"},
 //     { id: "2", date: new Date('2023-11-15'), fed: true, health: false, info: "Shy cat", latitude:  33.774097234804785, longitude: -84.39870972057157, photoUri: "https://www.google.com/url?sa=i&url=https%3A%2F%2Fwww.balisafarimarinepark.com%2Fbengal-tiger-the-power-beauty-and-more%2F&psig=AOvVaw13dz9FMTgVtbiSTQpJ-Gnh&ust=1739118990838000&source=images&cd=vfe&opi=89978449&ved=0CBQQjRxqFwoTCICMpqHBtIsDFQAAAAAdAAAAABAE", name: "Shadow"},
 //   ]);
-
+//
 //   const fetchPins = async  () => {
 //     const querySnapshot = await getDocs(collection(db, 'cat-sightings'));
 //     const pinsData: CatSighting[] = querySnapshot.docs.map(doc => ({
@@ -254,13 +279,13 @@ const styles = StyleSheet.create({
 //     setPins(pinsData);
 //     setMapKey(prev => prev + 1);
 //   };
-
+//
 //   useFocusEffect(
 //     useCallback(() => {
 //       fetchPins();
 //     }, [])
 //   );
-
+//
 //   const filteredPins = pins.filter(pin => {
 //     if (filter === 'all') return true;
 //     const days = parseInt(filter);
@@ -268,9 +293,9 @@ const styles = StyleSheet.create({
 //     cutoffDate.setDate(cutoffDate.getDate() - days);
 //     return new Date(pin.date) >= cutoffDate;
 //   });
-  
-  
-  
+//
+//
+//
 // >>>>>>> 58487f34421c377086b10ad071abd23121acaf65
 //   return (
 //     <View style={styles.container}>
@@ -287,7 +312,7 @@ const styles = StyleSheet.create({
 //           </TouchableOpacity>
 //         ))}
 //       </View>
-
+//
 // <<<<<<< HEAD
 //       <MapView
 //         style={{ flex: 1 }}
@@ -315,12 +340,12 @@ const styles = StyleSheet.create({
 //           />
 //         ))}
 //       </MapView>
-
+//
 //       <TouchableOpacity style={styles.reportButton} onPress={() => router.push("/sighting/report")}>
 //         <Text style={styles.buttonText}>Report</Text>
 // =======
 //             onPress={() => router.push({ pathname: '/sighting', params: { docId: pin.id, catDate: JSON.stringify(pin.date),
-//               catFed: pin.fed ? "true":"false", catHealth: pin.health ? "true":"false", catPhoto: pin.photoUri, 
+//               catFed: pin.fed ? "true":"false", catHealth: pin.health ? "true":"false", catPhoto: pin.photoUri,
 //               catInfo: pin.info, catLongitude: JSON.stringify(pin.longitude), catLatitude: JSON.stringify(pin.latitude),
 //               catName: pin.name} })}
 //           />
@@ -333,9 +358,9 @@ const styles = StyleSheet.create({
 //     </View>
 //   );
 // };
-
+//
 // export default HomeScreen;
-
+//
 // const styles = StyleSheet.create({
 //   container: { flex: 1 },
 //   buttonGroup: {
@@ -370,5 +395,4 @@ const styles = StyleSheet.create({
 //   buttonText: { fontSize: 18, fontWeight: "bold", color: "#fff" },
 //   activeText: { color: "#fff" },
 // });
-
 
