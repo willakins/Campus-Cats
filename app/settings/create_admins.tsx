@@ -1,17 +1,22 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, StatusBar, FlatList, TextInput, Alert } from 'react-native';
+import { Alert, StatusBar, StyleSheet, Text, View } from 'react-native';
+
 import { useRouter } from 'expo-router';
 import { collection, doc, DocumentData, getDoc, getDocs, getFirestore, query, updateDoc, where } from 'firebase/firestore';
-import { db } from '@/app/logged-in/firebase';
 import { getAuth } from 'firebase/auth';
+
+import { Button, TextInput } from '@/components';
+import { db } from '@/services/firebase';
 
 type ItemProps = {title: string};
 
+// TODO: Either make this useful, or remove it
 const Item = ({title}: ItemProps) => (
   <View style={styles.item}>
     <Text style={styles.title}>{title}</Text>
   </View>
 );
+
 const CreateAdmins = () => {
   const router = useRouter();
   const [email, setEmail] = useState('');
@@ -19,7 +24,7 @@ const CreateAdmins = () => {
 
   const handleBack = () => {
     // TODO: Retract a stack, instead of relying on absolute URL
-    router.push('/logged-in/settings');
+    router.push('/settings');
   };
 
   // Fetch current logged-in user ID on mount
@@ -30,14 +35,14 @@ const CreateAdmins = () => {
     if (user) {
       setSelfId(user.uid);  // Store user ID in state
     } else {
-      console.log("No user is logged in.");
+      console.log('No user is logged in.');
     }
   }, []);
 
   const handleMakeAdmin = () => {
     const queryEmail = async (user_email: string) => {
-      const usersRef = collection(db, "users");
-      const q = query(usersRef, where("email", "==", user_email));
+      const usersRef = collection(db, 'users');
+      const q = query(usersRef, where('email', '==', user_email));
       const querySnapshot = await getDocs(q);
       return [querySnapshot.docs[0].id, querySnapshot.docs[0].data()];
     };
@@ -53,7 +58,7 @@ const CreateAdmins = () => {
           return selfData.data()?.role == 2;
 
         } catch (error) {
-          Alert.alert("Error getting field: " + error);
+          Alert.alert('Error getting field: ' + error);
         }
       }
       return false;
@@ -61,11 +66,11 @@ const CreateAdmins = () => {
 
     const makeAdmin = async (user_email: string) => {
       if (!isSuperAdmin()) {
-        Alert.alert("You do not have permissions to create admins");
+        Alert.alert('You do not have permissions to create admins');
         return;
       }
 
-      const [userId, userData] = await queryEmail(email) as [string, DocumentData];;
+      const [userId, userData] = await queryEmail(user_email) as [string, DocumentData];;
 
       if (userId) {
         const db = getFirestore();
@@ -77,12 +82,12 @@ const CreateAdmins = () => {
             role: 1,
           });
 
-          Alert.alert(userData.email + " is now an admin!");
+          Alert.alert(userData.email + ' is now an admin!');
         } catch (error) {
-          Alert.alert("Error updating field: " + error);
+          Alert.alert('Error updating field: ' + error);
         }
       } else {
-        Alert.alert("No user is logged in.");
+        Alert.alert('No user is logged in.');
       }
     };
 
@@ -91,19 +96,17 @@ const CreateAdmins = () => {
 
   return (
     <View style={styles.profileContainer}>
-      <TouchableOpacity style={styles.logoutButton} onPress={handleBack}>
-        <Text style={styles.buttonText}>Back</Text>
-      </TouchableOpacity>
+      <Button style={styles.logoutButton} onPress={handleBack}>
+        Back
+      </Button>
 
-      <TextInput 
+      <TextInput
         placeholder="User email"
-        onChangeText={setEmail} 
-        style={styles.input}
+        onChangeText={setEmail}
       />
-      <TouchableOpacity style={styles.button} onPress={handleMakeAdmin}>
-        { false && <Text> hi </Text> }
-        <Text style={styles.buttonText}>Make administrator</Text>
-      </TouchableOpacity>
+      <Button onPress={handleMakeAdmin}>
+        Make administrator
+      </Button>
     </View>
   );
 };
@@ -111,30 +114,11 @@ const CreateAdmins = () => {
 export default CreateAdmins;
 
 const styles = StyleSheet.create({
-  profileContainer: { 
-    flex: 1, 
-    justifyContent: 'center', 
-    alignItems: 'center', 
-    padding: 20 
-  },
-  screen: {
+  profileContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-  },
-  lockIcon: {
-    marginRight: 15, // Adjust as needed for positioning
-  },
-  container: {
-    flex: 1,
-    justifyContent: 'flex-end', // Tab navigator will sit at the bottom
-    marginTop: StatusBar.currentHeight || 0,
-  },
-  screenContainer: {
-    flex: 1,
-    top: -50,
-    justifyContent: 'center',
-    alignItems: 'center',
+    padding: 20
   },
   logoutButton: {
     position: 'absolute',
@@ -147,31 +131,11 @@ const styles = StyleSheet.create({
     borderRadius: 5,
     zIndex: 10, // Ensure the logout button is on top
   },
-  logoutText: {
-    color: '#fff',
-    marginLeft: 5,
-  },
   tabs: {
     flex: 1,
     justifyContent: 'flex-end',
     bottom: 0,
     backgroundColor: '#333',
-  },
-  button: {
-    backgroundColor: '#333',
-    padding: 12,
-    borderRadius: 5,
-    alignItems: 'center',
-    margin: 5,
-    display: 'flex',
-    justifyContent: 'center',
-  },
-  buttonText: {
-    color: '#fff',
-    fontSize: 12,
-    fontWeight: 'bold',
-    textAlign: 'center',
-
   },
   item: {
     backgroundColor: '#f9c2ff',
@@ -181,15 +145,5 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 32,
-  },
-  input: {
-    height: 40,
-    width: 300,
-    borderColor: '#ccc',
-    borderWidth: 1,
-    borderRadius: 5,
-    marginBottom: 15,
-    paddingHorizontal: 10,
-    backgroundColor: '#fff',
   },
 });
