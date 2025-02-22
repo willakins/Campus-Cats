@@ -1,57 +1,43 @@
 import { Link, Stack, useRouter } from "expo-router";
-import { useContext, useState } from "react";
+import { useContext, useEffect, useState } from "react";
 import { Button, TextInput, TouchableOpacity, View, Image, Text, ScrollView, KeyboardAvoidingView, Platform } from "react-native";
 import { StyleSheet } from 'react-native';
-import { signInWithEmailAndPassword } from "firebase/auth";
+import { onAuthStateChanged, signInWithEmailAndPassword } from "firebase/auth";
 import { auth, db } from "./logged-in/firebase"; // Ensure you have the firebase.js file configured
 import { AdminContext } from "./AdminContext";
 import { doc, getDoc } from "firebase/firestore";
 
 
 const Login = () => {
-    const [username, setUsername] = useState('');
-      const [password, setPassword] = useState('');
-      const [error, setError] = useState('');
-      const router = useRouter();
-      const { adminStatus, setAdminStatus } = useContext(AdminContext);
-    
-      const validateUser = async () => {
-        // Simple validation
-        if (!username || !password) {
-          setError('Please enter both username and password');
-          return;
-        }
+  const [username, setUsername] = useState('');
+    const [password, setPassword] = useState('');
+    const [error, setError] = useState('');
+    const router = useRouter();
+    const { adminStatus, setAdminStatus } = useContext(AdminContext);
+  
+    const handleLogin = async () => {
+      try {
+        const userCredential = await signInWithEmailAndPassword(auth, username, password);
+        await checkUserRole(userCredential.user.uid);
+        router.push("/logged-in");
+      } catch (error: any) {
+        setError(error.message);
+      }
+    };
       
-        try {
-          await signInWithEmailAndPassword(auth, username, password);
-          router.push('/logged-in');
-        } catch (error: any) {
-          setError(error.message);
-        }
-          
-      };
-
-      const checkUserRole = async () => {
-        try {
-            // Get current user ID
-            const user = auth.currentUser;
-            if (!user) {
-            console.error('User not logged in');
-            return;
-            }
-
-            // Fetch user role from Firestore
-            const userDoc = await getDoc(doc(db, 'users', user.uid));
-            if (userDoc.exists()) {
-            const { role } = userDoc.data();
-            setAdminStatus(role === 1 || role === 2); // Admin roles are 1 or 2
-            } else {
-            console.error('User document does not exist');
-            }
-        } catch (error) {
-            console.error('Error fetching user role:', error);
-        }
-      };
+  const checkUserRole = async (uid: string) => {
+    const userDoc = await getDoc(doc(db, "users", uid));
+    
+    if (userDoc.exists()) {
+      const userRole = userDoc.data().role;
+      // Set the role accordingly in the context
+      alert(userRole);
+      setAdminStatus(userRole === 1 || userRole === 2); // Assuming role 1 or 2 is admin
+    } else {
+      console.log("No user document found!");
+    }
+  };
+      
 
       const createAnAccount = () => {
         router.push('/create-account')
@@ -75,7 +61,7 @@ const Login = () => {
             onChangeText={(text) => setPassword(text)}
             style={styles.input} 
             secureTextEntry />
-            <TouchableOpacity style={styles.button} onPress = {validateUser}>
+            <TouchableOpacity style={styles.button} onPress = {handleLogin}>
               <Text style={styles.buttonText}>Sign In</Text>
             </TouchableOpacity>
             <TouchableOpacity style={styles.button} onPress = {createAnAccount}>
