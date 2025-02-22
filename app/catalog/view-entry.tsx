@@ -3,51 +3,70 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { StyleSheet, ScrollView, Text, View, TouchableOpacity} from 'react-native';
 import { CatalogEntryObject } from '@/types/CatalogEntryObject';
 import { LatLng } from "react-native-maps";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Ionicons } from "@expo/vector-icons";
+import { getAuth } from "firebase/auth";
+import { doc, getDoc } from "firebase/firestore";
+import { db } from "../logged-in/firebase";
 
 const view_entry = () =>{
-    const router = useRouter();
-    const { paramId, paramName, paramProfile, paramInfo, paramLatitude, paramLongitude, paramExtraPhotos} = useLocalSearchParams();
-    const id = paramId as string;
-    const name = paramName as string;
-    const profilePhoto = paramProfile as string;
-    const info = paramInfo as string;
-    const latitude = parseFloat(paramLatitude as string);
-    const longitude = parseFloat(paramLongitude as string);
-    const extraPhotos = paramExtraPhotos as string;
-    var most_recent_sighting:LatLng = {
-        latitude: latitude,
-        longitude: longitude,
-      };
-
-    const handleBack = () => {
-      router.push('/logged-in/catalog');
+  const [adminStatus, setAdminStatus] = useState<boolean>(false); 
+  const router = useRouter();
+  const { paramId, paramName, paramInfo, paramLatitude, paramLongitude} = useLocalSearchParams();
+  const id = paramId as string;
+  const name = paramName as string;
+  const info = paramInfo as string;
+  const latitude = parseFloat(paramLatitude as string);
+  const longitude = parseFloat(paramLongitude as string);
+  var most_recent_sighting:LatLng = {
+      latitude: latitude,
+      longitude: longitude,
     };
 
-    const handleEdit = () => {
-      router.push({
-        pathname: "/catalog/edit-entry", // Dynamically navigate to the details page
-        params: { paramId:id, paramName:name, paramInfo:info }, // Pass the details as query params
-      });
-    };
+  const handleBack = () => {
+    router.push('/logged-in/catalog');
+  };
+  const handleEdit = () => {
+    router.push({
+      pathname: "/catalog/edit-entry", // Dynamically navigate to the details page
+      params: { paramId:id, paramName:name, paramInfo:info }, // Pass the details as query params
+    });
+  };
 
-    return (
-        <View>
-            <TouchableOpacity style={styles.logoutButton} onPress={handleBack}>
-            <Ionicons name="arrow-back-outline" size={25} color="#fff" />
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.editButton} onPress={handleEdit}>
-            <Text style ={styles.editText}> Edit Entry</Text>
-            </TouchableOpacity>
-            <CatalogEntry
-                id={id}
-                name={name}
-                info={info}
-                most_recent_sighting={most_recent_sighting}
-                />
-        </View>
-    );
+  // Following function checks for admin status
+  useEffect(() => {
+    setUserRole();
+  }, []);
+  const setUserRole = async () => {
+    const auth = getAuth();
+    const user = auth.currentUser;
+    if (user) {
+      const userDoc = await getDoc(doc(db, "users", user.uid));
+      if (userDoc.exists()) {
+        const userRole = userDoc.data().role;
+        setAdminStatus(userRole === 1 || userRole === 2);
+      } else {
+        console.log("No user document found!");
+      }
+    }
+  };
+
+  return (
+      <View>
+          <TouchableOpacity style={styles.logoutButton} onPress={handleBack}>
+          <Ionicons name="arrow-back-outline" size={25} color="#fff" />
+          </TouchableOpacity>
+          {adminStatus && <TouchableOpacity style={styles.editButton} onPress={handleEdit}>
+          <Text style ={styles.editText}> Edit Entry</Text>
+          </TouchableOpacity>}
+          <CatalogEntry
+              id={id}
+              name={name}
+              info={info}
+              most_recent_sighting={most_recent_sighting}
+              />
+      </View>
+  );
 }
 
 export default view_entry;
