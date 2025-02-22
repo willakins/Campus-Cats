@@ -3,15 +3,15 @@ import { getStorage, ref, listAll, getDownloadURL } from "firebase/storage";
 import { db, storage } from "./firebase"; // Import your firebase config
 import { FlatList, Text, StyleSheet, View, Image, ScrollView, SafeAreaView, TouchableOpacity } from 'react-native';
 import CatalogItem from '../../components/CatalogItem';
-import { collection, getDocs } from "firebase/firestore";
+import { collection, doc, getDoc, getDocs } from "firebase/firestore";
 import { CatalogEntryObject } from "@/types/CatalogEntryObject";
 import { useRouter } from "expo-router";
-import { AdminContext } from "../AdminContext";
+import { getAuth } from "firebase/auth";
 
 export default function Catalog() {
   const [catalogEntries, setCatalogEntries] = useState<CatalogEntryObject[]>([]);
+  const [adminStatus, setAdminStatus] = useState<boolean>(false); 
   const router = useRouter();
-  const { adminStatus, setAdminStatus } = useContext(AdminContext);
 
   const fetchCatalogData = async () => {
     try {
@@ -31,11 +31,28 @@ export default function Catalog() {
 
   useEffect(() => {
     fetchCatalogData()
-    alert(adminStatus)
   }, []);
 
+  // Following function checks for admin status
+    useEffect(() => {
+      setUserRole();
+    }, []);
+    const setUserRole = async () => {
+      const auth = getAuth();
+      const user = auth.currentUser;
+      if (user) {
+        const userDoc = await getDoc(doc(db, "users", user.uid));
+        if (userDoc.exists()) {
+          const userRole = userDoc.data().role;
+          setAdminStatus(userRole === 1 || userRole === 2);
+        } else {
+          console.log("No user document found!");
+        }
+      }
+    };
+
   const handleCreate = () => {
-    router.push
+    router.push('/catalog/create-entry')
   }
 
   return (

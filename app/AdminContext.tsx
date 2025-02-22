@@ -1,11 +1,19 @@
-import { createContext, useState } from 'react';
+import { createContext, useState, ReactNode } from 'react';
 
-export const AdminContext = createContext({
-  adminStatus: false,
-  setAdminStatus: (value: boolean) => {},
+// Define the AdminContext type
+interface AdminContextType {
+  adminStatus: boolean;
+  setAdminStatus: (value: boolean) => void;
+}
+
+// Create a default context value
+export const AdminContext = createContext<AdminContextType>({
+  adminStatus: false,  // Default value
+  setAdminStatus: () => {},  // Default empty function
 });
 
-export const AdminProvider = ({ children }: { children: React.ReactNode }) => {
+// Create the AdminProvider component
+export const AdminProvider = ({ children }: { children: ReactNode }) => {
   const [adminStatus, setAdminStatus] = useState<boolean>(false);
 
   return (

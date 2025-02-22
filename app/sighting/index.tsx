@@ -5,6 +5,7 @@ import { deleteDoc, doc, getDoc, Timestamp, updateDoc } from "firebase/firestore
 import { auth, db, storage } from "../logged-in/firebase";
 import MapView, { LatLng, Marker } from "react-native-maps";
 import { deleteObject, getDownloadURL, ref } from "firebase/storage";
+import { getAuth } from "firebase/auth";
 
 const CatSightingScreen = () => {
   //Check if admin, then set passed parameters from map screen
@@ -31,6 +32,8 @@ const CatSightingScreen = () => {
     latitude: latitude,
     longitude: longitude,
   };
+
+  const [adminStatus, setAdminStatus] = useState<boolean>(false); 
   
   const getImageUrl = async (imagePath: string) => {
     try {
@@ -56,37 +59,27 @@ const CatSightingScreen = () => {
   };
 
   
-  // Check user role
   useEffect(() => {
     fetchImage();
-    const checkUserRole = async () => {
-      try {
-        // Get current user ID
-        const user = auth.currentUser;
-        if (!user) {
-          console.error('User not logged in');
-          setLoading(false);
-          return;
-        }
-
-        // Fetch user role from Firestore
-        const userDoc = await getDoc(doc(db, 'users', user.uid));
-        if (userDoc.exists()) {
-          const { role } = userDoc.data();
-          setIsAdmin(role === 1 || role === 2); // Admin roles are 1 or 2
-        } else {
-          console.error('User document does not exist');
-        }
-      } catch (error) {
-        console.error('Error fetching user role:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    checkUserRole();
   }, []);
 
+  // Following function checks for admin status
+  useEffect(() => {
+    setUserRole();
+  }, []);
+  const setUserRole = async () => {
+    const auth = getAuth();
+    const user = auth.currentUser;
+    if (user) {
+      const userDoc = await getDoc(doc(db, "users", user.uid));
+      if (userDoc.exists()) {
+        const userRole = userDoc.data().role;
+        setAdminStatus(userRole === 1 || userRole === 2);
+      } else {
+        console.log("No user document found!");
+      }
+    }
+  };
 
   const saveSighting = async () => {
     const stamp = Timestamp.fromDate(date);

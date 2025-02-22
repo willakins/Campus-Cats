@@ -4,79 +4,61 @@ import { Button, TextInput, TouchableOpacity, View, Image, Text, ScrollView, Key
 import { StyleSheet } from 'react-native';
 import { onAuthStateChanged, signInWithEmailAndPassword } from "firebase/auth";
 import { auth, db } from "./logged-in/firebase"; // Ensure you have the firebase.js file configured
-import { AdminContext } from "./AdminContext";
 import { doc, getDoc } from "firebase/firestore";
-
 
 const Login = () => {
   const [username, setUsername] = useState('');
-    const [password, setPassword] = useState('');
-    const [error, setError] = useState('');
-    const router = useRouter();
-    const { adminStatus, setAdminStatus } = useContext(AdminContext);
-  
-    const handleLogin = async () => {
-      try {
-        const userCredential = await signInWithEmailAndPassword(auth, username, password);
-        await checkUserRole(userCredential.user.uid);
-        router.push("/logged-in");
-      } catch (error: any) {
-        setError(error.message);
-      }
-    };
-      
-  const checkUserRole = async (uid: string) => {
-    const userDoc = await getDoc(doc(db, "users", uid));
-    
-    if (userDoc.exists()) {
-      const userRole = userDoc.data().role;
-      // Set the role accordingly in the context
-      alert(userRole);
-      setAdminStatus(userRole === 1 || userRole === 2); // Assuming role 1 or 2 is admin
-    } else {
-      console.log("No user document found!");
-    }
-  };
-      
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+  const router = useRouter();
 
-      const createAnAccount = () => {
-        router.push('/create-account')
-      };
-    return (
-      <KeyboardAvoidingView
-      style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined} // iOS specific behavior
-      >
-      <ScrollView contentContainerStyle={styles.scrollView}>
-        <View style={styles.container}>
-          <Image source={require('../assets/images/campus_cats_logo.png')} style={styles.logo}/>
-          <View style={styles.inputContainer}>
-            <TextInput 
-            placeholder="Email" 
-            onChangeText={(text) => setUsername(text)}
-            style={styles.input} 
-            keyboardType="email-address" />
-            <TextInput 
-            placeholder="Password" 
-            onChangeText={(text) => setPassword(text)}
-            style={styles.input} 
-            secureTextEntry />
-            <TouchableOpacity style={styles.button} onPress = {handleLogin}>
-              <Text style={styles.buttonText}>Sign In</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.button} onPress = {createAnAccount}>
-                <Text style={styles.buttonText}>Create Account</Text>
-            </TouchableOpacity>
-                
-            <TouchableOpacity onPress={() => alert("Contact an Administrator")}>
-              <Text style={styles.forgotPassword}>Forgot password?</Text>
-            </TouchableOpacity>
-            {error ? <Text style={styles.errorText}>{error}</Text> : null}
-          </View>
+  const handleLogin = async () => {
+    try {
+      await signInWithEmailAndPassword(auth, username, password);
+      router.push("/logged-in");
+    } catch (error: any) {
+      setError(error.message);
+    }
+  }; 
+  const createAnAccount = () => {
+    router.push('/create-account')
+  };
+
+  return (
+    <KeyboardAvoidingView
+    style={styles.container}
+    behavior={Platform.OS === 'ios' ? 'padding' : undefined} // iOS specific behavior
+    >
+    <ScrollView contentContainerStyle={styles.scrollView}>
+      <View style={styles.container}>
+        <Image source={require('../assets/images/campus_cats_logo.png')} style={styles.logo}/>
+        <View style={styles.inputContainer}>
+          <TextInput 
+          placeholder="Email" 
+          onChangeText={(text) => setUsername(text)}
+          style={styles.input} 
+          keyboardType="email-address" />
+          <TextInput 
+          placeholder="Password" 
+          onChangeText={(text) => setPassword(text)}
+          style={styles.input} 
+          secureTextEntry />
+          <TouchableOpacity style={styles.button} onPress = {handleLogin}>
+            <Text style={styles.buttonText}>Sign In</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.button} onPress = {createAnAccount}>
+              <Text style={styles.buttonText}>Create Account</Text>
+          </TouchableOpacity>
+              
+          <TouchableOpacity onPress={() => alert("Contact an Administrator")}>
+            <Text style={styles.forgotPassword}>Forgot password?</Text>
+          </TouchableOpacity>
+          {error ? <Text style={styles.errorText}>{error}</Text> : null}
         </View>
-        </ScrollView>
-      </KeyboardAvoidingView>
-      );
+      </View>
+      </ScrollView>
+    </KeyboardAvoidingView>
+    );
 }
 
 export default Login;

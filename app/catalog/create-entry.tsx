@@ -36,7 +36,7 @@ const create_entry = () =>{
                     style={styles.input} />
                 <Text style={styles.headline}>Description</Text>
                 <TextInput
-                    placeholder="Type a description about the cat"
+                    placeholder="Type a description about the cat."
                     placeholderTextColor = '#888'
                     onChangeText={setInfo} 
                     style={styles.descInput} 
