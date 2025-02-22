@@ -1,26 +1,23 @@
 import CatalogEntry from "@/components/CatalogEntry";
 import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { deleteObject, getDownloadURL, listAll, ref, uploadBytesResumable } from "firebase/storage";
-import { useEffect, useState } from "react";
-import { StyleSheet, ScrollView, Text, View, TouchableOpacity, KeyboardAvoidingView, Platform, TextInput, Image} from 'react-native';
+import { deleteObject, getDownloadURL, listAll, ref, uploadBytes, uploadBytesResumable } from "firebase/storage";
+import React, { useEffect, useState } from "react";
+import { StyleSheet, ScrollView, Text, View, TouchableOpacity, KeyboardAvoidingView, Platform, TextInput, Image, Alert} from 'react-native';
 import MapView, { LatLng, Marker } from "react-native-maps";
 import { db, storage } from "../logged-in/firebase";
 import { doc, updateDoc } from "firebase/firestore";
+import { Snackbar } from "react-native-paper";
 
 const edit_entry = () => {
     const router = useRouter();
-    const { paramId, paramName, paramInfo, paramLatitude, paramLongitude} = useLocalSearchParams();
+    const { paramId, paramName, paramInfo} = useLocalSearchParams();
     const id = paramId as string;
+    const oldName = paramName as string;
     const [name, setName] = useState<string>(paramName as string);
     const [info, setInfo] = useState<string>(paramInfo as string);
-    const [longitude, setLongitude] = useState<number>(parseFloat(paramLongitude as string));
-    const [latitude, setLatitude] = useState<number>(parseFloat(paramLatitude as string));
-    
-    var most_recent_sighting:LatLng = {
-      latitude: latitude,
-      longitude: longitude,
-    };
+    const [visible, setVisible] = useState<boolean>(false);
+  
     const [profilePicUrl, setProfilePicUrl] = useState("");
     const [profilePicName, setProfilePicName] = useState(""); // Store actual filename of profile pic
     const [extraPics, setExtraPics] = useState<{ url: string; name: string }[]>([]);
@@ -60,15 +57,29 @@ const edit_entry = () => {
     const handleBack = () => {
         router.push({
             pathname: "/catalog/view-entry", // Dynamically navigate to the details page
-            params: { paramId:id, paramName:name, paramInfo:info, paramLatitude:latitude, 
-              paramLongitude:longitude}, // Pass the details as query params
+            params: { paramId:id, paramName:name, paramInfo:info }, // Pass the details as query params
           });
     };
 
-    const handleMapPress = (event: { nativeEvent: { coordinate: { latitude: any; longitude: any; }; }; }) => {
-      const { latitude, longitude } = event.nativeEvent.coordinate;
-      setLatitude(latitude);
-      setLongitude(longitude);
+    const confirmDeletion = (catName: string, index: number) => {
+       Alert.alert(
+            'Select Option',
+            'Are you sure you want to delete this image forever?',
+            [
+              {
+                text: 'Delete Forever',
+                onPress: () => deletePicture(catName, index),
+              },
+              {
+                text: 'Cancel',
+              },
+              {
+                text: 'Cancel',
+                style: 'cancel',
+              },
+            ],
+            { cancelable: true }
+          );
     };
 
     const deletePicture = async (catName: string, index: number) => {
@@ -100,12 +111,13 @@ const edit_entry = () => {
     };
 
     const swapProfilePicture = async (selectedPic: { url: string; name: string }) => {
+      setVisible(true);
       try {
         if (!profilePicName || !selectedPic.name) {
           alert("Error Could not find profile picture or selected picture.");
           return;
         }
-  
+        
         const oldProfileRef = ref(storage, `cats/${name}/${profilePicName}`);
         const selectedPicRef = ref(storage, `cats/${name}/${selectedPic.name}`);
   
@@ -132,6 +144,8 @@ const edit_entry = () => {
       } catch (error) {
         console.error("Error swapping profile picture:", error);
         alert("Error Failed to swap profile picture.");
+      } finally {
+        setVisible(false);
       }
     };
 
@@ -141,25 +155,48 @@ const edit_entry = () => {
         return;
       }
       try {
+        setVisible(true);
         // Reference to the Firestore document using its ID
         const catDocRef = doc(db, "catalog", id);
   
         // Update the 'name' field in Firestore
         await updateDoc(catDocRef, { 
           name: name,
-          mostRecentSighting: most_recent_sighting,
           info: info
         });
+
+        if (oldName !== name) {
+          const oldFolderRef = ref(storage, `cats/${oldName}`);
+          const oldPhotos = await listAll(oldFolderRef);
+    
+          for (const item of oldPhotos.items) {
+            const oldPath = item.fullPath; // Full path of old image
+            const newPath = oldPath.replace(`cats/${oldName}`, `cats/${name}`); // New path
+    
+            // Download old image data
+            const url = await getDownloadURL(item);
+            const response = await fetch(url);
+            const blob = await response.blob();
+    
+            // Upload to new location
+            const newImageRef = ref(storage, newPath);
+            await uploadBytes(newImageRef, blob);
+    
+            // Delete old image
+            await deleteObject(item);
+          }
+        }
   
         alert("Success cat name updated successfully!");
         router.push({
           pathname: "/catalog/view-entry", // Dynamically navigate to the details page
-          params: { paramId:id, paramName:name, paramInfo:info, paramLatitude:latitude, 
-            paramLongitude:longitude}, // Pass the details as query params
+          params: { paramId:id, paramName:name, paramInfo:info}, // Pass the details as query params
         });
       } catch (error) {
         console.error("Error updating name:", error);
         alert("Error Failed to update name.");
+      } finally {
+        setVisible(false);
       }
     };
 
@@ -190,19 +227,6 @@ const edit_entry = () => {
           onChangeText={setInfo} 
           style={styles.descInput} 
           multiline={true}/>
-        <Text style={styles.headline}> Most Recent Sighting</Text>
-        <MapView
-          style={styles.map}
-          initialRegion={{
-            latitude: 33.7756, // Default location (e.g., Georgia Tech)
-            longitude: -84.3963,
-            latitudeDelta: 0.01,
-            longitudeDelta: 0.01,
-          }}
-          onPress={handleMapPress} // This updates the location correctly
-        >
-          {most_recent_sighting && <Marker coordinate={most_recent_sighting} />}
-        </MapView>
         <Text style={styles.headline}> Extra Photos</Text>
         <Text style={styles.subHeading}> The photo you click will turn into the cat's profile picture</Text>
         <View style={styles.extraPicsContainer}>
@@ -211,11 +235,14 @@ const edit_entry = () => {
               <TouchableOpacity key={index} onPress={() => swapProfilePicture(pic)}>
                 <Image source={{ uri: pic.url }} style={styles.extraPic} />
               </TouchableOpacity>
-              <TouchableOpacity style={styles.deleteButton} onPress={() => deletePicture(name, index)}>
+              <TouchableOpacity style={styles.deleteButton} onPress={() => confirmDeletion(name, index)}>
                 <Text style={styles.deleteButtonText}>Delete</Text>
               </TouchableOpacity>
             </View>
           ))):<Text>Loading images...</Text>}
+          <Snackbar visible={visible} onDismiss={() => setVisible(false)} duration={2000}>
+          Saving...
+          </Snackbar>
         </View>
       </ScrollView>
     </KeyboardAvoidingView>

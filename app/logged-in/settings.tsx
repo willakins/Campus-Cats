@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import { View, Text, ActivityIndicator, TouchableOpacity} from 'react-native';
 import { StyleSheet } from 'react-native';
@@ -6,24 +6,11 @@ import { doc, getDoc, getFirestore, updateDoc } from 'firebase/firestore';
 import { auth, db } from '@/app/logged-in/firebase';
 import { useRouter } from 'expo-router';
 import { getAuth } from 'firebase/auth';
+import { AdminContext } from "../AdminContext";
 
 const Settings = () => {
-  const [isAdmin, setIsAdmin] = useState(false);
-  const [loading, setLoading] = useState(true);
-  const [userId, setUserId] = useState<string | null>(null);
-  const [message, setMessage] = useState<string>("");
+  const { adminStatus, setAdminStatus } = useContext(AdminContext);
 
-  // Fetch current logged-in user ID on mount
-  useEffect(() => {
-    const auth = getAuth();
-    const user = auth.currentUser;
-
-    if (user) {
-      setUserId(user.uid);  // Store user ID in state
-    } else {
-      setMessage("No user is logged in.");
-    }
-  }, []);
 
     const router = useRouter();
     const handleLogout = () => {
@@ -32,49 +19,14 @@ const Settings = () => {
     const handleCreateAdmins = () => {
       router.push('/settings/create_admins');
     };
-    useEffect(() => {
-        const checkUserRole = async () => {
-        try {
-            // Get current user ID
-            const user = auth.currentUser;
-            if (!user) {
-            console.error('User not logged in');
-            setLoading(false);
-            return;
-            }
 
-            // Fetch user role from Firestore
-            const userDoc = await getDoc(doc(db, 'users', user.uid));
-            if (userDoc.exists()) {
-            const { role } = userDoc.data();
-            setIsAdmin(role === 1 || role === 2); // Admin roles are 1 or 2
-            } else {
-            console.error('User document does not exist');
-            }
-        } catch (error) {
-            console.error('Error fetching user role:', error);
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    checkUserRole();
-  }, []);
-
-  if (loading) {
-    return (
-      <View style={styles.screen}>
-        <ActivityIndicator size="large" color="#000" />
-      </View>
-    );
-  }
   return (
     <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
         <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
             <Ionicons name="log-out-outline" size={25} color="#fff" />
         </TouchableOpacity>
         <Text>Setting Screen</Text>
-        {isAdmin && (<>
+        {adminStatus && (<>
           <TouchableOpacity style={styles.button} onPress={handleCreateAdmins}>
             <Text style={styles.buttonText}>Make someone else an admin</Text>
           </TouchableOpacity>
