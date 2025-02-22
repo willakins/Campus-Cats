@@ -1,10 +1,11 @@
 import { Link, Stack, useRouter } from "expo-router";
-import { useState } from "react";
+import { useContext, useState } from "react";
 import { Button, TextInput, TouchableOpacity, View, Image, Text, ScrollView, KeyboardAvoidingView, Platform } from "react-native";
 import { StyleSheet } from 'react-native';
 import { signInWithEmailAndPassword } from "firebase/auth";
-import { auth } from "./logged-in/firebase"; // Ensure you have the firebase.js file configured
-
+import { auth, db } from "./logged-in/firebase"; // Ensure you have the firebase.js file configured
+import { AdminContext } from "./AdminContext";
+import { doc, getDoc } from "firebase/firestore";
 
 
 const Login = () => {
@@ -12,6 +13,7 @@ const Login = () => {
       const [password, setPassword] = useState('');
       const [error, setError] = useState('');
       const router = useRouter();
+      const { adminStatus, setAdminStatus } = useContext(AdminContext);
     
       const validateUser = async () => {
         // Simple validation
@@ -27,6 +29,28 @@ const Login = () => {
           setError(error.message);
         }
           
+      };
+
+      const checkUserRole = async () => {
+        try {
+            // Get current user ID
+            const user = auth.currentUser;
+            if (!user) {
+            console.error('User not logged in');
+            return;
+            }
+
+            // Fetch user role from Firestore
+            const userDoc = await getDoc(doc(db, 'users', user.uid));
+            if (userDoc.exists()) {
+            const { role } = userDoc.data();
+            setAdminStatus(role === 1 || role === 2); // Admin roles are 1 or 2
+            } else {
+            console.error('User document does not exist');
+            }
+        } catch (error) {
+            console.error('Error fetching user role:', error);
+        }
       };
 
       const createAnAccount = () => {

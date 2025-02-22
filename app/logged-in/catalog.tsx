@@ -1,13 +1,17 @@
-import React, { useEffect, useState } from "react";
+import React, { useContext, useEffect, useState } from "react";
 import { getStorage, ref, listAll, getDownloadURL } from "firebase/storage";
 import { db, storage } from "./firebase"; // Import your firebase config
-import { FlatList, Text, StyleSheet, View, Image, ScrollView, SafeAreaView } from 'react-native';
+import { FlatList, Text, StyleSheet, View, Image, ScrollView, SafeAreaView, TouchableOpacity } from 'react-native';
 import CatalogItem from '../../components/CatalogItem';
 import { collection, getDocs } from "firebase/firestore";
 import { CatalogEntryObject } from "@/types/CatalogEntryObject";
+import { useRouter } from "expo-router";
+import { AdminContext } from "../AdminContext";
 
 export default function Catalog() {
   const [catalogEntries, setCatalogEntries] = useState<CatalogEntryObject[]>([]);
+  const router = useRouter();
+  const { adminStatus, setAdminStatus } = useContext(AdminContext);
 
   const fetchCatalogData = async () => {
     try {
@@ -29,9 +33,16 @@ export default function Catalog() {
     fetchCatalogData()
   }, []);
 
+  const handleCreate = () => {
+    router.push
+  }
+
   return (
     <SafeAreaView style={styles.container}>
       <Text style={styles.title}>Catalog</Text>
+      {adminStatus && <TouchableOpacity style={styles.editButton} onPress={handleCreate}>
+        <Text style ={styles.editText}> Create Entry</Text>
+      </TouchableOpacity>}
       <ScrollView contentContainerStyle={styles.scrollView}>
         {catalogEntries.map((entry) => (
           <CatalogItem
@@ -70,5 +81,24 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: '#F4F4F9',
+  },
+  editButton: {
+    position: 'absolute',
+    top: 20,
+    right: 20,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#333',
+    padding: 5,
+    borderRadius: 5,
+    zIndex: 10, // Ensure the logout button is on top
+  },
+  logoutText: {
+    color: '#fff',
+    marginLeft: 5,
+  },
+  editText: {
+    color: '#fff',
+    marginLeft: 0,
   },
 });
