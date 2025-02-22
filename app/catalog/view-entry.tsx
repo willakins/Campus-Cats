@@ -28,8 +28,7 @@ const view_entry = () =>{
     const handleEdit = () => {
       router.push({
         pathname: "/catalog/edit-entry", // Dynamically navigate to the details page
-        params: { paramId:id, paramName:name, paramInfo:info, paramLatitude:latitude, 
-          paramLongitude:longitude }, // Pass the details as query params
+        params: { paramId:id, paramName:name, paramInfo:info }, // Pass the details as query params
       });
     };
 

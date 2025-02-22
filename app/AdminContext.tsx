@@ -1,15 +1,15 @@
 import { createContext, useState } from 'react';
 
 export const AdminContext = createContext({
-  adminView: 0,
-  adminStatus: 0,
-  setAdminView: (value: number) => {},
-  setAdminStatus: (value: number) => {},
+  adminView: false,
+  adminStatus: false,
+  setAdminView: (value: boolean) => {},
+  setAdminStatus: (value: boolean) => {},
 });
 
 export const AdminProvider = ({ children }: { children: React.ReactNode }) => {
-  const [adminView, setAdminView] = useState(0);
-  const [adminStatus, setAdminStatus] = useState(0);
+  const [adminView, setAdminView] = useState<boolean>(false);
+  const [adminStatus, setAdminStatus] = useState<boolean>(false);
 
   return (
     <AdminContext.Provider value={{ adminView, adminStatus, setAdminView, setAdminStatus }}>
