@@ -31,6 +31,7 @@ export default function Catalog() {
 
   useEffect(() => {
     fetchCatalogData()
+    alert(adminStatus)
   }, []);
 
   const handleCreate = () => {
