@@ -6,19 +6,38 @@ import { doc, getDoc, getFirestore, updateDoc } from 'firebase/firestore';
 import { auth, db } from '@/app/logged-in/firebase';
 import { useRouter } from 'expo-router';
 import { getAuth } from 'firebase/auth';
-import { AdminContext } from "../AdminContext";
 
 const Settings = () => {
-  const { adminStatus, setAdminStatus } = useContext(AdminContext);
+  const [adminStatus, setAdminStatus] = useState<boolean>(false); 
+  const router = useRouter();
 
+  const handleLogout = () => {
+    router.push('/login')
+  };
+  const handleCreateAdmins = () => {
+    router.push('/settings/create_admins');
+  };
+  const createAnAccount = () => {
+    router.push('/create-account')
+  };
 
-    const router = useRouter();
-    const handleLogout = () => {
-      router.push('/login')
-    };
-    const handleCreateAdmins = () => {
-      router.push('/settings/create_admins');
-    };
+  // Following function checks for admin status
+  useEffect(() => {
+    setUserRole();
+  }, []);
+  const setUserRole = async () => {
+    const auth = getAuth();
+    const user = auth.currentUser;
+    if (user) {
+      const userDoc = await getDoc(doc(db, "users", user.uid));
+      if (userDoc.exists()) {
+        const userRole = userDoc.data().role;
+        setAdminStatus(userRole === 1 || userRole === 2);
+      } else {
+        console.log("No user document found!");
+      }
+    }
+  };
 
   return (
     <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
