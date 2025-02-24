@@ -1,80 +1,122 @@
-import React, { useEffect, useState } from 'react';
-import { FlatList, Image, StyleSheet, Text, View } from 'react-native';
+import React, { useContext, useEffect, useState } from "react";
+import { getStorage, ref, listAll, getDownloadURL } from "firebase/storage";
+import { db, storage } from "./firebase"; // Import your firebase config
+import { FlatList, Text, StyleSheet, View, Image, ScrollView, SafeAreaView, TouchableOpacity } from 'react-native';
+import CatalogItem from '../../components/CatalogItem';
+import { collection, doc, getDoc, getDocs } from "firebase/firestore";
+import { CatalogEntryObject } from "@/types/CatalogEntryObject";
+import { useRouter } from "expo-router";
+import { getAuth } from "firebase/auth";
 
-import { ref, listAll, getDownloadURL } from 'firebase/storage';
+export default function Catalog() {
+  const [catalogEntries, setCatalogEntries] = useState<CatalogEntryObject[]>([]);
+  const [adminStatus, setAdminStatus] = useState<boolean>(false); 
+  const router = useRouter();
 
-import { storage } from '@/services/firebase'; // Import your firebase config
-
-const Catalog = () => {
-  const [photoUrls, setPhotoUrls] = useState<string[] | null>([]);
-
-  // Function to retrieve photos from Firebase Storage
-  const fetchPhotos = async () => {
-    const folderPath = 'photos'; // Specify your folder in Firebase Storage
-    const folderRef = ref(storage, folderPath);
-
+  const fetchCatalogData = async () => {
     try {
-      // List all files in the folder
-      const result = await listAll(folderRef);
-
-      // Get download URLs for all the files
-      const urls = await Promise.all(
-        result.items.map((itemRef) => getDownloadURL(itemRef))
-      );
-
-      // Update state with the list of photo URLs
-      setPhotoUrls(urls);
+      const querySnapshot = await getDocs(collection(db, 'catalog'));
+      const entries: CatalogEntryObject[] = querySnapshot.docs.map((doc) => ({
+        id: doc.id,
+        name: doc.data().name,
+        info: doc.data().info,
+        extraPhotos: doc.data().extraPhotos,
+        most_recent_sighting: doc.data().mostRecentSighting
+      }));
+      setCatalogEntries(entries);
     } catch (error) {
-      console.error('Error fetching photos from Firebase Storage: ', error);
+      console.error('Error fetching catalog data: ', error);
     }
   };
 
   useEffect(() => {
-    fetchPhotos(); // Fetch photos when the screen is loaded
+    fetchCatalogData()
   }, []);
+
+  // Following function checks for admin status
+    useEffect(() => {
+      setUserRole();
+    }, []);
+    const setUserRole = async () => {
+      const auth = getAuth();
+      const user = auth.currentUser;
+      if (user) {
+        const userDoc = await getDoc(doc(db, "users", user.uid));
+        if (userDoc.exists()) {
+          const userRole = userDoc.data().role;
+          setAdminStatus(userRole === 1 || userRole === 2);
+        } else {
+          console.log("No user document found!");
+        }
+      }
+    };
+
+  const handleCreate = () => {
+    router.push('/catalog/create-entry')
+  }
+
   return (
-    <FlatList
-      data={photoUrls}
-      keyExtractor={(_item, index) => index.toString()}
-      renderItem={({ item }) => (
-        <View style={styles.item}>
-          <Image source={{ uri: item }} style={styles.image} />
-          <Text style={styles.text}>Grumpus the cat</Text>
-        </View>
-      )}
-      contentContainerStyle={styles.list}
-    />
+    <SafeAreaView style={styles.container}>
+      <Text style={styles.title}>Catalog</Text>
+      {adminStatus && <TouchableOpacity style={styles.editButton} onPress={handleCreate}>
+        <Text style ={styles.editText}> Create Entry</Text>
+      </TouchableOpacity>}
+      <ScrollView contentContainerStyle={styles.scrollView}>
+        {catalogEntries.map((entry) => (
+          <CatalogItem
+            key={entry.id}
+            id={entry.id}
+            name={entry.name}
+            info={entry.info}
+            most_recent_sighting={entry.most_recent_sighting}
+            />
+        ))}
+      </ScrollView>
+    </SafeAreaView>
+    
   );
-};
-
-export default Catalog;
-
+}
 const styles = StyleSheet.create({
-  list: {
-    padding: 16,
+  container: {
+    flex: 1,
+    backgroundColor: '#F4F4F9',
+    paddingTop: 20,
+    paddingHorizontal: 15,
   },
-  item: {
-    marginBottom: 16,
-    padding: 20,
-    backgroundColor: '#fff',
-    borderRadius: 8,
-    shadowColor: '#000',
-    shadowOpacity: 0.1,
-    shadowOffset: { width: 0, height: 2 },
-    shadowRadius: 4,
-    elevation: 3,
-    flexDirection: 'row', // Align items horizontally
-    alignItems: 'center',
+  title: {
+    fontSize: 32,
+    fontWeight: 'bold',
+    color: '#333',
+    marginBottom: 20,
+    marginTop: 20,
+    textAlign: 'center',
+  },
+  scrollView: {
+    padding: 10,
+  },
+  loaderContainer: {
+    flex: 1,
     justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#F4F4F9',
   },
-  image: {
-    width: '50%', // Take up the full width of the container
-    aspectRatio: 16 / 9, // Maintain a 16:9 aspect ratio
-    borderRadius: 10,
-    marginRight: 10,
+  editButton: {
+    position: 'absolute',
+    top: 20,
+    right: 20,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#333',
+    padding: 5,
+    borderRadius: 5,
+    zIndex: 10, // Ensure the logout button is on top
   },
-  text: {
-    fontSize: 15,
-    marginRight: 50,
+  logoutText: {
+    color: '#fff',
+    marginLeft: 5,
+  },
+  editText: {
+    color: '#fff',
+    marginLeft: 0,
   },
 });
