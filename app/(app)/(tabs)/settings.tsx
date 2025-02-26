@@ -10,11 +10,12 @@ import { auth, db } from '@/services/firebase';
 import { useAuth } from '@/providers';
 
 const Settings = () => {
+  const { signOut } = useAuth();
   const [adminStatus, setAdminStatus] = useState<boolean>(false); 
   const router = useRouter();
 
   const handleLogout = () => {
-    useAuth().signOut();
+    signOut();
     router.push('/login')
   };
   const handleCreateAdmins = () => {
