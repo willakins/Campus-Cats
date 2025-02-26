@@ -26,33 +26,26 @@ const HomeScreen = () => {
   const [mapKey, setMapKey] = useState(0);
   const [pins, setPins] = useState<CatSighting[]>([]);
 
-  const fetchPins = async  () => {
-    const querySnapshot = await getDocs(collection(db, 'cat-sightings'));
-    const pinsData: CatSighting[] = querySnapshot.docs.map(doc => ({
-      id: doc.id,
-      date: doc.data().spotted_time.toDate(),
-      fed: doc.data().fed,
-      health: doc.data().health,
-      photoUri: doc.data().image,
-      info: doc.data().info,
-      latitude: doc.data().latitude,
-      longitude: doc.data().longitude,
-      name: doc.data().name
-      // Include the document ID
-    }));
-    setPins(pinsData);
-    setMapKey(prev => prev + 1);
-  };
-
-  // Prevent going back to login page after logging in by using back button
-  const navigation = useNavigation();
-  useEffect(() => {
-    navigation.addListener('beforeRemove', (e) => {
-      e.preventDefault();
-    });
-  }, []);
   useFocusEffect(
     useCallback(() => {
+      const fetchPins = async  () => {
+        const querySnapshot = await getDocs(collection(db, 'cat-sightings'));
+        const pinsData: CatSighting[] = querySnapshot.docs.map(doc => ({
+          id: doc.id,
+          date: doc.data().spotted_time.toDate(),
+          fed: doc.data().fed,
+          health: doc.data().health,
+          photoUri: doc.data().image,
+          info: doc.data().info,
+          latitude: doc.data().latitude,
+          longitude: doc.data().longitude,
+          name: doc.data().name
+          // Include the document ID
+        }));
+        setPins(pinsData);
+        setMapKey(prev => prev + 1);
+      };
+
       fetchPins();
     }, [])
   );

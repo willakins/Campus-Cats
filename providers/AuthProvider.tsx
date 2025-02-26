@@ -31,10 +31,10 @@ const AuthProvider = ({ children }: { children: ReactNode }) => {
         if (user) {
           const userDoc = await getDoc(doc(db, 'users', user.uid));
           setUser(userDoc);
-          setIsLoading(false);
         } else {
           setUser(null);
         }
+        setIsLoading(false);
       }
     );
 
@@ -45,8 +45,10 @@ const AuthProvider = ({ children }: { children: ReactNode }) => {
   return (
     <AuthContext.Provider value={{
       signIn: () => {
+        // TODO: Actually use this to sign in
       },
       signOut: () => {
+        auth.signOut();
       },
       user, setUser,
       isLoading, setIsLoading,

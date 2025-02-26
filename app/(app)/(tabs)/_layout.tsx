@@ -4,7 +4,7 @@ import { Platform, StatusBar, StyleSheet, View } from 'react-native';
 import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
-const RootLayout = () => {
+const HomeLayout = () => {
   const size2 = 29;
   const color2 = '#333'
   const bar_height: number = Platform.select({
@@ -76,7 +76,7 @@ const RootLayout = () => {
   );
 };
 
-export default RootLayout;
+export default HomeLayout;
 
 const styles = StyleSheet.create({
   container: {

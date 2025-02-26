@@ -21,18 +21,14 @@ const CreateAccount = () => {
 
     await setDoc(doc(db, 'users', uid), { role: 0, email: username }); // Default role: 0 (regular user)
 
-    router.push('/');
+    router.replace('/');
     return '';
-  };
-
-  const goBack = () => {
-    router.push('/login')
   };
 
   return (
     <Login
       onSubmit={validateNewUser}
-      onBack={goBack}
+      onBack={router.back}
     />
   );
 };

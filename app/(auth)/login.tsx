@@ -2,7 +2,7 @@ import { useRouter } from 'expo-router';
 import { signInWithEmailAndPassword } from 'firebase/auth';
 
 import { Login } from '@/components';
-import { auth } from '@/services/firebase'; // TODO: Ensure you have the firebase.js file configured
+import { auth } from '@/services/firebase';
 
 const LoginScreen = () => {
   const router = useRouter();
@@ -15,7 +15,7 @@ const LoginScreen = () => {
 
     try {
       await signInWithEmailAndPassword(auth, username, password);
-      router.push('/(tabs)');
+      router.replace('/(app)/(tabs)');
     } catch (error: any) {
       return error.message;
     }

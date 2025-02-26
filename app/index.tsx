@@ -1,4 +1,4 @@
-import React, { useCallback, useContext, useEffect, useState } from 'react';
+import React, { useCallback, useEffect } from 'react';
 import { Image, SafeAreaView, StyleSheet } from 'react-native';
 
 import { useRouter } from 'expo-router';
@@ -8,7 +8,6 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { LoadingIndicator } from '@/components';
 import { auth } from '@/services/firebase';
 import { useAuth } from '@/providers';
-import { onAuthStateChanged } from 'firebase/auth';
 
 // Instruct SplashScreen not to hide yet, we want to do this manually
 SplashScreen.preventAutoHideAsync().catch(() => {
