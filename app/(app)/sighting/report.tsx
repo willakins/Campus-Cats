@@ -177,16 +177,16 @@ const CatReportScreen = () => {
               }}
               onPress={handleMapPress} // This updates the location correctly
             >
-              {location && <Marker coordinate={location} />}
+              {location ? <Marker coordinate={location} /> : null}
             </MapView>
             <View style={styles.dateInput}>
               <Text style={styles.sliderText}>{date ? date.toDateString() : 'Select Sighting Date'}</Text>
               <TouchableOpacity  onPress={() => setShowPicker(true)}>
-                {showPicker && <DateTimePicker
+                {showPicker ? <DateTimePicker
                   value={date || new Date()}
                   mode="date"
                   display="default"
-                  onChange={handleDateChange}/>}
+                  onChange={handleDateChange}/> : null}
               </TouchableOpacity>
             </View>
             <TextInput
@@ -213,7 +213,7 @@ const CatReportScreen = () => {
                 <Ionicons name="camera-outline" size={29} color="#fff" />
               </Button>
             </View>
-            {photoURL && <Image source={{ uri: photoURL }} style={styles.selectedPreview} />}
+            {photoURL ? <Image source={{ uri: photoURL }} style={styles.selectedPreview} /> : null}
 
             <Button onPress={handleSubmission}>
               Submit Sighting

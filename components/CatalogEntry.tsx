@@ -59,7 +59,7 @@ export const CatalogEntry: React.FC<CatalogEntryObject> = ({ id, name, info, mos
           longitudeDelta: 0.01,
         }}
       >
-        {most_recent_sighting && <Marker coordinate={most_recent_sighting} />}
+        {most_recent_sighting ? <Marker coordinate={most_recent_sighting} /> : null}
       </MapView>
       <Text style={styles.subHeading}> Extra Photos</Text>
       {imageUrls ? (imageUrls.map((url, index) => (

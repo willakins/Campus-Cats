@@ -43,20 +43,20 @@ export const Login: React.FC<LoginProps> = ({
         <Button onPress={handleSubmit}>
           {onCreateAccount !== undefined ? 'Sign In' : 'Create Account'}
         </Button>
-        {onCreateAccount !== undefined &&
+        {onCreateAccount !== undefined ?
           <Button onPress={onCreateAccount}>
             Create Account
           </Button>
-        }
-        {onBack !== undefined && <Button onPress={onBack}>Go Back</Button>}
-        {forgotPassword &&
+        : null}
+        {onBack !== undefined ? <Button onPress={onBack}>Go Back</Button> : null}
+        {forgotPassword ?
           <BorderlessButton
             onPress={() => alert("Contact an Administrator")}
             textStyle={styles.forgotPassword}>
             Forgot password?
           </BorderlessButton>
-        }
-        {error && <Text style={styles.errorText}>{error}</Text>}
+        : null}
+        {error ? <Text style={styles.errorText}>{error}</Text> : null}
       </View>
     </View>
   );

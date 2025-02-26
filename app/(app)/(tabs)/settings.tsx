@@ -45,7 +45,7 @@ const Settings = () => {
         <Ionicons name="log-out-outline" size={25} color="#fff" />
       </TouchableOpacity>
       <Text>Setting Screen</Text>
-      {adminStatus && (<>
+      {adminStatus ? (<>
         <TouchableOpacity style={styles.button} onPress={handleCreateAdmins}>
           <Text style={styles.buttonText}>Make someone else an admin</Text>
         </TouchableOpacity>
@@ -55,7 +55,7 @@ const Settings = () => {
           color="black"
           style={styles.lockIcon}
         />
-      </>)}
+      </>) : null}
     </View>
   );
 }

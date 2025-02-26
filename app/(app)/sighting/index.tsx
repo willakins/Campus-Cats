@@ -143,9 +143,9 @@ const CatSightingScreen = () => {
       behavior={Platform.OS === 'ios' ? 'padding' : undefined} // iOS specific behavior
     >
       <ScrollView contentContainerStyle={styles.scrollView}>
-        {isAdmin && <Button style={styles.deleteButton} onPress={deleteSighting}>
+        {isAdmin ? <Button style={styles.deleteButton} onPress={deleteSighting}>
           Delete
-        </Button>}
+        </Button> : null}
         <Text style={styles.headline}>
           {isAdmin ? 'View' : 'Edit'} A Cat Sighting
         </Text>
@@ -156,7 +156,7 @@ const CatSightingScreen = () => {
               <Text style={styles.catImage}>Loading image...</Text>
             )}
           <View style={styles.inputContainer}>
-            {isAdmin && <MapView
+            {isAdmin ? <MapView
               style={{ width: '100%', height: 150, marginVertical: 10 }}
               initialRegion={{
                 latitude: 33.7756,
@@ -166,8 +166,8 @@ const CatSightingScreen = () => {
               }}
               onPress={handleMapPress} // This updates the location correctly
             >
-              {location && <Marker coordinate={location} />}
-            </MapView>}
+              {location ? <Marker coordinate={location} /> : null}
+            </MapView> : null}
             <Text style={styles.sliderText}>Cat's Name</Text>
             <TextInput
               value={name}
@@ -197,9 +197,9 @@ const CatSightingScreen = () => {
           </View>
         </View>
       </ScrollView>
-      {isAdmin && <Button onPress={saveSighting}>
+      {isAdmin ? <Button onPress={saveSighting}>
         Save
-      </Button>}
+      </Button> : null}
       <Button onPress={router.back}>
         Back
       </Button>
