@@ -15,7 +15,7 @@ const LoginScreen = () => {
 
     try {
       await signInWithEmailAndPassword(auth, username, password);
-      router.push('/home');
+      router.push('/(tabs)');
     } catch (error: any) {
       return error.message;
     }
