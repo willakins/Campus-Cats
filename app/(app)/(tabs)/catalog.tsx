@@ -57,9 +57,9 @@ export default function Catalog() {
   return (
     <SafeAreaView style={styles.container}>
       <Text style={styles.title}>Catalog</Text>
-      {adminStatus && <Button style={styles.editButton} onPress={handleCreate}>
+      {adminStatus ? <Button style={styles.editButton} onPress={handleCreate}>
         <Text style ={styles.editText}> Create Entry</Text>
-      </Button>}
+      </Button> : null}
       <ScrollView contentContainerStyle={styles.scrollView}>
         {catalogEntries.map((entry) => (
           <CatalogItem
