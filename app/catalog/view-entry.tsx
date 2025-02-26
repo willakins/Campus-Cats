@@ -3,12 +3,11 @@ import { StyleSheet, Text, View } from 'react-native';
 
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { getAuth } from 'firebase/auth';
 import { doc, getDoc } from 'firebase/firestore';
 import { LatLng } from 'react-native-maps';
 
 import { Button, CatalogEntry } from '@/components';
-import { db } from '@/services/firebase';
+import { auth, db } from '@/services/firebase';
 
 const view_entry = () =>{
   const [adminStatus, setAdminStatus] = useState<boolean>(false); 
@@ -39,7 +38,6 @@ const view_entry = () =>{
     setUserRole();
   }, []);
   const setUserRole = async () => {
-    const auth = getAuth();
     const user = auth.currentUser;
     if (user) {
       const userDoc = await getDoc(doc(db, 'users', user.uid));

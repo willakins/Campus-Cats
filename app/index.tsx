@@ -1,9 +1,14 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useContext, useEffect, useState } from 'react';
 import { Image, SafeAreaView, StyleSheet } from 'react-native';
 
 import { useRouter } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+
+import { LoadingIndicator } from '@/components';
+import { auth } from '@/services/firebase';
+import { useAuth } from '@/providers';
+import { onAuthStateChanged } from 'firebase/auth';
 
 // Instruct SplashScreen not to hide yet, we want to do this manually
 SplashScreen.preventAutoHideAsync().catch(() => {
@@ -17,30 +22,21 @@ SplashScreen.setOptions({
 });
 
 const App = () => {
-  const [isAppReady, setAppReady] = useState<boolean>(false);
-
-  useEffect(() => {
-    async function prepare() {
-      /* If we need to load anything, do so here */
-      setAppReady(true);
-    }
-
-    prepare();
-  }, []);
+  const { isLoading } = useAuth();
 
   const onLayoutRootView = useCallback(() => {
-    if (isAppReady) {
+    if (!isLoading) {
       // This tells the splash screen to hide immediately! If we call this after
-      // `setAppIsReady`, then we may see a blank screen while the app is
+      // `setIsLoading`, then we may see a blank screen while the app is
       // loading its initial state and rendering its first pixels. So instead,
       // we hide the splash screen once we know the root view has already
       // performed layout.
       SplashScreen.hide();
     }
-  }, [isAppReady]);
+  }, [isLoading]);
 
-  if (!isAppReady) {
-    return null;
+  if (isLoading) {
+    return <LoadingIndicator />;
   }
 
   return (
@@ -59,8 +55,13 @@ const AppSplashScreen: React.FC<{}> = () => {
 
   useEffect(() => {
     const timer = setTimeout(() => {
-      router.push('/login')
-    }, 1000);
+      console.log('here');
+      if (auth.currentUser) {
+        router.push('/(tabs)')
+      } else {
+        router.push('/login')
+      }
+    }, 0);
 
     return () => clearTimeout(timer);
   }, []);
