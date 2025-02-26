@@ -16,9 +16,11 @@
   },
   "dependencies": {
     "@expo/vector-icons": "^14.0.4",
+    "@react-native-async-storage/async-storage": "1.23.1",
     "@react-native-community/datetimepicker": "8.2.0",
     "@react-navigation/native": "^7.0.14",
     "@react-navigation/stack": "^7.1.1",
+    "@teovilla/react-native-web-maps": "^0.9.5",
     "@types/babel-traverse": "^6.25.10",
     "expo": "~52.0.26",
     "expo-camera": "~16.0.14",
