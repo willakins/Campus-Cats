@@ -56,7 +56,7 @@ const AppSplashScreen: React.FC<{}> = () => {
     const timer = setTimeout(() => {
       console.log('here');
       if (auth.currentUser) {
-        router.push('/(tabs)')
+        router.push('/(app)/(tabs)')
       } else {
         router.push('/login')
       }
