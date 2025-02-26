@@ -200,7 +200,7 @@ const CatSightingScreen = () => {
       {isAdmin && <Button onPress={saveSighting}>
         Save
       </Button>}
-      <Button onPress={() => router.push('/(tabs)')}>
+      <Button onPress={router.back}>
         Back
       </Button>
     </KeyboardAvoidingView>

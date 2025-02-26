@@ -218,7 +218,7 @@ const CatReportScreen = () => {
             <Button onPress={handleSubmission}>
               Submit Sighting
             </Button>
-            <Button onPress={() => router.push('/(tabs)')}>
+            <Button onPress={router.back}>
               Back
             </Button>
           </View>
