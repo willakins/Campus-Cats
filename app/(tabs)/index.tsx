@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { Platform, StyleSheet, View } from 'react-native';
 
 import { useFocusEffect, useNavigation, useRouter } from 'expo-router';
 import { collection, getDocs } from 'firebase/firestore';
@@ -82,7 +82,7 @@ const HomeScreen = () => {
         ))}
       </View>
 
-      <MapView key = {mapKey} style={{ flex: 1 }} initialRegion={{ latitude: 33.776077, longitude: -84.396199, latitudeDelta: 0.01, longitudeDelta: 0.01 }}>
+      <MapView provider={Platform.OS === 'web' ? 'google' : undefined} key={mapKey} style={{ flex: 1 }} initialRegion={{ latitude: 33.776077, longitude: -84.396199, latitudeDelta: 0.01, longitudeDelta: 0.01 }}>
         {filteredPins.map(pin => (
           <Marker
             key={pin.id}
