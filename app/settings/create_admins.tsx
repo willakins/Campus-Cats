@@ -3,10 +3,9 @@ import { Alert, StyleSheet, View } from 'react-native';
 
 import { useRouter } from 'expo-router';
 import { collection, doc, DocumentData, getDoc, getDocs, getFirestore, query, updateDoc, where } from 'firebase/firestore';
-import { getAuth } from 'firebase/auth';
 
 import { Button, TextInput } from '@/components';
-import { db } from '@/services/firebase';
+import { auth, db } from '@/services/firebase';
 
 const CreateAdmins = () => {
   const router = useRouter();
@@ -20,7 +19,6 @@ const CreateAdmins = () => {
 
   // Fetch current logged-in user ID on mount
   useEffect(() => {
-    const auth = getAuth();
     const user = auth.currentUser;
 
     if (user) {
