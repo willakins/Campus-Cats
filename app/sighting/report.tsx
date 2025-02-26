@@ -6,7 +6,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { Ionicons } from '@expo/vector-icons';
 import { addDoc, collection, serverTimestamp, Timestamp } from 'firebase/firestore';
 import { getStorage, getDownloadURL, ref, uploadBytes } from 'firebase/storage';
-// import DateTimePicker from '@react-native-community/datetimepicker';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import 'react-native-get-random-values'; // Needed for uuid
 import MapView, { LatLng, Marker } from 'react-native-maps';
 import { v4 as uuidv4 } from 'uuid';
@@ -54,7 +54,9 @@ const CatReportScreen = () => {
     }
 
     let result = await ImagePicker.launchImageLibraryAsync({
-      quality: 1.0, // 100% quality, do not compress
+      // 100% quality, do not compress
+      // e.g. 90% quality would be 0.9
+      quality: 1.0,
     });
 
     if (!result.canceled) {
@@ -124,7 +126,7 @@ const CatReportScreen = () => {
               healthy: health,
               fed: fed,
             });
-            router.push('/home')
+            router.push('/(tabs)')
           }
         } catch (error) {
           if (error instanceof Error) {
@@ -180,7 +182,7 @@ const CatReportScreen = () => {
             <View style={styles.dateInput}>
               <Text style={styles.sliderText}>{date ? date.toDateString() : 'Select Sighting Date'}</Text>
               <TouchableOpacity  onPress={() => setShowPicker(true)}>
-                {false && showPicker && <DateTimePicker
+                {showPicker && <DateTimePicker
                   value={date || new Date()}
                   mode="date"
                   display="default"
@@ -189,12 +191,12 @@ const CatReportScreen = () => {
             </View>
             <TextInput
               placeholder="Cat's name"
-              placeholderTextColor = "#888"
+              placeholderTextColor="#888"
               onChangeText={setName}
             />
             <TextInput
               placeholder="Additional Info"
-              placeholderTextColor = "#888"
+              placeholderTextColor="#888"
               value={info}
               onChangeText={setInfo}
             />
@@ -216,7 +218,7 @@ const CatReportScreen = () => {
             <Button onPress={handleSubmission}>
               Submit Sighting
             </Button>
-            <Button onPress={() => router.push('/home')}>
+            <Button onPress={() => router.push('/(tabs)')}>
               Back
             </Button>
           </View>

@@ -26,7 +26,7 @@ const RootLayout = () => {
           }}
         >
           <Tabs.Screen
-            name="home" // Maps to the `home.tsx` file - this is the map of GTech
+            name="index" // Maps to the `index.tsx` file - this is the map of GTech
             options={{
               tabBarLabel: '',
               tabBarIcon: ({ color, size }) => (

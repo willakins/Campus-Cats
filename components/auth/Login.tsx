@@ -34,11 +34,11 @@ export const Login: React.FC<LoginProps> = ({
       <View style={styles.inputContainer}>
         <TextInput 
           placeholder="Email" 
-          onChangeText={(text) => setUsername(text)}
+          onChangeText={setUsername}
           keyboardType="email-address" />
         <TextInput 
           placeholder="Password" 
-          onChangeText={(text) => setPassword(text)}
+          onChangeText={setPassword}
           secureTextEntry />
         <Button onPress={handleSubmit}>
           {onCreateAccount !== undefined ? 'Sign In' : 'Create Account'}
@@ -56,18 +56,13 @@ export const Login: React.FC<LoginProps> = ({
             Forgot password?
           </BorderlessButton>
         }
-        {error ? <Text style={styles.errorText}>{error}</Text> : null}
+        {error && <Text style={styles.errorText}>{error}</Text>}
       </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  scrollView: {
-    flexGrow: 1,
-    justifyContent: 'center',
-    padding: 20,
-  },
   container: {
     flex: 1,
     alignItems: 'center',

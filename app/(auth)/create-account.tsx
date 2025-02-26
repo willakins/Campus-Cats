@@ -10,7 +10,7 @@ import { auth, db } from '@/services/firebase';
 const CreateAccount = () => {
   const router = useRouter();
 
-  const validateNewUser = async (username: string, password: string) => {
+  const validateNewUser = async (username: string, password: string): Promise<string> => {
     // Simple validation
     if (!username || !password) {
       return 'Please enter both username and password';

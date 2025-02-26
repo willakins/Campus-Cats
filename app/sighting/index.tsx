@@ -1,23 +1,28 @@
-import React, { useEffect, useState } from "react";
-import { View, Text, TextInput, Image, Switch, Button, ActivityIndicator, StyleSheet, KeyboardAvoidingView, ScrollView, Platform, TouchableOpacity } from "react-native";
-import { useLocalSearchParams, useRouter } from "expo-router";
-import { deleteDoc, doc, getDoc, Timestamp, updateDoc } from "firebase/firestore";
-import { auth, db, storage } from "../logged-in/firebase";
-import MapView, { LatLng, Marker } from "react-native-maps";
-import { deleteObject, getDownloadURL, ref } from "firebase/storage";
-import { getAuth } from "firebase/auth";
+import React, { useEffect, useState } from 'react';
+import { ActivityIndicator, Image, Text, KeyboardAvoidingView, Platform, StyleSheet, ScrollView, Switch, View } from 'react-native';
+
+import { useLocalSearchParams, useRouter } from 'expo-router';
+import { deleteDoc, doc, getDoc, Timestamp, updateDoc } from 'firebase/firestore';
+import { deleteObject, getDownloadURL, ref } from 'firebase/storage';
+import MapView, { LatLng, Marker } from 'react-native-maps';
+
+import { Button, TextInput } from '@/components';
+import { db, storage } from '@/services/firebase';
 
 const CatSightingScreen = () => {
   //Check if admin, then set passed parameters from map screen
-  const [isAdmin, setIsAdmin] = useState(false);
-  const [loading, setLoading] = useState(true);
   const router = useRouter();
   // Pull params from router
   const { docId, catDate, catFed, catHealth, catInfo, catPhoto, catLongitude, catLatitude, catName} = useLocalSearchParams();
 
+  // TODO: Replace placeholders with states eventually
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [loading, setLoading] = useState(true);
+
   // Convert params to right type (Frick you Typescript!!)
 
   const docRef:string = docId as string;
+  // TODO: remove dead code
   const [date, setDate] = useState<Date>(new Date(JSON.parse(catDate as string)));
   const [fed, setFed] = useState<boolean>(JSON.parse(catFed as string));
   const [health, setHealth] = useState<boolean>(JSON.parse(catHealth as string));
@@ -88,7 +93,7 @@ const CatSightingScreen = () => {
       });
 
       alert('Saved!');
-      router.push('/home')
+      router.push('/(tabs)')
     } catch (error: unknown) {
       if (error instanceof Error) {
         alert('Error saving sighting: ' + error.message);
@@ -119,7 +124,7 @@ const CatSightingScreen = () => {
       }
       await deleteDoc(doc(db, 'cat-sightings', docRef));
       alert('Cat sighting deleted successfully!');
-      router.push('/home');
+      router.push('/(tabs)');
     } catch (error) {
       console.error('Error deleting sighting:', error);
       alert('Failed to delete sighting.');
@@ -195,7 +200,7 @@ const CatSightingScreen = () => {
       {isAdmin && <Button onPress={saveSighting}>
         Save
       </Button>}
-      <Button onPress={() => router.push('/home')}>
+      <Button onPress={() => router.push('/(tabs)')}>
         Back
       </Button>
     </KeyboardAvoidingView>
