@@ -5,3 +5,5 @@ export { TextInput } from './ui/TextInput';
 
 export { CatalogEntry } from './CatalogEntry';
 export { CatalogItem } from './CatalogItem';
+
+export { LoadingIndicator } from './LoadingIndicator';

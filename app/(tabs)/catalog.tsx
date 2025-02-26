@@ -1,13 +1,12 @@
 import React, {  useEffect, useState } from 'react';
-import { SafeAreaView, ScrollView, StyleSheet, Text, TouchableOpacity } from 'react-native';
+import { SafeAreaView, ScrollView, StyleSheet, Text } from 'react-native';
 
 import { useRouter } from 'expo-router';
-import { getAuth } from 'firebase/auth';
 import { collection, doc, getDoc, getDocs } from 'firebase/firestore';
 
-import { CatalogItem } from '@/components';
+import { Button, CatalogItem } from '@/components';
 import { CatalogEntryObject } from '@/types';
-import { db } from '@/services/firebase'; // Import your firebase config
+import { auth, db } from '@/services/firebase'; // Import your firebase config
 
 export default function Catalog() {
   const [catalogEntries, setCatalogEntries] = useState<CatalogEntryObject[]>([]);
@@ -39,7 +38,6 @@ export default function Catalog() {
     setUserRole();
   }, []);
   const setUserRole = async () => {
-    const auth = getAuth();
     const user = auth.currentUser;
     if (user) {
       const userDoc = await getDoc(doc(db, 'users', user.uid));
@@ -59,9 +57,9 @@ export default function Catalog() {
   return (
     <SafeAreaView style={styles.container}>
       <Text style={styles.title}>Catalog</Text>
-      {adminStatus && <TouchableOpacity style={styles.editButton} onPress={handleCreate}>
+      {adminStatus && <Button style={styles.editButton} onPress={handleCreate}>
         <Text style ={styles.editText}> Create Entry</Text>
-      </TouchableOpacity>}
+      </Button>}
       <ScrollView contentContainerStyle={styles.scrollView}>
         {catalogEntries.map((entry) => (
           <CatalogItem

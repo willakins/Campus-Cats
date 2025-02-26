@@ -3,17 +3,18 @@ import { Text, TouchableOpacity, View } from 'react-native';
 
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { getAuth } from 'firebase/auth';
 import { doc, getDoc } from 'firebase/firestore';
 import { StyleSheet } from 'react-native';
 
-import { db } from '@/services/firebase';
+import { auth, db } from '@/services/firebase';
+import { useAuth } from '@/providers';
 
 const Settings = () => {
   const [adminStatus, setAdminStatus] = useState<boolean>(false); 
   const router = useRouter();
 
   const handleLogout = () => {
+    useAuth().signOut();
     router.push('/login')
   };
   const handleCreateAdmins = () => {
@@ -25,15 +26,14 @@ const Settings = () => {
     setUserRole();
   }, []);
   const setUserRole = async () => {
-    const auth = getAuth();
     const user = auth.currentUser;
     if (user) {
-      const userDoc = await getDoc(doc(db, "users", user.uid));
+      const userDoc = await getDoc(doc(db, 'users', user.uid));
       if (userDoc.exists()) {
         const userRole = userDoc.data().role;
         setAdminStatus(userRole === 1 || userRole === 2);
       } else {
-        console.log("No user document found!");
+        console.log('No user document found!');
       }
     }
   };
