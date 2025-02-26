@@ -55,9 +55,9 @@ const view_entry = () =>{
       <Button style={styles.logoutButton} onPress={handleBack}>
         <Ionicons name="arrow-back-outline" size={25} color="#fff" />
       </Button>
-      {adminStatus && <Button style={styles.editButton} onPress={handleEdit}>
+      {adminStatus ? <Button style={styles.editButton} onPress={handleEdit}>
         <Text style ={styles.editText}> Edit Entry</Text>
-      </Button>}
+      </Button> : null}
       <CatalogEntry
         id={id}
         name={name}
