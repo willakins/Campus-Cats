@@ -19,7 +19,7 @@ const CreateAccount = () => {
     const userCredential = await createUserWithEmailAndPassword(auth, username, password);
     const { uid } = userCredential.user;
 
-    await setDoc(doc(db, 'users', uid), { role: 0, name:username }); // Default role: 0 (regular user)
+    await setDoc(doc(db, 'users', uid), { role: 0, email: username }); // Default role: 0 (regular user)
 
     router.push('/');
     return '';
