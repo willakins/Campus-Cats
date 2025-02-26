@@ -1,12 +1,13 @@
-import React, { useContext, useEffect, useState } from "react";
-import { getStorage, ref, listAll, getDownloadURL } from "firebase/storage";
-import { db, storage } from "./firebase"; // Import your firebase config
-import { FlatList, Text, StyleSheet, View, Image, ScrollView, SafeAreaView, TouchableOpacity } from 'react-native';
-import CatalogItem from '../../components/CatalogItem';
-import { collection, doc, getDoc, getDocs } from "firebase/firestore";
-import { CatalogEntryObject } from "@/types/CatalogEntryObject";
-import { useRouter } from "expo-router";
-import { getAuth } from "firebase/auth";
+import React, {  useEffect, useState } from 'react';
+import { SafeAreaView, ScrollView, StyleSheet, Text, TouchableOpacity } from 'react-native';
+
+import { useRouter } from 'expo-router';
+import { getAuth } from 'firebase/auth';
+import { collection, doc, getDoc, getDocs } from 'firebase/firestore';
+
+import { CatalogItem } from '@/components';
+import { CatalogEntryObject } from '@/types';
+import { db } from '@/services/firebase'; // Import your firebase config
 
 export default function Catalog() {
   const [catalogEntries, setCatalogEntries] = useState<CatalogEntryObject[]>([]);
@@ -34,22 +35,22 @@ export default function Catalog() {
   }, []);
 
   // Following function checks for admin status
-    useEffect(() => {
-      setUserRole();
-    }, []);
-    const setUserRole = async () => {
-      const auth = getAuth();
-      const user = auth.currentUser;
-      if (user) {
-        const userDoc = await getDoc(doc(db, "users", user.uid));
-        if (userDoc.exists()) {
-          const userRole = userDoc.data().role;
-          setAdminStatus(userRole === 1 || userRole === 2);
-        } else {
-          console.log("No user document found!");
-        }
+  useEffect(() => {
+    setUserRole();
+  }, []);
+  const setUserRole = async () => {
+    const auth = getAuth();
+    const user = auth.currentUser;
+    if (user) {
+      const userDoc = await getDoc(doc(db, 'users', user.uid));
+      if (userDoc.exists()) {
+        const userRole = userDoc.data().role;
+        setAdminStatus(userRole === 1 || userRole === 2);
+      } else {
+        console.log('No user document found!');
       }
-    };
+    }
+  };
 
   const handleCreate = () => {
     router.push('/catalog/create-entry')
@@ -69,11 +70,11 @@ export default function Catalog() {
             name={entry.name}
             info={entry.info}
             most_recent_sighting={entry.most_recent_sighting}
-            />
+          />
         ))}
       </ScrollView>
     </SafeAreaView>
-    
+
   );
 }
 const styles = StyleSheet.create({

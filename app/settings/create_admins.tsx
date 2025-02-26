@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Alert, StatusBar, StyleSheet, Text, View } from 'react-native';
+import { Alert, StyleSheet, View } from 'react-native';
 
 import { useRouter } from 'expo-router';
 import { collection, doc, DocumentData, getDoc, getDocs, getFirestore, query, updateDoc, where } from 'firebase/firestore';
@@ -7,15 +7,6 @@ import { getAuth } from 'firebase/auth';
 
 import { Button, TextInput } from '@/components';
 import { db } from '@/services/firebase';
-
-type ItemProps = {title: string};
-
-// TODO: Either make this useful, or remove it
-const Item = ({title}: ItemProps) => (
-  <View style={styles.item}>
-    <Text style={styles.title}>{title}</Text>
-  </View>
-);
 
 const CreateAdmins = () => {
   const router = useRouter();

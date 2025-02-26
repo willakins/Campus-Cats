@@ -1,30 +1,31 @@
-// CatalogEntry.js
-import { storage } from '@/app/logged-in/firebase';
-import { CatalogEntryObject } from '@/types/CatalogEntryObject';
-import { getDownloadURL, listAll, ref } from 'firebase/storage';
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, Image, ScrollView } from 'react-native';
-import MapView, { Marker } from "react-native-maps";
+import { Text, StyleSheet, Image, ScrollView } from 'react-native';
 
-const CatalogEntry: React.FC<CatalogEntryObject> = ({ id, name, info, most_recent_sighting }) => {
+import { getDownloadURL, listAll, ref } from 'firebase/storage';
+import MapView, { Marker } from 'react-native-maps';
+
+import { CatalogEntryObject } from '@/types/CatalogEntryObject';
+import { storage } from '@/services/firebase';
+
+export const CatalogEntry: React.FC<CatalogEntryObject> = ({ id, name, info, most_recent_sighting }) => {
   const [profileURL, setProfile] = useState<string | null>(null);
   const [imageUrls, setImageUrls] = useState<string[]>([]);
 
   const fetchCatImages = async (catName: string) => {
     try {
       const folderRef = ref(storage, `cats/${catName}/`);
-      
+
       // List all images in the folder
       const result = await listAll(folderRef);
-      
-      let profilePicUrl = "";
+
+      let profilePicUrl = '';
       let extraPicUrls: string[] = [];
-  
+
       for (const itemRef of result.items) {
         const url = await getDownloadURL(itemRef);
-        
+
         // Check if this is the profile picture
-        if (itemRef.name.includes("_profile")) {
+        if (itemRef.name.includes('_profile')) {
           profilePicUrl = url;
         } else {
           extraPicUrls.push(url);
@@ -33,35 +34,35 @@ const CatalogEntry: React.FC<CatalogEntryObject> = ({ id, name, info, most_recen
       setProfile(profilePicUrl);
       setImageUrls(extraPicUrls);
     } catch (error) {
-      console.error("Error fetching images: ", error);
+      console.error('Error fetching images: ', error);
     }
   };
-    
-useEffect(() => {
-  fetchCatImages(name);
-}, []);
+
+  useEffect(() => {
+    fetchCatImages(name);
+  }, []);
 
 
   return (
     <ScrollView contentContainerStyle={styles.entryContainer}>
-        <Text style={styles.title}>{name}</Text>
-        {profileURL ? (<Image source={{ uri: profileURL }} style={styles.image} resizeMode="contain" />) : 
+      <Text style={styles.title}>{name}</Text>
+      {profileURL ? (<Image source={{ uri: profileURL }} style={styles.image} resizeMode="contain" />) : 
         <Text style={styles.title}>Loading image...</Text>}
-        <Text style={styles.description}>{info}</Text>
-        <Text style={styles.subHeading}> Most Recent Sighting</Text>
-        <MapView
-            style={styles.map}
-            initialRegion={{
-              latitude: 33.7756, // Default location (e.g., Georgia Tech)
-              longitude: -84.3963,
-              latitudeDelta: 0.01,
-              longitudeDelta: 0.01,
-            }}
-          >
-            {most_recent_sighting && <Marker coordinate={most_recent_sighting} />}
-        </MapView>
-        <Text style={styles.subHeading}> Extra Photos</Text>
-        {imageUrls ? (imageUrls.map((url, index) => (
+      <Text style={styles.description}>{info}</Text>
+      <Text style={styles.subHeading}> Most Recent Sighting</Text>
+      <MapView
+        style={styles.map}
+        initialRegion={{
+          latitude: 33.7756, // Default location (e.g., Georgia Tech)
+          longitude: -84.3963,
+          latitudeDelta: 0.01,
+          longitudeDelta: 0.01,
+        }}
+      >
+        {most_recent_sighting && <Marker coordinate={most_recent_sighting} />}
+      </MapView>
+      <Text style={styles.subHeading}> Extra Photos</Text>
+      {imageUrls ? (imageUrls.map((url, index) => (
         <Image key={index} source={{ uri: url }} style={styles.image} />))) : <Text>Loading images...</Text>}
     </ScrollView>
   );
@@ -121,5 +122,3 @@ const styles = StyleSheet.create({
     marginTop: -20,
   },
 });
-
-export default CatalogEntry;

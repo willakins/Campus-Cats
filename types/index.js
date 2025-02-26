@@ -1,0 +1,1 @@
+export { CatalogEntryObject } from './CatalogEntryObject'
