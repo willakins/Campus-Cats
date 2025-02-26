@@ -1,13 +1,14 @@
-import CatalogEntry from "@/components/CatalogEntry";
-import { useLocalSearchParams, useRouter } from "expo-router";
-import { StyleSheet, ScrollView, Text, View, TouchableOpacity} from 'react-native';
-import { CatalogEntryObject } from '@/types/CatalogEntryObject';
-import { LatLng } from "react-native-maps";
-import { useEffect, useState } from "react";
-import { Ionicons } from "@expo/vector-icons";
-import { getAuth } from "firebase/auth";
-import { doc, getDoc } from "firebase/firestore";
-import { db } from "../logged-in/firebase";
+import { useEffect, useState } from 'react';
+import { StyleSheet, Text, View } from 'react-native';
+
+import { useLocalSearchParams, useRouter } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
+import { getAuth } from 'firebase/auth';
+import { doc, getDoc } from 'firebase/firestore';
+import { LatLng } from 'react-native-maps';
+
+import { Button, CatalogEntry } from '@/components';
+import { db } from '@/services/firebase';
 
 const view_entry = () =>{
   const [adminStatus, setAdminStatus] = useState<boolean>(false); 
@@ -19,16 +20,16 @@ const view_entry = () =>{
   const latitude = parseFloat(paramLatitude as string);
   const longitude = parseFloat(paramLongitude as string);
   var most_recent_sighting:LatLng = {
-      latitude: latitude,
-      longitude: longitude,
-    };
+    latitude: latitude,
+    longitude: longitude,
+  };
 
   const handleBack = () => {
-    router.push('/logged-in/catalog');
+    router.push('/catalog');
   };
   const handleEdit = () => {
     router.push({
-      pathname: "/catalog/edit-entry", // Dynamically navigate to the details page
+      pathname: '/catalog/edit-entry', // Dynamically navigate to the details page
       params: { paramId:id, paramName:name, paramInfo:info }, // Pass the details as query params
     });
   };
@@ -41,31 +42,31 @@ const view_entry = () =>{
     const auth = getAuth();
     const user = auth.currentUser;
     if (user) {
-      const userDoc = await getDoc(doc(db, "users", user.uid));
+      const userDoc = await getDoc(doc(db, 'users', user.uid));
       if (userDoc.exists()) {
         const userRole = userDoc.data().role;
         setAdminStatus(userRole === 1 || userRole === 2);
       } else {
-        console.log("No user document found!");
+        console.log('No user document found!');
       }
     }
   };
 
   return (
-      <View>
-          <TouchableOpacity style={styles.logoutButton} onPress={handleBack}>
-          <Ionicons name="arrow-back-outline" size={25} color="#fff" />
-          </TouchableOpacity>
-          {adminStatus && <TouchableOpacity style={styles.editButton} onPress={handleEdit}>
-          <Text style ={styles.editText}> Edit Entry</Text>
-          </TouchableOpacity>}
-          <CatalogEntry
-              id={id}
-              name={name}
-              info={info}
-              most_recent_sighting={most_recent_sighting}
-              />
-      </View>
+    <View>
+      <Button style={styles.logoutButton} onPress={handleBack}>
+        <Ionicons name="arrow-back-outline" size={25} color="#fff" />
+      </Button>
+      {adminStatus && <Button style={styles.editButton} onPress={handleEdit}>
+        <Text style ={styles.editText}> Edit Entry</Text>
+      </Button>}
+      <CatalogEntry
+        id={id}
+        name={name}
+        info={info}
+        most_recent_sighting={most_recent_sighting}
+      />
+    </View>
   );
 }
 
@@ -107,7 +108,6 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: 'bold',
     textAlign: 'center',
-
   },
   container: {
     flex: 1,
