@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { Image, StyleSheet, Text, View } from 'react-native';
 
-import { Button, BorderlessButton, TextInput } from '@/components';
+import { Button, BorderlessButton } from './ui/Buttons';
+import { TextInput } from './ui/TextInput';
 
 type LoginProps = {
   onSubmit: (user: string, pass: string) => Promise<string>;
@@ -30,7 +31,7 @@ export const Login: React.FC<LoginProps> = ({
 
   return (
     <View style={styles.container}>
-      <Image source={require('@/assets/images/campus_cats_logo.png')} style={styles.logo}/>
+      <Image source={require('@/assets/images/campus_cats_logo.png')} style={styles.logo} resizeMode='contain'/>
       <View style={styles.inputContainer}>
         <TextInput 
           placeholder="Email" 
@@ -72,7 +73,6 @@ const styles = StyleSheet.create({
   logo: {
     width: 250,
     height: 250,
-    resizeMode: 'contain',
     marginBottom: 20,
   },
   inputContainer: {
