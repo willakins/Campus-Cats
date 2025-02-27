@@ -5,7 +5,7 @@ import { AuthProvider } from '@/providers';
 const RootLayout = () => {
   return (
     <AuthProvider>
-      <Slot />;
+      <Slot />
     </AuthProvider>
   );
 };

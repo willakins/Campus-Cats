@@ -21,10 +21,10 @@ SplashScreen.setOptions({
 });
 
 const App = () => {
-  const { isLoading } = useAuth();
+  const { loading } = useAuth();
 
   const onLayoutRootView = useCallback(() => {
-    if (!isLoading) {
+    if (!loading) {
       // This tells the splash screen to hide immediately! If we call this after
       // `setIsLoading`, then we may see a blank screen while the app is
       // loading its initial state and rendering its first pixels. So instead,
@@ -32,9 +32,9 @@ const App = () => {
       // performed layout.
       SplashScreen.hide();
     }
-  }, [isLoading]);
+  }, [loading]);
 
-  if (isLoading) {
+  if (loading) {
     return <LoadingIndicator />;
   }
 
@@ -54,13 +54,12 @@ const AppSplashScreen: React.FC<{}> = () => {
 
   useEffect(() => {
     const timer = setTimeout(() => {
-      console.log('here');
       if (auth.currentUser) {
-        router.push('/(app)/(tabs)')
+        router.push('/(app)/(tabs)');
       } else {
-        router.push('/login')
+        router.push('/login');
       }
-    }, 0);
+    }, 1000);
 
     return () => clearTimeout(timer);
   }, []);
@@ -68,7 +67,8 @@ const AppSplashScreen: React.FC<{}> = () => {
   return(
     <Image
       style={styles.splashImage}
-      source={require('../assets/images/app-icon.png')}
+      resizeMode='contain'
+      source={require('@/assets/images/app-icon.png')}
     />
   );
 };
@@ -83,6 +83,5 @@ const styles = StyleSheet.create({
   splashImage: {
     width: 200,
     height: 200,
-    resizeMode: 'contain',
   },
 });
