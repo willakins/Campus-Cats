@@ -3,15 +3,16 @@ import { Redirect, Stack } from 'expo-router';
 import { useAuth } from '@/providers';
 
 const AppLayout = () => {
-  const { user } = useAuth();
+  const { currentUser } = useAuth();
 
-  if (!user) {
+  if (!currentUser) {
     // If we are not logged in, redirect to login screens
     return <Redirect href="/login" />;
   }
+
   return <Stack
     screenOptions={{
-      headerShown: true,
+      headerShown: false,
     }}
   />;
 };

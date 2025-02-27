@@ -5,7 +5,7 @@ import { Image, Text, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
 import { getDownloadURL, listAll, ref } from 'firebase/storage';
 
-import { Button } from '@/components';
+import { Button } from './ui/Buttons';
 import { CatalogEntryObject } from '@/types';
 import { storage } from '@/services/firebase';
 

@@ -3,15 +3,16 @@ import { Redirect, Stack } from 'expo-router';
 import { useAuth } from '@/providers';
 
 const AuthLayout = () => {
-  const { user } = useAuth();
+  const { currentUser } = useAuth();
 
-  if (user) {
+  if (currentUser) {
     // If we are already logged in, bypass login screens
     return <Redirect href="/(app)/(tabs)" />;
   }
+
   return <Stack
     screenOptions={{
-      headerShown: true,
+      headerShown: false,
     }}
   />;
 };
