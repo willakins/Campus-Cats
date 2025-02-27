@@ -1,18 +1,16 @@
-import React, { useState, useEffect } from 'react';
 import { Text, TouchableOpacity, View } from 'react-native';
 
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { doc, getDoc } from 'firebase/firestore';
 import { StyleSheet } from 'react-native';
 
-import { auth, db } from '@/services/firebase';
 import { useAuth } from '@/providers';
 
 const Settings = () => {
-  const { signOut } = useAuth();
-  const [adminStatus, setAdminStatus] = useState<boolean>(false); 
+  const { signOut, user } = useAuth();
   const router = useRouter();
+
+  const adminStatus = user.role === 1 || user.role === 2;
 
   const handleLogout = () => {
     signOut();
@@ -20,23 +18,6 @@ const Settings = () => {
   };
   const handleCreateAdmins = () => {
     router.push('/settings/create_admins');
-  };
-
-  // Following function checks for admin status
-  useEffect(() => {
-    setUserRole();
-  }, []);
-  const setUserRole = async () => {
-    const user = auth.currentUser;
-    if (user) {
-      const userDoc = await getDoc(doc(db, 'users', user.uid));
-      if (userDoc.exists()) {
-        const userRole = userDoc.data().role;
-        setAdminStatus(userRole === 1 || userRole === 2);
-      } else {
-        console.log('No user document found!');
-      }
-    }
   };
 
   return (

@@ -8,15 +8,15 @@ type AuthContextType = {
   createAccount: () => void;
   signOut: () => void;
   currentUser: User | null,
-  userData: any;
+  user: any;
   loading: boolean;
 };
 
 const AuthContext = createContext<AuthContextType>({} as AuthContextType);
 
 const AuthProvider = ({ children }: { children: ReactNode }) => {
-  const [currentUser, setCurrentUser] = useState<User | null>();
-  const [userData, setUserData] = useState<any>(null);
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState<boolean>(true);
 
   const login = () => {
@@ -39,16 +39,16 @@ const AuthProvider = ({ children }: { children: ReactNode }) => {
           // Fetch user data from Firestore
           const userDoc = await getDoc(doc(db, 'users', authUser.uid));
           if (userDoc.exists()) {
-            setUserData({ id: userDoc.id, ...userDoc.data() });
+            setUser({ id: userDoc.id, ...userDoc.data() });
           } else {
-            setUserData(null);
+            setUser(null);
           }
         } catch (error) {
           console.error("Error fetching user data:", error);
-          setUserData(null);
+          setUser(null);
         }
       } else {
-        setUserData(null);
+        setUser(null);
       }
       
       setLoading(false);
@@ -59,7 +59,7 @@ const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const value = {
     login, createAccount, signOut,
-    currentUser, userData, loading,
+    currentUser, user, loading,
   }
 
   return (
