@@ -14,7 +14,7 @@ const LoginScreen = () => {
     }
 
     try {
-      login(username, password);
+      await login(username, password);
       router.replace('/(app)/(tabs)');
     } catch (error: any) {
       return error.message;
