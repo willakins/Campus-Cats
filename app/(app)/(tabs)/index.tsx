@@ -1,11 +1,10 @@
-import React, { useCallback, useEffect, useState } from 'react';
-import { Platform, StyleSheet, View } from 'react-native';
+import React, { useCallback, useState } from 'react';
+import { StyleSheet, View } from 'react-native';
 
-import { useFocusEffect, useNavigation, useRouter } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 import { collection, getDocs } from 'firebase/firestore';
-import MapView, { Marker } from 'react-native-maps';
 
-import { Button } from '@/components';
+import { Button, SightingMapView } from '@/components';
 import { db } from '@/services/firebase';
 
 interface CatSighting {
@@ -28,7 +27,7 @@ const HomeScreen = () => {
 
   useFocusEffect(
     useCallback(() => {
-      const fetchPins = async  () => {
+      const fetchPins = async () => {
         const querySnapshot = await getDocs(collection(db, 'cat-sightings'));
         const pinsData: CatSighting[] = querySnapshot.docs.map(doc => ({
           id: doc.id,
@@ -50,13 +49,27 @@ const HomeScreen = () => {
     }, [])
   );
 
-  const filteredPins = pins.filter(pin => {
+  const filterPins = (pin: CatSighting) => {
     if (filter === 'all') return true;
     const days = parseInt(filter);
     const cutoffDate = new Date();
     cutoffDate.setDate(cutoffDate.getDate() - days);
     return new Date(pin.date) >= cutoffDate;
-  });
+  };
+
+  const viewSighting = (pin: CatSighting) => {
+    router.push({ pathname: '/sighting', params: {
+      docId: pin.id,
+      catDate: JSON.stringify(pin.date),
+      catFed: pin.fed ? 'true':'false',
+      catHealth: pin.health ? 'true':'false',
+      catPhoto: pin.photoUri,
+      catInfo: pin.info,
+      catLongitude: JSON.stringify(pin.longitude),
+      catLatitude: JSON.stringify(pin.latitude),
+      catName: pin.name
+    }})
+  };
 
   // TODO: Create a Google Cloud API Project
   // https://docs.expo.dev/versions/latest/sdk/map-view/#deploy-app-with-google-maps
@@ -75,27 +88,19 @@ const HomeScreen = () => {
         ))}
       </View>
 
-      <MapView provider={Platform.OS === 'web' ? 'google' : undefined} key={mapKey} style={{ flex: 1 }} initialRegion={{ latitude: 33.776077, longitude: -84.396199, latitudeDelta: 0.01, longitudeDelta: 0.01 }}>
-        {filteredPins.map(pin => (
-          <Marker
-            key={pin.id}
-            coordinate={{ latitude: pin.latitude, longitude: pin.longitude }}
-            title={pin.name}
-            description={pin.info}
-            onPress={() => router.push({ pathname: '/sighting', params: {
-              docId: pin.id,
-              catDate: JSON.stringify(pin.date),
-              catFed: pin.fed ? 'true':'false',
-              catHealth: pin.health ? 'true':'false',
-              catPhoto: pin.photoUri,
-              catInfo: pin.info,
-              catLongitude: JSON.stringify(pin.longitude),
-              catLatitude: JSON.stringify(pin.latitude),
-              catName: pin.name
-            }})}
-          />
-        ))}
-      </MapView>
+      <SightingMapView
+        list={pins}
+        filter={filterPins}
+        key={mapKey}
+        style={{ flex: 1 }}
+        initialRegion={{
+          latitude: 33.776077,
+          longitude: -84.396199,
+          latitudeDelta: 0.01,
+          longitudeDelta: 0.01,
+        }}
+        onPerMarkerPress={viewSighting}
+      />
       <Button
         style={styles.reportButton}
         onPress={() => router.push('/sighting/report')}
