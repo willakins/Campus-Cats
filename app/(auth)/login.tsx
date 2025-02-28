@@ -1,10 +1,10 @@
 import { useRouter } from 'expo-router';
-import { signInWithEmailAndPassword } from 'firebase/auth';
 
 import { Login } from '@/components';
-import { auth } from '@/services/firebase';
+import { useAuth } from '@/providers';
 
 const LoginScreen = () => {
+  const { login } = useAuth();
   const router = useRouter();
 
   const validateUser = async (username: string, password: string): Promise<string> => {
@@ -14,7 +14,7 @@ const LoginScreen = () => {
     }
 
     try {
-      await signInWithEmailAndPassword(auth, username, password);
+      login(username, password);
       router.replace('/(app)/(tabs)');
     } catch (error: any) {
       return error.message;
