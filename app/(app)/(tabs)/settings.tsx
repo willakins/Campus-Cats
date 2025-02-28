@@ -12,8 +12,8 @@ const Settings = () => {
 
   const adminStatus = user.role === 1 || user.role === 2;
 
-  const handleLogout = () => {
-    signOut();
+  const handleLogout = async () => {
+    await signOut();
     router.push('/login')
   };
   const handleCreateAdmins = () => {

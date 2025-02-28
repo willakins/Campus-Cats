@@ -1,5 +1,5 @@
 import { auth, db } from '@/services/firebase';
-import { onAuthStateChanged, User as AuthUser, signInWithEmailAndPassword, createUserWithEmailAndPassword } from 'firebase/auth';
+import { onAuthStateChanged, User as AuthUser, signInWithEmailAndPassword, createUserWithEmailAndPassword, UserCredential } from 'firebase/auth';
 import { doc, getDoc } from 'firebase/firestore';
 import { createContext, useState, ReactNode, useContext, useEffect } from 'react';
 
@@ -7,9 +7,9 @@ import { createContext, useState, ReactNode, useContext, useEffect } from 'react
 type User = any;
 
 type AuthContextType = {
-  login: (username: string, password: string) => void;
-  createAccount: (username: string, password: string) => void;
-  signOut: () => void;
+  login: (username: string, password: string) => Promise<UserCredential>;
+  createAccount: (username: string, password: string) => Promise<UserCredential>;
+  signOut: () => Promise<void>;
   currentUser: AuthUser | null,
   user: User;
   loading: boolean;
@@ -22,44 +22,33 @@ const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState<boolean>(true);
 
-  const login = (username: string, password: string) => {
-    signInWithEmailAndPassword(auth, username, password)
-      .then((userCredential) => {
-        const authUser = userCredential.user
-        return getDoc(doc(db, 'users', authUser.uid));
-      })
-      .then((userDoc) => {
-        if (userDoc.exists()) {
-          setUser({ id: userDoc.id, ...userDoc.data() });
-        } else {
-          setUser(null);
-        }
-      })
-      .catch(() => {
-        throw Error('Failed to log in');
-      });
+  const login = async (username: string, password: string): Promise<UserCredential> => {
+    const userCredential = await signInWithEmailAndPassword(auth, username, password);
+    const authUser = userCredential.user;
+    const userDoc = await getDoc(doc(db, 'users', authUser.uid));
+    if (userDoc.exists()) {
+      setUser({ id: userDoc.id, ...userDoc.data() });
+    } else {
+      setUser(null);
+    }
+    return userCredential;
   };
 
-  const createAccount = (username: string, password: string) => {
-    createUserWithEmailAndPassword(auth, username, password)
-      .then((userCredential) => {
-        const authUser = userCredential.user
-        return getDoc(doc(db, 'users', authUser.uid));
-      })
-      .then((userDoc) => {
-        if (userDoc.exists()) {
-          setUser({ id: userDoc.id, ...userDoc.data() });
-        } else {
-          setUser(null);
-        }
-      })
-      .catch(() => {
-        throw Error('Failed to log in');
-      });
+  const createAccount = async (username: string, password: string): Promise<UserCredential> => {
+    const userCredential = await createUserWithEmailAndPassword(auth, username, password);
+    const authUser = userCredential.user;
+    const userDoc = await getDoc(doc(db, 'users', authUser.uid));
+    if (userDoc.exists()) {
+      setUser({ id: userDoc.id, ...userDoc.data() });
+    } else {
+      setUser(null);
+    }
+    return userCredential;
   };
 
-  const signOut = () => {
-    auth.signOut().then(() => setUser(null));
+  const signOut = async (): Promise<void> => {
+    await auth.signOut();
+    setUser(null);
   };
 
   useEffect(() => {

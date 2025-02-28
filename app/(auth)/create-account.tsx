@@ -1,13 +1,14 @@
 import React from 'react';
 
 import { useRouter } from 'expo-router';
-import { createUserWithEmailAndPassword } from 'firebase/auth';
 import { doc, setDoc } from 'firebase/firestore';
 
 import { Login } from '@/components'
-import { auth, db } from '@/services/firebase';
+import { db } from '@/services/firebase';
+import { useAuth } from '@/providers';
 
 const CreateAccount = () => {
+  const { createAccount } = useAuth();
   const router = useRouter();
 
   const validateNewUser = async (username: string, password: string): Promise<string> => {
@@ -16,7 +17,7 @@ const CreateAccount = () => {
       return 'Please enter both username and password';
     }
 
-    const userCredential = await createUserWithEmailAndPassword(auth, username, password);
+    const userCredential = await createAccount(username, password);
     const { uid } = userCredential.user;
 
     await setDoc(doc(db, 'users', uid), { role: 0, email: username }); // Default role: 0 (regular user)
