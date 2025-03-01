@@ -54,8 +54,24 @@ const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (authUser) => {
+    // Get user doc on start
+    const getUserDoc = async () => {
+      if (auth.currentUser) {
+        const userDoc = await getDoc(doc(db, 'users', auth.currentUser.uid)).then();
+        if (userDoc.exists()) {
+          setUser({ id: userDoc.id, ...userDoc.data() });
+        } else {
+          // NOTE: It would probably make more sense for this to throw
+          setUser(null);
+        }
+      } else {
+        setUser(null);
+      }
+    };
+
+    const unsubscribe = onAuthStateChanged(auth, async (authUser) => {
       setCurrentUser(authUser);
+      await getUserDoc();
       setLoading(false);
     });
 
