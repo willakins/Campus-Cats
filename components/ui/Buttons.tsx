@@ -13,6 +13,12 @@ type CameraButtonProps = {
   style?: StyleProp<ViewStyle>;
 };
 
+type IconProps = React.PropsWithoutRef<TouchableOpacityProps> & {
+  children?: React.ReactNode;
+  style?: StyleProp<ViewStyle>;
+  //icon name
+};
+
 export const Button: React.FC<ButtonProps> = ({
 	children,
 	style,
@@ -29,7 +35,7 @@ export const Button: React.FC<ButtonProps> = ({
       </Text>
     </TouchableOpacity>
   );
-}
+};
 
 export const BorderlessButton: React.FC<ButtonProps> = ({
 	children,
@@ -44,7 +50,7 @@ export const BorderlessButton: React.FC<ButtonProps> = ({
       </Text>
     </TouchableOpacity>
   );
-}
+};
 
 export const ImageButton: React.FC<ButtonProps> = ({
 	children,
