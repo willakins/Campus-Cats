@@ -1,6 +1,6 @@
 import { auth, db } from '@/services/firebase';
 import { onAuthStateChanged, User as AuthUser, signInWithEmailAndPassword, createUserWithEmailAndPassword, UserCredential } from 'firebase/auth';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { createContext, useState, ReactNode, useContext, useEffect } from 'react';
 
 // TODO: implement User type
@@ -37,6 +37,8 @@ const AuthProvider = ({ children }: { children: ReactNode }) => {
   const createAccount = async (username: string, password: string): Promise<UserCredential> => {
     const userCredential = await createUserWithEmailAndPassword(auth, username, password);
     const authUser = userCredential.user;
+    // Create the new document immediately before setting it
+    await setDoc(doc(db, 'users', authUser.uid), { role: 0, email: username }); // Default role: 0 (regular user)
     const userDoc = await getDoc(doc(db, 'users', authUser.uid));
     if (userDoc.exists()) {
       setUser({ id: userDoc.id, ...userDoc.data() });

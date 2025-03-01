@@ -1,10 +1,8 @@
 import React from 'react';
 
 import { useRouter } from 'expo-router';
-import { doc, setDoc } from 'firebase/firestore';
 
 import { Login } from '@/components'
-import { db } from '@/services/firebase';
 import { useAuth } from '@/providers';
 
 const CreateAccount = () => {
@@ -17,12 +15,13 @@ const CreateAccount = () => {
       return 'Please enter both username and password';
     }
 
-    const userCredential = await createAccount(username, password);
-    const { uid } = userCredential.user;
+    try {
+      await createAccount(username, password);
+      router.replace('/(app)/(tabs)');
+    } catch (error: any) {
+      return error.message;
+    }
 
-    await setDoc(doc(db, 'users', uid), { role: 0, email: username }); // Default role: 0 (regular user)
-
-    router.replace('/');
     return '';
   };
 
