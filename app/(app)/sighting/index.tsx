@@ -17,7 +17,7 @@ const CatSightingScreen = () => {
 
   // TODO: Replace placeholders with states eventually
   const [isAdmin, setIsAdmin] = useState(false);
-  const [loading, setLoading] = useState(true);
+  // const [loading, setLoading] = useState(true);
 
   // Convert params to right type (Frick you Typescript!!)
 
@@ -93,7 +93,7 @@ const CatSightingScreen = () => {
       });
 
       alert('Saved!');
-      router.push('/(tabs)')
+      router.push('/(app)/(tabs)')
     } catch (error: unknown) {
       if (error instanceof Error) {
         alert('Error saving sighting: ' + error.message);
@@ -105,13 +105,13 @@ const CatSightingScreen = () => {
     }
   };
 
-  if (loading) {
-    return (
-      <View style={styles.screen}>
-        <ActivityIndicator size="large" color="#000" />
-      </View>
-    );
-  }
+  // if (loading) {
+  //   return (
+  //     <View style={styles.screen}>
+  //       <ActivityIndicator size="large" color="#000" />
+  //     </View>
+  //   );
+  // }
   const deleteSighting = async () => {
     try {
       if (photoURL) {
@@ -124,7 +124,7 @@ const CatSightingScreen = () => {
       }
       await deleteDoc(doc(db, 'cat-sightings', docRef));
       alert('Cat sighting deleted successfully!');
-      router.push('/(tabs)');
+      router.push('/(app)/(tabs)');
     } catch (error) {
       console.error('Error deleting sighting:', error);
       alert('Failed to delete sighting.');
