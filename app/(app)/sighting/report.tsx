@@ -126,7 +126,7 @@ const CatReportScreen = () => {
               healthy: health,
               fed: fed,
             });
-            router.push('/(tabs)')
+            router.push('/(app)/(tabs)')
           }
         } catch (error) {
           if (error instanceof Error) {
