@@ -7,7 +7,7 @@ import { doc, getDoc } from 'firebase/firestore';
 import { LatLng } from 'react-native-maps';
 
 import { Button, CatalogEntry } from '@/components';
-import { auth, db } from '@/services/firebase';
+import { auth, db } from '@/config/firebase';
 
 const view_entry = () =>{
   const [adminStatus, setAdminStatus] = useState<boolean>(false); 

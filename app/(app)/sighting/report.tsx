@@ -12,7 +12,7 @@ import MapView, { LatLng, Marker } from 'react-native-maps';
 import { v4 as uuidv4 } from 'uuid';
 
 import { Button, TextInput } from '@/components';
-import { db } from '@/services/firebase';
+import { db } from '@/config/firebase';
 
 const CatReportScreen = () => {
   const [date, setDate] = useState<Date | null>(null);
