@@ -5,7 +5,7 @@ import { useRouter } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 
 import { LoadingIndicator } from '@/components';
-import { auth } from '@/services/firebase';
+import { auth } from '@/config/firebase';
 import { useAuth } from '@/providers';
 
 // Instruct SplashScreen not to hide yet, we want to do this manually
