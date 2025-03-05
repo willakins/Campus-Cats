@@ -1,1 +1,1 @@
-export { CatalogEntryObject } from './CatalogEntryObject'
+export { CatalogEntryObject } from './CatalogEntryObject';

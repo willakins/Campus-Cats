@@ -7,7 +7,7 @@ import { getDownloadURL, listAll, ref } from 'firebase/storage';
 
 import { Button } from './ui/Buttons';
 import { CatalogEntryObject } from '@/types';
-import { storage } from '@/services/firebase';
+import { storage } from '@/config/firebase';
 
 export const CatalogItem: React.FC<CatalogEntryObject> = ({ id, name, info, most_recent_sighting }) => {
   const router = useRouter();
