@@ -5,7 +5,7 @@ import { useRouter } from 'expo-router';
 import { collection, doc, DocumentData, getDoc, getDocs, getFirestore, query, updateDoc, where } from 'firebase/firestore';
 
 import { Button, TextInput } from '@/components';
-import { auth, db } from '@/services/firebase';
+import { auth, db } from '@/config/firebase';
 
 const CreateAdmins = () => {
   const router = useRouter();

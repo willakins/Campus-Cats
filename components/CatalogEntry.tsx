@@ -5,7 +5,7 @@ import { getDownloadURL, listAll, ref } from 'firebase/storage';
 import MapView, { Marker } from 'react-native-maps';
 
 import { CatalogEntryObject } from '@/types/CatalogEntryObject';
-import { storage } from '@/services/firebase';
+import { storage } from '@/config/firebase';
 
 export const CatalogEntry: React.FC<CatalogEntryObject> = ({ id, name, info, most_recent_sighting }) => {
   const [profileURL, setProfile] = useState<string | null>(null);

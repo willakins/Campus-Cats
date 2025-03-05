@@ -1,10 +1,10 @@
-import { auth, db } from '@/services/firebase';
 import { onAuthStateChanged, User as AuthUser, signInWithEmailAndPassword, createUserWithEmailAndPassword, UserCredential } from 'firebase/auth';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { createContext, useState, ReactNode, useContext, useEffect } from 'react';
 
 // TODO: implement User type
 type User = any;
+import { auth, db } from '@/config/firebase';
 
 type AuthContextType = {
   login: (username: string, password: string) => Promise<UserCredential>;

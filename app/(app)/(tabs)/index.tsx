@@ -5,7 +5,7 @@ import { useFocusEffect, useRouter } from 'expo-router';
 import { collection, getDocs } from 'firebase/firestore';
 
 import { Button, SightingMapView } from '@/components';
-import { db } from '@/services/firebase';
+import { db } from '@/config/firebase';
 
 interface CatSighting {
   id: string;
