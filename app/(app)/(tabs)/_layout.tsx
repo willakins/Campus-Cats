@@ -10,7 +10,7 @@ const HomeLayout = () => {
   const bar_height: number = Platform.select({
     ios: 40,
     android: 60,
-    default: 90
+    default: 40
   });
 
   return (
