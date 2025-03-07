@@ -6,8 +6,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { doc, getDoc } from 'firebase/firestore';
 import { LatLng } from 'react-native-maps';
 
-import { Button, CatalogEntry } from '@/components';
-import { auth, db } from '@/config/firebase';
+import { Button, CatalogEntry, IconButton } from '@/components';
+import { auth, db } from '@/services/firebase';
 
 const view_entry = () =>{
   const [adminStatus, setAdminStatus] = useState<boolean>(false); 
@@ -52,9 +52,14 @@ const view_entry = () =>{
 
   return (
     <View>
+      
+      {/* 
       <Button style={styles.logoutButton} onPress={handleBack}>
         <Ionicons name="arrow-back-outline" size={25} color="#fff" />
       </Button>
+      */}
+      <IconButton iconName="arrow-back-outline" onPress={handleBack} style={styles.logoutButton}/>
+      
       {adminStatus ? <Button style={styles.editButton} onPress={handleEdit}>
         <Text style ={styles.editText}> Edit Entry</Text>
       </Button> : null}
