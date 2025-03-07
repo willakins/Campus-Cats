@@ -3,7 +3,6 @@ import { Image, SafeAreaView, StyleSheet } from 'react-native';
 
 import { useRouter } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
-import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { LoadingIndicator } from '@/components';
 import { auth } from '@/services/firebase';
@@ -39,11 +38,9 @@ const App = () => {
   }
 
   return (
-    <SafeAreaProvider>
-      <SafeAreaView onLayout={onLayoutRootView} style={styles.splashContainer}>
-        <AppSplashScreen />
-      </SafeAreaView>
-    </SafeAreaProvider>
+    <SafeAreaView onLayout={onLayoutRootView} style={styles.splashContainer}>
+      <AppSplashScreen />
+    </SafeAreaView>
   );
 };
 
