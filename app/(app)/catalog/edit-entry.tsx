@@ -7,7 +7,7 @@ import { doc, updateDoc } from 'firebase/firestore';
 import { deleteObject, getDownloadURL, listAll, uploadBytes, uploadBytesResumable, ref } from 'firebase/storage';
 import { Snackbar } from 'react-native-paper';
 
-import { Button, TextInput } from '@/components';
+import { Button, TextInput, ImageButton } from '@/components';
 import { db, storage } from '@/services/firebase';
 
 const edit_entry = () => {
@@ -233,9 +233,9 @@ const edit_entry = () => {
         <View style={styles.extraPicsContainer}>
           {extraPics ? (extraPics.map((pic, index) => (
             <View key={index} style={styles.imageWrapper}>
-              <Button key={index} onPress={() => swapProfilePicture(pic)}>
+              <ImageButton key={index} onPress={() => swapProfilePicture(pic)}>
                 <Image source={{ uri: pic.url }} style={styles.extraPic} />
-              </Button>
+              </ImageButton>
               <Button style={styles.deleteButton} onPress={() => confirmDeletion(name, index)}>
                 <Text style={styles.deleteButtonText}>Delete</Text>
               </Button>

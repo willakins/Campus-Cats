@@ -1,4 +1,4 @@
-export { Button, BorderlessButton } from './ui/Buttons';
+export { Button, BorderlessButton, ImageButton } from './ui/Buttons';
 export { TextInput } from './ui/TextInput';
 export { LoadingIndicator } from './ui/LoadingIndicator';
 
