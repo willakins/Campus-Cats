@@ -1,6 +1,6 @@
 // CatalogItem.js
 import React, { useEffect, useState } from 'react';
-import { Image, Text, StyleSheet } from 'react-native';
+import { Image, Text, StyleSheet, View } from 'react-native';
 
 import { useRouter } from 'expo-router';
 import { getDownloadURL, listAll, ref } from 'firebase/storage';
@@ -54,10 +54,12 @@ export const CatalogItem: React.FC<CatalogEntryObject> = ({ id, name, info, most
 
   return (
     <Button style={styles.entryContainer} onPress={handlePress}>
-      <Text style={styles.title}>{name}</Text>
-      {profileURL ? (<Image source={{ uri: profileURL }} style={styles.image} />) : 
-        <Text style={styles.title}>Loading image...</Text>}
-      <Text style={styles.description}>{info}</Text>
+      <View style={styles.entryElements}>
+        <Text style={styles.title}>{name}</Text>
+        {profileURL ? (<Image source={{ uri: profileURL }} style={styles.image} />) : 
+          <Text style={styles.title}>Loading image...</Text>}
+        <Text style={styles.description}>{info}</Text>
+      </View>
     </Button>
   );
 };
@@ -75,6 +77,10 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 10,
     elevation: 5,
+  },
+  entryElements: {
+    flexDirection: "column", // Ensures each item is stacked vertically
+    alignItems: "center",
   },
   image: {
     width: 250, // Set a fixed width for the image
