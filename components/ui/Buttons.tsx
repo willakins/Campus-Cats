@@ -39,6 +39,24 @@ export const BorderlessButton: React.FC<ButtonProps> = ({
   );
 }
 
+export const ImageButton: React.FC<ButtonProps> = ({
+	children,
+	style,
+	textStyle,
+	...props
+}) => {
+  const style_: StyleProp<ViewStyle> = [styles.imageButton, style];
+  const textStyle_: StyleProp<TextStyle> = [styles.buttonText, textStyle];
+
+  return (
+    <TouchableOpacity style={style_} {...props}>
+      <Text style={textStyle_}>
+        {children}
+      </Text>
+    </TouchableOpacity>
+  );
+}
+
 const styles = StyleSheet.create({
   button: {
     backgroundColor: '#333',
@@ -54,5 +72,12 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: 'bold',
     textAlign: 'center',
+  },
+  imageButton: {
+    backgroundColor: '#333',
+    borderRadius: 10,
+    alignItems: 'center',
+    display: 'flex',
+    justifyContent: 'center',
   },
 });
