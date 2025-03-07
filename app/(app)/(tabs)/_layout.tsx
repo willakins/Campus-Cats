@@ -8,7 +8,7 @@ const HomeLayout = () => {
   const size2 = 29;
   const color2 = '#333'
   const bar_height: number = Platform.select({
-    ios: 0,
+    ios: 80,
     android: 60,
     default: 90
   });
