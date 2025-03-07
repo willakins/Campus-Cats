@@ -12,7 +12,6 @@ type CameraButtonProps = {
   onPhotoSelected: (uri: string) => void;
   style?: StyleProp<ViewStyle>;
 };
-
 type IconProps = React.PropsWithoutRef<TouchableOpacityProps> & {
   children?: React.ReactNode;
   style?: StyleProp<ViewStyle>;
