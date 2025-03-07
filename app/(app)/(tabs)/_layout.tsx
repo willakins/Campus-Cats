@@ -1,5 +1,5 @@
 import React from 'react';
-import { Platform, StatusBar, StyleSheet, View } from 'react-native';
+import { Platform, StyleSheet, View } from 'react-native';
 
 import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -8,14 +8,12 @@ const HomeLayout = () => {
   const size2 = 29;
   const color2 = '#333'
   const bar_height: number = Platform.select({
-    ios: 80,
+    ios: 40,
     android: 60,
     default: 90
   });
 
   return (
-    <View style={styles.container}>
-      <StatusBar backgroundColor="#333" />
       <View style={styles.tabs}>
         <Tabs
           screenOptions={{
@@ -72,21 +70,15 @@ const HomeLayout = () => {
           />
         </Tabs>
       </View>
-    </View>
   );
 };
 
 export default HomeLayout;
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: 'flex-end', // Tab navigator will sit at the bottom
-  },
   tabs: {
     flex: 1,
     justifyContent: 'flex-end',
-    bottom: 0,
     backgroundColor: '#333',
   }
 });
