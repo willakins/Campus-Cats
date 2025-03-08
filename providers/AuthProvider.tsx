@@ -6,8 +6,8 @@ import { auth } from '@/config/firebase';
 import { User, fetchUser, mutateUser } from '@/models';
 
 type AuthContextType = {
-  login: (username: string, password: string) => Promise<void>;
-  createAccount: (username: string, password: string) => Promise<void>;
+  login: (email: string, password: string) => Promise<void>;
+  createAccount: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
   currentUser: AuthUser | null,
   user: User;
@@ -21,17 +21,17 @@ const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User>({} as User);
   const [loading, setLoading] = useState<boolean>(true);
 
-  const login = async (username: string, password: string) => {
-    await signInWithEmailAndPassword(auth, username, password);
+  const login = async (email: string, password: string) => {
+    await signInWithEmailAndPassword(auth, email, password);
   };
 
-  const createAccount = async (username: string, password: string) => {
-    const userCredential = await createUserWithEmailAndPassword(auth, username, password);
+  const createAccount = async (email: string, password: string) => {
+    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
     const authUser = userCredential.user;
     // Create a default user
     mutateUser({
       id: authUser.uid,
-      email: username,
+      email: email,
       role: 0,
     });
   };
