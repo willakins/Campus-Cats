@@ -8,3 +8,4 @@ export { CatalogEntry } from './CatalogEntry';
 export { CatalogItem } from './CatalogItem';
 export { Login } from './Login';
 export { PhotoHandler } from './PhotoHandler';
+export { CatalogImageHandler } from './CatalogImageHandler'

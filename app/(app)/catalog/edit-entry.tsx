@@ -7,7 +7,7 @@ import { doc, updateDoc } from 'firebase/firestore';
 import { deleteObject, getDownloadURL, listAll, uploadBytes, uploadBytesResumable, ref } from 'firebase/storage';
 import { Snackbar } from 'react-native-paper';
 
-import { Button, TextInput, ImageButton, CameraButton } from '@/components';
+import { Button, TextInput, ImageButton, CameraButton, CatalogImageHandler } from '@/components';
 import { db, storage } from '@/services/firebase';
 
 const edit_entry = () => {
@@ -20,7 +20,6 @@ const edit_entry = () => {
   const [visible, setVisible] = useState<boolean>(false);
 
   const [profilePicUrl, setProfilePicUrl] = useState('');
-  const [profilePicName, setProfilePicName] = useState(''); // Store actual filename of profile pic
   const [extraPics, setExtraPics] = useState<{ url: string; name: string }[]>([]);
   const [newPics, setNewPics] = useState<{ url: string; name: string }[]>([]);
   const [newPhotosAdded, setNewPhotos] = useState<boolean>(false);
@@ -46,12 +45,12 @@ const edit_entry = () => {
       }
 
       setProfilePicUrl(profilePic);
-      setProfilePicName(profileName);
       setExtraPics(extraPicsArray);
     } catch (error) {
       console.error('Error fetching images: ', error);
     }
   };
+  const imageHandler = new CatalogImageHandler(setVisible, fetchCatImages, setExtraPics, setNewPics, setNewPhotos);
 
   useEffect(() => {
     fetchCatImages();
@@ -62,89 +61,6 @@ const edit_entry = () => {
       pathname: '/catalog/view-entry', // Dynamically navigate to the details page
       params: { paramId:id, paramName:name, paramInfo:info }, // Pass the details as query params
     });
-  };
-
-  const confirmDeletion = (photoURL:string) => {
-    Alert.alert(
-      'Select Option',
-      'Are you sure you want to delete this image forever?',
-      [
-        {
-          text: 'Delete Forever',
-          onPress: () => deletePicture(photoURL),
-        },
-        {
-          text: 'Cancel',
-          style: 'cancel',
-        },
-      ],
-      { cancelable: true }
-    );
-  };
-
-  const deletePicture = async (photoURL:string) => {
-    try {
-      const imageRef = ref(storage, `cats/${name}/${photoURL}`);
-      await deleteObject(imageRef);
-      fetchCatImages();
-
-      alert('Success Image deleted successfully!');
-    } catch (error) {
-      alert('Error Failed to delete the image.');
-      console.error('Error deleting image: ', error);
-    }
-  };
-
-  const swapProfilePicture = async (selectedPic: { url: string; name: string }) => {
-    setVisible(true);
-    try {
-      if (!profilePicName || !selectedPic.name) {
-        alert('Error Could not find profile picture or selected picture.');
-        return;
-      }
-
-      const oldProfileRef = ref(storage, `cats/${name}/${profilePicName}`);
-      const selectedPicRef = ref(storage, `cats/${name}/${selectedPic.name}`);
-
-      // Fetch image blobs
-      const oldProfileBlob = await (await fetch(profilePicUrl)).blob();
-      const selectedPicBlob = await (await fetch(selectedPic.url)).blob();
-
-      // Swap images:
-      // 1. Delete both files
-      await deleteObject(oldProfileRef);
-      await deleteObject(selectedPicRef);
-
-      // 2. Re-upload old profile picture as selectedPic.name
-      const newExtraPicRef = ref(storage, `cats/${name}/${selectedPic.name}`);
-      await uploadBytesResumable(newExtraPicRef, oldProfileBlob);
-
-      // 3. Re-upload selected picture as profile picture
-      const newProfilePicRef = ref(storage, `cats/${name}/${name}_profile.jpg`);
-      await uploadBytesResumable(newProfilePicRef, selectedPicBlob);
-
-      // Refresh UI
-      fetchCatImages();
-      alert('Success Profile picture updated!');
-    } catch (error) {
-      console.error('Error swapping profile picture:', error);
-      alert('Error Failed to swap profile picture.');
-    } finally {
-      setVisible(false);
-    }
-  };
-
-  const generateUniqueFileName = (existingFiles:string[], originalName:string) => {
-    let fileExtension = originalName.split('.').pop(); // Get file extension (e.g., jpg, png)
-    let fileNameBase = originalName.replace(/\.[^/.]+$/, ""); // Remove extension
-    let newFileName;
-  
-    do {
-      let randomInt = Math.floor(Math.random() * 10000); // Generate random number (0-9999)
-      newFileName = `${fileNameBase}_${randomInt}.${fileExtension}`;
-    } while (existingFiles.includes(newFileName)); // Ensure it's unique
-  
-    return newFileName;
   };
 
   const handleSave = async () => {
@@ -200,7 +116,7 @@ const edit_entry = () => {
           const existingFilesSnapshot = await listAll(folderRef);
         const existingFiles = existingFilesSnapshot.items.map((item) => item.name);
 
-          const unique_name = generateUniqueFileName(existingFiles, "Whiskers_.jpg")
+          const unique_name = imageHandler.generateUniqueFileName(existingFiles, "Whiskers_.jpg")
           const photoRef = ref(storage, `${folderPath}${unique_name}`);
           await uploadBytes(photoRef, blob);
         }
@@ -215,18 +131,6 @@ const edit_entry = () => {
     } finally {
       setVisible(false);
     }
-  };
-
-  const addPhoto = (newPhotoUri: string) => {
-    setExtraPics((prevPics) => [
-      ...prevPics,
-      { url: newPhotoUri, name: `photo_${prevPics.length + 1}` },
-    ]);
-    setNewPics((prevPics) => [
-      ...prevPics,
-      { url: newPhotoUri, name: `photo_${prevPics.length + 1}` },
-    ]);
-    setNewPhotos(true);
   };
 
   return (
@@ -261,10 +165,10 @@ const edit_entry = () => {
         <View style={styles.extraPicsContainer}>
           {extraPics ? (extraPics.map((pic, index) => (
             <View key={index} style={styles.imageWrapper}>
-              <ImageButton key={index} onPress={() => swapProfilePicture(pic)}>
+              <ImageButton key={index} onPress={() => imageHandler.swapProfilePicture(pic)}>
                 <Image source={{ uri: pic.url }} style={styles.extraPic} />
               </ImageButton>
-              <Button style={styles.deleteButton} onPress={() => confirmDeletion(pic.name)}>
+              <Button style={styles.deleteButton} onPress={() => imageHandler.confirmDeletion(pic.name)}>
                 <Text style={styles.deleteButtonText}>Delete</Text>
               </Button>
             </View>
@@ -274,7 +178,7 @@ const edit_entry = () => {
           </Snackbar>
         </View>
         <Text style={styles.headline}> Upload Additional Photos</Text>
-        <CameraButton onPhotoSelected={addPhoto}></CameraButton>
+        <CameraButton onPhotoSelected={imageHandler.addPhoto}></CameraButton>
       </ScrollView>
     </KeyboardAvoidingView>
   );
