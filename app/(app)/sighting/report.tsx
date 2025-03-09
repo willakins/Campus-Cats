@@ -1,29 +1,28 @@
 import React, { useState } from 'react';
-import { Image, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Switch, Text, TouchableOpacity, View, } from 'react-native';
+import { Alert, Image, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Switch, Text, TouchableOpacity, View, } from 'react-native';
 
 import { useRouter } from 'expo-router';
 import { addDoc, collection, serverTimestamp, Timestamp } from 'firebase/firestore';
 import { getStorage, getDownloadURL, ref, uploadBytes } from 'firebase/storage';
-import DateTimePicker from '@react-native-community/datetimepicker';
 import MapView, { LatLng, MapPressEvent, Marker } from 'react-native-maps';
 
-import { Button, CameraButton, TextInput } from '@/components';
+import { Button, CameraButton, DateTimeInput, TextInput } from '@/components';
 import { db } from '@/config/firebase';
 import { getMediaFromPicker, uploadFromURI } from '@/utils';
 
 const CatReportScreen = () => {
-  const [date, setDate] = useState<Date | null>(null);
-  const [showPicker, setShowPicker] = useState(true);
+  const [date, setDate] = useState<Date>(new Date());
   const [fed, setFed] = useState<boolean>(false);
   const [health, setHealth] = useState<boolean>(false);
-  const [photoURL, setPhotoURL] = useState<string>('');
+  const [photoURI, setPhotoURI] = useState<string>('');
   const [info, setInfo] = useState<string>('');
   const [longitude, setLongitude] = useState<number>(-84.3963);
   const [latitude, setLatitude] = useState<number>(33.7756);
   const [name, setName] = useState<string>('');
+
   const router = useRouter();
 
-  var location:LatLng = {
+  var location: LatLng = {
     latitude: latitude,
     longitude: longitude,
   };
@@ -129,12 +128,6 @@ const CatReportScreen = () => {
     setLongitude(longitude);
   };
 
-  const handleDateChange = (event: any, selectedDate: any) => {
-    // If a date is selected, immediately update the date state
-    setDate(selectedDate || date);
-    setShowPicker(false); // Close the picker once a date is selected
-  };
-
   return (
     <KeyboardAvoidingView
       style={styles.container}
@@ -156,16 +149,7 @@ const CatReportScreen = () => {
             >
               {location ? <Marker coordinate={location} /> : null}
             </MapView>
-            <View style={styles.dateInput}>
-              <Text style={styles.sliderText}>{date ? date.toDateString() : 'Select Sighting Date'}</Text>
-              <TouchableOpacity  onPress={() => setShowPicker(true)}>
-                {showPicker ? <DateTimePicker
-                  value={date || new Date()}
-                  mode="date"
-                  display="default"
-                  onChange={handleDateChange}/> : null}
-              </TouchableOpacity>
-            </View>
+            <DateTimeInput date={date} setDate={setDate}/>
             <TextInput
               placeholder="Cat's name"
               placeholderTextColor="#888"

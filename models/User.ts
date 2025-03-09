@@ -11,11 +11,11 @@ const User = z.object({
 
 type User = z.infer<typeof User>;
 
-const path = 'users';
+export const path = 'users';
 
 const fetchUser = async (id: string) => {
-  const userDoc = await getDoc(doc(db, path, id));
-  return User.parse({ id: userDoc.id, ...userDoc.data() });
+  const document = await getDoc(doc(db, path, id));
+  return User.parse({ id: document.id, ...document.data() });
 };
 
 const mutateUser = async ({id, ...data}: User) => {
