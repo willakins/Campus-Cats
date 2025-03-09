@@ -448,4 +448,5 @@ const styles = StyleSheet.create({
     width: 240,
     height: 180,
   },
+  
 });
