@@ -1,7 +1,7 @@
 import React from 'react';
 import { Alert } from 'react-native';
 import { deleteObject, uploadBytesResumable, ref } from 'firebase/storage';
-import { storage } from '@/services/firebase';
+import { storage } from '@/config/firebase';
 
 interface CatalogImageHandlerProps {
   setVisible: (visible: boolean) => void;
