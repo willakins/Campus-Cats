@@ -7,7 +7,7 @@ import { doc, updateDoc } from 'firebase/firestore';
 import { deleteObject, getDownloadURL, listAll, uploadBytes, uploadBytesResumable, ref } from 'firebase/storage';
 import { Snackbar } from 'react-native-paper';
 
-import { Button, TextInput, ImageButton } from '@/components';
+import { Button, TextInput, ImageButton, CameraButton } from '@/components';
 import { db, storage } from '@/services/firebase';
 
 const edit_entry = () => {
@@ -201,6 +201,13 @@ const edit_entry = () => {
     }
   };
 
+  const addPhoto = (newPhotoUri: string) => {
+    setExtraPics((prevPics) => [
+      ...prevPics,
+      { url: newPhotoUri, name: `photo_${prevPics.length + 1}` },
+    ]);
+  };
+
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === 'ios' ? 'padding' : undefined} // iOS specific behavior
@@ -245,6 +252,8 @@ const edit_entry = () => {
             Saving...
           </Snackbar>
         </View>
+        <Text style={styles.headline}> Upload Additional Photos</Text>
+        <CameraButton onPhotoSelected={addPhoto}></CameraButton>
       </ScrollView>
     </KeyboardAvoidingView>
   );
