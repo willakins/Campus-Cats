@@ -20,7 +20,6 @@ export default function Catalog() {
         id: doc.id,
         name: doc.data().name,
         info: doc.data().info,
-        extraPhotos: doc.data().extraPhotos,
         most_recent_sighting: doc.data().mostRecentSighting
       }));
       setCatalogEntries(entries);
