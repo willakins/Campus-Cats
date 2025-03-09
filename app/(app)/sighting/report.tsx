@@ -7,12 +7,11 @@ import { Ionicons } from '@expo/vector-icons';
 import { addDoc, collection, serverTimestamp, Timestamp } from 'firebase/firestore';
 import { getStorage, getDownloadURL, ref, uploadBytes } from 'firebase/storage';
 import DateTimePicker from '@react-native-community/datetimepicker';
-import 'react-native-get-random-values'; // Needed for uuid
-import MapView, { LatLng, Marker } from 'react-native-maps';
-import { v4 as uuidv4 } from 'uuid';
+import MapView, { LatLng, MapPressEvent, Marker } from 'react-native-maps';
 
 import { Button, TextInput } from '@/components';
 import { db } from '@/config/firebase';
+import { getMediaFromPicker, uploadFromURI } from '@/utils';
 
 const CatReportScreen = () => {
   const [date, setDate] = useState<Date | null>(null);
@@ -32,35 +31,26 @@ const CatReportScreen = () => {
   };
 
   const handleTakePhoto = async () => {
-    const { status, } = await ImagePicker.requestCameraPermissionsAsync();
-    if (status !== 'granted') {
-      alert('Sorry, we need camera roll permissions to make this work!');
-    }
-
-    let result = await ImagePicker.launchCameraAsync({
-      quality: 1.0, // 100% quality, do not compress
+    const assets = await getMediaFromPicker({
+      requestPermissions: ImagePicker.requestCameraPermissionsAsync,
+      pickMedia: ImagePicker.launchCameraAsync,
+      pickMediaOptions: { quality: 1.0 }, // 100% quality, do not compress
+      permissionsErrorMessage: 'Sorry, we need camera roll permissions to make this work!',
     });
-
-    if (!result.canceled) {
-      setPhotoURL(result.assets[0].uri);
+    if (assets) {
+      setPhotoURI(assets[0].uri);
     }
   };
 
   const handleSelectPhoto = async () => {
-    // Permissions check only needed for iOS 10
-    const { status, } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (status !== 'granted') {
-      alert('Sorry, we need media library permissions to make this work!');
-    }
-
-    let result = await ImagePicker.launchImageLibraryAsync({
-      // 100% quality, do not compress
-      // e.g. 90% quality would be 0.9
-      quality: 1.0,
+    const assets = await getMediaFromPicker({
+      requestPermissions: ImagePicker.requestMediaLibraryPermissionsAsync,
+      pickMedia: ImagePicker.launchImageLibraryAsync,
+      pickMediaOptions: { quality: 1.0 }, // 100% quality, do not compress
+      permissionsErrorMessage: 'Sorry, we need media library permissions to make this work!',
     });
-
-    if (!result.canceled) {
-      setPhotoURL(result.assets[0].uri);
+    if (assets) {
+      setPhotoURI(assets[0].uri);
     }
   };
 
@@ -71,11 +61,11 @@ const CatReportScreen = () => {
       [
         {
           text: 'Take Photo',
-          onPress: handleTakePhoto,
+          onPress: () => handleTakePhoto(),
         },
         {
           text: 'Choose from Library',
-          onPress: handleSelectPhoto,
+          onPress: async () => await handleSelectPhoto(),
         },
         {
           text: 'Cancel',
@@ -86,67 +76,56 @@ const CatReportScreen = () => {
     );
   };
 
+  const validateForm = () => {
+    if (!photoURI) {
+      return 'Please select a photo.';
+    }
+    if (name == '' || !date) {
+      return 'Please enter all necessary information.';
+    }
+
+    // No errors
+    return null;
+  };
+
   const handleSubmission = async () => {
-    if (photoURL) {
-      try {
-        // Create a blob from the image URI
+    const errors = validateForm();
+    if (errors) {
+      alert(errors);
+      return;
+    }
 
-        const response = await fetch(photoURL);
-        const blob = response.blob();
+    try {
+      const result = await uploadFromURI('photos/', photoURI);
 
-        console.log('Blob created:', blob);
+      // TODO: It's possible for an image to be created but the database write
+      // fails; find a way to either make the entire operation atomic, or
+      // implement garbage collection on the storage bucket.
+      await addDoc(collection(db, 'cat-sightings'), {
+        timestamp: serverTimestamp(),
+        spotted_time: Timestamp.fromDate(date), // currently unused, but we may want to distinguish
+        // upload and sighting time in the future
+        latitude: latitude,
+        longitude: longitude,
+        name: name,
+        image: result.metadata.fullPath,
+        info: info,
+        healthy: health,
+        fed: fed,
+      });
 
-        // Generate a unique filename for the image
-        const filename = uuidv4();
-        const filepath = 'photos/' + filename
-        const photoRef = ref(getStorage(), filepath);
+      alert('Cat submitted successfully!');
+      router.push('/(app)/(tabs)')
 
-        console.log('Photo reference created:', photoRef);
-
-        try {
-          if (name == '' || !date || !filepath) {
-            alert('please enter all necessary information');
-          } else {
-            await uploadBytes(photoRef, await blob);
-            console.log('Upload successful');
-            const photoUri = await getDownloadURL(photoRef);
-            console.log('Download URL:', photoUri);
-
-            alert('Cat submitted successfully!');
-
-            await addDoc(collection(db, 'cat-sightings'), {
-              timestamp: serverTimestamp(),
-              spotted_time: Timestamp.fromDate(date), // currently unused, but we may want to distinguish
-              // upload and sighting time in the future
-              latitude: latitude,
-              longitude: longitude,
-              name: name,
-              image: filepath,
-              info: info,
-              healthy: health,
-              fed: fed,
-            });
-            router.push('/(app)/(tabs)')
-          }
-        } catch (error) {
-          if (error instanceof Error) {
-            console.error('Error during upload:', error);
-            alert(`Upload failed: ${error.message}`);
-          }
-        }
-
-      } catch (error) {
-        if (error instanceof Error) {
-          console.error('Error during upload:', error);
-          alert(`Upload failed: ${error.message}`);
-        }
+    } catch (error) {
+      if (error instanceof Error) {
+        console.error('Error during upload:', error);
+        alert(`Upload failed: ${error.message}`);
       }
-    } else {
-      alert('Please select a photo.');
     }
   };
 
-  const handleMapPress = (event: { nativeEvent: { coordinate: { latitude: any; longitude: any; }; }; }) => {
+  const handleMapPress = (event: MapPressEvent) => {
     const { latitude, longitude } = event.nativeEvent.coordinate;
     setLatitude(latitude);
     setLongitude(longitude);
