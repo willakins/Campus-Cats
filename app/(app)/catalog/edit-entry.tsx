@@ -86,6 +86,7 @@ const edit_entry = () => {
     try {
       const imageRef = ref(storage, `cats/${name}/${photoURL}`);
       await deleteObject(imageRef);
+      fetchCatImages();
 
       alert('Success Image deleted successfully!');
     } catch (error) {
