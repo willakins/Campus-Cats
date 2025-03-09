@@ -1,7 +1,5 @@
 export * from './ui/Buttons';
 export { LoadingIndicator } from './ui/LoadingIndicator';
-export { DateTimeInput } from './ui/DateTimeInput';
-export { LoadingIndicator } from './ui/LoadingIndicator';
 export * from './ui/TextInput';
 
 export { LoginForm } from './forms/Login';
