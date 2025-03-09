@@ -64,17 +64,14 @@ const edit_entry = () => {
     });
   };
 
-  const confirmDeletion = (catName: string, index: number) => {
+  const confirmDeletion = (photoURL:string) => {
     Alert.alert(
       'Select Option',
       'Are you sure you want to delete this image forever?',
       [
         {
           text: 'Delete Forever',
-          onPress: () => deletePicture(catName, index),
-        },
-        {
-          text: 'Cancel',
+          onPress: () => deletePicture(photoURL),
         },
         {
           text: 'Cancel',
@@ -85,25 +82,9 @@ const edit_entry = () => {
     );
   };
 
-  const deletePicture = async (catName: string, index: number) => {
+  const deletePicture = async (photoURL:string) => {
     try {
-      const folderRef = ref(storage, `cats/${catName}/`);
-
-      // List all images in the cat's folder
-      const result = await listAll(folderRef);
-
-      if (index >= result.items.length) {
-        alert('Error Invalid image index.');
-        return;
-      }
-
-      // Sort items to ensure ordering (if needed)
-      const sortedItems = result.items.sort((a, b) => a.name.localeCompare(b.name));
-
-      // Get the specific image reference
-      const imageRef = sortedItems[index]; 
-
-      // Delete the file from Firebase Storage
+      const imageRef = ref(storage, `cats/${name}/${photoURL}`);
       await deleteObject(imageRef);
 
       alert('Success Image deleted successfully!');
@@ -152,6 +133,19 @@ const edit_entry = () => {
     }
   };
 
+  const generateUniqueFileName = (existingFiles:string[], originalName:string) => {
+    let fileExtension = originalName.split('.').pop(); // Get file extension (e.g., jpg, png)
+    let fileNameBase = originalName.replace(/\.[^/.]+$/, ""); // Remove extension
+    let newFileName;
+  
+    do {
+      let randomInt = Math.floor(Math.random() * 10000); // Generate random number (0-9999)
+      newFileName = `${fileNameBase}_${randomInt}.${fileExtension}`;
+    } while (existingFiles.includes(newFileName)); // Ensure it's unique
+  
+    return newFileName;
+  };
+
   const handleSave = async () => {
     if (!name.trim()) {
       alert('Invalid Name Cat name cannot be empty.');
@@ -191,27 +185,25 @@ const edit_entry = () => {
       }
 
       if (newPhotosAdded) {
-        for (const item in newPics) {
-          const response = await fetch(item);
+        const folderPath = `cats/${name}/`; // Path in Firebase Storage
+        const folderRef = ref(storage, folderPath);
+
+        // Step 1: Get a list of all existing files in the folder
+        const existingFilesSnapshot = await listAll(folderRef);
+        const existingFiles = existingFilesSnapshot.items.map((item) => item.name);
+
+        // Step 3: Upload only new photos
+        for (const pic of newPics) {
+          const response = await fetch(pic.url);
           const blob = await response.blob();
-  
-          // Define storage path (e.g., 'images/photo_123.jpg')
-          const filename = `images/${Date.now()}_${Math.random().toString(36).substring(7)}.jpg`;
-          const storageRef = ref(storage, filename);
-    
-          // Upload file
-          await uploadBytes(storageRef, blob);
-          console.log("Upload successful!");
-    
-          // Get the download URL
-          const downloadURL = await getDownloadURL(storageRef);
-          console.log("File available at:", downloadURL);
-    
-          return downloadURL;
+          const existingFilesSnapshot = await listAll(folderRef);
+        const existingFiles = existingFilesSnapshot.items.map((item) => item.name);
+
+          const unique_name = generateUniqueFileName(existingFiles, "Whiskers_.jpg")
+          const photoRef = ref(storage, `${folderPath}${unique_name}`);
+          await uploadBytes(photoRef, blob);
         }
       }
-
-      alert('Success cat name updated successfully!');
       router.push({
         pathname: '/catalog/view-entry', // Dynamically navigate to the details page
         params: { paramId:id, paramName:name, paramInfo:info}, // Pass the details as query params
@@ -271,7 +263,7 @@ const edit_entry = () => {
               <ImageButton key={index} onPress={() => swapProfilePicture(pic)}>
                 <Image source={{ uri: pic.url }} style={styles.extraPic} />
               </ImageButton>
-              <Button style={styles.deleteButton} onPress={() => confirmDeletion(name, index)}>
+              <Button style={styles.deleteButton} onPress={() => confirmDeletion(pic.name)}>
                 <Text style={styles.deleteButtonText}>Delete</Text>
               </Button>
             </View>
