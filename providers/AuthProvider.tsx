@@ -1,14 +1,13 @@
-import { auth, db } from '@/services/firebase';
-import { onAuthStateChanged, User as AuthUser, signInWithEmailAndPassword, createUserWithEmailAndPassword, UserCredential } from 'firebase/auth';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
-import { createContext, useState, ReactNode, useContext, useEffect } from 'react';
+import { createContext, ReactNode, useContext, useEffect, useState } from 'react';
 
-// TODO: implement User type
-type User = any;
+import { createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut as signOutAuthUser, onAuthStateChanged, User as AuthUser } from 'firebase/auth';
+
+import { auth } from '@/config/firebase';
+import { User, fetchUser, mutateUser } from '@/models';
 
 type AuthContextType = {
-  login: (username: string, password: string) => Promise<UserCredential>;
-  createAccount: (username: string, password: string) => Promise<UserCredential>;
+  login: (email: string, password: string) => Promise<void>;
+  createAccount: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
   currentUser: AuthUser | null,
   user: User;
@@ -19,59 +18,40 @@ const AuthContext = createContext<AuthContextType>({} as AuthContextType);
 
 const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [currentUser, setCurrentUser] = useState<AuthUser | null>(null);
-  const [user, setUser] = useState<any>(null);
+  const [user, setUser] = useState<User>({} as User);
   const [loading, setLoading] = useState<boolean>(true);
 
-  const login = async (username: string, password: string): Promise<UserCredential> => {
-    const userCredential = await signInWithEmailAndPassword(auth, username, password);
-    const authUser = userCredential.user;
-    const userDoc = await getDoc(doc(db, 'users', authUser.uid));
-    if (userDoc.exists()) {
-      setUser({ id: userDoc.id, ...userDoc.data() });
-    } else {
-      setUser(null);
-    }
-    return userCredential;
+  const login = async (email: string, password: string) => {
+    await signInWithEmailAndPassword(auth, email, password);
   };
 
-  const createAccount = async (username: string, password: string): Promise<UserCredential> => {
-    const userCredential = await createUserWithEmailAndPassword(auth, username, password);
+  const createAccount = async (email: string, password: string) => {
+    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
     const authUser = userCredential.user;
-    // Create the new document immediately before setting it
-    await setDoc(doc(db, 'users', authUser.uid), { role: 0, email: username }); // Default role: 0 (regular user)
-    const userDoc = await getDoc(doc(db, 'users', authUser.uid));
-    if (userDoc.exists()) {
-      setUser({ id: userDoc.id, ...userDoc.data() });
-    } else {
-      setUser(null);
-    }
-    return userCredential;
+    // Create a default user
+    mutateUser({
+      id: authUser.uid,
+      email: email,
+      role: 0,
+    });
   };
 
-  const signOut = async (): Promise<void> => {
-    await auth.signOut();
-    setUser(null);
+  const signOut = async () => {
+    await signOutAuthUser(auth);
   };
 
   useEffect(() => {
-    // Get user doc on start
-    const getUserDoc = async () => {
-      if (auth.currentUser) {
-        const userDoc = await getDoc(doc(db, 'users', auth.currentUser.uid)).then();
-        if (userDoc.exists()) {
-          setUser({ id: userDoc.id, ...userDoc.data() });
-        } else {
-          // NOTE: It would probably make more sense for this to throw
-          setUser(null);
-        }
-      } else {
-        setUser(null);
-      }
-    };
-
     const unsubscribe = onAuthStateChanged(auth, async (authUser) => {
-      setCurrentUser(authUser);
-      await getUserDoc();
+      try {
+        if (authUser?.uid) {
+          // Get user doc on start
+          const data = await fetchUser(authUser?.uid);
+          setUser(data);
+        }
+        setCurrentUser(authUser);
+      } catch (error: unknown) {
+        console.log(error);
+      }
       setLoading(false);
     });
 

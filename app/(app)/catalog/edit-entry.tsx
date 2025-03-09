@@ -8,7 +8,7 @@ import { deleteObject, getDownloadURL, listAll, uploadBytes, uploadBytesResumabl
 import { Snackbar } from 'react-native-paper';
 
 import { Button, TextInput, ImageButton, CameraButton, CatalogImageHandler } from '@/components';
-import { db, storage } from '@/services/firebase';
+import { db, storage } from '@/config/firebase';
 
 const edit_entry = () => {
   const router = useRouter();
@@ -392,4 +392,5 @@ const styles = StyleSheet.create({
     width: 240,
     height: 180,
   },
+  
 });
