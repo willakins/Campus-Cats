@@ -7,7 +7,7 @@ import { deleteObject, getDownloadURL, ref } from 'firebase/storage';
 import MapView, { LatLng, Marker } from 'react-native-maps';
 
 import { Button, TextInput } from '@/components';
-import { db, storage } from '@/services/firebase';
+import { db, storage } from '@/config/firebase';
 
 const CatSightingScreen = () => {
   //Check if admin, then set passed parameters from map screen

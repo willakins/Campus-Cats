@@ -10,7 +10,6 @@ const RootLayout = () => {
         <Slot />
       </AuthProvider>
     </SafeAreaView>
-    
   );
 };
 

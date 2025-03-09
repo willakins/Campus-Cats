@@ -5,12 +5,11 @@ import { useRouter } from 'expo-router';
 import { addDoc, collection, serverTimestamp, Timestamp } from 'firebase/firestore';
 import { getStorage, getDownloadURL, ref, uploadBytes } from 'firebase/storage';
 import DateTimePicker from '@react-native-community/datetimepicker';
-import 'react-native-get-random-values'; // Needed for uuid
-import MapView, { LatLng, Marker } from 'react-native-maps';
-import { v4 as uuidv4 } from 'uuid';
+import MapView, { LatLng, MapPressEvent, Marker } from 'react-native-maps';
 
 import { Button, CameraButton, TextInput } from '@/components';
-import { db } from '@/services/firebase';
+import { db } from '@/config/firebase';
+import { getMediaFromPicker, uploadFromURI } from '@/utils';
 
 const CatReportScreen = () => {
   const [date, setDate] = useState<Date | null>(null);
@@ -29,67 +28,102 @@ const CatReportScreen = () => {
     longitude: longitude,
   };
 
-  const handleSubmission = async () => {
-    if (photoURL) {
-      try {
-        // Create a blob from the image URI
-
-        const response = await fetch(photoURL);
-        const blob = response.blob();
-
-        console.log('Blob created:', blob);
-
-        // Generate a unique filename for the image
-        const filename = uuidv4();
-        const filepath = 'photos/' + filename
-        const photoRef = ref(getStorage(), filepath);
-
-        console.log('Photo reference created:', photoRef);
-
-        try {
-          if (name == '' || !date || !filepath) {
-            alert('please enter all necessary information');
-          } else {
-            await uploadBytes(photoRef, await blob);
-            console.log('Upload successful');
-            const photoUri = await getDownloadURL(photoRef);
-            console.log('Download URL:', photoUri);
-
-            alert('Cat submitted successfully!');
-
-            await addDoc(collection(db, 'cat-sightings'), {
-              timestamp: serverTimestamp(),
-              spotted_time: Timestamp.fromDate(date), // currently unused, but we may want to distinguish
-              // upload and sighting time in the future
-              latitude: latitude,
-              longitude: longitude,
-              name: name,
-              image: filepath,
-              info: info,
-              healthy: health,
-              fed: fed,
-            });
-            router.push('/(app)/(tabs)')
-          }
-        } catch (error) {
-          if (error instanceof Error) {
-            console.error('Error during upload:', error);
-            alert(`Upload failed: ${error.message}`);
-          }
-        }
-
-      } catch (error) {
-        if (error instanceof Error) {
-          console.error('Error during upload:', error);
-          alert(`Upload failed: ${error.message}`);
-        }
-      }
-    } else {
-      alert('Please select a photo.');
+  const handleTakePhoto = async () => {
+    const assets = await getMediaFromPicker({
+      requestPermissions: ImagePicker.requestCameraPermissionsAsync,
+      pickMedia: ImagePicker.launchCameraAsync,
+      pickMediaOptions: { quality: 1.0 }, // 100% quality, do not compress
+      permissionsErrorMessage: 'Sorry, we need camera roll permissions to make this work!',
+    });
+    if (assets) {
+      setPhotoURI(assets[0].uri);
     }
   };
 
-  const handleMapPress = (event: { nativeEvent: { coordinate: { latitude: any; longitude: any; }; }; }) => {
+  const handleSelectPhoto = async () => {
+    const assets = await getMediaFromPicker({
+      requestPermissions: ImagePicker.requestMediaLibraryPermissionsAsync,
+      pickMedia: ImagePicker.launchImageLibraryAsync,
+      pickMediaOptions: { quality: 1.0 }, // 100% quality, do not compress
+      permissionsErrorMessage: 'Sorry, we need media library permissions to make this work!',
+    });
+    if (assets) {
+      setPhotoURI(assets[0].uri);
+    }
+  };
+
+  const handlePress = () => {
+    Alert.alert(
+      'Select Option',
+      'Would you like to take a photo or select from your library?',
+      [
+        {
+          text: 'Take Photo',
+          onPress: () => handleTakePhoto(),
+        },
+        {
+          text: 'Choose from Library',
+          onPress: async () => await handleSelectPhoto(),
+        },
+        {
+          text: 'Cancel',
+          style: 'cancel',
+        },
+      ],
+      { cancelable: true }
+    );
+  };
+
+  const validateForm = () => {
+    if (!photoURI) {
+      return 'Please select a photo.';
+    }
+    if (name == '' || !date) {
+      return 'Please enter all necessary information.';
+    }
+
+    // No errors
+    return null;
+  };
+
+  const handleSubmission = async () => {
+    const errors = validateForm();
+    if (errors) {
+      alert(errors);
+      return;
+    }
+
+    try {
+      const result = await uploadFromURI('photos/', photoURI);
+
+      // TODO: It's possible for an image to be created but the database write
+      // fails; find a way to either make the entire operation atomic, or
+      // implement garbage collection on the storage bucket.
+      await addDoc(collection(db, 'cat-sightings'), {
+        timestamp: serverTimestamp(),
+        spotted_time: Timestamp.fromDate(date), // currently unused, but we may want to distinguish
+        // upload and sighting time in the future
+        latitude: latitude,
+        longitude: longitude,
+        name: name,
+        image: result.metadata.fullPath,
+        info: info,
+        healthy: health,
+        fed: fed,
+      });
+
+      alert('Cat submitted successfully!');
+      router.push('/(app)/(tabs)')
+
+    } catch (error) {
+      if (error instanceof Error) {
+        console.error('Error during upload:', error);
+        alert(`Upload failed: ${error.message}`);
+      }
+    }
+  };
+
+  const handleMapPress = (event: MapPressEvent) => {
     const { latitude, longitude } = event.nativeEvent.coordinate;
     setLatitude(latitude);
     setLongitude(longitude);
