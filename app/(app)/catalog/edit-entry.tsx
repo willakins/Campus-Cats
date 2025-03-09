@@ -50,7 +50,8 @@ const edit_entry = () => {
       console.error('Error fetching images: ', error);
     }
   };
-  const imageHandler = new CatalogImageHandler({ setVisible, fetchCatImages, setExtraPics, setNewPics, setNewPhotos, name, profilePicUrl });
+  const imageHandler = new CatalogImageHandler({ setVisible, fetchCatImages, setExtraPics, setNewPics, setNewPhotos, 
+                                              name, profilePicUrl });
 
   useEffect(() => {
     fetchCatImages();
@@ -105,18 +106,14 @@ const edit_entry = () => {
         const folderPath = `cats/${name}/`; // Path in Firebase Storage
         const folderRef = ref(storage, folderPath);
 
-        // Step 1: Get a list of all existing files in the folder
-        const existingFilesSnapshot = await listAll(folderRef);
-        const existingFiles = existingFilesSnapshot.items.map((item) => item.name);
-
         // Step 3: Upload only new photos
         for (const pic of newPics) {
           const response = await fetch(pic.url);
           const blob = await response.blob();
           const existingFilesSnapshot = await listAll(folderRef);
-        const existingFiles = existingFilesSnapshot.items.map((item) => item.name);
+          const existingFiles = existingFilesSnapshot.items.map((item) => item.name);
 
-          const unique_name = imageHandler.generateUniqueFileName(existingFiles, "Whiskers_.jpg")
+          const unique_name = generateUniqueFileName(existingFiles, "Whiskers_.jpg")
           const photoRef = ref(storage, `${folderPath}${unique_name}`);
           await uploadBytes(photoRef, blob);
         }
@@ -132,6 +129,19 @@ const edit_entry = () => {
       setVisible(false);
     }
   };
+
+  const generateUniqueFileName = (existingFiles: string[], originalName: string) => {
+    let fileExtension = originalName.split('.').pop() || ''; // Get file extension (e.g., jpg, png)
+    let fileNameBase = originalName.replace(/\.[^/.]+$/, ''); // Remove extension
+    let newFileName: string;
+
+    do {
+      let randomInt = Math.floor(Math.random() * 10000); // Generate random number (0-9999)
+      newFileName = `${fileNameBase}_${randomInt}.${fileExtension}`;
+    } while (existingFiles.includes(newFileName)); // Ensure it's unique
+
+    return newFileName;
+  }
 
   return (
     <KeyboardAvoidingView
