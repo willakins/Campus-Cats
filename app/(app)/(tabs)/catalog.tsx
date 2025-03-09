@@ -6,7 +6,7 @@ import { collection, doc, getDoc, getDocs } from 'firebase/firestore';
 
 import { Button, CatalogItem } from '@/components';
 import { CatalogEntryObject } from '@/types';
-import { auth, db } from '@/services/firebase'; // Import your firebase config
+import { auth, db } from '@/config/firebase'; // Import your firebase config
 
 export default function Catalog() {
   const [catalogEntries, setCatalogEntries] = useState<CatalogEntryObject[]>([]);
