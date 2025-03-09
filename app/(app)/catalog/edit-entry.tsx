@@ -22,6 +22,8 @@ const edit_entry = () => {
   const [profilePicUrl, setProfilePicUrl] = useState('');
   const [profilePicName, setProfilePicName] = useState(''); // Store actual filename of profile pic
   const [extraPics, setExtraPics] = useState<{ url: string; name: string }[]>([]);
+  const [newPics, setNewPics] = useState<{ url: string; name: string }[]>([]);
+  const [newPhotosAdded, setNewPhotos] = useState<boolean>(false);
 
   const fetchCatImages = async () => {
     try {
@@ -188,6 +190,27 @@ const edit_entry = () => {
         }
       }
 
+      if (newPhotosAdded) {
+        for (const item in newPics) {
+          const response = await fetch(item);
+          const blob = await response.blob();
+  
+          // Define storage path (e.g., 'images/photo_123.jpg')
+          const filename = `images/${Date.now()}_${Math.random().toString(36).substring(7)}.jpg`;
+          const storageRef = ref(storage, filename);
+    
+          // Upload file
+          await uploadBytes(storageRef, blob);
+          console.log("Upload successful!");
+    
+          // Get the download URL
+          const downloadURL = await getDownloadURL(storageRef);
+          console.log("File available at:", downloadURL);
+    
+          return downloadURL;
+        }
+      }
+
       alert('Success cat name updated successfully!');
       router.push({
         pathname: '/catalog/view-entry', // Dynamically navigate to the details page
@@ -206,6 +229,11 @@ const edit_entry = () => {
       ...prevPics,
       { url: newPhotoUri, name: `photo_${prevPics.length + 1}` },
     ]);
+    setNewPics((prevPics) => [
+      ...prevPics,
+      { url: newPhotoUri, name: `photo_${prevPics.length + 1}` },
+    ]);
+    setNewPhotos(true);
   };
 
   return (
