@@ -1,9 +1,7 @@
 import React, { useState } from 'react';
-import { Alert, Image, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Switch, Text, TouchableOpacity, View, } from 'react-native';
+import { Image, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Switch, Text, TouchableOpacity, View, } from 'react-native';
 
 import { useRouter } from 'expo-router';
-import * as ImagePicker from 'expo-image-picker';
-import { Ionicons } from '@expo/vector-icons';
 import { addDoc, collection, serverTimestamp, Timestamp } from 'firebase/firestore';
 import { getStorage, getDownloadURL, ref, uploadBytes } from 'firebase/storage';
 import DateTimePicker from '@react-native-community/datetimepicker';
@@ -11,7 +9,7 @@ import 'react-native-get-random-values'; // Needed for uuid
 import MapView, { LatLng, Marker } from 'react-native-maps';
 import { v4 as uuidv4 } from 'uuid';
 
-import { Button, TextInput } from '@/components';
+import { Button, CameraButton, TextInput } from '@/components';
 import { db } from '@/services/firebase';
 
 const CatReportScreen = () => {
@@ -29,61 +27,6 @@ const CatReportScreen = () => {
   var location:LatLng = {
     latitude: latitude,
     longitude: longitude,
-  };
-
-  const handleTakePhoto = async () => {
-    const { status, } = await ImagePicker.requestCameraPermissionsAsync();
-    if (status !== 'granted') {
-      alert('Sorry, we need camera roll permissions to make this work!');
-    }
-
-    let result = await ImagePicker.launchCameraAsync({
-      quality: 1.0, // 100% quality, do not compress
-    });
-
-    if (!result.canceled) {
-      setPhotoURL(result.assets[0].uri);
-    }
-  };
-
-  const handleSelectPhoto = async () => {
-    // Permissions check only needed for iOS 10
-    const { status, } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (status !== 'granted') {
-      alert('Sorry, we need media library permissions to make this work!');
-    }
-
-    let result = await ImagePicker.launchImageLibraryAsync({
-      // 100% quality, do not compress
-      // e.g. 90% quality would be 0.9
-      quality: 1.0,
-    });
-
-    if (!result.canceled) {
-      setPhotoURL(result.assets[0].uri);
-    }
-  };
-
-  const handlePress = () => {
-    Alert.alert(
-      'Select Option',
-      'Would you like to take a photo or select from your library?',
-      [
-        {
-          text: 'Take Photo',
-          onPress: handleTakePhoto,
-        },
-        {
-          text: 'Choose from Library',
-          onPress: handleSelectPhoto,
-        },
-        {
-          text: 'Cancel',
-          style: 'cancel',
-        },
-      ],
-      { cancelable: true }
-    );
   };
 
   const handleSubmission = async () => {
@@ -208,13 +151,8 @@ const CatReportScreen = () => {
               <Switch value={fed} onValueChange={setFed} />
               <Text style={styles.sliderText}>Is in good health</Text>
             </View>
-            <View style={styles.cameraView}>
-              <Button style={styles.cameraButton} onPress={handlePress}>
-                <Ionicons name="camera-outline" size={29} color="#fff" />
-              </Button>
-            </View>
+            <CameraButton onPhotoSelected={setPhotoURL}></CameraButton>
             {photoURL ? <Image source={{ uri: photoURL }} style={styles.selectedPreview} /> : null}
-
             <Button onPress={handleSubmission}>
               Submit Sighting
             </Button>
