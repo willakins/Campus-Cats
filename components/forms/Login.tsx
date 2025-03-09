@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Image, StyleSheet, Text, View } from 'react-native';
+import { Image, KeyboardAvoidingView, StyleSheet, Text, View } from 'react-native';
 
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
@@ -48,33 +48,38 @@ export const LoginForm: React.FC<LoginProps> = ({
   };
 
   return (
-    <View style={styles.container}>
-      <Image source={require('@/assets/images/campus_cats_logo.png')} style={styles.logo} resizeMode='contain'/>
-      <View style={styles.inputContainer}>
-        <ControlledInput control={control} name="email" label="Email" />
-        <ControlledInput control={control} name="password" label="Password" secureTextEntry />
-        <Button onPress={handleSubmit(submitHandler)}>
-          {type === 'login' ? 'Sign In' : 'Create Account'}
-        </Button>
-        {onSwitchType !== undefined ?
-          <Button onPress={onSwitchType}>
-            {type === 'login' ? 'Create Account' : 'Go Back'}
+    <KeyboardAvoidingView style={styles.keyboardAvoid} behavior="padding">
+      <View style={styles.container}>
+        <Image source={require('@/assets/images/campus_cats_logo.png')} style={styles.logo} resizeMode='contain'/>
+        <View style={styles.inputContainer}>
+          <ControlledInput control={control} name="email" label="Email" />
+          <ControlledInput control={control} name="password" label="Password" secureTextEntry />
+          <Button onPress={handleSubmit(submitHandler)}>
+            {type === 'login' ? 'Sign In' : 'Create Account'}
           </Button>
-        : null}
-        {forgotPassword ?
-          <BorderlessButton
-            onPress={() => alert("Contact an Administrator")}
-            textStyle={styles.forgotPassword}>
-            Forgot password?
-          </BorderlessButton>
-        : null}
-        {error ? <Text style={styles.errorText}>{error}</Text> : null}
+          {onSwitchType !== undefined ?
+            <Button onPress={onSwitchType}>
+              {type === 'login' ? 'Create Account' : 'Go Back'}
+            </Button>
+            : null}
+          {forgotPassword ?
+            <BorderlessButton
+              onPress={() => alert("Contact an Administrator")}
+              textStyle={styles.forgotPassword}>
+              Forgot password?
+            </BorderlessButton>
+            : null}
+          {error ? <Text style={styles.errorText}>{error}</Text> : null}
+        </View>
       </View>
-    </View>
+    </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
+  keyboardAvoid: {
+    flex: 1,
+  },
   container: {
     flex: 1,
     alignItems: 'center',
