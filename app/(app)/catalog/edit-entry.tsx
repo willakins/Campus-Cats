@@ -50,7 +50,7 @@ const edit_entry = () => {
       console.error('Error fetching images: ', error);
     }
   };
-  const imageHandler = new CatalogImageHandler(setVisible, fetchCatImages, setExtraPics, setNewPics, setNewPhotos);
+  const imageHandler = new CatalogImageHandler({ setVisible, fetchCatImages, setExtraPics, setNewPics, setNewPhotos, name, profilePicUrl });
 
   useEffect(() => {
     fetchCatImages();
