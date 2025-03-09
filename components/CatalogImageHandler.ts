@@ -1,6 +1,6 @@
 import React from 'react';
 import { Alert } from 'react-native';
-import { deleteObject, getDownloadURL, listAll, uploadBytesResumable, ref } from 'firebase/storage';
+import { deleteObject, uploadBytesResumable, ref } from 'firebase/storage';
 import { storage } from '@/services/firebase';
 
 interface CatalogImageHandlerProps {
@@ -41,19 +41,6 @@ class CatalogImageHandler {
     this.name = name;
     this.profilePicName = name + '_profile.jpg';
     this.profilePicUrl = profilePicUrl;
-  }
-
-  public generateUniqueFileName(existingFiles: string[], originalName: string): string {
-    let fileExtension = originalName.split('.').pop() || ''; // Get file extension (e.g., jpg, png)
-    let fileNameBase = originalName.replace(/\.[^/.]+$/, ''); // Remove extension
-    let newFileName: string;
-
-    do {
-      let randomInt = Math.floor(Math.random() * 10000); // Generate random number (0-9999)
-      newFileName = `${fileNameBase}_${randomInt}.${fileExtension}`;
-    } while (existingFiles.includes(newFileName)); // Ensure it's unique
-
-    return newFileName;
   }
 
   public swapProfilePicture = async (selectedPic: { name: string, url: string }) => {
@@ -127,6 +114,7 @@ class CatalogImageHandler {
   };
 
   public addPhoto = (newPhotoUri: string) => {
+    console.log('adding photos!')
     this.setExtraPics((prevPics) => [
       ...prevPics,
       { url: newPhotoUri, name: `photo_${prevPics.length + 1}` },
