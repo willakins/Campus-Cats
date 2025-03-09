@@ -32,10 +32,10 @@ export const getMediaFromPicker = async ({
 };
 
 // Upload a file
-export const uploadFromURI = async (uploadDir: string, uri: string) => {
+export const uploadFromURI = async (uploadDir: string, uri: string, filename?: string | undefined) => {
   // Get a unique ref
-  const filename = uuidv4();
-  const filepath = uploadDir + filename;
+  const filename_ = filename || uuidv4();
+  const filepath = uploadDir + filename_;
   const storageRef = ref(storage, filepath);
 
   // Get a file for uploading
