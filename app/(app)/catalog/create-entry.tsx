@@ -91,7 +91,7 @@ const create_entry = () =>{
       <Button style={styles.editButton} onPress={handleCreate}>
         <Text style={styles.editText}> Create Entry</Text>
       </Button>
-      <ScrollView contentContainerStyle={styles.entryContainer}>q
+      <ScrollView contentContainerStyle={styles.entryContainer}>
         <Text style={styles.title}>Create A Catalog Entry</Text>
         <Text style={styles.headline}>Cat's Name</Text>
         <TextInput 

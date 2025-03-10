@@ -53,11 +53,6 @@ const view_entry = () =>{
   return (
     <View>
       
-      {/* 
-      <Button style={styles.logoutButton} onPress={handleBack}>
-        <Ionicons name="arrow-back-outline" size={25} color="#fff" />
-      </Button>
-      */}
       <IconButton iconName="arrow-back-outline" onPress={handleBack} style={styles.logoutButton}/>
       
       {adminStatus ? <Button style={styles.editButton} onPress={handleEdit}>
