@@ -2,6 +2,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { StyleProp, StyleSheet, Text, TextStyle, TouchableOpacity, TouchableOpacityProps, View, ViewStyle } from 'react-native';
 import { PhotoHandler } from '@/components';
 
+type IoniconsName = React.ComponentProps<typeof Ionicons>['name'];
+
 type ButtonProps = React.PropsWithoutRef<TouchableOpacityProps> & {
   children?: React.ReactNode;
   style?: StyleProp<ViewStyle>;
@@ -14,12 +16,13 @@ type CameraButtonProps = {
 };
 
 type IconProps = React.PropsWithoutRef<TouchableOpacityProps> & {
-  iconName: _default;
+  iconName: IoniconsName;
   iconSize?: number;
   iconColor?: string;
   style?: StyleProp<ViewStyle>;
   onPress?: () => void;
 };
+
 export const Button: React.FC<ButtonProps> = ({
 	children,
 	style,
