@@ -5,7 +5,7 @@ import { useFocusEffect, useRouter } from 'expo-router';
 
 import { Button, SightingMapView } from '@/components';
 import { CatSightingObject } from '@/types';
-import DatabaseService from '@/components/DatabaseService';
+import DatabaseService from '@/components/services/DatabaseService';
 import { globalStyles, buttonStyles, textStyles, containerStyles } from '@/styles';
 
 const HomeScreen = () => {

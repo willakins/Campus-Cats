@@ -5,7 +5,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import MapView, { LatLng, Marker } from 'react-native-maps';
 
 import { Button, TextInput } from '@/components';
-import DatabaseService from '@/components/DatabaseService';
+import DatabaseService from '@/components/services/DatabaseService';
 import { useAuth } from '@/providers';
 import { Ionicons } from '@expo/vector-icons';
 import { globalStyles, buttonStyles, textStyles, containerStyles } from '@/styles';

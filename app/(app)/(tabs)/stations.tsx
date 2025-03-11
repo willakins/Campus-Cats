@@ -5,7 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Button, StationItem } from '@/components';
 import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
-import DatabaseService from '@/components/DatabaseService';
+import DatabaseService from '@/components/services/DatabaseService';
 import { StationEntryObject } from '@/types';
 
 const Stations = () => {

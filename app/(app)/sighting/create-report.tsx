@@ -6,7 +6,7 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import MapView, { LatLng, MapPressEvent, Marker } from 'react-native-maps';
 
 import { Button, CameraButton, TextInput } from '@/components';
-import DatabaseService from '@/components/DatabaseService';
+import DatabaseService from '@/components/services/DatabaseService';
 import { globalStyles, buttonStyles, textStyles, containerStyles } from '@/styles';
 import { Ionicons } from '@expo/vector-icons';
 
