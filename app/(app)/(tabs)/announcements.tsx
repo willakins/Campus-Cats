@@ -1,12 +1,11 @@
-import React, { useEffect, useState } from 'react';
-import { SafeAreaView, ScrollView, Text, View } from 'react-native';
+import React, { useCallback, useState } from 'react';
+import { SafeAreaView, ScrollView, Text } from 'react-native';
 
-import { Ionicons } from '@expo/vector-icons';
 import { globalStyles, buttonStyles, textStyles, containerStyles } from '@/styles';
 
 import { AnnouncementItem, Button, LoadingIndicator } from '@/components';
 import { useAuth } from '@/providers';
-import { router } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
 import DatabaseService from '@/components/DatabaseService';
 import { AnnouncementEntryObject } from '@/types';
 
@@ -20,28 +19,31 @@ const Announcements = () => {
     return <LoadingIndicator />;
   }
 
-  useEffect(() => {
-    database.fetchAnnouncementData(setAnns);
-  }, []);
+  useFocusEffect(
+    useCallback(() => {
+      database.fetchAnnouncementData(setAnns);
+    }, [])
+  );
 
   return (
     <SafeAreaView style={containerStyles.container}>
-          <Text style={textStyles.title}>Announcements</Text>
-          {isAdmin ? <Button style={buttonStyles.editButton} onPress={() => router.push('/announcements/create-ann')}>
-            <Text style ={textStyles.editText}> Create Announcement</Text>
-          </Button> : null}
-          <ScrollView contentContainerStyle={containerStyles.scrollView}>
-            {anns.map((ann) => (
-              <AnnouncementItem
-                key={ann.id}
-                id={ann.id}
-                title={ann.title}
-                info={ann.info}
-                photos={ann.photos}
-              />
-            ))}
-          </ScrollView>
-        </SafeAreaView>
+      <Text style={textStyles.title}>Announcements</Text>
+      {isAdmin ? <Button style={buttonStyles.editButton} onPress={() => router.push('/announcements/create-ann')}>
+        <Text style ={textStyles.editText}> Create Announcement</Text>
+      </Button> : null}
+      <ScrollView contentContainerStyle={containerStyles.scrollView}>
+        {anns.map((ann) => (
+          <AnnouncementItem
+            key={ann.id}
+            id={ann.id}
+            title={ann.title}
+            info={ann.info}
+            photos={ann.photos}
+            createdAt={ann.createdAt}
+          />
+        ))}
+      </ScrollView>
+    </SafeAreaView>
   );
 };
 export default Announcements;

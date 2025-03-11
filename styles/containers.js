@@ -40,7 +40,6 @@ const containerStyles = StyleSheet.create({
         flexDirection: 'column', // Stack items vertically
         justifyContent: 'center', // Center content vertically
         alignItems: 'center', // Center content horizontally
-        marginBottom: 20, // Space between catalog entries
         padding: 5,
         borderRadius:10,
         backgroundColor: '#fff',
@@ -73,7 +72,7 @@ const containerStyles = StyleSheet.create({
         borderRadius: 10,
     },
     headlineImage: {
-        width: 400,  // Set a fixed width for the profile picture
+        width: '100%',  // Set a fixed width for the profile picture
         height: 250, // Set a fixed height for the profile picture
         borderRadius: 60,  // Makes the image circular
         marginTop: 10,
@@ -118,7 +117,7 @@ const containerStyles = StyleSheet.create({
         shadowRadius: 4,
         borderRadius:10,
     },
-    loginInputContainer: {
+    input: {
         width: '80%',
         backgroundColor: '#f9f9f9',
         padding: 20,
@@ -128,17 +127,7 @@ const containerStyles = StyleSheet.create({
         shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.1,
         shadowRadius: 4,
-      },
-    input: {
-        height: 40,
-        width: 300,
-        borderColor: '#ccc',
-        borderWidth: 1,
-        borderRadius: 5,
-        marginBottom: 15,
-        paddingHorizontal: 10,
-        backgroundColor: '#fff',
-        color: '#000',
+        margin:10,
     },
     profileContainer: {
         flex: 1,
