@@ -1,8 +1,6 @@
 import React, { Dispatch, SetStateAction } from 'react';
 import { Alert } from 'react-native';
-import { deleteObject, uploadBytesResumable, ref } from 'firebase/storage';
-import { storage } from '@/config/firebase';
-import DatabaseService from './DatabaseService';
+import DatabaseService from '../DatabaseService';
 
 type FetchCatImagesType = (
   catName: string,
@@ -83,7 +81,7 @@ class CatalogImageHandler {
       [
         {
           text: 'Delete Forever',
-          onPress: () => this.database.deletePicture(this.name, photoURL, this.setProfile, this.setImageUrls),
+          onPress: () => this.database.deleteCatalogPicture(this.name, photoURL, this.setProfile, this.setImageUrls),
         },
         {
           text: 'Cancel',

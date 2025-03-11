@@ -4,6 +4,8 @@ import { globalStyles } from '@/styles';
 
 import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { useAuth } from '@/providers';
+
 
 const HomeLayout = () => {
   const size2 = 29;
@@ -13,6 +15,8 @@ const HomeLayout = () => {
     android: 60,
     default: 40
   });
+  const { user, loading } = useAuth();
+  const isAdmin = user.role === 1 || user.role === 2;
 
   return (
       <View style={globalStyles.tabs}>
@@ -42,15 +46,15 @@ const HomeLayout = () => {
               ),
             }}
           />
-          <Tabs.Screen
-            name="chat" // Maps to the `chat.tsx` file
+          {isAdmin ? <Tabs.Screen
+            name="stations" // Maps to the `station.tsx` file
             options={{
               tabBarLabel: '',
               tabBarIcon: ({ color, size }) => (
-                <Ionicons name="chatbox-outline" size={size2} color={color2} />
+                <Ionicons name="paw-outline" size={size2} color={color2} />
               ),
             }}
-          />
+          /> : null}
           <Tabs.Screen
             name="catalog" // Maps to the `catalog.tsx` file
             options={{
@@ -65,7 +69,7 @@ const HomeLayout = () => {
             options={{
               tabBarLabel: '',
               tabBarIcon: ({ color, size }) => (
-                <Ionicons name="settings-outline" size={size2} color={color2} />
+                <Ionicons name="information-circle-outline" size={size2} color={color2} />
               ),
             }}
           />

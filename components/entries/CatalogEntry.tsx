@@ -1,14 +1,14 @@
 import React, { useEffect, useState } from 'react';
-import { Text, Image, ScrollView } from 'react-native';
+import { Text, Image, ScrollView, View } from 'react-native';
 
 import MapView, { Marker } from 'react-native-maps';
 
 import { CatalogEntryObject } from '@/types/CatalogEntryObject';
-import { AnnouncementEntryObject, CatSightingObject } from '@/types';
-import DatabaseService from './DatabaseService';
+import { CatSightingObject } from '@/types';
+import DatabaseService from '../DatabaseService';
 import { globalStyles, buttonStyles, textStyles, containerStyles } from '@/styles';
 
-export const AnnouncementEntry: React.FC<AnnouncementEntryObject> = ({ id, title, info, photos }) => {
+export const CatalogEntry: React.FC<CatalogEntryObject> = ({ id, name, info }) => {
   const [profileURL, setProfile] = useState<string>('');
   const [imageUrls, setImageUrls] = useState<string[]>([]);
   const [sightings, setSightings] = useState<CatSightingObject[]>([]);
@@ -20,12 +20,12 @@ export const AnnouncementEntry: React.FC<AnnouncementEntryObject> = ({ id, title
   }, []);
 
   return (
-    <ScrollView contentContainerStyle={containerStyles.entryContainer}>
+    <ScrollView contentContainerStyle={containerStyles.scrollView}>
       <Text style={textStyles.catalogTitle}>{name}</Text>
-      {profileURL ? (<Image source={{ uri: profileURL }} style={containerStyles.headlineImage} resizeMode="contain" />) : 
+      {profileURL ? (<Image source={{ uri: profileURL }} style={containerStyles.headlineImage}/>) : 
         <Text style={textStyles.catalogTitle}>Loading image...</Text>}
-      <Text style={textStyles.description}>{info}</Text>
-      <Text style={textStyles.subHeading}> Most Recent Sighting</Text>
+      <Text style={textStyles.catalogDescription}>{info}</Text>
+      <Text style={textStyles.headline}> Sightings </Text>
       <MapView
         style={containerStyles.mapContainer}
         initialRegion={{
@@ -49,7 +49,7 @@ export const AnnouncementEntry: React.FC<AnnouncementEntryObject> = ({ id, title
       </MapView>
       <Text style={textStyles.subHeading}> Extra Photos</Text>
       {imageUrls ? (imageUrls.map((url, index) => (
-        <Image key={index} source={{ uri: url }} style={containerStyles.headlineImage} />))) : <Text>Loading images...</Text>}
+        <Image key={index} source={{ uri: url }} style={containerStyles.headlineImage} />))) : <Text>Loading images...</Text>}  
     </ScrollView>
   );
 };

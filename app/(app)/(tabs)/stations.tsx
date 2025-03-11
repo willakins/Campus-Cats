@@ -1,11 +1,11 @@
 import { Text, View } from 'react-native';
 import { globalStyles, buttonStyles, textStyles, containerStyles } from '@/styles';
 
-const Chat = () => {
+const Stations = () => {
   return (
     <View style={ globalStyles.screen }>
-      <Text>Chat Screen</Text>
+      <Text>Stations Screen</Text>
     </View>
   );
 };
-export default Chat;
+export default Stations
