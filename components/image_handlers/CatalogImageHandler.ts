@@ -54,7 +54,6 @@ class CatalogImageHandler {
   }
 
   public swapProfilePicture = async (picUrl:string) => {
-    this.setVisible(true);
     const picName = this.getFileNameFromUrl(picUrl);
     try {
       if (!this.profilePicName || !picName) {
@@ -62,15 +61,10 @@ class CatalogImageHandler {
         return;
       }
       await this.database.swapProfilePicture(this.name, picUrl, picName, this.profilePicUrl, this.profilePicName);
-      
-      // Refresh UI
-      this.fetchCatImages(this.name, this.setProfile, this.setImageUrls);
-      alert('Profile picture updated!');
+      setTimeout(() => this.fetchCatImages(this.name, this.setProfile, this.setImageUrls), 2000);
     } catch (error) {
       console.error('Error swapping profile picture:', error);
       alert('Error Failed to swap profile picture.');
-    } finally {
-      this.setVisible(false);
     }
   };
 

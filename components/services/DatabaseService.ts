@@ -219,8 +219,11 @@ class DatabaseService {
   /**
    * Effect: Deletes an existing catalog entry from firebase
    */
-  public async deleteCatalogEntry() {
-    DatabaseService.catalogService.deleteCatalogEntry();
+  public async deleteCatalogEntry(
+    catName:string,
+    id:string,
+    setVisible: Dispatch<SetStateAction<boolean>>,) {
+    DatabaseService.catalogService.deleteCatalogEntry(catName, id, setVisible);
   }
 
   /**
