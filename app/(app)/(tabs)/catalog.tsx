@@ -20,7 +20,6 @@ export default function Catalog() {
         id: doc.id,
         name: doc.data().name,
         info: doc.data().info,
-        most_recent_sighting: doc.data().mostRecentSighting
       }));
       setCatalogEntries(entries);
     } catch (error) {
@@ -66,7 +65,6 @@ export default function Catalog() {
             id={entry.id}
             name={entry.name}
             info={entry.info}
-            most_recent_sighting={entry.most_recent_sighting}
           />
         ))}
       </ScrollView>

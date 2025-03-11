@@ -12,16 +12,10 @@ import { auth, db } from '@/config/firebase';
 const view_entry = () =>{
   const [adminStatus, setAdminStatus] = useState<boolean>(false); 
   const router = useRouter();
-  const { paramId, paramName, paramInfo, paramLatitude, paramLongitude} = useLocalSearchParams();
+  const { paramId, paramName, paramInfo } = useLocalSearchParams();
   const id = paramId as string;
   const name = paramName as string;
   const info = paramInfo as string;
-  const latitude = parseFloat(paramLatitude as string);
-  const longitude = parseFloat(paramLongitude as string);
-  var most_recent_sighting:LatLng = {
-    latitude: latitude,
-    longitude: longitude,
-  };
 
   const handleBack = () => {
     router.push('/catalog');
@@ -62,7 +56,6 @@ const view_entry = () =>{
         id={id}
         name={name}
         info={info}
-        most_recent_sighting={most_recent_sighting}
       />
     </View>
   );

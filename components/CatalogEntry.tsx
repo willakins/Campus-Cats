@@ -5,11 +5,40 @@ import { getDownloadURL, listAll, ref } from 'firebase/storage';
 import MapView, { Marker } from 'react-native-maps';
 
 import { CatalogEntryObject } from '@/types/CatalogEntryObject';
-import { storage } from '@/config/firebase';
+import { db, storage } from '@/config/firebase';
+import { CatSightingObject } from '@/types';
+import { collection, getDocs, query, where } from 'firebase/firestore';
 
-export const CatalogEntry: React.FC<CatalogEntryObject> = ({ id, name, info, most_recent_sighting }) => {
+export const CatalogEntry: React.FC<CatalogEntryObject> = ({ id, name, info }) => {
   const [profileURL, setProfile] = useState<string | null>(null);
   const [imageUrls, setImageUrls] = useState<string[]>([]);
+  const [sightings, setSightings] = useState<CatSightingObject[]>([]);
+
+  const getSightings = async (catName: string) => {
+    try {
+      // Create ref, create query, search firestore with query at reference
+      const sightingsRef = collection(db, 'cat-sightings');
+      const q = query(sightingsRef, where('name', '==', name));
+      const querySnapshot = await getDocs(q);
+
+      // Map each successful query to cat sighting
+      const catSightings: CatSightingObject[] = querySnapshot.docs.map(doc => ({
+        id: doc.id,
+        date: doc.data().spotted_time.toDate(),
+        fed: doc.data().fed,
+        health: doc.data().health,
+        photoUri: doc.data().image,
+        info: doc.data().info,
+        latitude: doc.data().latitude,
+        longitude: doc.data().longitude,
+        name: doc.data().name
+        // Include the document ID
+      }));
+      setSightings(catSightings);
+    } catch (error) {
+      console.error('Error fetching cat sightings: ', error);
+    }
+  };
 
   const fetchCatImages = async (catName: string) => {
     try {
@@ -40,8 +69,8 @@ export const CatalogEntry: React.FC<CatalogEntryObject> = ({ id, name, info, mos
 
   useEffect(() => {
     fetchCatImages(name);
+    getSightings(name);
   }, []);
-
 
   return (
     <ScrollView contentContainerStyle={styles.entryContainer}>
@@ -59,7 +88,17 @@ export const CatalogEntry: React.FC<CatalogEntryObject> = ({ id, name, info, mos
           longitudeDelta: 0.01,
         }}
       >
-        {most_recent_sighting ? <Marker coordinate={most_recent_sighting} /> : null}
+        {sightings.map((sighting:CatSightingObject) => (
+          <Marker
+          key={sighting.id}
+          coordinate={{
+            latitude: sighting.latitude,
+            longitude: sighting.longitude,
+          }}
+          title={sighting.name}
+          description={sighting.info}
+        />
+        ))}
       </MapView>
       <Text style={styles.subHeading}> Extra Photos</Text>
       {imageUrls ? (imageUrls.map((url, index) => (
