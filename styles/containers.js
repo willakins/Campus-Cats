@@ -40,13 +40,14 @@ const containerStyles = StyleSheet.create({
         flexDirection: 'column', // Stack items vertically
         justifyContent: 'center', // Center content vertically
         alignItems: 'center', // Center content horizontally
-        padding: 5,
+        padding: 15,
         borderRadius:10,
         backgroundColor: '#fff',
         shadowColor: '#000',
         shadowOpacity: 0.1,
         shadowRadius: 10,
         elevation: 5,
+        width:'100%'
     },
     entryElements: {
         flexDirection: "column", // Ensures each item is stacked vertically
@@ -77,6 +78,13 @@ const containerStyles = StyleSheet.create({
         width: '100%',  // Set a fixed width for the profile picture
         height: 250, // Set a fixed height for the profile picture
         borderRadius: 60,  // Makes the image circular
+        marginTop: 10,
+        paddingHorizontal: 20,
+    },
+    extraImage: {
+        width: '100%',  // Set a fixed width for the profile picture
+        height: 250, // Set a fixed height for the profile picture
+        borderRadius: 200,  // Makes the image circular
         marginTop: 10,
         paddingHorizontal: 20,
     },

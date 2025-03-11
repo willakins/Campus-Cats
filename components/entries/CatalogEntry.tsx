@@ -5,7 +5,7 @@ import MapView, { Marker } from 'react-native-maps';
 
 import { CatalogEntryObject } from '@/types/CatalogEntryObject';
 import { CatSightingObject } from '@/types';
-import DatabaseService from '../DatabaseService';
+import DatabaseService from '../services/DatabaseService';
 import { globalStyles, buttonStyles, textStyles, containerStyles } from '@/styles';
 
 export const CatalogEntry: React.FC<CatalogEntryObject> = ({ id, name, info }) => {
@@ -49,7 +49,7 @@ export const CatalogEntry: React.FC<CatalogEntryObject> = ({ id, name, info }) =
       </MapView>
       <Text style={textStyles.subHeading}> Extra Photos</Text>
       {imageUrls ? (imageUrls.map((url, index) => (
-        <Image key={index} source={{ uri: url }} style={containerStyles.headlineImage} />))) : <Text>Loading images...</Text>}  
+        <Image key={index} source={{ uri: url }} style={containerStyles.extraImage} resizeMode='contain'/>))) : <Text>Loading images...</Text>}  
     </ScrollView>
   );
 };

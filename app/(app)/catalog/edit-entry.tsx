@@ -6,7 +6,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Snackbar } from 'react-native-paper';
 
 import { Button, TextInput, ImageButton, CameraButton, CatalogImageHandler } from '@/components';
-import DatabaseService from '@/components/DatabaseService';
+import DatabaseService from '@/components/services/DatabaseService';
 import { globalStyles, buttonStyles, textStyles, containerStyles } from '@/styles';
 
 const edit_entry = () => {
@@ -37,8 +37,8 @@ const edit_entry = () => {
     database.fetchCatImages(name, setProfile, setImageUrls);
   }, []);
 
-  const handleCatalogSave = () => {
-    database.handleCatalogSave(name, oldName, info, newPics, newPhotosAdded, id, setVisible)
+  const handleCatalogSave = async () => {
+    await database.handleCatalogSave(name, oldName, info, newPics, newPhotosAdded, id, setVisible)
     router.push({
       pathname: '/catalog/view-entry', // Dynamically navigate to the details page
       params: { paramId:id, paramName:name, paramInfo:info}, // Pass the details as query params
