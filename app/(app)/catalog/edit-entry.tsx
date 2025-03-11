@@ -24,8 +24,7 @@ const edit_entry = () => {
   const [newPhotosAdded, setNewPhotos] = useState<boolean>(false);
   const database = DatabaseService.getInstance();
   const imageHandler = new CatalogImageHandler({ 
-    setVisible, 
-    fetchCatImages:database.fetchCatImages, 
+    setVisible,  
     setImageUrls, 
     setNewPics, 
     setNewPhotos,
@@ -39,25 +38,6 @@ const edit_entry = () => {
     }, [profilePicUrl])
   );
 
-  const handleCatalogSave = async () => {
-    await database.handleCatalogSave(name, oldName, info, newPics, newPhotosAdded, id, setVisible)
-    router.push({
-      pathname: '/catalog/view-entry', // Dynamically navigate to the details page
-      params: { paramId:id, paramName:name, paramInfo:info}, // Pass the details as query params
-    });
-  }
-
-  const deleteEntry = async () => {
-    await database.deleteCatalogEntry(name, id, setVisible);
-    router.push('/catalog');
-  }
-
-  const handleSwap = async (pic:string) => {
-    await imageHandler.swapProfilePicture(pic);
-    setVisible(true);
-    setTimeout(() => setVisible(false), 2500);
-  }
-
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === 'ios' ? 'padding' : undefined} // iOS specific behavior
@@ -66,7 +46,8 @@ const edit_entry = () => {
         pathname: '/catalog/view-entry', params: { paramId:id, paramName:name, paramInfo:info }, })}>
         <Ionicons name="arrow-back-outline" size={25} color="#fff" />
       </Button>
-      <Button style={buttonStyles.editButton} onPress={handleCatalogSave}>
+      <Button style={buttonStyles.editButton} 
+      onPress={() => database.handleCatalogSave(name, oldName, info, newPics, newPhotosAdded, id, setVisible, router)}>
         <Text style ={textStyles.editText}> Save Entry</Text>
       </Button>
       <ScrollView contentContainerStyle={containerStyles.entryContainer}>
@@ -74,7 +55,7 @@ const edit_entry = () => {
         {profilePicUrl ? (<Image source={{ uri: profilePicUrl }} style={containerStyles.headlineImage} resizeMode="contain" />) : 
           <Text style={textStyles.title}>Loading image...</Text>}
           <View style={containerStyles.extraPicsContainer}>
-          <Snackbar visible={visible} onDismiss={() => setVisible(false)} duration={2000}>
+          <Snackbar visible={visible} onDismiss={() => setVisible(false)}>
                 Saving...
           </Snackbar>
         </View>
@@ -98,7 +79,7 @@ const edit_entry = () => {
         <View style={containerStyles.extraPicsContainer}>
           {extraPics ? (extraPics.map((pic, index) => (
             <View key={index} style={containerStyles.imageWrapper}>
-              <ImageButton key={index} onPress={() => handleSwap(pic)}>
+              <ImageButton key={index} onPress={() => imageHandler.swapProfilePicture(pic)}>
                 <Image source={{ uri: pic }} style={containerStyles.extraPic} />
               </ImageButton>
               <Button style={buttonStyles.deleteButton} onPress={() => imageHandler.confirmDeletion(pic)}>
@@ -109,7 +90,7 @@ const edit_entry = () => {
         </View>
         <Text style={textStyles.headline}> Upload Additional Photos</Text>
         <CameraButton onPhotoSelected={imageHandler.addPhoto}></CameraButton>
-        <Button style={buttonStyles.deleteButton}onPress={deleteEntry}> Delete Catalog Entry</Button>
+        <Button style={buttonStyles.deleteButton}onPress={() => database.deleteCatalogEntry(name, id, setVisible, router)}> Delete Catalog Entry</Button>
       </ScrollView>
     </KeyboardAvoidingView>
   );
