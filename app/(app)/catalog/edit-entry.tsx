@@ -38,6 +38,7 @@ const edit_entry = () => {
   }, []);
 
   const handleCatalogSave = () => {
+    alert(oldName)
     database.handleCatalogSave(name, oldName, info, newPics, newPhotosAdded, id, setVisible)
     router.push({
       pathname: '/catalog/view-entry', // Dynamically navigate to the details page

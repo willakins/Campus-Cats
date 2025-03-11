@@ -8,6 +8,7 @@ import MapView, { LatLng, MapPressEvent, Marker } from 'react-native-maps';
 import { Button, CameraButton, TextInput } from '@/components';
 import DatabaseService from '@/components/DatabaseService';
 import { globalStyles, buttonStyles, textStyles, containerStyles } from '@/styles';
+import { Ionicons } from '@expo/vector-icons';
 
 const CatReportScreen = () => {
   const [date, setDate] = useState<Date>(new Date());
@@ -49,12 +50,18 @@ const CatReportScreen = () => {
       style={containerStyles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined} // iOS specific behavior
     >
+      <Button style={buttonStyles.logoutButton} onPress={() => router.push('/(app)/(tabs)')}>
+        <Ionicons name="arrow-back-outline" size={25} color="#fff" />
+      </Button>
+      <Button style={buttonStyles.editButton} onPress={handleSubmission}>
+        <Text style= {textStyles.editText}>Submit Sighting</Text>
+      </Button>
       <ScrollView contentContainerStyle={containerStyles.scrollView}>
         <View style={containerStyles.container}>
+        <Text style={textStyles.catalogTitle}>Report A Sighting</Text>
           <View style={containerStyles.inputContainer}>
-            <Text style={textStyles.headline}>Report A Cat Sighting</Text>
             <MapView
-              style={{ width: '100%', height: 200, marginVertical: 10 }}
+              style={containerStyles.mapContainer}
               initialRegion={{
                 latitude: 33.7756, // Default location (e.g., Georgia Tech)
                 longitude: -84.3963,
@@ -79,12 +86,14 @@ const CatReportScreen = () => {
               placeholder="Cat's name"
               placeholderTextColor="#888"
               onChangeText={setName}
+              style={textStyles.input}
             />
             <TextInput
               placeholder="Additional Info"
               placeholderTextColor="#888"
               value={info}
               onChangeText={setInfo}
+              style={textStyles.input}
             />
             <View style={containerStyles.sliderContainer}>
               <Switch value={health} onValueChange={setHealth}/>
@@ -96,12 +105,6 @@ const CatReportScreen = () => {
             </View>
             <CameraButton onPhotoSelected={setPhotoURL}></CameraButton>
             {photoUrl ? <Image source={{ uri: photoUrl }} style={containerStyles.selectedPreview} /> : null}
-            <Button onPress={handleSubmission}>
-              Submit Sighting
-            </Button>
-            <Button onPress={router.back}>
-              Back
-            </Button>
           </View>
         </View>
       </ScrollView>
