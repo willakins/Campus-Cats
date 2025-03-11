@@ -4,7 +4,7 @@
 
 # Release Notes
 
-## Version 3.0.0
+## Version 0.3.0
 
 ### Features
 
@@ -20,6 +20,7 @@
 ### Known Issues
 
 - **Map Optimization:** The home page map currently makes more database queries than necessary, but this does not impact performance from a user perspective.
+
 
 ## Version 0.2.0
 
