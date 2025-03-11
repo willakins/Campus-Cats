@@ -6,30 +6,19 @@ import { collection, getDocs } from 'firebase/firestore';
 
 import { Button, SightingMapView } from '@/components';
 import { db } from '@/config/firebase';
-
-interface CatSighting {
-  id: string;
-  date: Date;
-  fed: boolean;
-  health: boolean;
-  photoUri: string;
-  info: string;
-  latitude: number;
-  longitude: number;
-  name: string;
-}
+import { CatSightingObject } from '@/types';
 
 const HomeScreen = () => {
   const router = useRouter();
   const [filter, setFilter] = useState('all');
   const [mapKey, setMapKey] = useState(0);
-  const [pins, setPins] = useState<CatSighting[]>([]);
+  const [pins, setPins] = useState<CatSightingObject[]>([]);
 
   useFocusEffect(
     useCallback(() => {
       const fetchPins = async () => {
         const querySnapshot = await getDocs(collection(db, 'cat-sightings'));
-        const pinsData: CatSighting[] = querySnapshot.docs.map(doc => ({
+        const pinsData: CatSightingObject[] = querySnapshot.docs.map(doc => ({
           id: doc.id,
           date: doc.data().spotted_time.toDate(),
           fed: doc.data().fed,
@@ -49,7 +38,7 @@ const HomeScreen = () => {
     }, [])
   );
 
-  const filterPins = (pin: CatSighting) => {
+  const filterPins = (pin: CatSightingObject) => {
     if (filter === 'all') return true;
     const days = parseInt(filter);
     const cutoffDate = new Date();
@@ -57,7 +46,7 @@ const HomeScreen = () => {
     return new Date(pin.date) >= cutoffDate;
   };
 
-  const viewSighting = (pin: CatSighting) => {
+  const viewSighting = (pin: CatSightingObject) => {
     router.push({ pathname: '/sighting', params: {
       docId: pin.id,
       catDate: JSON.stringify(pin.date),
