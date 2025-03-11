@@ -21,7 +21,8 @@ const globalStyles = StyleSheet.create({
     },
     safeView: {
       flex: 1,
-      backgroundColor: "#fff", // Set the notch area color
+      backgroundColor: "#ccc", // Set the notch area color
+      marginBottom:-40,
     },
 });
 export { globalStyles };

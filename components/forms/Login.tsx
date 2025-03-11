@@ -50,9 +50,8 @@ export const LoginForm: React.FC<LoginProps> = ({
 
   return (
     <KeyboardAvoidingView style={globalStyles.screen} behavior="padding">
-      <View style={globalStyles.screen}>
-        <Image source={require('@/assets/images/campus_cats_logo.png')} style={containerStyles.logo} resizeMode='contain'/>
-        <View style={containerStyles.loginInputContainer}>
+      <Image source={require('@/assets/images/campus_cats_logo.png')} style={containerStyles.logo}/>
+        <View style={containerStyles.loginContainer}>
           <ControlledInput control={control} name="email" label="Email" />
           <ControlledInput control={control} name="password" label="Password" secureTextEntry />
           <Button onPress={handleSubmit(submitHandler)}>
@@ -72,7 +71,6 @@ export const LoginForm: React.FC<LoginProps> = ({
             : null}
           {error ? <Text style={textStyles.errorText}>{error}</Text> : null}
         </View>
-      </View>
     </KeyboardAvoidingView>
   );
 }

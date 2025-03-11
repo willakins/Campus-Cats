@@ -43,6 +43,12 @@ const textStyles = StyleSheet.create({
         textAlign: 'center',
         marginBottom: 0
     },
+    subHeading2: {
+        fontSize: 15,
+        color: '#000',
+        textAlign: 'left',
+        marginBottom: 0
+    },
     logoutText: {
         color: '#fff',
         marginLeft: 5,
