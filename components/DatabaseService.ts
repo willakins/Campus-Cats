@@ -68,23 +68,23 @@ class DatabaseService {
       setImageUrls?: Dispatch<SetStateAction<string[]>>
   ): Promise<void> {
       try {
-          const folderRef = ref(storage, `cats/${catName}/`);
-          const result = await listAll(folderRef);
-          let extraPicUrls: string[] = [];
+        const folderRef = ref(storage, `cats/${catName}/`);
+        const result = await listAll(folderRef);
+        let extraPicUrls: string[] = [];
 
-          for (const itemRef of result.items) {
-              const url = await getDownloadURL(itemRef);
-              if (itemRef.name.includes('_profile')) {
-                  setProfile(url);
-              } else {
-                  extraPicUrls.push(url);
-              }
+        for (const itemRef of result.items) {
+          const url = await getDownloadURL(itemRef);
+          if (itemRef.name.includes('_profile')) {
+            setProfile(url);
+          } else {
+            extraPicUrls.push(url);
           }
-          if (setImageUrls) {
-              setImageUrls(extraPicUrls);
-          }
+        }
+        if (setImageUrls) {
+          setImageUrls(extraPicUrls);
+        }
       } catch (error) {
-          console.error('Error fetching images: ', error);
+        console.error('Error fetching images: ', error);
       }
   }
 
@@ -438,7 +438,7 @@ class DatabaseService {
     await deleteObject(selectedPicRef);
 
     // 2. Re-upload old profile picture as selectedPic.name
-    const newExtraPicRef = ref(storage, `cats/${catName}/${catName}`);
+    const newExtraPicRef = ref(storage, `cats/${catName}/${picName}`);
     await uploadBytesResumable(newExtraPicRef, oldProfileBlob);
 
     // 3. Re-upload selected picture as profile picture

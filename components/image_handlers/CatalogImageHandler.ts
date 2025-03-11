@@ -55,7 +55,9 @@ class CatalogImageHandler {
 
   public swapProfilePicture = async (picUrl:string) => {
     this.setVisible(true);
-    const picName = this.getFileNameFromUrl(picUrl);
+    const name = this.getFileNameFromUrl(picUrl);
+    const parts = name.split('%');
+    const picName = parts[parts.length - 1].substring(2);// Handles weird filepath shenanigans to get desired filepath
     try {
       if (!this.profilePicName || !picName) {
         alert('Error Could not find profile picture or selected picture.');
@@ -65,7 +67,7 @@ class CatalogImageHandler {
       
       // Refresh UI
       this.fetchCatImages(this.name, this.setProfile, this.setImageUrls);
-      alert('Success Profile picture updated!');
+      alert('Profile picture updated!');
     } catch (error) {
       console.error('Error swapping profile picture:', error);
       alert('Error Failed to swap profile picture.');

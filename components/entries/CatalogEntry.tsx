@@ -22,7 +22,7 @@ export const CatalogEntry: React.FC<CatalogEntryObject> = ({ id, name, info }) =
   return (
     <ScrollView contentContainerStyle={containerStyles.scrollView}>
       <Text style={textStyles.catalogTitle}>{name}</Text>
-      {profileURL ? (<Image source={{ uri: profileURL }} style={containerStyles.headlineImage}/>) : 
+      {profileURL ? (<Image source={{ uri: profileURL }} style={containerStyles.headlineImage} resizeMode='contain'/>) : 
         <Text style={textStyles.catalogTitle}>Loading image...</Text>}
       <Text style={textStyles.catalogDescription}>{info}</Text>
       <Text style={textStyles.headline}> Sightings </Text>
