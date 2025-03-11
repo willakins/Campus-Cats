@@ -1,4 +1,4 @@
-import { Text, View } from 'react-native';
+import { SafeAreaView, ScrollView, Text, View } from 'react-native';
 
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -17,22 +17,22 @@ const view_entry = () =>{
   const info = paramInfo as string;
 
   return (
-    <View>
+    <SafeAreaView style={containerStyles.container}>
       <Button style={buttonStyles.logoutButton} onPress={() => router.push('/catalog')}>
         <Ionicons name="arrow-back-outline" size={25} color="#fff" />
       </Button>
       {isAdmin ? <Button style={buttonStyles.editButton} onPress={() => router.push({
-        pathname: '/catalog/edit-entry', // Dynamically navigate to the details page
-        params: { paramId:id, paramName:name, paramInfo:info }, // Pass the details as query params
+        pathname: '/catalog/edit-entry',
+        params: { paramId:id, paramName:name, paramInfo:info },
       })}>
         <Text style ={textStyles.editText}> Edit Entry</Text>
       </Button> : null}
       <CatalogEntry
-        id={id}
-        name={name}
-        info={info}
-      />
-    </View>
+          id={id}
+          name={name}
+          info={info}
+        />
+    </SafeAreaView>
   );
 }
 export default view_entry;

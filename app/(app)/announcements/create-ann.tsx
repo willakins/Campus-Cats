@@ -14,13 +14,24 @@ const create_ann = () =>{
   const [visible, setVisible] = useState<boolean>(false);
   const [info, setInfo] = useState<string>('');
   const [title, setTitle] = useState<string>('');
-  const [profile, setProfile] = useState<string>('');
+  const [photos, setPhotos] = useState<string[]>([]);
   const database = DatabaseService.getInstance();
   
-  const handleCreate = () => {
-    database.handleAnnouncementCreate(name, info, profile, setVisible);
+  const handleCreate = async () => {
+    await database.handleAnnouncementCreate(title, info, photos, setVisible);
     router.push('/announcements');
   }
+
+  const addPhoto = (newPhotoUri: string) => {
+    setPhotos((prevPics) => [
+      ...prevPics,
+      newPhotoUri,
+    ]);
+  };
+
+  const deleteImage = (imageUri: string) => {
+    setPhotos((prevPhotos) => prevPhotos.filter((pic) => pic !== imageUri));
+  };
 
   return (
     <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
@@ -32,24 +43,34 @@ const create_ann = () =>{
       </Button>
       <ScrollView contentContainerStyle={containerStyles.entryContainer}>
         <Text style={textStyles.title}>Create An Announcement</Text>
-        <Text style={textStyles.headline}>Title</Text>
-        <TextInput 
-          placeholder="title"
-          placeholderTextColor="#888"
-          onChangeText={setTitle} 
-          style={textStyles.input} />
-        <Text style={textStyles.headline}>Description</Text>
-        <TextInput
-          placeholder="Type a description about the announcement."
-          placeholderTextColor="#888"
-          onChangeText={setInfo} 
-          style={textStyles.descInput} 
-          multiline={true}/>
-        <Text style={textStyles.headline}>Want to Add Photos?</Text>
+        <View style={containerStyles.inputContainer}>
+          <Text style={textStyles.headline}>Title</Text>
+          <TextInput 
+            placeholder="title"
+            placeholderTextColor="#888"
+            onChangeText={setTitle} 
+            style={textStyles.input} />
+          <Text style={textStyles.headline}>Description</Text>
+          <TextInput
+            placeholder="Type a description about the announcement."
+            placeholderTextColor="#888"
+            onChangeText={setInfo} 
+            style={textStyles.descInput} 
+            multiline={true}/>
+            <Text style={textStyles.headline2}>Want to Add Photos?</Text>
         <View style={containerStyles.cameraView}>
-          <CameraButton onPhotoSelected={setProfile}></CameraButton>
-          {profile ? <Image source={{ uri: profile }} style={containerStyles.selectedPreview} /> : null}
+          <CameraButton onPhotoSelected={addPhoto}></CameraButton>
+          {photos ? (photos.map((pic, index) => (
+          <View key={index} style={containerStyles.imageWrapper}>
+            <Image source={{ uri: pic }} style={containerStyles.extraPic} />
+            <Button style={buttonStyles.deleteButton} onPress={() => deleteImage(pic)}>
+              <Text style={textStyles.deleteButtonText}>Delete</Text>
+            </Button>
+          </View>
+          ))):<Text>Loading images...</Text>}
         </View>
+        </View>
+        
         <Snackbar visible={visible} onDismiss={() => setVisible(false)} duration={2000}>
           Creating Announcement...
         </Snackbar>
