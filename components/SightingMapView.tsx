@@ -40,5 +40,4 @@ const SightingMapView: React.FC<SightingMapViewProps> = ({
     </MapView>
   );
 };
-
 export { SightingMapView };

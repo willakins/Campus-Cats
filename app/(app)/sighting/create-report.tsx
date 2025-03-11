@@ -1,0 +1,111 @@
+import React, { useState } from 'react';
+import { Image, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Switch, Text, TouchableOpacity, View, } from 'react-native';
+
+import { useRouter } from 'expo-router';
+import DateTimePicker from '@react-native-community/datetimepicker';
+import MapView, { LatLng, MapPressEvent, Marker } from 'react-native-maps';
+
+import { Button, CameraButton, TextInput } from '@/components';
+import DatabaseService from '@/components/DatabaseService';
+import { globalStyles, buttonStyles, textStyles, containerStyles } from '@/styles';
+
+const CatReportScreen = () => {
+  const [date, setDate] = useState<Date>(new Date());
+  const [showPicker, setShowPicker] = useState(true);
+  const [fed, setFed] = useState<boolean>(false);
+  const [health, setHealth] = useState<boolean>(false);
+  const [photoUrl, setPhotoURL] = useState<string>('');
+  const [info, setInfo] = useState<string>('');
+  const [longitude, setLongitude] = useState<number>(-84.3963);
+  const [latitude, setLatitude] = useState<number>(33.7756);
+  const [name, setName] = useState<string>('');
+  const router = useRouter();
+  const database = DatabaseService.getInstance();
+
+  var location:LatLng = {
+    latitude: latitude,
+    longitude: longitude,
+  };
+
+  const handleSubmission = () => {
+    database.handleReportSubmission(name, info, photoUrl, fed, health, date, longitude, latitude);
+    router.push('/(app)/(tabs)')
+  }
+
+  const handleMapPress = (event: MapPressEvent) => {
+    const { latitude, longitude } = event.nativeEvent.coordinate;
+    setLatitude(latitude);
+    setLongitude(longitude);
+  };
+
+  const handleDateChange = (event: any, selectedDate: any) => {
+    // If a date is selected, immediately update the date state
+    setDate(selectedDate || date);
+    setShowPicker(false); // Close the picker once a date is selected
+  };
+
+  return (
+    <KeyboardAvoidingView
+      style={containerStyles.container}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined} // iOS specific behavior
+    >
+      <ScrollView contentContainerStyle={containerStyles.scrollView}>
+        <View style={containerStyles.container}>
+          <View style={containerStyles.inputContainer}>
+            <Text style={textStyles.headline}>Report A Cat Sighting</Text>
+            <MapView
+              style={{ width: '100%', height: 200, marginVertical: 10 }}
+              initialRegion={{
+                latitude: 33.7756, // Default location (e.g., Georgia Tech)
+                longitude: -84.3963,
+                latitudeDelta: 0.01,
+                longitudeDelta: 0.01,
+              }}
+              onPress={handleMapPress} // This updates the location correctly
+            >
+              {location ? <Marker coordinate={location} /> : null}
+            </MapView>
+            <View style={containerStyles.dateInput}>
+              <Text style={textStyles.sliderText}>{date ? date.toDateString() : 'Select Sighting Date'}</Text>
+              <TouchableOpacity  onPress={() => setShowPicker(true)}>
+                {showPicker ? <DateTimePicker
+                  value={date || new Date()}
+                  mode="date"
+                  display="default"
+                  onChange={handleDateChange}/> : null}
+              </TouchableOpacity>
+            </View>
+            <TextInput
+              placeholder="Cat's name"
+              placeholderTextColor="#888"
+              onChangeText={setName}
+            />
+            <TextInput
+              placeholder="Additional Info"
+              placeholderTextColor="#888"
+              value={info}
+              onChangeText={setInfo}
+            />
+            <View style={containerStyles.sliderContainer}>
+              <Switch value={health} onValueChange={setHealth}/>
+              <Text style={textStyles.sliderText}>Has been fed</Text>
+            </View>
+            <View style={containerStyles.sliderContainer}>
+              <Switch value={fed} onValueChange={setFed} />
+              <Text style={textStyles.sliderText}>Is in good health</Text>
+            </View>
+            <CameraButton onPhotoSelected={setPhotoURL}></CameraButton>
+            {photoUrl ? <Image source={{ uri: photoUrl }} style={containerStyles.selectedPreview} /> : null}
+            <Button onPress={handleSubmission}>
+              Submit Sighting
+            </Button>
+            <Button onPress={router.back}>
+              Back
+            </Button>
+          </View>
+        </View>
+      </ScrollView>
+    </KeyboardAvoidingView>
+  );
+};
+export default CatReportScreen;

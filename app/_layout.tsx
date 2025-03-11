@@ -1,23 +1,16 @@
 import { Slot } from 'expo-router';
 
 import { AuthProvider } from '@/providers';
-import { SafeAreaView, StyleSheet } from 'react-native';
+import { SafeAreaView } from 'react-native';
+import { globalStyles, buttonStyles, textStyles, containerStyles } from '@/styles';
 
 const RootLayout = () => {
   return (
-    <SafeAreaView style = {styles.safeView}>
+    <SafeAreaView style = {globalStyles.safeView}>
       <AuthProvider>
         <Slot />
       </AuthProvider>
     </SafeAreaView>
   );
 };
-
 export default RootLayout;
-
-const styles = StyleSheet.create({
-  safeView: {
-    flex: 1,
-    backgroundColor: "#fff", // Set the notch area color
-  }
-});

@@ -1,6 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
-import { StyleProp, StyleSheet, Text, TextStyle, TouchableOpacity, TouchableOpacityProps, View, ViewStyle } from 'react-native';
-import { PhotoHandler } from '@/components';
+import { StyleProp, Text, TextStyle, TouchableOpacity, TouchableOpacityProps, View, ViewStyle } from 'react-native';
+import { PhotoHandler } from '@/components'
+import { globalStyles, buttonStyles, textStyles, containerStyles } from '@/styles';
 
 type ButtonProps = React.PropsWithoutRef<TouchableOpacityProps> & {
   children?: React.ReactNode;
@@ -19,8 +20,8 @@ export const Button: React.FC<ButtonProps> = ({
 	textStyle,
 	...props
 }) => {
-  const style_: StyleProp<ViewStyle> = [styles.button, style];
-  const textStyle_: StyleProp<TextStyle> = [styles.buttonText, textStyle];
+  const style_: StyleProp<ViewStyle> = [buttonStyles.button, style];
+  const textStyle_: StyleProp<TextStyle> = [textStyles.smallButtonText, textStyle];
 
   return (
     <TouchableOpacity style={style_} {...props}>
@@ -52,8 +53,8 @@ export const ImageButton: React.FC<ButtonProps> = ({
 	textStyle,
 	...props
 }) => {
-  const style_: StyleProp<ViewStyle> = [styles.imageButton, style];
-  const textStyle_: StyleProp<TextStyle> = [styles.buttonText, textStyle];
+  const style_: StyleProp<ViewStyle> = [buttonStyles.imageButton, style];
+  const textStyle_: StyleProp<TextStyle> = [textStyles.smallButtonText, textStyle];
 
   return (
     <TouchableOpacity style={style_} {...props}>
@@ -65,58 +66,14 @@ export const ImageButton: React.FC<ButtonProps> = ({
 }
 
 export const CameraButton: React.FC<CameraButtonProps> = ({ onPhotoSelected, style }) => {
-  const style_: StyleProp<ViewStyle> = [styles.imageButton, style];
+  const style_: StyleProp<ViewStyle> = [buttonStyles.imageButton, style];
   const photoHandler = new PhotoHandler(onPhotoSelected);
   
   return (
-    <View style={styles.cameraView}>
-      <Button style={styles.cameraButton} onPress={() => photoHandler.handlePress()}>
+    <View style={containerStyles.cameraView}>
+      <Button style={buttonStyles.cameraButton} onPress={() => photoHandler.handlePress()}>
         <Ionicons name="camera-outline" size={29} color="#fff" />
       </Button>
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  button: {
-    backgroundColor: '#333',
-    padding: 12,
-    borderRadius: 5,
-    alignItems: 'center',
-    margin: 5,
-    display: 'flex',
-    justifyContent: 'center',
-  },
-  buttonText: {
-    color: '#fff',
-    fontSize: 12,
-    fontWeight: 'bold',
-    textAlign: 'center',
-  },
-  imageButton: {
-    backgroundColor: '#333',
-    borderRadius: 10,
-    alignItems: 'center',
-    display: 'flex',
-    justifyContent: 'center',
-  },
-  cameraButton: {
-    width: 70,  // Width of the circle
-    height: 70, // Height of the circle (same as width to make it circular)
-    borderRadius: 35, // Half of width/height to make it circular
-    backgroundColor: '#333', // Button color (blue)
-    justifyContent: 'center', // Center the icon vertically
-    alignItems: 'center', // Center the icon horizontally
-    elevation: 5,  // Shadow for Android
-    shadowColor: '#000', // Shadow for iOS
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 3.5,
-    paddingVertical: 10,  // Vertical padding
-    paddingHorizontal: 20, // Horizontal padding
-  },
-  cameraView: {
-    alignItems: 'center',
-    paddingVertical: 20,  // Vertical padding
-  },
-});

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Image, KeyboardAvoidingView, StyleSheet, Text, View } from 'react-native';
+import { Image, KeyboardAvoidingView, Text, View } from 'react-native';
 
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
@@ -7,6 +7,7 @@ import { z } from 'zod';
 
 import { Button, BorderlessButton } from '@/components/ui/Buttons';
 import { ControlledInput } from '@/components/ui/TextInput';
+import { globalStyles, buttonStyles, textStyles, containerStyles } from '@/styles';
 
 // Login requirements
 const schema = z.object({
@@ -48,10 +49,10 @@ export const LoginForm: React.FC<LoginProps> = ({
   };
 
   return (
-    <KeyboardAvoidingView style={styles.keyboardAvoid} behavior="padding">
-      <View style={styles.container}>
-        <Image source={require('@/assets/images/campus_cats_logo.png')} style={styles.logo} resizeMode='contain'/>
-        <View style={styles.inputContainer}>
+    <KeyboardAvoidingView style={globalStyles.screen} behavior="padding">
+      <View style={globalStyles.screen}>
+        <Image source={require('@/assets/images/campus_cats_logo.png')} style={containerStyles.logo} resizeMode='contain'/>
+        <View style={containerStyles.loginInputContainer}>
           <ControlledInput control={control} name="email" label="Email" />
           <ControlledInput control={control} name="password" label="Password" secureTextEntry />
           <Button onPress={handleSubmit(submitHandler)}>
@@ -65,52 +66,13 @@ export const LoginForm: React.FC<LoginProps> = ({
           {forgotPassword ?
             <BorderlessButton
               onPress={() => alert("Contact an Administrator")}
-              textStyle={styles.forgotPassword}>
+              textStyle={textStyles.forgotPassword}>
               Forgot password?
             </BorderlessButton>
             : null}
-          {error ? <Text style={styles.errorText}>{error}</Text> : null}
+          {error ? <Text style={textStyles.errorText}>{error}</Text> : null}
         </View>
       </View>
     </KeyboardAvoidingView>
   );
 }
-
-const styles = StyleSheet.create({
-  keyboardAvoid: {
-    flex: 1,
-  },
-  container: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#fff', 
-  },
-  logo: {
-    width: 250,
-    height: 250,
-    marginBottom: 20,
-  },
-  inputContainer: {
-    width: '80%',
-    backgroundColor: '#f9f9f9',
-    padding: 20,
-    borderRadius: 10,
-    elevation: 3,  // Adds shadow on Android
-    shadowColor: '#000',  // Adds shadow on iOS
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-  },
-  forgotPassword: {
-    marginTop: 10,
-    color: '#007BFF',
-    fontSize: 14,
-    fontWeight: 'normal',
-    textAlign: 'center',
-  },
-  errorText: {
-    color: 'red',
-    marginBottom: 10,
-  },
-});
