@@ -1,5 +1,6 @@
 import { Control, FieldValues, Path, useController } from 'react-hook-form';
-import { StyleProp, StyleSheet, Text, TextInput as RNTextInput, TextInputProps as RNTextInputProps, TextStyle, View } from 'react-native';
+import { StyleProp, Text, TextInput as RNTextInput, TextInputProps as RNTextInputProps, TextStyle, View } from 'react-native';
+import { globalStyles, buttonStyles, textStyles, containerStyles } from '@/styles';
 
 import { RuleType } from '@/types';
 
@@ -21,16 +22,16 @@ export const TextInput: React.FC<TextInputProps> = ({
   style,
   ...props
 }) => {
-  const style_ = [styles.textInput, style];
+  const style_ = [textStyles.input, style];
 
   return (
     <View>
-      {label && <Text style={styles.label}>{label}</Text>}
+      {label && <Text style={textStyles.description}>{label}</Text>}
       <RNTextInput
         style={style_}
         {...props}
       />
-      {error && <Text style={styles.error}>{error}</Text>}
+      {error && <Text style={textStyles.errorText}>{error}</Text>}
     </View>
   );
 };
@@ -51,21 +52,3 @@ export const ControlledInput = <T extends FieldValues>({
     />
   );
 };
-
-const styles = StyleSheet.create({
-  label: {
-  },
-  error: {
-    color: 'red',
-    fontSize: 10,
-  },
-  textInput: {
-    height: 40,
-    borderColor: '#ccc',
-    borderWidth: 1,
-    borderRadius: 5,
-    marginBottom: 15,
-    paddingHorizontal: 10,
-    backgroundColor: '#fff',
-  },
-});

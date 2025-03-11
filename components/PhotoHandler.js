@@ -60,5 +60,4 @@ class PhotoHandler {
     );
   }
 }
-
 export { PhotoHandler };

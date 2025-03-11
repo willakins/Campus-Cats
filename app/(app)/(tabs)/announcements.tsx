@@ -1,7 +1,8 @@
 import React from 'react';
-import { Text, StyleSheet, View } from 'react-native';
+import { Text, View } from 'react-native';
 
 import { Ionicons } from '@expo/vector-icons';
+import { globalStyles, buttonStyles, textStyles, containerStyles } from '@/styles';
 
 import { LoadingIndicator } from '@/components';
 import { useAuth } from '@/providers';
@@ -15,24 +16,17 @@ const Announcements = () => {
   }
 
   return (
-    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+    <View style={globalStyles.screen}>
       <Text>Announcements Screen</Text>
       {isAdmin ? (
         <Ionicons
           name="lock-closed"
           size={24}
           color="black"
-          style={styles.lockIcon}
+          style={globalStyles.lockIcon}
         />
       ) : null}
     </View>
   );
 };
-
 export default Announcements;
-
-const styles = StyleSheet.create({
-  lockIcon: {
-    marginRight: 15, // Adjust as needed for positioning
-  },
-});

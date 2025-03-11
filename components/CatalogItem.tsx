@@ -1,6 +1,6 @@
 // CatalogItem.js
 import React, { useEffect, useState } from 'react';
-import { Image, Text, StyleSheet, View } from 'react-native';
+import { Image, Text, View } from 'react-native';
 
 import { useRouter } from 'expo-router';
 import { getDownloadURL, listAll, ref } from 'firebase/storage';
@@ -8,10 +8,13 @@ import { getDownloadURL, listAll, ref } from 'firebase/storage';
 import { Button } from './ui/Buttons';
 import { CatalogEntryObject } from '@/types';
 import { storage } from '@/config/firebase';
+import DatabaseService from './DatabaseService';
+import { globalStyles, buttonStyles, textStyles, containerStyles } from '@/styles';
 
 export const CatalogItem: React.FC<CatalogEntryObject> = ({ id, name, info }) => {
   const router = useRouter();
-  const [profileURL, setProfile] = useState<string | null>(null);
+  const [profileURL, setProfile] = useState<string>('');
+  const database = DatabaseService.getInstance();
 
   const fetchCatImages = async (catName: string) => {
     try {
@@ -38,7 +41,7 @@ export const CatalogItem: React.FC<CatalogEntryObject> = ({ id, name, info }) =>
   };
 
   useEffect(() => {
-    fetchCatImages(name);
+    database.fetchCatImages(name, setProfile);
   }, []);
 
   // Handle onPress and navigate to the detail page
@@ -50,57 +53,14 @@ export const CatalogItem: React.FC<CatalogEntryObject> = ({ id, name, info }) =>
   };
 
   return (
-    <Button style={styles.entryContainer} onPress={handlePress}>
-      <View style={styles.entryElements}>
-        <Text style={styles.title}>{name}</Text>
-        {profileURL ? (<Image source={{ uri: profileURL }} style={styles.image} />) : 
-          <Text style={styles.title}>Loading image...</Text>}
-        <Text style={styles.description}>{info}</Text>
+    <Button style={containerStyles.entryContainer} onPress={handlePress}>
+      <View style={containerStyles.entryElements}>
+        <Text style={textStyles.catalogTitle}>{name}</Text>
+        {profileURL ? (<Image source={{ uri: profileURL }} style={containerStyles.listImage} />) : 
+          <Text style={textStyles.title}>Loading image...</Text>}
+        <Text style={textStyles.catalogDescription}>{info}</Text>
       </View>
     </Button>
   );
 };
-
-const styles = StyleSheet.create({
-  entryContainer: {
-    flexDirection: 'column', // Stack items vertically
-    justifyContent: 'center', // Center content vertically
-    alignItems: 'center', // Center content horizontally
-    marginBottom: 20, // Space between catalog entries
-    padding: 5,
-    borderRadius:10,
-    backgroundColor: '#fff',
-    shadowColor: '#000',
-    shadowOpacity: 0.1,
-    shadowRadius: 10,
-    elevation: 5,
-  },
-  entryElements: {
-    flexDirection: "column", // Ensures each item is stacked vertically
-    alignItems: "center",
-  },
-  image: {
-    width: 250, // Set a fixed width for the image
-    height: 150, // Set a fixed height for the image
-    borderRadius: 40, // Make the image circular
-    marginBottom: 10, // Space between image and text
-  },
-  textContainer: {
-    alignItems: 'center', // Center text horizontally
-  },
-  title: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#333',
-    textAlign: 'center',
-    marginBottom: 5, // Space between title and description
-  },
-  description: {
-    fontSize: 14,
-    color: '#777',
-    textAlign: 'center',
-    marginHorizontal: 10, // Add some horizontal padding for better readability
-  },
-});
 export default CatalogItem;
-
