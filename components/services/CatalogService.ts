@@ -1,6 +1,6 @@
 import { db, storage } from "@/config/firebase";
 import { CatalogEntryObject, CatSightingObject } from "@/types";
-import { addDoc, collection, doc, getDocs, query, updateDoc, where } from "firebase/firestore";
+import { addDoc, collection, deleteDoc, doc, getDocs, query, updateDoc, where } from "firebase/firestore";
 import { deleteObject, getDownloadURL, getStorage, listAll, ref, uploadBytes, uploadBytesResumable } from "firebase/storage";
 import { Dispatch, SetStateAction } from "react";
 import { Alert } from "react-native";
@@ -91,7 +91,7 @@ class CatalogService {
     
           // Update the 'name' field in Firestore
           await updateDoc(catDocRef, { 
-            name: catName,
+            catName: catName,
             info: info
           });
           if (oldName !== catName) {
@@ -231,8 +231,48 @@ class CatalogService {
     /**
     * Effect: Deletes an existing catalog entry from firebase
     */
-    public async deleteCatalogEntry() {
+    public async deleteCatalogEntry(
+      catName:string,
+      id:string,
+      setVisible: Dispatch<SetStateAction<boolean>>,
+    ) {
+      Alert.alert(
+        'Select Option',
+        'Are you sure you want to delete this image forever?',
+        [
+          {
+            text: 'Delete Forever',
+            onPress: () => this.confirmDeleteCatalogEntry(catName, id, setVisible),
+          },
+          {
+            text: 'Cancel',
+            style: 'cancel',
+          },
+        ],
+        { cancelable: true }
+      );
+    }
+    /**
+     * Private 1
+     */
+    private async confirmDeleteCatalogEntry(catName:string, id:string, setVisible:Dispatch<SetStateAction<boolean>>) {
+      try {
+        setVisible(true);
+        await deleteDoc(doc(db, 'catalog', id)); //Delete firestore document
+
+        //Delete storage folder
+        const photoPath = `cats/${catName}`;
+        const folderRef = ref(storage, photoPath);
+        const result = await listAll(folderRef);
+        await Promise.all(result.items.map((item) => deleteObject(item)));
         
+        alert('Entry deleted successfully!');
+        
+      } catch (error) {
+        alert(error);
+      } finally {
+        setVisible(false);
+      }
     }
 
     /**
