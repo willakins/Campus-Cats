@@ -92,6 +92,7 @@ const containerStyles = StyleSheet.create({
         justifyContent: 'center',
         textAlign: 'center',
         flex: 1,
+        marginBottom: 15,
     },
     splashImage: {
         width: 200,
@@ -100,8 +101,9 @@ const containerStyles = StyleSheet.create({
     mapContainer: {
         width: '100%', 
         height: 200, 
-        paddingHorizontal: 15, 
+        paddingHorizontal: 5, 
         borderRadius:10,
+        marginTop: 10,
         marginBottom: 10,
     },
     inputContainer: {
@@ -114,6 +116,7 @@ const containerStyles = StyleSheet.create({
         shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.1,
         shadowRadius: 4,
+        borderRadius:10,
     },
     loginInputContainer: {
         width: '80%',
@@ -155,7 +158,7 @@ const containerStyles = StyleSheet.create({
     },
     dateInput: {
         height: 40,
-        width: 300,
+        width: '100%',
         borderColor: '#ccc',
         borderWidth: 1,
         borderRadius: 5,

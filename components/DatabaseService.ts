@@ -1,7 +1,7 @@
-import { deleteObject, getDownloadURL, getStorage, listAll, ref, uploadBytes } from 'firebase/storage';
+import { deleteObject, getDownloadURL, getStorage, listAll, ref, uploadBytes, uploadBytesResumable } from 'firebase/storage';
 import { getDocs, getDoc, updateDoc, doc, collection, query, where, DocumentData, getFirestore, addDoc, serverTimestamp, Timestamp, deleteDoc } from 'firebase/firestore';
 import { auth, db, storage } from '@/config/firebase';
-import { CatalogEntryObject, CatSightingObject } from '@/types';
+import { AnnouncementEntryObject, CatalogEntryObject, CatSightingObject } from '@/types';
 import { Dispatch, SetStateAction } from 'react';
 import { Alert } from 'react-native';
 import { uploadFromURI } from '@/utils';
@@ -415,6 +415,74 @@ class DatabaseService {
       Alert.alert('No user is logged in.');
     }
   };
+
+  /**
+   * Effect: Swaps the profile picture for a catalog entry
+   */
+  public async swapProfilePicture(
+    catName:string, 
+    picUrl:string, 
+    picName:string, 
+    profilePicUrl?:string, 
+    profilePicName?:string) {
+    const oldProfileRef = ref(storage, `cats/${catName}/${profilePicName}`);
+    const selectedPicRef = ref(storage, `cats/${catName}/${picName}`);
+
+    // Fetch image blobs
+    const oldProfileBlob = await (await fetch(profilePicUrl!)).blob();
+    const selectedPicBlob = await (await fetch(picUrl)).blob();
+
+    // Swap images:
+    // 1. Delete both files
+    await deleteObject(oldProfileRef);
+    await deleteObject(selectedPicRef);
+
+    // 2. Re-upload old profile picture as selectedPic.name
+    const newExtraPicRef = ref(storage, `cats/${catName}/${catName}`);
+    await uploadBytesResumable(newExtraPicRef, oldProfileBlob);
+
+    // 3. Re-upload selected picture as profile picture
+    const newProfilePicRef = ref(storage, `cats/${catName}/${catName}_profile.jpg`);
+    await uploadBytesResumable(newProfilePicRef, selectedPicBlob);
+}
+
+/**
+ * Effect: deletes a picture from a catalog entry
+ */
+public async deletePicture(
+  catName:string, 
+  photoURL: string, 
+  setProfile: Dispatch<SetStateAction<string>>,
+  setImageUrls: Dispatch<SetStateAction<string[]>>) {
+  try {
+    const imageRef = ref(storage, `cats/${catName}/${photoURL}`);
+    await deleteObject(imageRef);
+    this.fetchCatImages(catName, setProfile, setImageUrls);
+
+    alert('Success Image deleted successfully!');
+  } catch (error) {
+    alert('Error Failed to delete the image.');
+    console.error('Error deleting image: ', error);
+  }
+};
+
+  /**
+   * Effect: pulls announcement data from firestore
+   */
+  public async fetchAnnouncementData(setAnns:Dispatch<SetStateAction<AnnouncementEntryObject[]>>) {
+    try {
+      const querySnapshot = await getDocs(collection(db, 'announcements'));
+      const anns: AnnouncementEntryObject[] = querySnapshot.docs.map((doc) => ({
+        id: doc.id,
+        title: doc.data().title,
+        info: doc.data().info,
+        photos: doc.data().photos,
+      }));
+      setAnns(anns);
+    } catch (error) {
+      console.error('Error fetching catalog data: ', error);
+    }
+  }
 
   /**
    * Private 1

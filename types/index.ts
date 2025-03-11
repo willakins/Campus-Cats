@@ -12,4 +12,5 @@ export type RuleType<T extends FieldValues> = { [name in keyof T]: TRule<T> };
 
 // File exports
 export { CatalogEntryObject } from './CatalogEntryObject';
+export { AnnouncementEntryObject } from './AnnouncementEntryObject';
 export { CatSightingObject } from './CatSightingObject';

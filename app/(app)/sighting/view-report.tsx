@@ -66,15 +66,12 @@ const CatSightingScreen = () => {
         <Text style= {textStyles.editText}>Save</Text>
       </Button> : null}
       <ScrollView contentContainerStyle={containerStyles.scrollView}>
-        <Text style={textStyles.headline}>
+        <Text style={textStyles.catalogTitle}>
           {isAdmin ? 'Edit' : 'View'} A Cat Sighting
         </Text>
         <View style={containerStyles.container}>
-          {photoImage ? (
-            <Image source={{ uri: photoImage }} style={containerStyles.catImage} />
-          ) : (
-              <Text style={containerStyles.catImage}>Loading image...</Text>
-            )}
+          {photoImage ? (<Image source={{ uri: photoImage }} style={containerStyles.catImage} resizeMode='contain'/>) : 
+            (<Text style={containerStyles.catImage}>Loading image...</Text>)}
           <View style={containerStyles.inputContainer}>
             {isAdmin ? <MapView
               style={containerStyles.mapContainer}

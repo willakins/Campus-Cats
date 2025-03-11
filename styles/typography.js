@@ -67,7 +67,7 @@ const textStyles = StyleSheet.create({
     },
     input: {
         height: 40,
-        width: 300,
+        width: '100%',
         borderColor: '#ccc',
         borderWidth: 1,
         borderRadius: 5,

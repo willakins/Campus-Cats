@@ -2,6 +2,7 @@ import React, { Dispatch, SetStateAction } from 'react';
 import { Alert } from 'react-native';
 import { deleteObject, uploadBytesResumable, ref } from 'firebase/storage';
 import { storage } from '@/config/firebase';
+import DatabaseService from './DatabaseService';
 
 type FetchCatImagesType = (
   catName: string,
@@ -31,6 +32,7 @@ class CatalogImageHandler {
   private name: string;
   private profilePicName?: string;
   private profilePicUrl?: string;
+  private database = DatabaseService.getInstance();
 
   constructor({
     setVisible,
@@ -61,27 +63,8 @@ class CatalogImageHandler {
         alert('Error Could not find profile picture or selected picture.');
         return;
       }
-
-      const oldProfileRef = ref(storage, `cats/${this.name}/${this.profilePicName}`);
-      const selectedPicRef = ref(storage, `cats/${this.name}/${picName}`);
-
-      // Fetch image blobs
-      const oldProfileBlob = await (await fetch(this.profilePicUrl!)).blob();
-      const selectedPicBlob = await (await fetch(picUrl)).blob();
-
-      // Swap images:
-      // 1. Delete both files
-      await deleteObject(oldProfileRef);
-      await deleteObject(selectedPicRef);
-
-      // 2. Re-upload old profile picture as selectedPic.name
-      const newExtraPicRef = ref(storage, `cats/${this.name}/${picName}`);
-      await uploadBytesResumable(newExtraPicRef, oldProfileBlob);
-
-      // 3. Re-upload selected picture as profile picture
-      const newProfilePicRef = ref(storage, `cats/${this.name}/${this.name}_profile.jpg`);
-      await uploadBytesResumable(newProfilePicRef, selectedPicBlob);
-
+      await this.database.swapProfilePicture(this.name, picUrl, picName, this.profilePicUrl, this.profilePicName);
+      
       // Refresh UI
       this.fetchCatImages(this.name, this.setProfile, this.setImageUrls);
       alert('Success Profile picture updated!');
@@ -100,7 +83,7 @@ class CatalogImageHandler {
       [
         {
           text: 'Delete Forever',
-          onPress: () => this.deletePicture(photoURL),
+          onPress: () => this.database.deletePicture(this.name, photoURL, this.setProfile, this.setImageUrls),
         },
         {
           text: 'Cancel',
@@ -109,19 +92,6 @@ class CatalogImageHandler {
       ],
       { cancelable: true }
     );
-  };
-
-  private deletePicture = async (photoURL: string) => {
-    try {
-      const imageRef = ref(storage, `cats/${this.name}/${photoURL}`);
-      await deleteObject(imageRef);
-      this.fetchCatImages(this.name, this.setProfile, this.setImageUrls);
-
-      alert('Success Image deleted successfully!');
-    } catch (error) {
-      alert('Error Failed to delete the image.');
-      console.error('Error deleting image: ', error);
-    }
   };
 
   public addPhoto = (newPhotoUri: string) => {
