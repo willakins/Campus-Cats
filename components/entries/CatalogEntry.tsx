@@ -47,7 +47,7 @@ export const CatalogEntry: React.FC<CatalogEntryObject> = ({ id, name, info }) =
         />
         ))}
       </MapView>
-      <Text style={textStyles.subHeading}> Extra Photos</Text>
+      {imageUrls.length > 0 ? <Text style={textStyles.subHeading}> Extra Photos</Text>: null}
       {imageUrls ? (imageUrls.map((url, index) => (
         <Image key={index} source={{ uri: url }} style={containerStyles.extraImage} resizeMode='contain'/>))) : <Text>Loading images...</Text>}  
     </ScrollView>

@@ -1,8 +1,8 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import { Image, KeyboardAvoidingView, Platform, ScrollView, Text, View } from 'react-native';
 
 import { Ionicons } from '@expo/vector-icons';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { Snackbar } from 'react-native-paper';
 
 import { Button, TextInput, ImageButton, CameraButton, CatalogImageHandler } from '@/components';
@@ -32,10 +32,12 @@ const edit_entry = () => {
     setProfile,
     name, 
     profilePicUrl});
-
-  useEffect(() => {
-    database.fetchCatImages(name, setProfile, setImageUrls);
-  }, []);
+    
+  useFocusEffect(
+    useCallback(() => {
+      database.fetchCatImages(name, setProfile, setImageUrls);
+    }, [profilePicUrl])
+  );
 
   const handleCatalogSave = async () => {
     await database.handleCatalogSave(name, oldName, info, newPics, newPhotosAdded, id, setVisible)
@@ -43,6 +45,17 @@ const edit_entry = () => {
       pathname: '/catalog/view-entry', // Dynamically navigate to the details page
       params: { paramId:id, paramName:name, paramInfo:info}, // Pass the details as query params
     });
+  }
+
+  const deleteEntry = async () => {
+    await database.deleteCatalogEntry(name, id, setVisible);
+    router.push('/catalog');
+  }
+
+  const handleSwap = async (pic:string) => {
+    await imageHandler.swapProfilePicture(pic);
+    setVisible(true);
+    setTimeout(() => setVisible(false), 2500);
   }
 
   return (
@@ -60,6 +73,11 @@ const edit_entry = () => {
         <Text style={textStyles.title}>Edit A Catalog Entry</Text>
         {profilePicUrl ? (<Image source={{ uri: profilePicUrl }} style={containerStyles.headlineImage} resizeMode="contain" />) : 
           <Text style={textStyles.title}>Loading image...</Text>}
+          <View style={containerStyles.extraPicsContainer}>
+          <Snackbar visible={visible} onDismiss={() => setVisible(false)} duration={2000}>
+                Saving...
+          </Snackbar>
+        </View>
         <View style={containerStyles.loginContainer}>
           <Text style={textStyles.headline}>Cat's Name</Text>
           <TextInput 
@@ -75,12 +93,12 @@ const edit_entry = () => {
             style={textStyles.descInput} 
             multiline={true}/>
         </View>
-        <Text style={textStyles.headline}> Extra Photos</Text>
-        <Text style={textStyles.subHeading}> The photo you click will turn into the cat's profile picture</Text>
+        {extraPics.length > 0 ? <Text style={textStyles.headline}> Extra Photos</Text>: null}
+        {extraPics.length > 0 ? <Text style={textStyles.subHeading}> The photo you click will turn into the cat's profile picture</Text>: null}
         <View style={containerStyles.extraPicsContainer}>
           {extraPics ? (extraPics.map((pic, index) => (
             <View key={index} style={containerStyles.imageWrapper}>
-              <ImageButton key={index} onPress={() => imageHandler.swapProfilePicture(pic)}>
+              <ImageButton key={index} onPress={() => handleSwap(pic)}>
                 <Image source={{ uri: pic }} style={containerStyles.extraPic} />
               </ImageButton>
               <Button style={buttonStyles.deleteButton} onPress={() => imageHandler.confirmDeletion(pic)}>
@@ -88,12 +106,10 @@ const edit_entry = () => {
               </Button>
             </View>
           ))):<Text>Loading images...</Text>}
-          <Snackbar visible={visible} onDismiss={() => setVisible(false)} duration={2000}>
-            Saving...
-          </Snackbar>
         </View>
         <Text style={textStyles.headline}> Upload Additional Photos</Text>
         <CameraButton onPhotoSelected={imageHandler.addPhoto}></CameraButton>
+        <Button style={buttonStyles.deleteButton}onPress={deleteEntry}> Delete Catalog Entry</Button>
       </ScrollView>
     </KeyboardAvoidingView>
   );
