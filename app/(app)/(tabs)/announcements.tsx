@@ -6,7 +6,7 @@ import { globalStyles, buttonStyles, textStyles, containerStyles } from '@/style
 import { AnnouncementItem, Button, LoadingIndicator } from '@/components';
 import { useAuth } from '@/providers';
 import { router, useFocusEffect } from 'expo-router';
-import DatabaseService from '@/components/DatabaseService';
+import DatabaseService from '@/components/services/DatabaseService';
 import { AnnouncementEntryObject } from '@/types';
 
 const Announcements = () => {

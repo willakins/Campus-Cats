@@ -6,7 +6,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Snackbar } from 'react-native-paper';
 
 import { Button, TextInput, CameraButton } from '@/components';
-import DatabaseService from '@/components/DatabaseService';
+import DatabaseService from '@/components/services/DatabaseService';
 import { globalStyles, buttonStyles, textStyles, containerStyles } from '@/styles';
 
 const edit_ann = () => {
@@ -66,7 +66,7 @@ const edit_ann = () => {
       </Button>
       <ScrollView contentContainerStyle={containerStyles.entryContainer}>
         <Text style={textStyles.title}>Edit An Announcement</Text>
-        <View style={containerStyles.input}>
+        <View style={containerStyles.loginContainer}>
         <Text style={textStyles.headline}>Title</Text>
         <TextInput 
           value={title}

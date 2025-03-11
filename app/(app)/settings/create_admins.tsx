@@ -4,7 +4,7 @@ import { View } from 'react-native';
 import { useRouter } from 'expo-router';
 
 import { Button, TextInput } from '@/components';
-import DatabaseService from '@/components/DatabaseService';
+import DatabaseService from '@/components/services/DatabaseService';
 import { globalStyles, buttonStyles, textStyles, containerStyles } from '@/styles';
 import { Ionicons } from '@expo/vector-icons';
 

@@ -1,6 +1,6 @@
 import React, { Dispatch, SetStateAction } from 'react';
 import { Alert } from 'react-native';
-import DatabaseService from '../DatabaseService';
+import DatabaseService from '../services/DatabaseService';
 
 type FetchCatImagesType = (
   catName: string,
@@ -55,9 +55,7 @@ class CatalogImageHandler {
 
   public swapProfilePicture = async (picUrl:string) => {
     this.setVisible(true);
-    const name = this.getFileNameFromUrl(picUrl);
-    const parts = name.split('%');
-    const picName = parts[parts.length - 1].substring(2);// Handles weird filepath shenanigans to get desired filepath
+    const picName = this.getFileNameFromUrl(picUrl);
     try {
       if (!this.profilePicName || !picName) {
         alert('Error Could not find profile picture or selected picture.');
@@ -76,14 +74,15 @@ class CatalogImageHandler {
     }
   };
 
-  public confirmDeletion = (photoURL: string) => {
+  public confirmDeletion = (photoUrl: string) => {
+    const picName = this.getFileNameFromUrl(photoUrl);
     Alert.alert(
       'Select Option',
       'Are you sure you want to delete this image forever?',
       [
         {
           text: 'Delete Forever',
-          onPress: () => this.database.deleteCatalogPicture(this.name, photoURL, this.setProfile, this.setImageUrls),
+          onPress: () => this.database.deleteCatalogPicture(this.name, picName, this.setProfile, this.setImageUrls),
         },
         {
           text: 'Cancel',
@@ -111,7 +110,9 @@ class CatalogImageHandler {
     const parsedUrl = new URL(url);
     const path = parsedUrl.pathname; // Get the path part of the URL
     const fileName = path.substring(path.lastIndexOf('/') + 1); // Get the part after the last '/'
-    return fileName;
+    const parts = fileName.split('%');
+    const picName = parts[parts.length - 1].substring(2);// Handles weird filepath shenanigans to get desired filepath
+    return picName;
   }
 }
 export { CatalogImageHandler };

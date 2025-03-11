@@ -5,7 +5,7 @@ import { useRouter } from 'expo-router';
 
 import { Button } from '../ui/Buttons';
 import { AnnouncementEntryObject } from '@/types';
-import DatabaseService from '../DatabaseService';
+import DatabaseService from '../services/DatabaseService';
 import { globalStyles, buttonStyles, textStyles, containerStyles } from '@/styles';
 
 export const AnnouncementItem: React.FC<AnnouncementEntryObject> = ({ id, title, info, photos }) => {
