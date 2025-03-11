@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Image, KeyboardAvoidingView, Platform, SafeAreaView, ScrollView, Text, View } from 'react-native';
+import { Image, KeyboardAvoidingView, Platform, ScrollView, Text, View } from 'react-native';
 
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -17,17 +17,12 @@ const create_entry = () =>{
   const [profile, setProfile] = useState<string>('');
   const database = DatabaseService.getInstance();
   
-  const handleCreate = async () => {
-    await database.handleCatalogCreate(name, info, profile, setVisible);
-    router.push('/catalog');
-  }
-
   return (
     <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={containerStyles.container}>
-      <Button style={buttonStyles.logoutButton} onPress={() => router.push('/catalog')}>
+      <Button style={buttonStyles.logoutButton} onPress={() => router.back()}>
         <Ionicons name="arrow-back-outline" size={25} color="#fff" />
       </Button>
-      <Button style={buttonStyles.editButton} onPress={handleCreate}>
+      <Button style={buttonStyles.editButton} onPress={() => database.handleCatalogCreate(name, info, profile, setVisible, router)}>
         <Text style={textStyles.editText}> Create Entry</Text>
       </Button>
       <ScrollView contentContainerStyle={containerStyles.entryContainer}>

@@ -1,5 +1,6 @@
 import { db, storage } from "@/config/firebase";
 import { AnnouncementEntryObject } from "@/types";
+import { Router } from "expo-router";
 import { addDoc, collection, deleteDoc, doc, getDocs, serverTimestamp, updateDoc } from "firebase/firestore";
 import { deleteObject, getDownloadURL, listAll, ref, uploadBytes } from "firebase/storage";
 import { Dispatch, SetStateAction } from "react";
@@ -67,28 +68,26 @@ class AnnouncementsService {
     * Effect: updates an existing announcement in firestore
     */
     public async handleAnnouncementSave(
-        id:string,
-        title:string, 
-        info:string, 
-        photoPath:string,
-        newPhotos:string[],
-        isPicsChanged:boolean, 
-        setVisible:Dispatch<SetStateAction<boolean>>) {
+        thisAnn: AnnouncementEntryObject,
+        newPhotos: string[], 
+        isPicsChanged: boolean, 
+        setVisible: Dispatch<SetStateAction<boolean>>, 
+        router: Router) {
         try {
             setVisible(true);
-            const announcementRef = doc(db, 'announcements', id);
+            const announcementRef = doc(db, 'announcements', thisAnn.id);
             
             await updateDoc(announcementRef, { //Update firestore
-                title: title,
-                info: info,
-                photos: photoPath,
+                title: thisAnn.title,
+                info: thisAnn.info,
+                photos: thisAnn.photos,
                 updatedAt: new Date(),
             });
 
             //Update storage bucket
             if (isPicsChanged) {
-                await this.deleteAllImagesInFolder(photoPath);
-                await this.uploadImagesToStorage(newPhotos, photoPath);
+                await this.deleteAllImagesInFolder(thisAnn.photos);
+                await this.uploadImagesToStorage(newPhotos, thisAnn.photos);
             }
         
             console.log('Announcement updated successfully');
@@ -96,6 +95,15 @@ class AnnouncementsService {
             console.error('Error updating announcement: ', error);
         } finally {
             setVisible(false);
+            router.push({
+                pathname: '/announcements/view-ann',
+                params: { 
+                    paramId:thisAnn.id, 
+                    paramTitle:thisAnn.title, 
+                    paramInfo:thisAnn.info, 
+                    paramPhotos:thisAnn.photos, 
+                    paramCreated:thisAnn.createdAt },
+              });
         }
     }
 
