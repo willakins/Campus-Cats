@@ -9,6 +9,7 @@ import CatalogService from './CatalogService';
 import SightingsService from './SightingsService';
 import AnnouncementsService from './AnnouncementsService';
 import StationsService from './StationsService';
+import { Router } from 'expo-router';
 
 //Singleton class
 class DatabaseService {
@@ -195,35 +196,38 @@ class DatabaseService {
    * Effect: Updates firestore and storage when editing a catalog entry
    */
   public async handleCatalogSave(
-    catName:string, 
-    oldName:string, 
-    info:string, 
-    newPics:{ url: string; name: string }[], 
-    newPhotosAdded:boolean,
-    id:string, 
-    setVisible:Dispatch<SetStateAction<boolean>>) {
-    DatabaseService.catalogService.handleCatalogSave(catName, oldName, info, newPics, newPhotosAdded, id, setVisible);
+    catName: string, 
+    oldName: string, 
+    info: string, 
+    newPics: { url: string; name: string; }[], 
+    newPhotosAdded: boolean, 
+    id: string, setVisible: 
+    Dispatch<SetStateAction<boolean>>, 
+    router: Router) {
+    DatabaseService.catalogService.handleCatalogSave(catName, oldName, info, newPics, newPhotosAdded, id, setVisible, router);
   }
 
   /**
    * Effect: Creates a new catalog entry and stores it in firebase
    */
   public async handleCatalogCreate(
-    catName:string, 
-    info:string,
-    profilePic:string, 
-    setVisible:Dispatch<SetStateAction<boolean>>) {
-    DatabaseService.catalogService.handleCatalogCreate(catName, info, profilePic, setVisible);
+    catName: string, 
+    info: string, 
+    profilePic: string, 
+    setVisible: Dispatch<SetStateAction<boolean>>, 
+    router: Router) {
+    DatabaseService.catalogService.handleCatalogCreate(catName, info, profilePic, setVisible, router);
   }
 
   /**
    * Effect: Deletes an existing catalog entry from firebase
    */
   public async deleteCatalogEntry(
-    catName:string,
-    id:string,
-    setVisible: Dispatch<SetStateAction<boolean>>,) {
-    DatabaseService.catalogService.deleteCatalogEntry(catName, id, setVisible);
+    catName: string, 
+    id: string, 
+    setVisible: Dispatch<SetStateAction<boolean>>, 
+    router: Router,) {
+    await DatabaseService.catalogService.deleteCatalogEntry(catName, id, setVisible, router);
   }
 
   /**
@@ -235,7 +239,7 @@ class DatabaseService {
     picName:string, 
     profilePicUrl?:string, 
     profilePicName?:string) {
-    DatabaseService.catalogService.swapProfilePicture(catName, picUrl, picName, profilePicUrl, profilePicName);
+    await DatabaseService.catalogService.swapProfilePicture(catName, picUrl, picName, profilePicUrl, profilePicName);
   }
 
   /**
@@ -246,7 +250,7 @@ class DatabaseService {
     picName: string, 
     setProfile: Dispatch<SetStateAction<string>>,
     setImageUrls: Dispatch<SetStateAction<string[]>>) {
-    DatabaseService.catalogService.deleteCatalogPicture(catName, picName, setProfile, setImageUrls);
+    await DatabaseService.catalogService.deleteCatalogPicture(catName, picName, setProfile, setImageUrls);
   }
 
   /**
@@ -274,14 +278,12 @@ class DatabaseService {
    * Effect: updates an existing announcement in firestore
    */
   public async handleAnnouncementSave(
-    id:string,
-    title:string, 
-    info:string, 
-    photoPath:string,
-    newPhotos:string[],
-    isPicsChanged:boolean, 
-    setVisible:Dispatch<SetStateAction<boolean>>) {
-    DatabaseService.announcementsService.handleAnnouncementSave(id, title, info, photoPath, newPhotos, isPicsChanged, setVisible);
+    thisAnn: AnnouncementEntryObject,
+    newPhotos: string[], 
+    isPicsChanged: boolean, 
+    setVisible: Dispatch<SetStateAction<boolean>>, 
+    router: Router) {
+    DatabaseService.announcementsService.handleAnnouncementSave(thisAnn, newPhotos, isPicsChanged, setVisible, router);
   }
 
   /**

@@ -1,5 +1,6 @@
 import { db, storage } from "@/config/firebase";
 import { CatalogEntryObject, CatSightingObject } from "@/types";
+import { Router } from "expo-router";
 import { addDoc, collection, deleteDoc, doc, getDocs, query, updateDoc, where } from "firebase/firestore";
 import { deleteObject, getDownloadURL, getStorage, listAll, ref, uploadBytes, uploadBytesResumable } from "firebase/storage";
 import { Dispatch, SetStateAction } from "react";
@@ -73,13 +74,14 @@ class CatalogService {
     * Effect: Updates firestore and storage when editing a catalog entry
     */
     public async handleCatalogSave(
-        catName:string, 
-        oldName:string, 
-        info:string, 
-        newPics:{ url: string; name: string }[], 
-        newPhotosAdded:boolean,
-        id:string, 
-        setVisible:Dispatch<SetStateAction<boolean>>) {
+      catName: string, 
+      oldName: string, 
+      info: string, 
+      newPics: { url: string; name: string; }[], 
+      newPhotosAdded: boolean, 
+      id: string, 
+      setVisible: Dispatch<SetStateAction<boolean>>, 
+      router: Router) {
         if (!catName.trim()) {
           alert('Invalid Name Cat name cannot be empty.');
           return;
@@ -136,6 +138,10 @@ class CatalogService {
           alert('Error Failed to update name.');
         } finally {
           setVisible(false);
+          router.push({
+            pathname: '/catalog/view-entry', // Dynamically navigate to the details page
+            params: { paramId:id, paramName:catName, paramInfo:info}, // Pass the details as query params
+          })
         }
     };
     
@@ -143,10 +149,11 @@ class CatalogService {
      * 
      */
     public async handleCatalogCreate(
-        catName:string, 
-        info:string,
-        profilePic:string, 
-        setVisible:Dispatch<SetStateAction<boolean>>) {
+      catName: string, 
+      info: string, 
+      profilePic: string, 
+      setVisible: Dispatch<SetStateAction<boolean>>, 
+      router: Router) {
         if (!catName.trim()) {
           Alert.alert('Invalid Name', 'Cat name cannot be empty.');
           return;
@@ -175,6 +182,7 @@ class CatalogService {
           Alert.alert('Error', 'Failed to create cat entry.');
         } finally {
           setVisible(false);
+          router.back();
         }
     };
 
@@ -232,9 +240,10 @@ class CatalogService {
     * Effect: Deletes an existing catalog entry from firebase
     */
     public async deleteCatalogEntry(
-      catName:string,
-      id:string,
-      setVisible: Dispatch<SetStateAction<boolean>>,
+      catName: string, 
+      id: string, 
+      setVisible: Dispatch<SetStateAction<boolean>>, 
+      router: Router,
     ) {
       Alert.alert(
         'Select Option',
@@ -242,7 +251,7 @@ class CatalogService {
         [
           {
             text: 'Delete Forever',
-            onPress: () => this.confirmDeleteCatalogEntry(catName, id, setVisible),
+            onPress: async () => await this.confirmDeleteCatalogEntry(catName, id, setVisible, router),
           },
           {
             text: 'Cancel',
@@ -255,7 +264,11 @@ class CatalogService {
     /**
      * Private 1
      */
-    private async confirmDeleteCatalogEntry(catName:string, id:string, setVisible:Dispatch<SetStateAction<boolean>>) {
+    private async confirmDeleteCatalogEntry(
+      catName: string, 
+      id: string, 
+      setVisible: Dispatch<SetStateAction<boolean>>, 
+      router: Router) {
       try {
         setVisible(true);
         await deleteDoc(doc(db, 'catalog', id)); //Delete firestore document
@@ -265,8 +278,9 @@ class CatalogService {
         const folderRef = ref(storage, photoPath);
         const result = await listAll(folderRef);
         await Promise.all(result.items.map((item) => deleteObject(item)));
-        
+    
         alert('Entry deleted successfully!');
+        router.push('/catalog');
         
       } catch (error) {
         alert(error);

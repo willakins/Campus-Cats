@@ -1,16 +1,9 @@
-import React, { Dispatch, SetStateAction } from 'react';
+import React from 'react';
 import { Alert } from 'react-native';
 import DatabaseService from '../services/DatabaseService';
 
-type FetchCatImagesType = (
-  catName: string,
-  setProfile: Dispatch<SetStateAction<string>>,
-  setImageUrls: Dispatch<SetStateAction<string[]>>
-) => Promise<void>;
-
 interface CatalogImageHandlerProps {
   setVisible: (visible: boolean) => void;
-  fetchCatImages: FetchCatImagesType;
   setImageUrls: React.Dispatch<React.SetStateAction<string[]>>;
   setNewPics: React.Dispatch<React.SetStateAction<{ url: string; name: string }[]>>;
   setNewPhotos: React.Dispatch<React.SetStateAction<boolean>>;
@@ -22,7 +15,6 @@ interface CatalogImageHandlerProps {
 
 class CatalogImageHandler {
   private setVisible: (visible: boolean) => void;
-  private fetchCatImages: FetchCatImagesType;
   private setImageUrls: React.Dispatch<React.SetStateAction<string[]>>;
   private setNewPics: React.Dispatch<React.SetStateAction<{ url: string; name: string }[]>>;
   private setNewPhotos: React.Dispatch<React.SetStateAction<boolean>>;
@@ -34,7 +26,6 @@ class CatalogImageHandler {
 
   constructor({
     setVisible,
-    fetchCatImages,
     setImageUrls,
     setNewPics,
     setNewPhotos,
@@ -43,7 +34,6 @@ class CatalogImageHandler {
     profilePicUrl
   }: CatalogImageHandlerProps) {
     this.setVisible = setVisible;
-    this.fetchCatImages = fetchCatImages;
     this.setImageUrls = setImageUrls;
     this.setNewPics = setNewPics;
     this.setNewPhotos = setNewPhotos;
@@ -56,15 +46,18 @@ class CatalogImageHandler {
   public swapProfilePicture = async (picUrl:string) => {
     const picName = this.getFileNameFromUrl(picUrl);
     try {
+      this.setVisible(true);
       if (!this.profilePicName || !picName) {
         alert('Error Could not find profile picture or selected picture.');
         return;
       }
       await this.database.swapProfilePicture(this.name, picUrl, picName, this.profilePicUrl, this.profilePicName);
-      setTimeout(() => this.fetchCatImages(this.name, this.setProfile, this.setImageUrls), 2000);
+      this.database.fetchCatImages(this.name, this.setProfile, this.setImageUrls);
     } catch (error) {
       console.error('Error swapping profile picture:', error);
       alert('Error Failed to swap profile picture.');
+    } finally {
+      this.setVisible(false);
     }
   };
 
@@ -76,7 +69,7 @@ class CatalogImageHandler {
       [
         {
           text: 'Delete Forever',
-          onPress: () => this.database.deleteCatalogPicture(this.name, picName, this.setProfile, this.setImageUrls),
+          onPress: async () => await this.database.deleteCatalogPicture(this.name, picName, this.setProfile, this.setImageUrls),
         },
         {
           text: 'Cancel',

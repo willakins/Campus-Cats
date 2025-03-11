@@ -8,6 +8,7 @@ import { Snackbar } from 'react-native-paper';
 import { Button, TextInput, CameraButton } from '@/components';
 import DatabaseService from '@/components/services/DatabaseService';
 import { globalStyles, buttonStyles, textStyles, containerStyles } from '@/styles';
+import { AnnouncementEntryObject } from '@/types';
 
 const edit_ann = () => {
   const router = useRouter();
@@ -20,13 +21,14 @@ const edit_ann = () => {
   const [photos, setPhotos] = useState<string[]>([]);
   const createdAt = paramCreated as string;
   const [isPicsChanged, setPicsChanged] = useState<boolean>(false);
+  const thisAnn = new AnnouncementEntryObject(id, title, info, photoPath, createdAt);
 
   const [visible, setVisible] = useState<boolean>(false);
   const database = DatabaseService.getInstance();
 
   useEffect(() => {
     database.fetchAnnouncementImages(photoPath, setPhotos);
-  }, []);
+  }, [isPicsChanged]);
 
   const addPhoto = (newPhotoUri: string) => {
     setPhotos((prevPics) => [
@@ -42,11 +44,8 @@ const edit_ann = () => {
   };
 
   const handleAnnouncementSave = async () => {
-    await database.handleAnnouncementSave(id, title, info, photoPath, photos, isPicsChanged, setVisible)
-    router.push({
-      pathname: '/announcements/view-ann',
-      params: { paramId:id, paramTitle:title, paramInfo:info, paramPhotos, paramCreated },
-    });
+    await database.handleAnnouncementSave(thisAnn, photos, isPicsChanged, setVisible, router)
+    
   }
 
   const deleteAnnouncement = async () => {
