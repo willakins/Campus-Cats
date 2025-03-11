@@ -9,10 +9,8 @@ import { Button } from './ui/Buttons';
 import { CatalogEntryObject } from '@/types';
 import { storage } from '@/config/firebase';
 
-export const CatalogItem: React.FC<CatalogEntryObject> = ({ id, name, info, most_recent_sighting }) => {
+export const CatalogItem: React.FC<CatalogEntryObject> = ({ id, name, info }) => {
   const router = useRouter();
-  const latitude = JSON.stringify(most_recent_sighting.latitude);
-  const longitude = JSON.stringify(most_recent_sighting.longitude);
   const [profileURL, setProfile] = useState<string | null>(null);
 
   const fetchCatImages = async (catName: string) => {
@@ -47,8 +45,7 @@ export const CatalogItem: React.FC<CatalogEntryObject> = ({ id, name, info, most
   const handlePress = () => {
     router.push({
       pathname: '/catalog/view-entry', // Dynamically navigate to the details page
-      params: { paramId:id, paramName:name, paramInfo:info, paramLatitude:latitude, 
-        paramLongitude:longitude}, // Pass the details as query params
+      params: { paramId:id, paramName:name, paramInfo:info }, // Pass the details as query params
     });
   };
 
