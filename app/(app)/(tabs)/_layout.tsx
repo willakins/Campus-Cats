@@ -1,80 +1,89 @@
 import React from 'react';
-import { Platform, View } from 'react-native';
-import { globalStyles } from '@/styles';
-
-import { Tabs } from 'expo-router';
+import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
-import { useAuth } from '@/providers';
+import { useAuth } from '@/providers'; // Assuming useAuth gives you user info
+import HomeScreen from './index';
+import AnnouncementsScreen from './announcements';
+import CatalogScreen from './catalog';
+import SettingsScreen from './settings';
+import StationsScreen from './stations'; // Admin-only screen
+import { Platform } from 'react-native';
 
+const Tab = createBottomTabNavigator();
 
-const HomeLayout = () => {
+const TabNavigator = () => {
+  const { user } = useAuth(); // Assuming useAuth hook provides user details
+  const isAdmin = user.role === 1 || user.role === 2;
   const size2 = 29;
   const color2 = '#333'
   const bar_height: number = Platform.select({
-    ios: 40,
+    ios: 80,
     android: 60,
-    default: 40
+    default: 80
   });
-  const { user, loading } = useAuth();
-  const isAdmin = user.role === 1 || user.role === 2;
 
   return (
-      <View style={globalStyles.tabs}>
-        <Tabs
-          screenOptions={{
-            headerShown: false, // Hide the default header
-            tabBarStyle: { backgroundColor: 'white', height: bar_height },
-            tabBarActiveTintColor: 'tomato',
-            tabBarInactiveTintColor: 'gray',
+    <Tab.Navigator
+      screenOptions={{
+        headerShown: false, // Hide the default header
+        tabBarStyle: { backgroundColor: 'white', height: bar_height },
+        tabBarActiveTintColor: 'tomato',
+        tabBarInactiveTintColor: 'gray',
+      }}
+    >
+      <Tab.Screen
+        name="Home"
+        component={HomeScreen}
+        options={{
+          tabBarLabel: "",
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="location-outline" size={size2} color={color2} />
+          ),
+        }}
+      />
+      <Tab.Screen
+        name="Announcements"
+        component={AnnouncementsScreen}
+        options={{
+          tabBarLabel: "",
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="notifications-outline" size={size2} color={color2} />
+          ),
+        }}
+      />
+      {isAdmin && (
+        <Tab.Screen
+          name="Stations"
+          component={StationsScreen}
+          options={{
+            tabBarLabel: "",
+            tabBarIcon: ({ color, size }) => (
+              <Ionicons name="paw-outline" size={size2} color={color2} />
+            ),
           }}
-        >
-          <Tabs.Screen
-            name="index" // Maps to the `index.tsx` file - this is the map of GTech
-            options={{
-              tabBarLabel: '',
-              tabBarIcon: ({ color, size }) => (
-                <Ionicons name="location-outline" size={size2} color={color2} />
-              ),
-            }}
-          />
-          <Tabs.Screen
-            name="announcements" // Maps to the announcements.tsx file
-            options={{
-              tabBarLabel: '',
-              tabBarIcon: ({ color, size }) => (
-                <Ionicons name="notifications-outline" size={size2} color={color2} />
-              ),
-            }}
-          />
-          {isAdmin ? <Tabs.Screen
-            name="stations" // Maps to the `station.tsx` file
-            options={{
-              tabBarLabel: '',
-              tabBarIcon: ({ color, size }) => (
-                <Ionicons name="paw-outline" size={size2} color={color2} />
-              ),
-            }}
-          /> : null}
-          <Tabs.Screen
-            name="catalog" // Maps to the `catalog.tsx` file
-            options={{
-              tabBarLabel: '',
-              tabBarIcon: ({ color, size }) => (
-                <Ionicons name="image-outline" size={size2} color={color2} />
-              ),
-            }}
-          />
-          <Tabs.Screen
-            name="settings" // Maps to the `catalog.tsx` file
-            options={{
-              tabBarLabel: '',
-              tabBarIcon: ({ color, size }) => (
-                <Ionicons name="information-circle-outline" size={size2} color={color2} />
-              ),
-            }}
-          />
-        </Tabs>
-      </View>
+        />
+      )}
+      <Tab.Screen
+        name="Catalog"
+        component={CatalogScreen}
+        options={{
+          tabBarLabel: "",
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="image-outline" size={size2} color={color2} />
+          ),
+        }}
+      />
+      <Tab.Screen
+        name="Info"
+        component={SettingsScreen}
+        options={{
+          tabBarLabel: "",
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="information-circle-outline" size={size2} color={color2} />
+          ),
+        }}
+      />
+    </Tab.Navigator>
   );
 };
-export default HomeLayout;
+export default TabNavigator;

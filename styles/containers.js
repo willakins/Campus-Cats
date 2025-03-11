@@ -62,9 +62,11 @@ const containerStyles = StyleSheet.create({
         margin: 10,
     },
     logo: {
-        width: 250,
-        height: 250,
+        height: '40%',
+        width: '80%',
         marginBottom: 20,
+        borderRadius:50,
+        aspectRatio: 1
     },
     extraPic: {
         width: 100,
@@ -117,7 +119,7 @@ const containerStyles = StyleSheet.create({
         shadowRadius: 4,
         borderRadius:10,
     },
-    input: {
+    loginContainer: {
         width: '80%',
         backgroundColor: '#f9f9f9',
         padding: 20,

@@ -26,7 +26,7 @@ export const TextInput: React.FC<TextInputProps> = ({
 
   return (
     <View>
-      {label && <Text style={textStyles.description}>{label}</Text>}
+      {label && <Text style={textStyles.subHeading2}>{label}</Text>}
       <RNTextInput
         style={style_}
         {...props}
@@ -49,6 +49,7 @@ export const ControlledInput = <T extends FieldValues>({
       value={field.value || ''}
       {...props}
       error={fieldState.error?.message}
+      style={textStyles.input}
     />
   );
 };
