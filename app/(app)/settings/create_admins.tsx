@@ -6,6 +6,7 @@ import { useRouter } from 'expo-router';
 import { Button, TextInput } from '@/components';
 import DatabaseService from '@/components/DatabaseService';
 import { globalStyles, buttonStyles, textStyles, containerStyles } from '@/styles';
+import { Ionicons } from '@expo/vector-icons';
 
 const CreateAdmins = () => {
   const router = useRouter();
@@ -14,8 +15,8 @@ const CreateAdmins = () => {
 
   return (
     <View style={containerStyles.profileContainer}>
-      <Button style={buttonStyles.logoutButton} onPress={() => router.push('/settings')}>
-        Back
+      <Button style={buttonStyles.logoutButton} onPress={() => router.push('/(app)/(tabs)/settings')}>
+        <Ionicons name="arrow-back-outline" size={25} color="#fff" />
       </Button>
 
       <TextInput
