@@ -60,19 +60,21 @@ const edit_entry = () => {
         <Text style={textStyles.title}>Edit A Catalog Entry</Text>
         {profilePicUrl ? (<Image source={{ uri: profilePicUrl }} style={containerStyles.headlineImage} resizeMode="contain" />) : 
           <Text style={textStyles.title}>Loading image...</Text>}
-        <Text style={textStyles.headline}>Cat's Name</Text>
-        <TextInput 
-          value={name}
-          placeholderTextColor = "#888"
-          onChangeText={setName} 
-          style={textStyles.input} />
-        <Text style={textStyles.headline}>Description</Text>
-        <TextInput
-          value={info}
-          placeholderTextColor = "#888"
-          onChangeText={setInfo} 
-          style={textStyles.descInput} 
-          multiline={true}/>
+        <View style={containerStyles.loginContainer}>
+          <Text style={textStyles.headline}>Cat's Name</Text>
+          <TextInput 
+            value={name}
+            placeholderTextColor = "#888"
+            onChangeText={setName} 
+            style={textStyles.input} />
+          <Text style={textStyles.headline}>Description</Text>
+          <TextInput
+            value={info}
+            placeholderTextColor = "#888"
+            onChangeText={setInfo} 
+            style={textStyles.descInput} 
+            multiline={true}/>
+        </View>
         <Text style={textStyles.headline}> Extra Photos</Text>
         <Text style={textStyles.subHeading}> The photo you click will turn into the cat's profile picture</Text>
         <View style={containerStyles.extraPicsContainer}>
