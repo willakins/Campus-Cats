@@ -1,5 +1,6 @@
 import React from 'react';
-import { Platform, StyleSheet, View } from 'react-native';
+import { Platform, View } from 'react-native';
+import { globalStyles } from '@/styles';
 
 import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -14,7 +15,7 @@ const HomeLayout = () => {
   });
 
   return (
-      <View style={styles.tabs}>
+      <View style={globalStyles.tabs}>
         <Tabs
           screenOptions={{
             headerShown: false, // Hide the default header
@@ -72,13 +73,4 @@ const HomeLayout = () => {
       </View>
   );
 };
-
 export default HomeLayout;
-
-const styles = StyleSheet.create({
-  tabs: {
-    flex: 1,
-    justifyContent: 'flex-end',
-    backgroundColor: '#333',
-  }
-});
