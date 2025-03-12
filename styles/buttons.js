@@ -25,6 +25,13 @@ const buttonStyles = StyleSheet.create({
       borderRadius: 5,
       marginTop: 5,
     },
+    iconButton: {
+      backgroundColor: '#333',
+      padding: 5,
+      borderRadius: 5,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
     deleteButton3: {
       backgroundColor: '#0492c2',
       padding: 5,

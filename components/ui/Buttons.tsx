@@ -52,7 +52,7 @@ export const IconButton: React.FC<IconProps> = ({
   ...props
 }) => {
   return (
-    <TouchableOpacity style={[styles.iconButton, style]} onPress={onPress} {...props}>
+    <TouchableOpacity style={[buttonStyles.iconButton, style]} onPress={onPress} {...props}>
       <Ionicons name={iconName} size={iconSize} color={iconColor} />
     </TouchableOpacity>
   );
@@ -103,54 +103,3 @@ export const CameraButton: React.FC<CameraButtonProps> = ({ onPhotoSelected, sty
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  button: {
-    backgroundColor: '#333',
-    padding: 12,
-    borderRadius: 5,
-    alignItems: 'center',
-    margin: 5,
-    display: 'flex',
-    justifyContent: 'center',
-  },
-  iconButton: {
-    backgroundColor: '#333',
-    padding: 5,
-    borderRadius: 5,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  buttonText: {
-    color: '#fff',
-    fontSize: 12,
-    fontWeight: 'bold',
-    textAlign: 'center',
-  },
-  imageButton: {
-    backgroundColor: '#333',
-    borderRadius: 10,
-    alignItems: 'center',
-    display: 'flex',
-    justifyContent: 'center',
-  },
-  cameraButton: {
-    width: 70,  // Width of the circle
-    height: 70, // Height of the circle (same as width to make it circular)
-    borderRadius: 35, // Half of width/height to make it circular
-    backgroundColor: '#333', // Button color (blue)
-    justifyContent: 'center', // Center the icon vertically
-    alignItems: 'center', // Center the icon horizontally
-    elevation: 5,  // Shadow for Android
-    shadowColor: '#000', // Shadow for iOS
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 3.5,
-    paddingVertical: 10,  // Vertical padding
-    paddingHorizontal: 20, // Horizontal padding
-  },
-  cameraView: {
-    alignItems: 'center',
-    paddingVertical: 20,  // Vertical padding
-  },
-});
