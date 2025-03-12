@@ -49,6 +49,19 @@ const containerStyles = StyleSheet.create({
         elevation: 5,
         width:'100%'
     },
+    row: {
+        marginBottom: 20,
+        marginTop:20,
+    },
+    contactContainer: {
+        padding: 20,
+        backgroundColor: '#fff',
+        borderRadius: 10,
+        borderWidth: 1,
+        borderColor: '#ddd',
+        position: 'relative',
+        marginTop:50
+    },
     entryElements: {
         flexDirection: "column", // Ensures each item is stacked vertically
         alignItems: "center",

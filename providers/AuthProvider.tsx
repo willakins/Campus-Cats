@@ -4,11 +4,12 @@ import { createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut as 
 
 import { auth } from '@/config/firebase';
 import { User, fetchUser, mutateUser } from '@/models';
+import { Router } from 'expo-router';
 
 type AuthContextType = {
   login: (email: string, password: string) => Promise<void>;
   createAccount: (email: string, password: string) => Promise<void>;
-  signOut: () => Promise<void>;
+  signOut: (router:Router) => Promise<void>;
   currentUser: AuthUser | null,
   user: User;
   loading: boolean;
@@ -36,8 +37,9 @@ const AuthProvider = ({ children }: { children: ReactNode }) => {
     });
   };
 
-  const signOut = async () => {
+  const signOut = async (router:Router) => {
     await signOutAuthUser(auth);
+    router.push('/login');
   };
 
   useEffect(() => {

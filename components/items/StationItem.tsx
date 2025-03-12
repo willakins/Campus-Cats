@@ -19,7 +19,7 @@ export const StationItem: React.FC<CatalogEntryObject> = ({ id, name, info }) =>
   return (
     <Button style={containerStyles.entryContainer} onPress={() =>
       router.push({
-      pathname: '/catalog/view-entry',
+      pathname: '/stations/view-station',
       params: { paramId:id, paramName:name, paramInfo:info },
       })}>
       <View style={containerStyles.entryElements}>
