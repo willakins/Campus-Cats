@@ -4,6 +4,11 @@ import { Image, KeyboardAvoidingView, Platform, ScrollView, Text, View } from 'r
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Snackbar } from 'react-native-paper';
+import * as ImagePicker from 'expo-image-picker';
+import { db } from '@/config/firebase';
+import { Button, TextInput, IconButton } from '@/components';
+import { addDoc, collection } from 'firebase/firestore';
+import { getStorage, getDownloadURL, ref, uploadBytes } from 'firebase/storage';
 import { Button, CameraButton, TextInput } from '@/components';
 import DatabaseService from '@/components/services/DatabaseService';
 import { globalStyles, buttonStyles, textStyles, containerStyles } from '@/styles';
@@ -18,6 +23,10 @@ const create_entry = () =>{
   const database = DatabaseService.getInstance();
   
   return (
+    <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      <IconButton iconName="arrow-back-outline" onPress={handleBack} style={styles.logoutButton}/>
+      <Button style={styles.editButton} onPress={handleCreate}>
+        <Text style={styles.editText}> Create Entry</Text>
     <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={containerStyles.container}>
       <Button style={buttonStyles.logoutButton} onPress={() => router.back()}>
         <Ionicons name="arrow-back-outline" size={25} color="#fff" />

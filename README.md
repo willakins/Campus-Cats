@@ -4,6 +4,24 @@
 
 # Release Notes
 
+## Version 0.3.0
+
+### Features
+
+- **Refactored Forms with react-hook-form:** Began transitioning forms to use `react-hook-form`, starting with the login page. This improves validation by providing better, per-input error messages.
+- **Reworked Login Flow:** The login process has been improved to be more robust. Now, logins persist properly, reducing the need for repeated logins. This also speeds up loading for announcements and settings pages.
+
+### Bug Fixes
+
+- **Fixed Android Keyboard Issue:** The login button can now be clicked even when the keyboard is up.
+- **Fixed Android Date Picker:** The date picker now correctly displays on Android devices.
+- **Report Button Alignment:** The report button is now properly centered across all devices.
+
+### Known Issues
+
+- **Map Optimization:** The home page map currently makes more database queries than necessary, but this does not impact performance from a user perspective.
+
+
 ## Version 0.2.0
 
 ### Features
