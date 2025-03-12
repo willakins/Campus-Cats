@@ -8,7 +8,14 @@ const globalStyles = StyleSheet.create({
       backgroundColor: '#333',
     },
     lockIcon: {
-      marginRight: 15, // Adjust as needed for positioning
+      position: 'absolute',
+      top: 10,
+      right: 20,
+      flexDirection: 'row',
+      alignItems: 'center',
+      padding: 5,
+      borderRadius: 5,
+      zIndex: 10,
     },
     homeScreen: {
       flex: 1,

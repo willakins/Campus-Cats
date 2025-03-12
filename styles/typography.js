@@ -43,6 +43,16 @@ const textStyles = StyleSheet.create({
         textAlign: 'center',
         marginBottom: 0
     },
+    normalText: {
+        fontSize: 16,
+        color: '#333',
+    },
+    contactInput: {
+        fontSize: 16,
+        borderBottomWidth: 1,
+        borderColor: '#ddd',
+        padding: 5,
+    },
     subHeading2: {
         fontSize: 15,
         color: '#000',

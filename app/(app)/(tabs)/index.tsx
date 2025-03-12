@@ -35,7 +35,7 @@ const HomeScreen = () => {
       catDate: JSON.stringify(pin.date),
       catFed: pin.fed ? 'true':'false',
       catHealth: pin.health ? 'true':'false',
-      catPhoto: pin.photoUri,
+      catPhoto: pin.photoUrl,
       catInfo: pin.info,
       catLongitude: JSON.stringify(pin.longitude),
       catLatitude: JSON.stringify(pin.latitude),

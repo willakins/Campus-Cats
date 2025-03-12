@@ -1,7 +1,7 @@
 import { deleteObject, getDownloadURL, getStorage, listAll, ref, uploadBytes, uploadBytesResumable } from 'firebase/storage';
 import { getDocs, getDoc, updateDoc, doc, collection, query, where, DocumentData, getFirestore, addDoc, serverTimestamp, Timestamp, deleteDoc } from 'firebase/firestore';
 import { auth, db, storage } from '@/config/firebase';
-import { AnnouncementEntryObject, CatalogEntryObject, CatSightingObject } from '@/types';
+import { AnnouncementEntryObject, CatalogEntryObject, CatSightingObject, ContactInfo } from '@/types';
 import { Dispatch, SetStateAction } from 'react';
 import { Alert } from 'react-native';
 import { uploadFromURI } from '@/utils';
@@ -10,6 +10,7 @@ import SightingsService from './SightingsService';
 import AnnouncementsService from './AnnouncementsService';
 import StationsService from './StationsService';
 import { Router } from 'expo-router';
+import SettingsService from './SettingsService';
 
 //Singleton class
 class DatabaseService {
@@ -18,6 +19,7 @@ class DatabaseService {
   private static announcementsService: AnnouncementsService = new AnnouncementsService();
   private static sightingsService: SightingsService = new SightingsService();
   private static stationsService: StationsService = new StationsService();
+  private static settingsService: SettingsService = new SettingsService();
 
   private constructor() {
       // Private constructor ensures no external instances can be created
@@ -93,7 +95,7 @@ class DatabaseService {
    */
   public async fetchPins(setPins:Dispatch<SetStateAction<CatSightingObject[]>>, setMapKey:Dispatch<SetStateAction<number>>) {
     const querySnapshot = await getDocs(collection(db, 'cat-sightings'));
-    DatabaseService.sightingsService.fetchPins(setPins, setMapKey);
+    await DatabaseService.sightingsService.fetchPins(setPins, setMapKey);
   }
 
   /**
@@ -102,46 +104,32 @@ class DatabaseService {
   public async getSightings(
     catName: string, 
     setSightings:Dispatch<SetStateAction<CatSightingObject[]>>) {
-    DatabaseService.sightingsService.getSightings(catName, setSightings);
+    await DatabaseService.sightingsService.getSightings(catName, setSightings);
   }
 
   /**
    * Effect: updates firestore when editing a cat sighting
    */
   public async saveSighting(
-    docRef: string,
-    catName:string, 
-    info:string, 
-    photoUrl:string, 
-    fed:boolean, 
-    health:boolean, 
-    date:Date, 
-    longitude:number, 
-    latitude:number
+   thisSighting:CatSightingObject
    ) {
-    DatabaseService.sightingsService.saveSighting(docRef, catName, info, photoUrl, fed, health, date, longitude, latitude);
+    await DatabaseService.sightingsService.saveSighting(thisSighting);
   }
 
   /**
    * Effect: Submits a new cat sighting to firestore
    */
   public async handleReportSubmission(
-    catName:string, 
-    info:string, 
-    photoUrl:string, 
-    fed:boolean, 
-    health:boolean, 
-    date:Date, 
-    longitude:number, 
-    latitude:number) {
-    DatabaseService.sightingsService.handleReportSubmission(catName, info, photoUrl, fed, health, date, longitude, latitude);
+    thisSighting:CatSightingObject,
+    router:Router) {
+    await DatabaseService.sightingsService.handleReportSubmission(thisSighting, router);
   }
 
   /**
    * Effect: updates firestore when deleting a cat sighting
    */
   public async deleteSighting(photoUrl:string, docRef:string) {
-    DatabaseService.sightingsService.deleteSighting(photoUrl, docRef);
+    await DatabaseService.sightingsService.deleteSighting(photoUrl, docRef);
   }
 
   /**
@@ -178,9 +166,9 @@ class DatabaseService {
     setImageUrls?: Dispatch<SetStateAction<string[]>>
   ): Promise<void> {
     if (setImageUrls){
-      DatabaseService.catalogService.fetchCatImages(catName, setProfile, setImageUrls);
+      await DatabaseService.catalogService.fetchCatImages(catName, setProfile, setImageUrls);
     } else {
-      DatabaseService.catalogService.fetchCatImages(catName, setProfile);
+      await DatabaseService.catalogService.fetchCatImages(catName, setProfile);
     }
   }
 
@@ -188,7 +176,7 @@ class DatabaseService {
    * Effect: Pulls catalog documents from firestore
    */
   public async fetchCatalogData(setCatalogEntries:Dispatch<SetStateAction<CatalogEntryObject[]>> ) {
-    DatabaseService.catalogService.fetchCatalogData(setCatalogEntries);
+    await DatabaseService.catalogService.fetchCatalogData(setCatalogEntries);
   }
 
   
@@ -204,7 +192,7 @@ class DatabaseService {
     id: string, setVisible: 
     Dispatch<SetStateAction<boolean>>, 
     router: Router) {
-    DatabaseService.catalogService.handleCatalogSave(catName, oldName, info, newPics, newPhotosAdded, id, setVisible, router);
+    await DatabaseService.catalogService.handleCatalogSave(catName, oldName, info, newPics, newPhotosAdded, id, setVisible, router);
   }
 
   /**
@@ -216,7 +204,7 @@ class DatabaseService {
     profilePic: string, 
     setVisible: Dispatch<SetStateAction<boolean>>, 
     router: Router) {
-    DatabaseService.catalogService.handleCatalogCreate(catName, info, profilePic, setVisible, router);
+    await DatabaseService.catalogService.handleCatalogCreate(catName, info, profilePic, setVisible, router);
   }
 
   /**
@@ -257,21 +245,21 @@ class DatabaseService {
    * Effect: pulls announcement data from firestore
    */
   public async fetchAnnouncementData(setAnns:Dispatch<SetStateAction<AnnouncementEntryObject[]>>) {
-    DatabaseService.announcementsService.fetchAnnouncementData(setAnns);
+    await DatabaseService.announcementsService.fetchAnnouncementData(setAnns);
   }
 
   /**
    * Effect: pulls announcement images from storage
    */
   public async fetchAnnouncementImages(folderPath:string, setImageUrls:Dispatch<SetStateAction<string[]>>) {
-    DatabaseService.announcementsService.fetchAnnouncementImages(folderPath, setImageUrls);
+    await DatabaseService.announcementsService.fetchAnnouncementImages(folderPath, setImageUrls);
   }
 
   /**
    * Effect: creates an announcement and stores it in firestore
    */
   public async handleAnnouncementCreate(title:string, info:string, photos:string[], setVisible:Dispatch<SetStateAction<boolean>>) {
-    DatabaseService.announcementsService.handleAnnouncementCreate(title, info, photos, setVisible);
+    await DatabaseService.announcementsService.handleAnnouncementCreate(title, info, photos, setVisible);
   }
 
   /**
@@ -283,42 +271,92 @@ class DatabaseService {
     isPicsChanged: boolean, 
     setVisible: Dispatch<SetStateAction<boolean>>, 
     router: Router) {
-    DatabaseService.announcementsService.handleAnnouncementSave(thisAnn, newPhotos, isPicsChanged, setVisible, router);
+    await DatabaseService.announcementsService.handleAnnouncementSave(thisAnn, newPhotos, isPicsChanged, setVisible, router);
   }
 
   /**
    * Effect: Deletes an announcement from database
    */
   public async deleteAnnouncement(photoPath:string, id:string) {
-    DatabaseService.announcementsService.deleteAnnouncement(photoPath, id);
+    await DatabaseService.announcementsService.deleteAnnouncement(photoPath, id);
   }
 
   /**
    * TODO
    */
   public async fetchStations() {
-    DatabaseService.stationsService.fetchStations();
+    await DatabaseService.stationsService.fetchStations();
   }
 
   /**
    * TODO
    */
   public async createStation() {
-    DatabaseService.stationsService.createStation();
+    await DatabaseService.stationsService.createStation();
   }
 
   /**
    * TODO
    */
   public async editStation() {
-    DatabaseService.stationsService.editStation();
+    await DatabaseService.stationsService.editStation();
   }
 
   /**
    * TODO
    */
   public async deleteStation() {
-    DatabaseService.stationsService.deleteStation();
+    await DatabaseService.stationsService.deleteStation();
+  }
+
+  /**
+  * Effect: Pulls contact info data from firestore
+  */
+  public async fetchContactInfo(setContactInfo:Dispatch<SetStateAction<ContactInfo[]>>) {
+    await DatabaseService.settingsService.fetchContactInfo(setContactInfo);
+  }
+
+  /**
+  * Effect: Updates firestore with new contact info
+  */
+  public async updateContactInfo(
+    contactInfo:ContactInfo[],
+    hasChanged:boolean) {
+    await DatabaseService.settingsService.updateContactInfo(contactInfo, hasChanged);
+  }
+
+  /**
+  * Effect: Updates firestore with new contact info with extra steps
+  */
+  public async handleTextChange(
+    index: number, 
+    field: 'name' | 'email', 
+    newText: string,
+    contactInfo:ContactInfo[],
+    setContactInfo:Dispatch<SetStateAction<ContactInfo[]>>,
+    setHasChanged:Dispatch<SetStateAction<boolean>>) {
+    await DatabaseService.settingsService.handleTextChange(index, field, newText, contactInfo, setContactInfo, setHasChanged);
+  }
+
+  /**
+   * Effect: Adds a contact and creates a new firestore document
+   */
+  public async addContact(
+    contactInfo:ContactInfo[],
+    setContactInfo:Dispatch<SetStateAction<ContactInfo[]>>,
+    setHasChanged:Dispatch<SetStateAction<boolean>>) {
+    await DatabaseService.settingsService.addContact(contactInfo, setContactInfo, setHasChanged);
+  }
+
+  /**
+  * Effect: Deletes a contact and removes it from firestore
+  */
+  public async deleteContact(
+    index: number, 
+    contactInfo:ContactInfo[],
+    setContactInfo:Dispatch<SetStateAction<ContactInfo[]>>,
+    setHasChanged:Dispatch<SetStateAction<boolean>>) {
+    await DatabaseService.settingsService.deleteContact(index, contactInfo, setContactInfo, setHasChanged);
   }
 
   /**
