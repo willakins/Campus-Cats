@@ -52,7 +52,7 @@ export const IconButton: React.FC<IconProps> = ({
   ...props
 }) => {
   return (
-    <TouchableOpacity style={[styles.iconButton, style]} onPress={onPress} {...props}>
+    <TouchableOpacity style={[buttonStyles.iconButton, style]} onPress={onPress} {...props}>
       <Ionicons name={iconName} size={iconSize} color={iconColor} />
     </TouchableOpacity>
   );

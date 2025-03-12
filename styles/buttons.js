@@ -37,6 +37,13 @@ const buttonStyles = StyleSheet.create({
       borderRadius: 5,
       marginTop: 5,
     },
+    iconButton: {
+      backgroundColor: '#333',
+      padding: 5,
+      borderRadius: 5,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
     reportButton: {
         position: 'absolute', // Position the button absolutely
         bottom: 20,           // Adjust distance from the bottom of the screen
