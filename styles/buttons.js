@@ -31,6 +31,12 @@ const buttonStyles = StyleSheet.create({
       borderRadius: 5,
       marginTop: 5,
     },
+    dateButton: {
+      backgroundColor: '#0b6623',
+      padding: 5,
+      borderRadius: 5,
+      marginTop: 5,
+    },
     reportButton: {
         position: 'absolute', // Position the button absolutely
         bottom: 20,           // Adjust distance from the bottom of the screen
