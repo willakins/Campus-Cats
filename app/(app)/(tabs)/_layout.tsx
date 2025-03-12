@@ -3,10 +3,10 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '@/providers'; // Assuming useAuth gives you user info
 import HomeScreen from './index';
-import AnnouncementsScreen from './announcements';
-import CatalogScreen from './catalog';
-import SettingsScreen from './settings';
-import StationsScreen from './stations'; // Admin-only screen
+import Announcements from './announcements';
+import Catalog from './catalog';
+import Settings from './settings';
+import Stations from './stations'; // Admin-only screen
 import { Platform } from 'react-native';
 
 const Tab = createBottomTabNavigator();
@@ -43,7 +43,7 @@ const TabNavigator = () => {
       />
       <Tab.Screen
         name="Announcements"
-        component={AnnouncementsScreen}
+        component={Announcements}
         options={{
           tabBarLabel: "",
           tabBarIcon: ({ color, size }) => (
@@ -54,7 +54,7 @@ const TabNavigator = () => {
       {isAdmin && (
         <Tab.Screen
           name="Stations"
-          component={StationsScreen}
+          component={Stations}
           options={{
             tabBarLabel: "",
             tabBarIcon: ({ color, size }) => (
@@ -65,7 +65,7 @@ const TabNavigator = () => {
       )}
       <Tab.Screen
         name="Catalog"
-        component={CatalogScreen}
+        component={Catalog}
         options={{
           tabBarLabel: "",
           tabBarIcon: ({ color, size }) => (
@@ -75,7 +75,7 @@ const TabNavigator = () => {
       />
       <Tab.Screen
         name="Info"
-        component={SettingsScreen}
+        component={Settings}
         options={{
           tabBarLabel: "",
           tabBarIcon: ({ color, size }) => (

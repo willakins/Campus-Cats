@@ -26,7 +26,7 @@ const Stations = () => {
     const [stationEntries, setStationEntries] = useState<StationEntryObject[]>([]);
 
     useEffect(() => {
-      //database.fetchStationData(setStationEntries);
+      database.fetchStations(setStationEntries);
     }, []);
 
     return (
@@ -41,7 +41,12 @@ const Stations = () => {
                   key={station.id}
                   id={station.id}
                   name={station.name}
-                  info={station.info}
+                  profilePic={station.profilePic}
+                  longitude={station.longitude}
+                  latitude={station.latitude}
+                  lastStocked={station.lastStocked}
+                  stockingFreq={station.stockingFreq}
+                  knownCats={station.knownCats}
                 />
               ))}
             </ScrollView>
