@@ -1,43 +1,102 @@
-import { Text, TouchableOpacity, View } from 'react-native';
-
+import { SafeAreaView, ScrollView, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { globalStyles, buttonStyles, textStyles, containerStyles } from '@/styles';
 
 import { useAuth } from '@/providers';
+import { Button } from '@/components';
+import { useEffect, useState } from 'react';
+import DatabaseService from '@/components/services/DatabaseService';
+import { ContactInfo } from '@/types';
 
 const Settings = () => {
   const { signOut, user } = useAuth();
+  const isAdmin = user.role === 1 || user.role === 2;
   const router = useRouter();
+  const [isEditable, setIsEditable] = useState(false);
+  const [contactInfo, setContactInfo] = useState<ContactInfo[]>([]);
+  const [hasChanged, setHasChanged] = useState<boolean>(false);
+  const database = DatabaseService.getInstance();
 
-  const adminStatus = user.role === 1 || user.role === 2;
+  useEffect(() => {
+    database.fetchContactInfo(setContactInfo);
+  }, []);
 
-  const handleLogout = async () => {
-    await signOut();
-    router.push('/login')
-  };
-  const handleCreateAdmins = () => {
-    router.push('/settings/create_admins');
+  const handleEdit = () => {
+    if (isEditable) {
+      database.updateContactInfo(contactInfo, hasChanged);
+      setHasChanged(false);
+    }
+    setIsEditable(!isEditable);
   };
 
   return (
-    <View style={globalStyles.screen}>
-      <TouchableOpacity style={buttonStyles.logoutButton} onPress={handleLogout}>
+    <SafeAreaView style={containerStyles.container}>
+      <Button style={buttonStyles.logoutButton} onPress={() => signOut(router)}>
         <Ionicons name="log-out-outline" size={25} color="#fff" />
-      </TouchableOpacity>
-      <Text>Setting Screen</Text>
-      {adminStatus ? (<>
-        <TouchableOpacity style={buttonStyles.button} onPress={handleCreateAdmins}>
-          <Text style={textStyles.smallButtonText}>Make someone else an admin</Text>
-        </TouchableOpacity>
-        <Ionicons
-          name="lock-closed"
-          size={24}
-          color="black"
-          style={globalStyles.lockIcon}
-        />
-      </>) : null}
-    </View>
+      </Button>
+      {isAdmin && (
+        <Ionicons name="lock-closed" size={24} color="black" style={globalStyles.lockIcon} />
+      )}
+      <ScrollView contentContainerStyle={containerStyles.scrollView}>
+        <View style={containerStyles.contactContainer}>
+          <Text style={textStyles.headline2}>Club Contact Information</Text>
+          {isAdmin && (
+            <Button onPress={handleEdit} style={buttonStyles.editButton}>
+              <Text style={textStyles.editText}>{isEditable ? 'Save' : 'Edit'}</Text>
+            </Button>
+          )}
+
+          {/* Loop to render subheading, normal text, or editable text */}
+          {contactInfo.map((contact, index) => (
+            <View key={index} style={containerStyles.row}>
+              {isAdmin && isEditable ? (
+                <TextInput
+                  style={textStyles.input}
+                  value={contact.name}
+                  onChangeText={(newText) =>
+                    database.handleTextChange(index, 'name', newText, contactInfo, setContactInfo, setHasChanged)
+                  }
+                  placeholder="Enter Name"
+                />
+              ) : (
+                <Text style={textStyles.normalText}>{contact.name}</Text>
+              )}
+              {isAdmin && isEditable ? (
+                <TextInput
+                  style={textStyles.input}
+                  value={contact.email}
+                  onChangeText={(newText) =>
+                    database.handleTextChange(index, 'email', newText, contactInfo, setContactInfo, setHasChanged)
+                  }
+                  placeholder="Enter Email"
+                />
+              ) : (
+                <Text style={textStyles.normalText}>{contact.email}</Text>
+              )}
+              {isAdmin && isEditable && (
+                <Button onPress={() => database.deleteContact(index, contactInfo, setContactInfo, setHasChanged)} 
+                  style={buttonStyles.deleteButton}>
+                  <Text style={textStyles.deleteButtonText}>Delete Above Contact</Text>
+                </Button>
+              )}
+            </View>
+          ))}
+          {isAdmin && isEditable ? <Button style={buttonStyles.button} 
+                    onPress={() => database.addContact(contactInfo, setContactInfo, setHasChanged)}>
+              <Text style={textStyles.smallButtonText}>Add Contact</Text>
+            </Button>: null}
+        </View>
+
+        {isAdmin && (
+            <Button style={buttonStyles.button} onPress={() => router.push('/settings/create_admins')}>
+              <Text style={textStyles.smallButtonText}>Make someone else an admin</Text>
+            </Button>
+        )}
+        {isAdmin ? <Button style={buttonStyles.button} onPress={() => router.push('/settings/manage_users')}>Manage Users</Button>:null}
+      </ScrollView>
+    </SafeAreaView>
   );
-}
+};
+
 export default Settings;

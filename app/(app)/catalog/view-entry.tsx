@@ -18,7 +18,7 @@ const view_entry = () =>{
 
   return (
     <SafeAreaView style={containerStyles.container}>
-      <Button style={buttonStyles.logoutButton} onPress={() => router.push('/catalog')}>
+      <Button style={buttonStyles.logoutButton} onPress={() => router.push('/(app)/(tabs)/catalog')}>
         <Ionicons name="arrow-back-outline" size={25} color="#fff" />
       </Button>
       {isAdmin ? <Button style={buttonStyles.editButton} onPress={() => router.push({

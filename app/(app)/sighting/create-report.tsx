@@ -9,6 +9,7 @@ import { Button, CameraButton, TextInput } from '@/components';
 import DatabaseService from '@/components/services/DatabaseService';
 import { globalStyles, buttonStyles, textStyles, containerStyles } from '@/styles';
 import { Ionicons } from '@expo/vector-icons';
+import { CatSightingObject } from '@/types';
 
 const CatReportScreen = () => {
   const [date, setDate] = useState<Date>(new Date());
@@ -22,6 +23,7 @@ const CatReportScreen = () => {
   const [name, setName] = useState<string>('');
   const router = useRouter();
   const database = DatabaseService.getInstance();
+  var thisSighting:CatSightingObject;
 
   var location:LatLng = {
     latitude: latitude,
@@ -29,7 +31,8 @@ const CatReportScreen = () => {
   };
 
   const handleSubmission = () => {
-    database.handleReportSubmission(name, info, photoUrl, fed, health, date, longitude, latitude);
+    thisSighting = new CatSightingObject('-1', name, info, photoUrl, fed, health, date, longitude, latitude)
+    database.handleReportSubmission(thisSighting, router);
     router.push('/(app)/(tabs)')
   }
 

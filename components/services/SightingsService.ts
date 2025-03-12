@@ -1,6 +1,7 @@
 import { db, storage } from "@/config/firebase";
 import { CatSightingObject } from "@/types";
 import { uploadFromURI } from "@/utils";
+import { Router } from "expo-router";
 import { addDoc, collection, deleteDoc, doc, getDocs, query, serverTimestamp, Timestamp, updateDoc, where } from "firebase/firestore";
 import { deleteObject, ref } from "firebase/storage";
 import { Dispatch, SetStateAction } from "react";
@@ -20,7 +21,7 @@ class SightingsService {
         date: doc.data().spotted_time.toDate(),
         fed: doc.data().fed,
         health: doc.data().health,
-        photoUri: doc.data().image,
+        photoUrl: doc.data().image,
         info: doc.data().info,
         latitude: doc.data().latitude,
         longitude: doc.data().longitude,
@@ -49,7 +50,7 @@ class SightingsService {
         date: doc.data().spotted_time.toDate(),
         fed: doc.data().fed,
         health: doc.data().health,
-        photoUri: doc.data().image,
+        photoUrl: doc.data().image,
         info: doc.data().info,
         latitude: doc.data().latitude,
         longitude: doc.data().longitude,
@@ -66,46 +67,40 @@ class SightingsService {
     * Effect: Submits a new cat sighting to firestore
     */
     public async handleReportSubmission(
-        catName:string, 
-        info:string, 
-        photoUrl:string, 
-        fed:boolean, 
-        health:boolean, 
-        date:Date, 
-        longitude:number, 
-        latitude:number) {
-        const errors = this.validateForm(catName, info, photoUrl);
+        thisSighting:CatSightingObject,
+        router:Router) {
+        const errors = this.validateForm(thisSighting.name, thisSighting.info, thisSighting.photoUrl);
         if (errors) {
-        alert(errors);
-        return;
+            alert(errors);
+            return;
         }
 
         try {
-        const result = await uploadFromURI('photos/', photoUrl);
+            const result = await uploadFromURI('photos/', thisSighting.photoUrl);
 
-        // TODO: It's possible for an image to be created but the database write
-        // fails; find a way to either make the entire operation atomic, or
-        // implement garbage collection on the storage bucket.
-        await addDoc(collection(db, 'cat-sightings'), {
-            timestamp: serverTimestamp(),
-            spotted_time: Timestamp.fromDate(date), // currently unused, but we may want to distinguish
-            // upload and sighting time in the future
-            latitude: latitude,
-            longitude: longitude,
-            name: catName,
-            image: result.metadata.fullPath,
-            info: info,
-            healthy: health,
-            fed: fed,
-        });
+            // TODO: It's possible for an image to be created but the database write
+            // fails; find a way to either make the entire operation atomic, or
+            // implement garbage collection on the storage bucket.
+            await addDoc(collection(db, 'cat-sightings'), {
+                timestamp: serverTimestamp(),
+                spotted_time: Timestamp.fromDate(thisSighting.date), // currently unused, but we may want to distinguish
+                // upload and sighting time in the future
+                latitude: thisSighting.latitude,
+                longitude: thisSighting.longitude,
+                name: thisSighting.name,
+                image: result.metadata.fullPath,
+                info: thisSighting.info,
+                healthy: thisSighting.health,
+                fed: thisSighting.fed,
+            });
 
-        alert('Cat submitted successfully!');
+            alert('Cat submitted successfully!');
 
         } catch (error) {
-        if (error instanceof Error) {
-            console.error('Error during upload:', error);
-            alert(`Upload failed: ${error.message}`);
-        }
+            if (error instanceof Error) {
+                console.error('Error during upload:', error);
+                alert(`Upload failed: ${error.message}`);
+            }
         }
     };
 
@@ -130,33 +125,25 @@ class SightingsService {
    * Effect: updates firestore when editing a cat sighting
    */
     public async saveSighting(
-        docRef: string,
-        catName:string, 
-        info:string, 
-        photoUrl:string, 
-        fed:boolean, 
-        health:boolean, 
-        date:Date, 
-        longitude:number, 
-        latitude:number
+        thisSighting:CatSightingObject
     ) {
-        const stamp = Timestamp.fromDate(date);
-        if (!docRef) {
+        const stamp = Timestamp.fromDate(thisSighting.date);
+        if (!thisSighting.id) {
         alert('Error: docRef is undefined!');
         return;
         }
 
-        const sightingRef = doc(db, 'cat-sightings', docRef);
+        const sightingRef = doc(db, 'cat-sightings', thisSighting.id);
         try {
         await updateDoc(sightingRef, {
             timestamp: stamp,
-            fed,
-            health,
-            image: photoUrl,
-            info,
-            longitude,
-            latitude,
-            catName,
+            fed: thisSighting.fed,
+            health: thisSighting.health,
+            image: thisSighting.photoUrl,
+            info: thisSighting.info,
+            longitude: thisSighting.longitude,
+            latitude: thisSighting.latitude,
+            name: thisSighting.name,
         });
 
         alert('Saved!');
