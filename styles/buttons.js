@@ -19,6 +19,18 @@ const buttonStyles = StyleSheet.create({
       borderRadius: 5,
       marginTop: 5,
     },
+    deleteButton2: {
+      backgroundColor: '#0b6623',
+      padding: 5,
+      borderRadius: 5,
+      marginTop: 5,
+    },
+    deleteButton3: {
+      backgroundColor: '#0492c2',
+      padding: 5,
+      borderRadius: 5,
+      marginTop: 5,
+    },
     reportButton: {
         position: 'absolute', // Position the button absolutely
         bottom: 20,           // Adjust distance from the bottom of the screen
