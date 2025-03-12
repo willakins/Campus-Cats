@@ -8,7 +8,6 @@ import { Button, CameraButton, TextInput } from '@/components';
 import DatabaseService from '@/components/services/DatabaseService';
 import { globalStyles, buttonStyles, textStyles, containerStyles } from '@/styles';
 
-
 const create_entry = () =>{
   const router = useRouter();
   const [visible, setVisible] = useState<boolean>(false);

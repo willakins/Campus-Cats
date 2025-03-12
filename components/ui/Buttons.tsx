@@ -3,6 +3,8 @@ import { StyleProp, Text, TextStyle, TouchableOpacity, TouchableOpacityProps, Vi
 import { PhotoHandler } from '../image_handlers/PhotoHandler';
 import { globalStyles, buttonStyles, textStyles, containerStyles } from '@/styles';
 
+type IoniconsName = React.ComponentProps<typeof Ionicons>['name'];
+
 type ButtonProps = React.PropsWithoutRef<TouchableOpacityProps> & {
   children?: React.ReactNode;
   style?: StyleProp<ViewStyle>;
@@ -12,6 +14,14 @@ type ButtonProps = React.PropsWithoutRef<TouchableOpacityProps> & {
 type CameraButtonProps = {
   onPhotoSelected: (uri: string) => void;
   style?: StyleProp<ViewStyle>;
+};
+
+type IconProps = React.PropsWithoutRef<TouchableOpacityProps> & {
+  iconName: IoniconsName;
+  iconSize?: number;
+  iconColor?: string;
+  style?: StyleProp<ViewStyle>;
+  onPress?: () => void;
 };
 
 export const Button: React.FC<ButtonProps> = ({
@@ -30,7 +40,23 @@ export const Button: React.FC<ButtonProps> = ({
       </Text>
     </TouchableOpacity>
   );
-}
+};
+
+
+export const IconButton: React.FC<IconProps> = ({
+  iconName,
+  iconSize = 25,
+  iconColor = '#fff',
+  style,
+  onPress,
+  ...props
+}) => {
+  return (
+    <TouchableOpacity style={[styles.iconButton, style]} onPress={onPress} {...props}>
+      <Ionicons name={iconName} size={iconSize} color={iconColor} />
+    </TouchableOpacity>
+  );
+};
 
 export const BorderlessButton: React.FC<ButtonProps> = ({
 	children,
@@ -45,7 +71,7 @@ export const BorderlessButton: React.FC<ButtonProps> = ({
       </Text>
     </TouchableOpacity>
   );
-}
+};
 
 export const ImageButton: React.FC<ButtonProps> = ({
 	children,

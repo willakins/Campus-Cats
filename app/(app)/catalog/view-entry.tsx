@@ -3,7 +3,7 @@ import { SafeAreaView, ScrollView, Text, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
-import { Button, CatalogEntry } from '@/components';
+import { Button, CatalogEntry, IconButton } from '@/components';
 import { useAuth } from '@/providers';
 import { globalStyles, buttonStyles, textStyles, containerStyles } from '@/styles';
 

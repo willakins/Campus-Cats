@@ -4,6 +4,8 @@ export * from './ui/TextInput';
 
 export { LoginForm } from './forms/Login';
 
+export { AdminView } from './AdminView'
+
 export { SightingMapView } from './SightingMapView'
 export { CatalogEntry } from './entries/CatalogEntry';
 export { AnnouncementEntry } from './entries/AnnouncementEntry';
