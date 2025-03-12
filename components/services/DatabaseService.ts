@@ -1,7 +1,7 @@
 import { deleteObject, getDownloadURL, getStorage, listAll, ref, uploadBytes, uploadBytesResumable } from 'firebase/storage';
 import { getDocs, getDoc, updateDoc, doc, collection, query, where, DocumentData, getFirestore, addDoc, serverTimestamp, Timestamp, deleteDoc } from 'firebase/firestore';
 import { auth, db, storage } from '@/config/firebase';
-import { AnnouncementEntryObject, CatalogEntryObject, CatSightingObject, ContactInfo } from '@/types';
+import { AnnouncementEntryObject, CatalogEntryObject, CatSightingObject, ContactInfo, User } from '@/types';
 import { Dispatch, SetStateAction } from 'react';
 import { Alert } from 'react-native';
 import { uploadFromURI } from '@/utils';
@@ -357,6 +357,36 @@ class DatabaseService {
     setContactInfo:Dispatch<SetStateAction<ContactInfo[]>>,
     setHasChanged:Dispatch<SetStateAction<boolean>>) {
     await DatabaseService.settingsService.deleteContact(index, contactInfo, setContactInfo, setHasChanged);
+  }
+
+  /**
+  * Effect: deletes a user from the firestore
+  */
+  public async handleDeleteUser(
+    user:User,
+  ) {
+    await DatabaseService.settingsService.handleDeleteUser(user);
+  }
+
+  /**
+   * Effect: promotes a user's role if capable
+   */
+  public async handlePromoteUser(thisUser:User) {
+    await DatabaseService.settingsService.handlePromoteUser(thisUser);
+  }
+
+  /**
+   * Effect: demotes a user's role if capable
+   */
+  public async handleDemoteUser(thisUser:User) {
+    await DatabaseService.settingsService.handleDemoteUser(thisUser);
+  } 
+
+  /**
+   * Effect: Pulls list of users from firestore
+   */
+  public async fetchUsers(setUsers:Dispatch<SetStateAction<User[]>>) {
+    await DatabaseService.settingsService.fetchUsers(setUsers);
   }
 
   /**

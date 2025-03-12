@@ -87,13 +87,8 @@ const Settings = () => {
               <Text style={textStyles.smallButtonText}>Add Contact</Text>
             </Button>: null}
         </View>
-
-        {isAdmin && (
-            <Button style={buttonStyles.button} onPress={() => router.push('/settings/create_admins')}>
-              <Text style={textStyles.smallButtonText}>Make someone else an admin</Text>
-            </Button>
-        )}
         {isAdmin ? <Button style={buttonStyles.button} onPress={() => router.push('/settings/manage_users')}>Manage Users</Button>:null}
+        {isAdmin ? <Button style={buttonStyles.button} onPress={() => router.push('/settings/manage_whitelist')}>Manage Whitelist</Button>:null}
       </ScrollView>
     </SafeAreaView>
   );

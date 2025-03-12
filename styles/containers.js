@@ -49,6 +49,20 @@ const containerStyles = StyleSheet.create({
         elevation: 5,
         width:'100%'
     },
+    userContainer: {
+        flexDirection: 'column', // Stack items vertically
+        justifyContent: 'center', // Center content vertically
+        alignItems: 'center', // Center content horizontally
+        padding: 15,
+        borderRadius:10,
+        backgroundColor: '#fff',
+        shadowColor: '#000',
+        shadowOpacity: 0.1,
+        shadowRadius: 10,
+        elevation: 5,
+        width:'95%',
+        margin:10
+    },
     row: {
         marginBottom: 20,
         marginTop:20,
@@ -64,6 +78,10 @@ const containerStyles = StyleSheet.create({
     },
     entryElements: {
         flexDirection: "column", // Ensures each item is stacked vertically
+        alignItems: "center",
+    },
+    entryRowElements: {
+        flexDirection: "row", // Ensures each item is stacked vertically
         alignItems: "center",
     },
     extraPicsContainer: {

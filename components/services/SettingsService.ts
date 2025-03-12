@@ -1,7 +1,9 @@
 import { db } from "@/config/firebase";
-import { ContactInfo } from "@/types";
+import { ContactInfo, User } from "@/types";
+import { Router } from "expo-router";
 import { addDoc, collection, deleteDoc, doc, getDocs, updateDoc } from "firebase/firestore";
 import { Dispatch, SetStateAction } from "react";
+import { Alert } from "react-native";
 
 //Wrapper class for settings database funcitonality
 class SettingsService {
@@ -110,5 +112,82 @@ class SettingsService {
       console.error('Error deleting contact:', error);
     }
   };
+
+  /**
+   * Effect: deletes a user from the firestore
+   */
+  public async handleDeleteUser(
+    user:User,
+  ) {
+    Alert.alert(
+      "Delete User",
+      `Are you sure you want to delete ${user.email}?`,
+      [
+        { text: "Cancel", style: "cancel" },
+        { 
+          text: "Delete", 
+          style: "destructive",
+          onPress: async () => {
+            try {
+              await deleteDoc(doc(db, "users", user.id));
+              Alert.alert("User Deleted", `${user.email} has been removed.`);
+            } catch (error) {
+              console.error("Error deleting user:", error);
+              Alert.alert("Error", "Could not delete user.");
+            }
+          }
+        }
+      ]
+    );
+  };
+
+  /**
+   * Effect: promotes a user's role if capable
+   */
+  public async handlePromoteUser(thisUser:User) {
+    try {
+      thisUser.role += 1;
+      const userRef = doc(db, "users", thisUser.id);
+      await updateDoc(userRef, {
+        role: thisUser.role
+      });
+      console.log(`User ${thisUser.id} has been promoted to role 1.`);
+    } catch (error) {
+      console.error("Error promoting user:", error);
+    }
+  }
+
+  /**
+   * Effect: Pulls list of users from firestore
+   */
+  public async fetchUsers(setUsers:Dispatch<SetStateAction<User[]>>) {
+    try {
+      const querySnapshot = await getDocs(collection(db, 'users'));
+      const userList = querySnapshot.docs.map(doc => ({
+        id: doc.id,
+        email: doc.data().email,
+        role: doc.data().role,
+      }));
+      setUsers(userList);
+    } catch (error) {
+      console.error('Error fetching users:', error);
+    }
+  };
+
+  /**
+   * Effect: demotes a user's role if capable
+   */
+  public async handleDemoteUser(thisUser:User) {
+    try {
+      thisUser.role -= 1;
+      const userRef = doc(db, "users", thisUser.id);
+      await updateDoc(userRef, {
+        role: thisUser.role
+      });
+      console.log(`User ${thisUser.id} has been promoted to role 1.`);
+    } catch (error) {
+      console.error("Error promoting user:", error);
+    }
+  }
 }
 export default SettingsService;
