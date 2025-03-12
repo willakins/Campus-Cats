@@ -26,7 +26,7 @@ export const UserItem: React.FC<{ user: User; setUsers: React.Dispatch<React.Set
       <View style={containerStyles.entryRowElements}>
         {isHigher ? (
           <Button style={buttonStyles.deleteButton} onPress={() => handleUserUpdate(() => database.handleDeleteUser(user))}>
-            <Text style={textStyles.deleteButtonText}>Delete User</Text>
+            <Text style={textStyles.deleteButtonText}>Block User</Text>
           </Button>
         ) : null}
         {isHigher ? (

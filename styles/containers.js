@@ -186,16 +186,26 @@ const containerStyles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
     },
+    picker: {
+        backgroundColor: '#fff',
+        flex: 1,
+        justifyContent: 'center',
+    },
     dateInput: {
-        height: 40,
+        height: 70,
         width: '100%',
         borderColor: '#ccc',
         borderWidth: 1,
         borderRadius: 5,
-        marginBottom: 15,
-        paddingHorizontal: 10,
+        marginBottom:10,
+        padding:15,
         backgroundColor: '#fff',
         flexDirection: 'row', 
+        elevation: 3,  // Adds shadow on Android
+        shadowColor: '#000',  // Adds shadow on iOS
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
     },
 });
 export { containerStyles };

@@ -71,6 +71,12 @@ const textStyles = StyleSheet.create({
         color: '#fff',
         marginLeft: 0,
     },
+    dateText: {
+        fontSize: 15,
+        color: '#000',
+        textAlign: 'center',
+        marginTop: 10
+    },
     activeText: {
         color: '#fff'
     },

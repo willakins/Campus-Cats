@@ -1,7 +1,7 @@
 import { deleteObject, getDownloadURL, getStorage, listAll, ref, uploadBytes, uploadBytesResumable } from 'firebase/storage';
 import { getDocs, getDoc, updateDoc, doc, collection, query, where, DocumentData, getFirestore, addDoc, serverTimestamp, Timestamp, deleteDoc } from 'firebase/firestore';
 import { auth, db, storage } from '@/config/firebase';
-import { AnnouncementEntryObject, CatalogEntryObject, CatSightingObject, ContactInfo, User } from '@/types';
+import { AnnouncementEntryObject, CatalogEntryObject, CatSightingObject, ContactInfo, StationEntryObject, User } from '@/types';
 import { Dispatch, SetStateAction } from 'react';
 import { Alert } from 'react-native';
 import { uploadFromURI } from '@/utils';
@@ -284,15 +284,15 @@ class DatabaseService {
   /**
    * TODO
    */
-  public async fetchStations() {
-    await DatabaseService.stationsService.fetchStations();
+  public async fetchStations(setStationEntries:Dispatch<SetStateAction<StationEntryObject[]>>) {
+    await DatabaseService.stationsService.fetchStations(setStationEntries);
   }
 
   /**
    * TODO
    */
-  public async createStation() {
-    await DatabaseService.stationsService.createStation();
+  public async createStation(thisStation:StationEntryObject, router:Router) {
+    await DatabaseService.stationsService.createStation(thisStation, router);
   }
 
   /**
@@ -387,6 +387,15 @@ class DatabaseService {
    */
   public async fetchUsers(setUsers:Dispatch<SetStateAction<User[]>>) {
     await DatabaseService.settingsService.fetchUsers(setUsers);
+  }
+
+  /**
+   * Effect: Pulls images from firestore storage, sets profile picture
+   */
+  public async fetchStationImages(
+    profilePic: string,
+    setProfile: Dispatch<SetStateAction<string>>) {
+      await DatabaseService.stationsService.fetchStationImages(profilePic, setProfile);
   }
 
   /**

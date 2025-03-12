@@ -40,13 +40,13 @@ class CatalogService {
         for (const itemRef of result.items) {
             const url = await getDownloadURL(itemRef);
             if (itemRef.name.includes('_profile')) {
-            setProfile(url);
+              setProfile(url);
             } else {
-            extraPicUrls.push(url);
+              extraPicUrls.push(url);
             }
         }
         if (setImageUrls) {
-            setImageUrls(extraPicUrls);
+          setImageUrls(extraPicUrls);
         }
         } catch (error) {
         console.error('Error fetching images: ', error);
@@ -280,7 +280,7 @@ class CatalogService {
         await Promise.all(result.items.map((item) => deleteObject(item)));
     
         alert('Entry deleted successfully!');
-        router.push('/catalog');
+        router.navigate('/catalog');
         
       } catch (error) {
         alert(error);
