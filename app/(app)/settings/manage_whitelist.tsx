@@ -8,13 +8,14 @@ import { UserItem } from '@/components';
 import DatabaseService from '@/components/services/DatabaseService';
 import { User } from '@/types';
 
-const ManageUsers = () => {
+const ManageWhitelist = () => {
   const router = useRouter();
-  const [users, setUsers] = useState<User[]>([]);
+  const [notGTusers, setnotGTUsers] = useState<User[]>([]);
+  const [pendingUsers, setPendingUsers] = useState<User[]>([]);
   const database = DatabaseService.getInstance();
 
   useEffect(() => {
-    database.fetchUsers(setUsers);
+    database.fetchUsers(setnotGTUsers);
   }, []);
 
   return (
@@ -23,15 +24,19 @@ const ManageUsers = () => {
         <Ionicons name="arrow-back-outline" size={25} color="#fff" />
       </Button>
 
-      <Text style={textStyles.title}>Manage Users</Text>
+      <Text style={textStyles.title}>View Non-GT users</Text>
 
       <ScrollView contentContainerStyle={containerStyles.scrollView}>
-        {users.map((user) => (
-          <UserItem key={user.id} user={user} setUsers={setUsers} />
+        {notGTusers.map((user) => (
+          <UserItem key={user.id} user={user} setUsers={setnotGTUsers} />
+        ))}
+        <Text style={textStyles.headline2}>Pending users</Text>
+        {pendingUsers.map((user) => (
+          <UserItem key={user.id} user={user} setUsers={setPendingUsers} />
         ))}
       </ScrollView>
     </SafeAreaView>
   );
 };
 
-export default ManageUsers;
+export default ManageWhitelist;

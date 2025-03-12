@@ -16,3 +16,4 @@ export { AnnouncementEntryObject } from './AnnouncementEntryObject';
 export { CatSightingObject } from './CatSightingObject';
 export { StationEntryObject } from './StationEntryObject';
 export { ContactInfo } from './ContactInfo';
+export { User } from './User';
