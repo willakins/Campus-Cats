@@ -47,6 +47,7 @@ const Stations = () => {
                   lastStocked={station.lastStocked}
                   stockingFreq={station.stockingFreq}
                   knownCats={station.knownCats}
+                  isStocked={station.isStocked}
                 />
               ))}
             </ScrollView>

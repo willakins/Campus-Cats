@@ -1,7 +1,7 @@
 import React, {  useEffect, useState } from 'react';
 import { SafeAreaView, ScrollView, Text } from 'react-native';
 
-import { useRouter } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 
 import { Button, CatalogItem } from '@/components';
 import { CatalogEntryObject } from '@/types';
@@ -17,9 +17,9 @@ const Catalog = () => {
   const database = DatabaseService.getInstance();
   const adminStatus = user.role === 1 || user.role === 2;
 
-  useEffect(() => {
+  useFocusEffect(() => {
     database.fetchCatalogData(setCatalogEntries);
-  }, []);
+  });
 
   return (
     <SafeAreaView style={containerStyles.container}>
