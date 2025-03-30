@@ -2,7 +2,7 @@ import React from 'react';
 
 import { useRouter } from 'expo-router';
 
-import { LoginForm } from '@/components'
+import { LoginForm } from '@/forms'
 import { useAuth } from '@/providers';
 
 const CreateAccount = () => {

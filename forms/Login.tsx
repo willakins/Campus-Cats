@@ -5,17 +5,17 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 
-import { Button, BorderlessButton } from '@/components/ui/Buttons';
-import { ControlledInput } from '@/components/ui/TextInput';
-import { globalStyles, buttonStyles, textStyles, containerStyles } from '@/styles';
+import { Button, BorderlessButton } from '@/components';
+import { ControlledInput } from './controls';
+import { globalStyles, textStyles, containerStyles } from '@/styles';
 
 // Login requirements
-const schema = z.object({
+const loginSchema = z.object({
   email: z.string().email(),
   password: z.string().min(6),
 });
 
-type FormType = z.infer<typeof schema>;
+type LoginFormType = z.infer<typeof loginSchema>;
 
 type LoginProps = {
   onSubmit: (email: string, pass: string) => any;
@@ -32,12 +32,12 @@ export const LoginForm: React.FC<LoginProps> = ({
 }) => {
   const [error, setError] = useState<string>('');
 
-  const { handleSubmit, control } = useForm<FormType>({
-    resolver: zodResolver(schema),
+  const { handleSubmit, control } = useForm<LoginFormType>({
+    resolver: zodResolver(loginSchema),
   });
 
   // Wrap submit function to convert the Promise<String> into just a string
-  const submitHandler = async (data: FormType) => {
+  const submitHandler = async (data: LoginFormType) => {
     try {
       await onSubmit(data.email, data.password);
     } catch (err: unknown) {
