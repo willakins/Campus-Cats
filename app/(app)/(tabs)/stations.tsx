@@ -44,19 +44,15 @@ const Stations = () => {
           <Text style={textStyles.editText}> Create Entry</Text>
         </Button>
 
-        <View style={{ flexDirection: 'row', justifyContent: 'center', marginVertical: 10 }}>
-          {['All', 'Stocked', 'Unstocked'].map((label) => (
+        <View style={containerStyles.buttonGroup}>
+          {['Stocked', 'Unstocked', 'All'].map((label) => (
             <Button
               key={label}
-              style={{
-                backgroundColor: filter === label ? '#333' : '#ccc',
-                padding: 8,
-                marginHorizontal: 5,
-                borderRadius: 6,
-              }}
+              style={[buttonStyles.filterButton, filter === label && buttonStyles.activeButton]}
               onPress={() => setFilter(label as typeof filter)}
+              textStyle={[textStyles.buttonText, filter === label && textStyles.activeText]}
             >
-              <Text style={{ color: '#fff' }}>{label}</Text>
+              {label === 'All' ? 'All' : label === 'Stocked' ? 'Stocked' : 'Unstocked'}
             </Button>
           ))}
         </View>

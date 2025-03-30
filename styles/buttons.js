@@ -4,8 +4,8 @@ import { StyleSheet } from 'react-native';
 const buttonStyles = StyleSheet.create({
   editButton: {
     position: 'absolute',
-    top: 20,
-    right: 20,
+    top: 5,
+    right: 5,
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#333',
@@ -68,7 +68,7 @@ const buttonStyles = StyleSheet.create({
     backgroundColor: '#e0e0e0',
   },
   activeButton: {
-    backgroundColor: '#007bff'
+    backgroundColor: '#333'
   },
   logoutButton: {
     position: 'absolute',
