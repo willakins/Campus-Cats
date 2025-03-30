@@ -1,6 +1,6 @@
 import { useRouter } from 'expo-router';
 
-import { LoginForm } from '@/components';
+import { LoginForm } from '@/forms';
 import { useAuth } from '@/providers';
 
 const LoginScreen = () => {
