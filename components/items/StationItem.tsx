@@ -9,33 +9,22 @@ import { Checkbox } from "react-native-paper";
 import { globalStyles, buttonStyles, textStyles, containerStyles } from '@/styles';
 
 export const StationItem: React.FC<StationEntryObject> = ({ id, name, profilePic, longitude, latitude, lastStocked, stockingFreq, 
-  knownCats}) => {
+  knownCats, isStocked}) => {
   const router = useRouter();
   const [profileURL, setProfile] = useState<string>('');
   const database = DatabaseService.getInstance();
   const thisStation = new StationEntryObject(id, name, profilePic, longitude, latitude, lastStocked, stockingFreq, knownCats);
 
-  const checkStockStatus = () => {
-    const lastStockedDate = new Date(lastStocked);
-
-    const nextRestockDate = lastStockedDate;
-    nextRestockDate.setDate(lastStockedDate.getDate() + stockingFreq);
-    const today = new Date(); // Get today's date
-    return today >= nextRestockDate;
-  };
-  const isStocked = useState<boolean>(!checkStockStatus());
-
   useEffect(() => {
     database.fetchStationImages(profilePic, setProfile);
-    alert(isStocked)
   }, []);
 
   return (
     <Button style={containerStyles.entryContainer} onPress={() =>
       router.push({
       pathname: '/stations/view-station',
-      params: { paramId:id, paramName:name, paramPic:profilePic, paramLong:longitude, paramLat:latitude, paramStocked:lastStocked,
-                paramFreq:stockingFreq, paramCats:knownCats},
+      params: { paramId:id, paramName:name, paramPic:profilePic, paramLong:longitude, paramLat:latitude, paramStocked:JSON.stringify(isStocked), 
+        paramCats:knownCats, paramLastStocked:lastStocked, paramStockingFreq:stockingFreq},
       })}>
       <View style={containerStyles.entryElements}>
         <Text style={textStyles.catalogTitle}>{name}</Text>
