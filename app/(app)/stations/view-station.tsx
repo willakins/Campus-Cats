@@ -11,14 +11,14 @@ const view_entry = () =>{
   const { signOut, user } = useAuth();
   const isAdmin = user.role === 1 || user.role === 2;
   const router = useRouter();
-  const { paramId, paramName, paramPic, paramLong, paramLat, paramStocked, paramCats, paramLastStocked, paramStockFreq} = useLocalSearchParams();
+  const { paramId, paramName, paramPic, paramLong, paramLat, paramStocked, paramCats, paramLastStocked, paramStockingFreq} = useLocalSearchParams();
   const id = paramId as string;
   const name = paramName as string;
   const profilePic = paramPic as string;
   const longitude = (paramLong as string) as unknown as number;
   const latitude = (paramLat as string) as unknown as number;
   const lastStocked = paramLastStocked as string;
-  const stockingFreq = (paramStockFreq as string) as unknown as number;
+  const stockingFreq = (paramStockingFreq as string) as unknown as number;
   const knownCats = paramCats as string;
   const isStocked = paramStocked === "true";
 

@@ -32,13 +32,13 @@ export const StationItem: React.FC<StationEntryObject> = ({ id, name, profilePic
           {profileURL ? (<Image source={{ uri: profileURL }} style={containerStyles.listImage2} />) : 
           <Text style={textStyles.title}>Loading image...</Text>}
           <View style={containerStyles.stockContainer}>
-            <Text style={[textStyles.normalText, { color: isStocked ? "red" : "green" }]}>
-              {!isStocked ? "Has Food" : "Needs Food"}
+            <Text style={[textStyles.normalText, { color: isStocked ? "green" : "red"}]}>
+              {isStocked ? "Has Food" : "Needs Food"}
             </Text>
             <View style={containerStyles.checkboxContainer}>
               <Checkbox
-                status={!isStocked ? "checked" : "unchecked"}
-                color={!isStocked ? "red" : "green"} // Red when needs restocking, green when stocked
+                status={isStocked ? "checked" : "unchecked"}
+                color={isStocked ? "green" : "green"} // Red when needs restocking, green when stocked
               />
             </View>
           </View>
