@@ -18,8 +18,8 @@ const TabNavigator = () => {
   const color2 = '#333'
   const bar_height: number = Platform.select({
     ios: 80,
-    android: 60,
-    default: 80
+    android: 100,
+    default: 100
   });
 
   return (
