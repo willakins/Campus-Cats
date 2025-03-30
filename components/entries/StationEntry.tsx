@@ -3,12 +3,12 @@ import { Text, Image, ScrollView, View } from 'react-native';
 
 import MapView, { Marker } from 'react-native-maps';
 
-import { CatalogEntryObject } from '@/types/CatalogEntryObject';
-import { CatSightingObject } from '@/types';
+import { CatSightingObject, StationEntryObject } from '@/types';
 import DatabaseService from '../services/DatabaseService';
 import { globalStyles, buttonStyles, textStyles, containerStyles } from '@/styles';
 
-export const StationEntry: React.FC<CatalogEntryObject> = ({ id, name, info }) => {
+export const StationEntry: React.FC<StationEntryObject> = ({ id, name, profilePic, longitude, latitude, lastStocked, stockingFreq,
+  knownCats, isStocked }) => {
   const [profileURL, setProfile] = useState<string>('');
   const [imageUrls, setImageUrls] = useState<string[]>([]);
   const [sightings, setSightings] = useState<CatSightingObject[]>([]);
@@ -24,8 +24,6 @@ export const StationEntry: React.FC<CatalogEntryObject> = ({ id, name, info }) =
       <Text style={textStyles.catalogTitle}>{name}</Text>
       {profileURL ? (<Image source={{ uri: profileURL }} style={containerStyles.headlineImage} resizeMode='contain'/>) : 
         <Text style={textStyles.catalogTitle}>Loading image...</Text>}
-      <Text style={textStyles.catalogDescription}>{info}</Text>
-      <Text style={textStyles.headline}> Sightings </Text>
       <MapView
         style={containerStyles.mapContainer}
         initialRegion={{
@@ -47,9 +45,13 @@ export const StationEntry: React.FC<CatalogEntryObject> = ({ id, name, info }) =
         />
         ))}
       </MapView>
-      {imageUrls.length > 0 ? <Text style={textStyles.subHeading}> Extra Photos</Text>: null}
-      {imageUrls ? (imageUrls.map((url, index) => (
-        <Image key={index} source={{ uri: url }} style={containerStyles.extraImage} resizeMode='contain'/>))) : <Text>Loading images...</Text>}  
+      <Text style={textStyles.headline2}>
+        Cats That Frequent This Station
+      </Text>
+      <Text style={textStyles.normalText}>
+        Empty
+      </Text>
+
     </ScrollView>
   );
 };

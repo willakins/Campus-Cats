@@ -11,10 +11,16 @@ const view_entry = () =>{
   const { signOut, user } = useAuth();
   const isAdmin = user.role === 1 || user.role === 2;
   const router = useRouter();
-  const { paramId, paramName, paramInfo } = useLocalSearchParams();
+  const { paramId, paramName, paramPic, paramLong, paramLat, paramStocked, paramCats, paramLastStocked, paramStockFreq} = useLocalSearchParams();
   const id = paramId as string;
   const name = paramName as string;
-  const info = paramInfo as string;
+  const profilePic = paramPic as string;
+  const longitude = (paramLong as string) as unknown as number;
+  const latitude = (paramLat as string) as unknown as number;
+  const lastStocked = paramLastStocked as string;
+  const stockingFreq = (paramStockFreq as string) as unknown as number;
+  const knownCats = paramCats as string;
+  const isStocked = paramStocked === "true";
 
   return (
     <SafeAreaView style={containerStyles.container}>
@@ -23,14 +29,21 @@ const view_entry = () =>{
       </Button>
       {isAdmin ? <Button style={buttonStyles.editButton} onPress={() => router.push({
         pathname: '/stations/edit-station',
-        params: { paramId:id, paramName:name, paramInfo:info },
+        params: { paramId:id, paramName:name, paramPic:paramPic, paramLong:paramLong, paramLat:paramLat, paramStocked:paramStocked, paramCats:knownCats },
       })}>
         <Text style ={textStyles.editText}> Edit Station</Text>
       </Button> : null}
       <StationEntry
+          key={id}
           id={id}
           name={name}
-          info={info}
+          profilePic={profilePic}
+          longitude={longitude}
+          latitude={latitude}
+          lastStocked={lastStocked}
+          stockingFreq={stockingFreq}
+          knownCats={knownCats}
+          isStocked={isStocked}
         />
     </SafeAreaView>
   );

@@ -7,6 +7,7 @@ export class StationEntryObject {
     lastStocked: string;
     stockingFreq:number;
     knownCats: string;
+    isStocked: boolean;
   
     constructor(
       id: string,
@@ -26,5 +27,15 @@ export class StationEntryObject {
       this.lastStocked = lastStocked;
       this.stockingFreq = stockingFreq;
       this.knownCats = knownCats;
+      this.isStocked = StationEntryObject.calculateStocked(lastStocked, stockingFreq);
+    }
+
+    private static calculateStocked(lastStocked:string, stockingFreq:number) {
+      const lastStockedDate = new Date(lastStocked);
+
+      const nextRestockDate = lastStockedDate;
+      nextRestockDate.setDate(lastStockedDate.getDate() + stockingFreq);
+      const today = new Date(); // Get today's date
+      return today >= nextRestockDate;
     }
   }
