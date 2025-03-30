@@ -8,34 +8,29 @@ import { Snackbar } from 'react-native-paper';
 import { Button, TextInput, CameraButton, CatalogImageHandler } from '@/components';
 import DatabaseService from '@/components/services/DatabaseService';
 import { globalStyles, buttonStyles, textStyles, containerStyles } from '@/styles';
+import { StationEntryObject } from '@/types/StationEntryObject';
 
 const edit_station = () => {
   const router = useRouter();
-  const { paramId, paramName, paramInfo} = useLocalSearchParams();
+  const { paramId, paramName, paramPic, paramLong, paramLat, paramStocked, paramCats, paramLastStocked, paramStockingFreq} = useLocalSearchParams();
   const id = paramId as string;
-  const oldName = paramName as string;
   const [name, setName] = useState<string>(paramName as string);
-  const [info, setInfo] = useState<string>(paramInfo as string);
+  const originalName = name;
+  const [profilePic, setProfile] = useState<string>(paramPic as string);
+  const longitude = (paramLong as string) as unknown as number;
+  const latitude = (paramLat as string) as unknown as number;
+  const lastStocked = paramLastStocked as string;
+  const stockingFreq = (paramStockingFreq as string) as unknown as number;
+  const [knownCats, setKnownCats] = useState<string>(paramCats as string);
+  const isStocked = paramStocked === "true";
   const [visible, setVisible] = useState<boolean>(false);
-
-  const [profilePicUrl, setProfile] = useState<string>('');
-  const [extraPics, setImageUrls] = useState<string[]>([]);
-  const [newPics, setNewPics] = useState<{ url: string; name: string }[]>([]);
-  const [newPhotosAdded, setNewPhotos] = useState<boolean>(false);
   const database = DatabaseService.getInstance();
-  const imageHandler = new CatalogImageHandler({ 
-    setVisible,  
-    setImageUrls, 
-    setNewPics, 
-    setNewPhotos,
-    setProfile,
-    name, 
-    profilePicUrl});
+  const thisStation = new StationEntryObject(id, name, profilePic, longitude, latitude, lastStocked, stockingFreq, knownCats);
     
   useFocusEffect(
     useCallback(() => {
-      database.fetchCatImages(name, setProfile, setImageUrls);
-    }, [profilePicUrl])
+      database.fetchStationImages(profilePic, setProfile);
+    }, [profilePic])
   );
 
   return (
@@ -43,16 +38,17 @@ const edit_station = () => {
       behavior={Platform.OS === 'ios' ? 'padding' : undefined} // iOS specific behavior
     >
       <Button style={buttonStyles.logoutButton} onPress={() => router.push({
-        pathname: '/stations/view-station', params: { paramId:id, paramName:name, paramInfo:info }, })}>
+        pathname: '/stations/view-station', params: { paramId:id, paramName:name, paramPic:paramPic, paramLong:paramLong, paramLat:paramLat, paramStocked:paramStocked, paramCats:knownCats },
+      })}>
         <Ionicons name="arrow-back-outline" size={25} color="#fff" />
       </Button>
       <Button style={buttonStyles.editButton} 
-      onPress={() => database.handleStationSave(name, oldName, info, newPics, newPhotosAdded, id, setVisible, router)}>
+      onPress={() => database.saveStation(thisStation, originalName, setVisible, router)}>
         <Text style ={textStyles.editText}> Save Entry</Text>
       </Button>
       <ScrollView contentContainerStyle={containerStyles.entryContainer}>
         <Text style={textStyles.title}>Edit A Station Entry</Text>
-        {profilePicUrl ? (<Image source={{ uri: profilePicUrl }} style={containerStyles.headlineImage} resizeMode="contain" />) : 
+        {profilePic ? (<Image source={{ uri: profilePic }} style={containerStyles.headlineImage} resizeMode="contain" />) : 
           <Text style={textStyles.title}>Loading image...</Text>}
           <View style={containerStyles.extraPicsContainer}>
           <Snackbar visible={visible} onDismiss={() => setVisible(false)}>
@@ -68,15 +64,17 @@ const edit_station = () => {
             style={textStyles.input} />
           <Text style={textStyles.headline}>Cats Known to Frequent This Station (optional)</Text>
           <TextInput
-            value={info}
+            value={knownCats}
             placeholderTextColor = "#888"
-            onChangeText={setInfo} 
+            onChangeText={setKnownCats} 
             style={textStyles.descInput} 
             multiline={true}/>
         </View>
         <Text style={textStyles.headline}> Change Profile Photo </Text>
-        <CameraButton onPhotoSelected={imageHandler.addPhoto}></CameraButton>
-        <Button style={buttonStyles.deleteButton}onPress={() => database.deleteCatalogEntry(name, id, setVisible, router)}> Delete Catalog Entry</Button>
+        <View style={containerStyles.cameraView}>
+          <CameraButton onPhotoSelected={setProfile}></CameraButton>
+        </View>
+        <Button style={buttonStyles.deleteButton}onPress={() => database.deleteStation(id, setVisible, router)}> Delete Station Entry</Button>
       </ScrollView>
     </KeyboardAvoidingView>
   );

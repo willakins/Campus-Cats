@@ -36,6 +36,6 @@ export class StationEntryObject {
       const nextRestockDate = lastStockedDate;
       nextRestockDate.setDate(lastStockedDate.getDate() + stockingFreq);
       const today = new Date(); // Get today's date
-      return today >= nextRestockDate;
+      return !(today >= nextRestockDate);
     }
   }

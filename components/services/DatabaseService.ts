@@ -282,14 +282,14 @@ class DatabaseService {
   }
 
   /**
-   * TODO
+   * Effect: Gets all stations from firebase
    */
   public async fetchStations(setStationEntries:Dispatch<SetStateAction<StationEntryObject[]>>) {
     await DatabaseService.stationsService.fetchStations(setStationEntries);
   }
 
   /**
-   * TODO
+   * Effect: Adds a new station to firebase
    */
   public async createStation(thisStation:StationEntryObject, router:Router) {
     await DatabaseService.stationsService.createStation(thisStation, router);
@@ -298,15 +298,24 @@ class DatabaseService {
   /**
    * TODO
    */
-  public async editStation() {
-    await DatabaseService.stationsService.editStation();
+  public async saveStation(
+    thisStation: StationEntryObject, 
+    originalName: string,
+    setVisible: Dispatch<SetStateAction<boolean>>, 
+    router: Router
+  ) {
+    await DatabaseService.stationsService.saveStation(thisStation, originalName, setVisible, router);
   }
 
   /**
    * TODO
    */
-  public async deleteStation() {
-    await DatabaseService.stationsService.deleteStation();
+  public async deleteStation(
+    id: string, 
+    setVisible: Dispatch<SetStateAction<boolean>>, 
+    router: Router
+  ) {
+    await DatabaseService.stationsService.deleteStation(id, setVisible, router);
   }
 
   /**

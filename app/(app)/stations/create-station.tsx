@@ -22,7 +22,7 @@ const create_station = () =>{
   const [longitude, setLongitude] = useState<number>(-84.3963);
   const [latitude, setLatitude] = useState<number>(33.7756);
   const [lastStocked, setLastStocked] = useState<string>('');
-  const [stockingFreq, setStockingFreq] = useState<string>("7");
+  const [stockingFreq, setStockingFreq] = useState<number>(7);
   const [cats, setCats] = useState<string>('');
   const thisStation:StationEntryObject = 
     new StationEntryObject('-1', name, profile, longitude, latitude, lastStocked, stockingFreq, cats);
@@ -92,9 +92,9 @@ const create_station = () =>{
             </View>
           <Text style={textStyles.subHeading2}>How Often Does This Station Need to be restocked? (in days)</Text>
           <TextInput
-            placeholder={stockingFreq}
+            placeholder={JSON.stringify(stockingFreq)}
             placeholderTextColor="#888"
-            onChangeText={setStockingFreq} 
+            onChangeText={(text) => setStockingFreq(parseInt(text))}
             style={textStyles.input}/>
           <Text style={textStyles.subHeading2}>Cats Known to Frequent This Station (optional)</Text>
           <TextInput

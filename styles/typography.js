@@ -43,6 +43,18 @@ const textStyles = StyleSheet.create({
         textAlign: 'center',
         marginBottom: 0
     },
+    stationText1: {
+        fontSize: 15,
+        color: 'red',
+        textAlign: 'center',
+        padding: 30,
+    },
+    stationText2: {
+        fontSize: 20,
+        color: 'green',
+        textAlign: 'center',
+        padding:30,
+    },
     normalText: {
         fontSize: 16,
         color: '#333',
