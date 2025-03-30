@@ -32,8 +32,8 @@ const Stations = () => {
     }, []);
 
     const filteredStations = stationEntries.filter((station) => {
-      if (filter === 'Stocked') return !station.isStocked;
-      if (filter === 'Unstocked') return station.isStocked;
+      if (filter === 'Stocked') return station.isStocked;
+      if (filter === 'Unstocked') return !station.isStocked;
       return true;
     });
 
