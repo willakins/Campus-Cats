@@ -3,8 +3,8 @@ import { globalStyles, buttonStyles, textStyles, containerStyles } from '@/style
 import { useAuth } from '@/providers';
 import { Ionicons } from '@expo/vector-icons';
 import { Button, StationItem } from '@/components';
-import { useRouter } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useFocusEffect, useRouter } from 'expo-router';
+import { useState } from 'react';
 import DatabaseService from '@/components/services/DatabaseService';
 import { StationEntryObject } from '@/types';
 
@@ -25,9 +25,9 @@ const Stations = () => {
   } else {
     const [stationEntries, setStationEntries] = useState<StationEntryObject[]>([]);
 
-    useEffect(() => {
+    useFocusEffect(() => {
       database.fetchStations(setStationEntries);
-    }, []);
+    });
 
     return (
       <SafeAreaView style={containerStyles.container}>

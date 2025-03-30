@@ -11,12 +11,26 @@ export const StationEntry: React.FC<StationEntryObject> = ({ id, name, profilePi
   knownCats, isStocked }) => {
   const [profileURL, setProfile] = useState<string>('');
   const [imageUrls, setImageUrls] = useState<string[]>([]);
-  const [sightings, setSightings] = useState<CatSightingObject[]>([]);
-  const database = DatabaseService.getInstance();  
+  const database = DatabaseService.getInstance();
+
+  const calculateDaysUntilRestock = () => {
+    const lastStockedDate = new Date(lastStocked);
+    if (isNaN(lastStockedDate.getTime())) return 0; // Handle invalid date
+
+    const nextRestockDate = new Date(lastStockedDate);
+    nextRestockDate.setDate(lastStockedDate.getDate() + stockingFreq);
+
+    const today = new Date();
+    const timeDiff = nextRestockDate.getTime() - today.getTime();
+    const daysRemaining = Math.ceil(timeDiff / (1000 * 3600 * 24)); // Convert milliseconds to days
+    if (isNaN(daysRemaining)) return -2;
+
+    return daysRemaining;
+  }
+  var daysLeft = calculateDaysUntilRestock();  
 
   useEffect(() => {
-    database.fetchCatImages(name, setProfile, setImageUrls);
-    database.getSightings(name, setSightings);
+    database.fetchStationImages(profilePic, setProfile);
   }, []);
 
   return (
@@ -33,25 +47,20 @@ export const StationEntry: React.FC<StationEntryObject> = ({ id, name, profilePi
           longitudeDelta: 0.01,
         }}
       >
-        {sightings.map((sighting:CatSightingObject) => (
-          <Marker
-          key={sighting.id}
+        <Marker
+          key={id}
           coordinate={{
-            latitude: sighting.latitude,
-            longitude: sighting.longitude,
+            latitude: latitude,
+            longitude: longitude,
           }}
-          title={sighting.name}
-          description={sighting.info}
         />
-        ))}
       </MapView>
-      <Text style={textStyles.headline2}>
+      {knownCats.length > 0 ? <><Text style={textStyles.headline2}>
         Cats That Frequent This Station
-      </Text>
-      <Text style={textStyles.normalText}>
-        Empty
-      </Text>
-
+      </Text><Text style={textStyles.normalText}>
+          {knownCats}
+        </Text></>: null}
+        {isStocked ?<Text style={textStyles.stationText2}> This station will need to be restocked in {daysLeft} days.</Text>: <Text style={textStyles.stationText1}> This station needs to be restocked!</Text>}
     </ScrollView>
   );
 };
