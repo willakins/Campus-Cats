@@ -68,7 +68,7 @@ const buttonStyles = StyleSheet.create({
     backgroundColor: '#e0e0e0',
   },
   activeButton: {
-    backgroundColor: '#333'
+    backgroundColor: '#007bff'
   },
   logoutButton: {
     position: 'absolute',
