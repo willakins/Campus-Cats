@@ -5,6 +5,7 @@ import { useRouter } from 'expo-router';
 import { Button } from '../ui/Buttons';
 import { StationEntryObject } from '@/types';
 import DatabaseService from '../services/DatabaseService';
+import { Checkbox } from "react-native-paper";
 import { globalStyles, buttonStyles, textStyles, containerStyles } from '@/styles';
 
 export const StationItem: React.FC<StationEntryObject> = ({ id, name, profilePic, longitude, latitude, lastStocked, stockingFreq, 
@@ -14,8 +15,19 @@ export const StationItem: React.FC<StationEntryObject> = ({ id, name, profilePic
   const database = DatabaseService.getInstance();
   const thisStation = new StationEntryObject(id, name, profilePic, longitude, latitude, lastStocked, stockingFreq, knownCats);
 
+  const checkStockStatus = () => {
+    const lastStockedDate = new Date(lastStocked);
+
+    const nextRestockDate = lastStockedDate;
+    nextRestockDate.setDate(lastStockedDate.getDate() + stockingFreq);
+    const today = new Date(); // Get today's date
+    return today >= nextRestockDate;
+  };
+  const isStocked = useState<boolean>(!checkStockStatus());
+
   useEffect(() => {
     database.fetchStationImages(profilePic, setProfile);
+    alert(isStocked)
   }, []);
 
   return (
@@ -27,9 +39,23 @@ export const StationItem: React.FC<StationEntryObject> = ({ id, name, profilePic
       })}>
       <View style={containerStyles.entryElements}>
         <Text style={textStyles.catalogTitle}>{name}</Text>
-        {profileURL ? (<Image source={{ uri: profileURL }} style={containerStyles.listImage} />) : 
+        <View style={containerStyles.stationsEntry}>
+          {profileURL ? (<Image source={{ uri: profileURL }} style={containerStyles.listImage2} />) : 
           <Text style={textStyles.title}>Loading image...</Text>}
-        <Text style={textStyles.catalogDescription}>{knownCats}</Text>
+          <View style={containerStyles.stockContainer}>
+            <Text style={[textStyles.normalText, { color: isStocked ? "red" : "green" }]}>
+              {!isStocked ? "Has Food" : "Needs Food"}
+            </Text>
+            <View style={containerStyles.checkboxContainer}>
+              <Checkbox
+                status={!isStocked ? "checked" : "unchecked"}
+                color={!isStocked ? "red" : "green"} // Red when needs restocking, green when stocked
+              />
+            </View>
+          </View>
+        </View> 
+        
+        <Text style={textStyles.catalogDescription}>Known Cats: {knownCats}</Text>
       </View>
     </Button>
   );

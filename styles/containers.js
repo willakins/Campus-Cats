@@ -125,6 +125,12 @@ const containerStyles = StyleSheet.create({
         borderRadius: 40, // Make the image circular
         marginBottom: 10, // Space between image and text
     },
+    listImage2: {
+        width: 200, // Set a fixed width for the image
+        height: 150, // Set a fixed height for the image
+        borderRadius: 40, // Make the image circular
+        marginBottom: 10, // Space between image and text
+    },
     catImage: {
         width: '100%',
         height: 200,
@@ -206,6 +212,24 @@ const containerStyles = StyleSheet.create({
         shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.1,
         shadowRadius: 4,
+    },
+    stationsEntry: {
+        flexDirection: "row",
+        alignItems: "center",
+        backgroundColor: "white", // Ensure background is set
+        padding: 10,
+      },
+      checkboxContainer: {
+        borderWidth: 2, // Thickness of the box
+        borderColor: "black", // Box color
+        padding: 5, // Space between the checkbox and the box edges
+        borderRadius: 5, // Rounded corners
+      },
+      stockContainer: {
+        flex: 1,
+        alignItems:"center",
+        paddingTop: 20,
+        paddingHorizontal: 15,
     },
 });
 export { containerStyles };
