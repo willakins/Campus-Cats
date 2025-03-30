@@ -15,7 +15,7 @@ const loginSchema = z.object({
   password: z.string().min(6),
 });
 
-type LoginFormType = z.infer<typeof loginSchema>;
+type LoginDataType = z.infer<typeof loginSchema>;
 
 type LoginProps = {
   onSubmit: (email: string, pass: string) => any;
@@ -32,12 +32,12 @@ export const LoginForm: React.FC<LoginProps> = ({
 }) => {
   const [error, setError] = useState<string>('');
 
-  const { handleSubmit, control } = useForm<LoginFormType>({
+  const { handleSubmit, control } = useForm<LoginDataType>({
     resolver: zodResolver(loginSchema),
   });
 
   // Wrap submit function to convert the Promise<String> into just a string
-  const submitHandler = async (data: LoginFormType) => {
+  const submitHandler = async (data: LoginDataType) => {
     try {
       await onSubmit(data.email, data.password);
     } catch (err: unknown) {
