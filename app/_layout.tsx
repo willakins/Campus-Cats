@@ -1,16 +1,19 @@
 import { Slot } from 'expo-router';
+import { Provider as PaperProvider } from 'react-native-paper';
 
 import { AuthProvider } from '@/providers';
 import { SafeAreaView } from 'react-native';
-import { globalStyles, buttonStyles, textStyles, containerStyles } from '@/styles';
+import { globalStyles } from '@/styles';
 
 const RootLayout = () => {
   return (
-    <SafeAreaView style = {globalStyles.safeView}>
-      <AuthProvider>
-        <Slot />
-      </AuthProvider>
-    </SafeAreaView>
+    <PaperProvider>
+      <SafeAreaView style = {globalStyles.safeView}>
+        <AuthProvider>
+          <Slot />
+        </AuthProvider>
+      </SafeAreaView>
+    </PaperProvider>
   );
 };
 export default RootLayout;
