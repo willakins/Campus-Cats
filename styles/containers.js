@@ -96,6 +96,7 @@ const containerStyles = StyleSheet.create({
   logo: {
     height: '40%',
     width: '80%',
+    resizeMode: 'contain',
     marginBottom: 20,
     borderRadius:50,
     aspectRatio: 1
