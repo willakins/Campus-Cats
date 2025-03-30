@@ -3,6 +3,7 @@ export { LoadingIndicator } from './ui/LoadingIndicator';
 export * from './ui/TextInput';
 
 export { AdminView } from './AdminView'
+export { MapPicker } from './MapPicker'
 
 export { SightingMapView } from './SightingMapView'
 export { CatalogEntry } from './entries/CatalogEntry';
