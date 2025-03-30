@@ -5,7 +5,7 @@ export class StationEntryObject {
     longitude: number;
     latitude: number;
     lastStocked: string;
-    stockingFreq:string;
+    stockingFreq:number;
     knownCats: string;
   
     constructor(
@@ -15,7 +15,7 @@ export class StationEntryObject {
       longitude: number,
       latitude: number,
       lastStocked: string,
-      stockingFreq: string,
+      stockingFreq: number,
       knownCats: string
     ) {
       this.id = id;
