@@ -47,8 +47,7 @@ const buttonStyles = StyleSheet.create({
     reportButton: {
         position: 'absolute', // Position the button absolutely
         bottom: 20,           // Adjust distance from the bottom of the screen
-        left: '57%',          // Center horizontally
-        transform: [{ translateX: -75 }], // Offset to make the button centered (since width is 150)
+        alignSelf: 'center',
         backgroundColor: '#007bff', // Button background color
         paddingVertical: 10,  // Vertical padding
         paddingHorizontal: 20, // Horizontal padding
