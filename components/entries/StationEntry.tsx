@@ -3,24 +3,44 @@ import { Text, Image, ScrollView, View } from 'react-native';
 
 import MapView, { Marker } from 'react-native-maps';
 
-import { CatSightingObject, StationEntryObject } from '@/types';
+import { StationEntryObject } from '@/types';
+import { Button } from '@/components';
 import DatabaseService from '../services/DatabaseService';
 import { globalStyles, buttonStyles, textStyles, containerStyles } from '@/styles';
+import { useRouter } from 'expo-router';
+import { Snackbar } from 'react-native-paper';
 
-export const StationEntry: React.FC<StationEntryObject> = ({ id, name, profilePic, longitude, latitude, lastStocked, stockingFreq,
+export const StationEntry: React.FC<StationEntryObject> = ({ id, name, longitude, latitude, lastStocked, stockingFreq,
   knownCats, isStocked }) => {
   const [profileURL, setProfile] = useState<string>('');
-  const [imageUrls, setImageUrls] = useState<string[]>([]);
-  const [sightings, setSightings] = useState<CatSightingObject[]>([]);
-  const database = DatabaseService.getInstance();  
+  const database = DatabaseService.getInstance();
+  const thisStation = new StationEntryObject(id, name, longitude, latitude, lastStocked, stockingFreq, knownCats);
+  const router = useRouter();
+  const [visible, setVisible] = useState<boolean>(false);
+
+  const calculateDaysUntilRestock = () => {
+    const lastStockedDate = new Date(lastStocked);
+    if (isNaN(lastStockedDate.getTime())) return 0; // Handle invalid date
+
+    const nextRestockDate = new Date(lastStockedDate);
+    const newDate = lastStockedDate.getDate() + parseInt(stockingFreq);
+    nextRestockDate.setDate(newDate);
+    const today = new Date();
+    const timeDiff = nextRestockDate.getTime() - today.getTime();
+    
+    const daysRemaining = Math.ceil(timeDiff / (1000 * 3600 * 24)); // Convert milliseconds to days
+    if (isNaN(daysRemaining)) return -2;
+
+    return daysRemaining;
+  }
+  var daysLeft = calculateDaysUntilRestock();  
 
   useEffect(() => {
-    database.fetchCatImages(name, setProfile, setImageUrls);
-    database.getSightings(name, setSightings);
+    database.fetchStationImages(id, name, setProfile);
   }, []);
 
   return (
-    <ScrollView contentContainerStyle={containerStyles.scrollView}>
+    <ScrollView contentContainerStyle={containerStyles.scrollView2}>
       <Text style={textStyles.catalogTitle}>{name}</Text>
       {profileURL ? (<Image source={{ uri: profileURL }} style={containerStyles.headlineImage} resizeMode='contain'/>) : 
         <Text style={textStyles.catalogTitle}>Loading image...</Text>}
@@ -33,25 +53,24 @@ export const StationEntry: React.FC<StationEntryObject> = ({ id, name, profilePi
           longitudeDelta: 0.01,
         }}
       >
-        {sightings.map((sighting:CatSightingObject) => (
-          <Marker
-          key={sighting.id}
+        <Marker
+          key={id}
           coordinate={{
-            latitude: sighting.latitude,
-            longitude: sighting.longitude,
+            latitude: latitude,
+            longitude: longitude,
           }}
-          title={sighting.name}
-          description={sighting.info}
         />
-        ))}
       </MapView>
-      <Text style={textStyles.headline2}>
+      {knownCats.length > 0 ? <><Text style={textStyles.headline2}>
         Cats That Frequent This Station
-      </Text>
-      <Text style={textStyles.normalText}>
-        Empty
-      </Text>
-
+      </Text><Text style={textStyles.normalText}>
+          {knownCats}
+        </Text></>: null}
+        {isStocked ?<Text style={textStyles.stationText2}> This station will need to be restocked in {daysLeft} days.</Text>: <Text style={textStyles.stationText1}> This station needs to be restocked!</Text>}
+        <Button style={buttonStyles.refillButton} onPress={() => database.stockStation(thisStation, router, setVisible)}>I Just Refilled This Station!</Button>
+        <Snackbar visible={visible} onDismiss={() => setVisible(false)}>
+                Saving...
+          </Snackbar>
     </ScrollView>
   );
 };
