@@ -6,6 +6,7 @@ import { Button } from '../ui/Buttons';
 import { StationEntryObject } from '@/types';
 import DatabaseService from '../services/DatabaseService';
 import { Checkbox } from "react-native-paper";
+import { Checkbox } from "react-native-paper";
 import { globalStyles, buttonStyles, textStyles, containerStyles } from '@/styles';
 
 export const StationItem: React.FC<StationEntryObject> = ({ id, name, longitude, latitude, lastStocked, stockingFreq, 
@@ -27,6 +28,8 @@ export const StationItem: React.FC<StationEntryObject> = ({ id, name, longitude,
       })}>
       <View style={containerStyles.entryElements}>
         <Text style={textStyles.catalogTitle}>{name}</Text>
+        <View style={containerStyles.stationsEntry}>
+          {profileURL ? (<Image source={{ uri: profileURL }} style={containerStyles.listImage2} />) : 
         <View style={containerStyles.stationsEntry}>
           {profileURL ? (<Image source={{ uri: profileURL }} style={containerStyles.listImage2} />) : 
           <Text style={textStyles.title}>Loading image...</Text>}
