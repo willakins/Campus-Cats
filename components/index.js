@@ -2,9 +2,8 @@ export * from './ui/Buttons';
 export { LoadingIndicator } from './ui/LoadingIndicator';
 export * from './ui/TextInput';
 
-export { LoginForm } from './forms/Login';
-
 export { AdminView } from './AdminView'
+export { MapPicker } from './MapPicker'
 
 export { SightingMapView } from './SightingMapView'
 export { CatalogEntry } from './entries/CatalogEntry';

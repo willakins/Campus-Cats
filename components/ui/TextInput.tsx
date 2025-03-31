@@ -4,7 +4,7 @@ import { globalStyles, buttonStyles, textStyles, containerStyles } from '@/style
 
 import { RuleType } from '@/types';
 
-type TextInputProps = React.PropsWithoutRef<RNTextInputProps> & {
+export type TextInputProps = React.PropsWithoutRef<RNTextInputProps> & {
   label?: string;
   error?: string;
   style?: StyleProp<TextStyle>;

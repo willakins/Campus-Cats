@@ -4,7 +4,7 @@ export class StationEntryObject {
     longitude: number;
     latitude: number;
     lastStocked: string;
-    stockingFreq:string;
+    stockingFreq:number;
     knownCats: string;
     isStocked: boolean;
   
@@ -14,7 +14,7 @@ export class StationEntryObject {
       longitude: number,
       latitude: number,
       lastStocked: string,
-      stockingFreq: string,
+      stockingFreq: number,
       knownCats: string
     ) {
       this.id = id;
@@ -35,4 +35,12 @@ export class StationEntryObject {
       const today = new Date(); // Get today's date
       return !(today >= nextRestockDate);
     }
+
+    private static calculateStocked(lastStocked:string, stockingFreq:number) {
+      const lastStockedDate = new Date(lastStocked);
+
+      const nextRestockDate = lastStockedDate;
+      nextRestockDate.setDate(lastStockedDate.getDate() + stockingFreq);
+      const today = new Date(); // Get today's date
+      return !(today >= nextRestockDate);    }
   }

@@ -17,23 +17,42 @@ const Stations = () => {
   if (!isAdmin) { // Double safety so important info isn't leaked
     return (
       <SafeAreaView style={containerStyles.container}>
-        <Text style ={textStyles.catalogTitle}> You should not be here!</Text>
-      <Button style={buttonStyles.logoutButton} onPress={() => router.push('/(app)/(tabs)')}>
-        <Ionicons name="arrow-back-outline" size={25} color="#fff" />
-      </Button>
-    </SafeAreaView>);
+        <Text style={textStyles.catalogTitle}> You should not be here!</Text>
+        <Button style={buttonStyles.logoutButton} onPress={() => router.push('/(app)/(tabs)')}>
+          <Ionicons name="arrow-back-outline" size={25} color="#fff" />
+        </Button>
+      </SafeAreaView>
+    );
   } else {
     const [stationEntries, setStationEntries] = useState<StationEntryObject[]>([]);
+    const [filter, setFilter] = useState<'All' | 'Stocked' | 'Unstocked'>('All');
 
     useFocusEffect(() => {
       database.fetchStations(setStationEntries);
     });
 
+    const filteredStations = stationEntries.filter((station) => {
+      if (filter === 'Stocked') return station.isStocked;
+      if (filter === 'Unstocked') return !station.isStocked;
+      return true;
+    });
+
     return (
       <SafeAreaView style={containerStyles.container}>
-            <Text style={textStyles.title}>Feeding Stations</Text>
-            <Button style={buttonStyles.editButton} onPress={() => router.push('/stations/create-station')}>
-              <Text style ={textStyles.editText}> Create Entry</Text>
+        <Text style={textStyles.title}>Feeding Stations</Text>
+        <Button style={buttonStyles.editButton} onPress={() => router.push('/stations/create-station')}>
+          <Text style={textStyles.editText}> Create Entry</Text>
+        </Button>
+
+        <View style={containerStyles.buttonGroup}>
+          {['Stocked', 'Unstocked', 'All'].map((label) => (
+            <Button
+              key={label}
+              style={[buttonStyles.filterButton, filter === label && buttonStyles.activeButton]}
+              onPress={() => setFilter(label as typeof filter)}
+              textStyle={[textStyles.buttonText, filter === label && textStyles.activeText]}
+            >
+              {label === 'All' ? 'All' : label === 'Stocked' ? 'Stocked' : 'Unstocked'}
             </Button>
             <ScrollView contentContainerStyle={containerStyles.scrollView}>
               {stationEntries.map((station) => (
@@ -53,6 +72,6 @@ const Stations = () => {
           </SafeAreaView>
     );
   }
-  
 };
-export default Stations
+
+export default Stations;
