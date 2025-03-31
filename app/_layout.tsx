@@ -7,13 +7,13 @@ import { globalStyles } from '@/styles';
 
 const RootLayout = () => {
   return (
-    <PaperProvider>
+    <AuthProvider>
       <SafeAreaView style = {globalStyles.safeView}>
-        <AuthProvider>
+        <PaperProvider>
           <Slot />
-        </AuthProvider>
+        </PaperProvider>
       </SafeAreaView>
-    </PaperProvider>
+    </AuthProvider>
   );
 };
 export default RootLayout;

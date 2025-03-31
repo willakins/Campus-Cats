@@ -1,8 +1,12 @@
 export * from './ui/Buttons';
+export { DateTimeInput } from './ui/DateTimeInput';
+export { ErrorText } from './ui/ErrorText';
 export { LoadingIndicator } from './ui/LoadingIndicator';
 export * from './ui/TextInput';
 
 export { AdminView } from './AdminView'
+export { Errorbar } from './ErrorBar'
+export { FilePicker } from './FilePicker'
 export { MapPicker } from './MapPicker'
 
 export { SightingMapView } from './SightingMapView'

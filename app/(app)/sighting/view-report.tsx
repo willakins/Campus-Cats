@@ -55,7 +55,7 @@ const CatSightingScreen = () => {
     setLatitude(latitude);
     setLongitude(longitude);
   };
-  
+
   return (
     <KeyboardAvoidingView
       style={containerStyles.container}
@@ -64,7 +64,7 @@ const CatSightingScreen = () => {
       <Button style={buttonStyles.logoutButton} onPress={() => router.push('/(app)/(tabs)')}>
         <Ionicons name="arrow-back-outline" size={25} color="#fff" />
       </Button>
-        {isAdmin ? <Button style={buttonStyles.editButton} onPress={saveSighting}>
+      {isAdmin ? <Button style={buttonStyles.editButton} onPress={saveSighting}>
         <Text style= {textStyles.editText}>Save</Text>
       </Button> : null}
       <ScrollView contentContainerStyle={containerStyles.scrollView}>
