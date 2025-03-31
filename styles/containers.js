@@ -11,6 +11,11 @@ const containerStyles = StyleSheet.create({
     scrollView: {
         padding: 10,
     },
+    scrollView2: {
+        padding:10,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
     loaderContainer: {
         flex: 1,
         justifyContent: 'center',
