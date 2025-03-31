@@ -3,8 +3,8 @@ import { globalStyles, buttonStyles, textStyles, containerStyles } from '@/style
 import { useAuth } from '@/providers';
 import { Ionicons } from '@expo/vector-icons';
 import { Button, StationItem } from '@/components';
-import { useRouter } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useFocusEffect, useRouter } from 'expo-router';
+import { useState } from 'react';
 import DatabaseService from '@/components/services/DatabaseService';
 import { StationEntryObject } from '@/types';
 
@@ -27,9 +27,9 @@ const Stations = () => {
     const [stationEntries, setStationEntries] = useState<StationEntryObject[]>([]);
     const [filter, setFilter] = useState<'All' | 'Stocked' | 'Unstocked'>('All');
 
-    useEffect(() => {
+    useFocusEffect(() => {
       database.fetchStations(setStationEntries);
-    }, []);
+    });
 
     const filteredStations = stationEntries.filter((station) => {
       if (filter === 'Stocked') return station.isStocked;
@@ -65,7 +65,6 @@ const Stations = () => {
               key={station.id}
               id={station.id}
               name={station.name}
-              profilePic={station.profilePic}
               longitude={station.longitude}
               latitude={station.latitude}
               lastStocked={station.lastStocked}
