@@ -28,7 +28,7 @@ const view_entry = () =>{
       </Button>
       {isAdmin ? <Button style={buttonStyles.editButton} onPress={() => router.push({
         pathname: '/stations/edit-station',
-        params: { paramId:id, paramName:name, paramLong:paramLong, paramLat:paramLat, paramStocked:paramStocked, paramLastStocked:paramLastStocked, paramCats:knownCats, paramStockingFreq:paramStockingFreq },
+        params: { paramId:id, paramName:name, paramLong:paramLong, paramLat:paramLat, paramLastStocked:paramLastStocked, paramCats:knownCats, paramStockingFreq:paramStockingFreq },
       })}>
         <Text style ={textStyles.editText}> Edit Station</Text>
       </Button> : null}
