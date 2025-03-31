@@ -11,14 +11,13 @@ const view_entry = () =>{
   const { signOut, user } = useAuth();
   const isAdmin = user.role === 1 || user.role === 2;
   const router = useRouter();
-  const { paramId, paramName, paramPic, paramLong, paramLat, paramStocked, paramCats, paramLastStocked, paramStockFreq} = useLocalSearchParams();
+  const { paramId, paramName, paramLong, paramLat, paramStocked, paramCats, paramLastStocked, paramStockingFreq} = useLocalSearchParams();
   const id = paramId as string;
   const name = paramName as string;
-  const profilePic = paramPic as string;
   const longitude = (paramLong as string) as unknown as number;
   const latitude = (paramLat as string) as unknown as number;
   const lastStocked = paramLastStocked as string;
-  const stockingFreq = (paramStockFreq as string) as unknown as number;
+  const stockingFreq = paramStockingFreq as string;
   const knownCats = paramCats as string;
   const isStocked = paramStocked === "true";
 
@@ -29,7 +28,7 @@ const view_entry = () =>{
       </Button>
       {isAdmin ? <Button style={buttonStyles.editButton} onPress={() => router.push({
         pathname: '/stations/edit-station',
-        params: { paramId:id, paramName:name, paramPic:paramPic, paramLong:paramLong, paramLat:paramLat, paramStocked:paramStocked, paramCats:knownCats },
+        params: { paramId:id, paramName:name, paramLong:paramLong, paramLat:paramLat, paramStocked:paramStocked, paramLastStocked:paramLastStocked, paramCats:knownCats, paramStockingFreq:paramStockingFreq },
       })}>
         <Text style ={textStyles.editText}> Edit Station</Text>
       </Button> : null}
@@ -37,7 +36,6 @@ const view_entry = () =>{
           key={id}
           id={id}
           name={name}
-          profilePic={profilePic}
           longitude={longitude}
           latitude={latitude}
           lastStocked={lastStocked}
