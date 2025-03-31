@@ -4,7 +4,7 @@ import { Text, Image, ScrollView, View } from 'react-native';
 import MapView, { Marker } from 'react-native-maps';
 
 import { StationEntryObject } from '@/types';
-import { Button } from '@/components';
+import { Button } from '@/components/ui/Buttons';
 import DatabaseService from '../services/DatabaseService';
 import { globalStyles, buttonStyles, textStyles, containerStyles } from '@/styles';
 import { useRouter } from 'expo-router';

@@ -2,7 +2,7 @@
   "expo": {
     "name": "Campus Cats",
     "slug": "campus_cats",
-    "version": "1.0.0",
+    "version": "0.3.1",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "myapp",
@@ -14,12 +14,24 @@
       "backgroundColor": "#ffffff"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.gatech.CampusCats",
+      "config": {
+        "googleMapsApiKey": "AIzaSyD2koOi8GGUrbCZVju5Dq8Ca_1hxHb1mb8"
+      },
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
+      },
+      "config": {
+        "googleMaps": {
+          "apiKey": "AIzaSyD2koOi8GGUrbCZVju5Dq8Ca_1hxHb1mb8"
+        }
       },
       "permissions": [
         "android.permission.CAMERA",
@@ -45,6 +57,14 @@
     ],
     "experiments": {
       "typedRoutes": true
+    },
+    "extra": {
+      "router": {
+        "origin": false
+      },
+      "eas": {
+        "projectId": "7f8a8e08-7f38-436a-b8af-44cd2d22c8e4"
+      }
     }
   }
 }
