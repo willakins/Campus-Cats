@@ -1,5 +1,5 @@
-import { Platform } from 'react-native';
-import MapView, { MapViewProps, Marker } from 'react-native-maps';
+import { MapViewProps, Marker } from 'react-native-maps';
+import { MapView } from '@/components/ui/MapView';
 
 // TODO: implement CatSighting type
 type CatSighting = any;
@@ -17,11 +17,6 @@ const SightingMapView: React.FC<SightingMapViewProps> = ({
   children,
 	...props
 }) => {
-  // Web only supports google maps
-  if (Platform.OS === 'web') {
-    props.provider = 'google';
-  }
-
   return (
     <MapView {...props}>
       {list.filter(filter).map((item: CatSighting) => (
