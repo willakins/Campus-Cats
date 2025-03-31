@@ -56,9 +56,6 @@ const Stations = () => {
             </Button>
           ))}
         </View>
-
-      
-
         <ScrollView contentContainerStyle={containerStyles.scrollView}>
           {filteredStations.map((station) => (
             <StationItem
@@ -78,5 +75,4 @@ const Stations = () => {
     );
   }
 };
-
 export default Stations;
