@@ -19,13 +19,12 @@ class StationsService {
             const stations: StationEntryObject[] = querySnapshot.docs.map((doc) => ({
                 id: doc.id,
                 name: doc.data().name,
-                profilePic: doc.data().profilePic,
                 longitude: doc.data().longitude,
                 latitude: doc.data().latitude,
                 lastStocked: doc.data().lastStocked,
                 stockingFreq: doc.data().stockingFreq,
                 knownCats: doc.data().knownCats,
-                isStocked:false
+                isStocked:StationEntryObject.calculateStocked(doc.data().lastStocked, doc.data().stockingFreq)
             }));
             setStationEntries(stations);
         } catch (error) {
@@ -37,41 +36,39 @@ class StationsService {
     * Effect: Pulls images from firestore storage, sets profile picture
     */
     public async fetchStationImages(
-        profilePic: string,
+        id: string,
+        name:string,
         setProfile: Dispatch<SetStateAction<string>>) {
         try {
-            const picRef = ref(storage, profilePic);
+            const picRef = ref(storage, `stations/${id}/${name}.jpg`);
             const url = await getDownloadURL(picRef);
             setProfile(url);
         } catch (error) {
-            console.error('Error fetching images: ', error);
         }
     }
 
     /**
      * Effect: Creates a firestore document inside of the 'stations' collection
      */
-    public async createStation(thisStation:StationEntryObject, router:Router) {
+    public async createStation(thisStation:StationEntryObject, profilePic:string, router:Router) {
         try {
             //TODO input validation
-            const profilePath = `stations/${thisStation.name}/${thisStation.name}_profilePic.jpg`;
-            const storageRef = ref(storage, profilePath);
-            const response = await fetch(thisStation.profilePic);
-            const blob = await response.blob();
-            await uploadBytes(storageRef, blob);
-
-            
-
             const stationCollectionRef = collection(db, 'stations');
             const docRef = await addDoc(stationCollectionRef, {
                 name: thisStation.name,
-                profilePic: profilePath,
                 longitude: thisStation.longitude,
                 latitude: thisStation.latitude,
                 lastStocked: thisStation.lastStocked,
                 stockingFreq: thisStation.stockingFreq,
                 knownCats: thisStation.knownCats,
             });
+
+
+            const profilePath = `stations/${docRef.id}/${thisStation.name}.jpg`;
+            const storageRef = ref(storage, profilePath);
+            const response = await fetch(profilePic);
+            const blob = await response.blob();
+            await uploadBytes(storageRef, blob);
         
             console.log('Station successfully created with ID: ', docRef.id);
             router.navigate('/stations');
@@ -85,7 +82,9 @@ class StationsService {
      */
     public async saveStation(
         thisStation: StationEntryObject, 
-        originalName: string,
+        profilePic: string,
+        profileChanged: boolean,
+        originalName:string,
         setVisible: Dispatch<SetStateAction<boolean>>, 
         router: Router
     ) {
@@ -97,37 +96,34 @@ class StationsService {
                 setVisible(true);
                 // Reference to the Firestore document using its ID
                 const stationDocRef = doc(db, 'stations', thisStation.id);
-                
                 await updateDoc(stationDocRef, { 
                     knownCats: thisStation.knownCats,
                     name: thisStation.name,
                     lastStocked: thisStation.lastStocked,
                     latitude: thisStation.latitude,
                     longitude:thisStation.longitude,
-                    profilePic:thisStation.profilePic,
                     stockingFreq:thisStation.stockingFreq
                 });
-                if (originalName != thisStation.name) {
-                    const oldFolderRef = ref(storage, `stations/${originalName}`);
-                    const oldPhotos = await listAll(oldFolderRef);
-            
-                    for (const item of oldPhotos.items) {
-                        const oldPath = item.fullPath; // Full path of old image
-                        const newPath = oldPath.replace(`stations/${originalName}`, `stations/${thisStation.name}`); // New path
-            
-                        // Download old image data
-                        const url = await getDownloadURL(item);
-                        const response = await fetch(url);
-                        const blob = await response.blob();
-            
-                        // Upload to new location
-                        const newImageRef = ref(storage, newPath);
-                        await uploadBytes(newImageRef, blob);
-            
-                        // Delete old image
-                        await deleteObject(item);
+                if (profileChanged) {
+                    //Delete old profile 
+                    const oldProfilePath = `stations/${stationDocRef.id}/${originalName}.jpg`;
+                    const oldStorageRef = ref(storage, oldProfilePath);
+
+                    try {
+                        await deleteObject(oldStorageRef);
+                        console.log('Old profile picture deleted successfully.');
+                    } catch (deleteError) {
+                        console.warn('Failed to delete old profile picture (might not exist):', deleteError);
                     }
+
+                    //Upload new profile
+                    const profilePath = `stations/${stationDocRef.id}/${thisStation.name}.jpg`;
+                    const storageRef = ref(storage, profilePath);
+                    const response = await fetch(profilePic);
+                    const blob = await response.blob();
+                    await uploadBytes(storageRef, blob);
                 }
+
         
             } catch (error) {
                 console.error('Error updating station:', error);
@@ -145,6 +141,7 @@ class StationsService {
      */
     public async deleteStation(
         id: string, 
+        photoUrl:string,
         setVisible: Dispatch<SetStateAction<boolean>>, 
         router: Router
     ) {
@@ -154,7 +151,7 @@ class StationsService {
             [
                 {
                 text: 'Delete Forever',
-                onPress: async () => await this.confirmDeleteStationEntry(id, setVisible, router),
+                onPress: async () => await this.confirmDeleteStationEntry(id, photoUrl, setVisible, router),
                 },
                 {
                 text: 'Cancel',
@@ -166,24 +163,53 @@ class StationsService {
     }
 
     /**
+    * Effect: Stocks a station
+    */
+    public async stockStation(thisStation: StationEntryObject, router:Router,  setVisible: Dispatch<SetStateAction<boolean>>, ) {
+        try{
+            setVisible(true);
+            const stationDocRef = doc(db, 'stations', thisStation.id);
+            thisStation.lastStocked = (new Date()).toISOString().split('T')[0];
+            await updateDoc(stationDocRef, { 
+                knownCats: thisStation.knownCats,
+                name: thisStation.name,
+                lastStocked: thisStation.lastStocked,
+                latitude: thisStation.latitude,
+                longitude:thisStation.longitude,
+                stockingFreq:thisStation.stockingFreq
+            });
+        } catch(error) {} finally {
+            setVisible(false);
+            setTimeout(() => {
+                router.navigate('/stations');
+              }, 500);
+        }
+    }
+
+    /**
     * Private 1
     */
     private async confirmDeleteStationEntry(
         id: string, 
+        photoUrl:string,
         setVisible: Dispatch<SetStateAction<boolean>>, 
         router: Router) {
         try {
             setVisible(true);
             await deleteDoc(doc(db, 'stations', id)); //Delete firestore document
 
+            if (photoUrl) {
+                const imageRef = ref(storage, photoUrl);
+                await deleteObject(imageRef);
+            }
     
             alert('Station deleted successfully!');
-            router.navigate('/stations');
         
         } catch (error) {
             alert(error);
         } finally {
             setVisible(false);
+            router.navigate('/stations');
         }
     }
 }

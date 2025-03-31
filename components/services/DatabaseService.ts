@@ -94,7 +94,6 @@ class DatabaseService {
    * Effect: Pulls cat sightings from firestore and stores them in Marker friendly format
    */
   public async fetchPins(setPins:Dispatch<SetStateAction<CatSightingObject[]>>, setMapKey:Dispatch<SetStateAction<number>>) {
-    const querySnapshot = await getDocs(collection(db, 'cat-sightings'));
     await DatabaseService.sightingsService.fetchPins(setPins, setMapKey);
   }
 
@@ -291,8 +290,15 @@ class DatabaseService {
   /**
    * Effect: Adds a new station to firebase
    */
-  public async createStation(thisStation:StationEntryObject, router:Router) {
-    await DatabaseService.stationsService.createStation(thisStation, router);
+  public async createStation(thisStation:StationEntryObject, profilePic:string, router:Router) {
+    await DatabaseService.stationsService.createStation(thisStation, profilePic, router);
+  }
+
+  /**
+   * Effect: Stocks a station
+   */
+  public async stockStation(thisStation: StationEntryObject, router:Router,  setVisible: Dispatch<SetStateAction<boolean>>, ) {
+    await DatabaseService.stationsService.stockStation(thisStation, router, setVisible);
   }
 
   /**
@@ -300,11 +306,13 @@ class DatabaseService {
    */
   public async saveStation(
     thisStation: StationEntryObject, 
+    profilePic: string,
+    profileChanged: boolean,
     originalName: string,
     setVisible: Dispatch<SetStateAction<boolean>>, 
     router: Router
   ) {
-    await DatabaseService.stationsService.saveStation(thisStation, originalName, setVisible, router);
+    await DatabaseService.stationsService.saveStation(thisStation, profilePic, profileChanged, originalName, setVisible, router);
   }
 
   /**
@@ -312,10 +320,11 @@ class DatabaseService {
    */
   public async deleteStation(
     id: string, 
+    photoUrl:string,
     setVisible: Dispatch<SetStateAction<boolean>>, 
     router: Router
   ) {
-    await DatabaseService.stationsService.deleteStation(id, setVisible, router);
+    await DatabaseService.stationsService.deleteStation(id, photoUrl, setVisible, router);
   }
 
   /**
@@ -402,9 +411,10 @@ class DatabaseService {
    * Effect: Pulls images from firestore storage, sets profile picture
    */
   public async fetchStationImages(
-    profilePic: string,
+    id: string,
+    name:string,
     setProfile: Dispatch<SetStateAction<string>>) {
-      await DatabaseService.stationsService.fetchStationImages(profilePic, setProfile);
+      await DatabaseService.stationsService.fetchStationImages(id, name, setProfile);
   }
 
   /**

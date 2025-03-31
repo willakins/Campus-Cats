@@ -22,10 +22,10 @@ const create_station = () =>{
   const [longitude, setLongitude] = useState<number>(-84.3963);
   const [latitude, setLatitude] = useState<number>(33.7756);
   const [lastStocked, setLastStocked] = useState<string>('');
-  const [stockingFreq, setStockingFreq] = useState<number>(7);
+  const [stockingFreq, setStockingFreq] = useState<string>("7");
   const [cats, setCats] = useState<string>('');
   const thisStation:StationEntryObject = 
-    new StationEntryObject('-1', name, profile, longitude, latitude, lastStocked, stockingFreq, cats);
+    new StationEntryObject('-1', name, longitude, latitude, lastStocked, stockingFreq, cats);
 
   const database = DatabaseService.getInstance();
   
@@ -53,7 +53,7 @@ const create_station = () =>{
       <Button style={buttonStyles.logoutButton} onPress={() => router.back()}>
         <Ionicons name="arrow-back-outline" size={25} color="#fff" />
       </Button>
-      <Button style={buttonStyles.editButton} onPress={() => database.createStation(thisStation, router)}>
+      <Button style={buttonStyles.editButton} onPress={() => database.createStation(thisStation, profile, router)}>
         <Text style={textStyles.editText}> Create Station</Text>
       </Button>
       <ScrollView contentContainerStyle={containerStyles.entryContainer}>
@@ -92,9 +92,9 @@ const create_station = () =>{
             </View>
           <Text style={textStyles.subHeading2}>How Often Does This Station Need to be restocked? (in days)</Text>
           <TextInput
-            placeholder={JSON.stringify(stockingFreq)}
+            placeholder={stockingFreq}
             placeholderTextColor="#888"
-            onChangeText={(text) => setStockingFreq(parseInt(text))}
+            onChangeText={(text) => setStockingFreq(text)}
             style={textStyles.input}/>
           <Text style={textStyles.subHeading2}>Cats Known to Frequent This Station (optional)</Text>
           <TextInput
