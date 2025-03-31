@@ -13,11 +13,11 @@ import MapView, { LatLng, Marker } from 'react-native-maps';
 
 const edit_station = () => {
   const router = useRouter();
-  const { paramId, paramName, paramPic, paramLong, paramLat, paramStocked, paramCats, paramLastStocked, paramStockingFreq} = useLocalSearchParams();
+  const { paramId, paramName, paramLong, paramLat, paramStocked, paramCats, paramLastStocked, paramStockingFreq} = useLocalSearchParams();
   const id = paramId as string;
   const [name, setName] = useState<string>(paramName as string);
   const originalName = name;
-  const [profilePic, setProfile] = useState<string>(paramPic as string);
+  const [profilePic, setProfile] = useState<string>('');
   const [longitude, setLongitude] = useState<number>(parseFloat(paramLong as string));
   const [latitude, setLatitude] = useState<number>(parseFloat(paramLat as string));
   const lastStocked = paramLastStocked as string;
