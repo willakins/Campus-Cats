@@ -14,8 +14,8 @@ const view_entry = () =>{
   const { paramId, paramName, paramLong, paramLat, paramStocked, paramCats, paramLastStocked, paramStockingFreq} = useLocalSearchParams();
   const id = paramId as string;
   const name = paramName as string;
-  const longitude = (paramLong as string) as unknown as number;
-  const latitude = (paramLat as string) as unknown as number;
+  const longitude = +(paramLong as string);
+  const latitude = +(paramLat as string);
   const lastStocked = paramLastStocked as string;
   const stockingFreq = paramStockingFreq as string;
   const knownCats = paramCats as string;
