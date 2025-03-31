@@ -4,6 +4,28 @@
 
 # Release Notes
 
+# Version 0.4.0
+
+## Features
+
+- **New Station Management:** Introduced a page for adding new stations, integrated with Firestore.
+- **Edit Station Records:** Developed functionality to edit station records, ensuring seamless Firestore integration.
+- **Station Information Display:** Implemented a view page to display all stored station information.
+- **Enhanced Station Details:** Added restocking data to station details, along with filters and sorting options for improved navigation.
+- **Responsive 404 Error Page:** Designed a visually clean and responsive 404 error page.
+- **DateTimeInput Consistency:** Customized the DateTimeInput component for uniformity across the user interface.
+- **Improved Login Error Messages:** Enhanced login error messages to be clear and user-friendly.
+
+## Bug Fixes
+
+- **Android Login Accessibility:** Ensured the login button remains accessible on Android devices, even when the keyboard is active.
+- **Android Date Picker Display:** Resolved display issues with the date picker on Android devices.
+- **Report Button Alignment:** Corrected the alignment of the report button across all devices.
+
+## Known Issues
+
+- **Homepage Map Optimization:** The homepage map currently makes more database queries than necessary; however, performance is not noticeably impacted.
+
 ## Version 0.3.0
 
 ### Features
