@@ -13,7 +13,7 @@ import MapView, { LatLng, Marker } from 'react-native-maps';
 
 const edit_station = () => {
   const router = useRouter();
-  const { paramId, paramName, paramLong, paramLat, paramStocked, paramCats, paramLastStocked, paramStockingFreq} = useLocalSearchParams();
+  const { paramId, paramName, paramLong, paramLat, paramCats, paramLastStocked, paramStockingFreq} = useLocalSearchParams();
   const id = paramId as string;
   const [name, setName] = useState<string>(paramName as string);
   const originalName = name;
@@ -23,7 +23,6 @@ const edit_station = () => {
   const lastStocked = paramLastStocked as string;
   const [stockingFreq, setStockingFreq] = useState<string>(paramStockingFreq as string);
   const [knownCats, setKnownCats] = useState<string>(paramCats as string);
-  const isStocked = paramStocked === "true";
   const [visible, setVisible] = useState<boolean>(false);
   const database = DatabaseService.getInstance();
   const thisStation = new StationEntryObject(id, name, longitude, latitude, lastStocked, stockingFreq, knownCats);
