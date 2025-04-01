@@ -1,0 +1,13 @@
+Editing the firebase rules from here is incredibly easy.
+
+1.) Find the file firestore.rules in JIC-4331-SCRAPCATS
+
+(doesn't work for regular storage yet I'll do that soon sorry)
+
+2.) Edit the rules as needed
+
+3.) Make sure you have run npm install
+
+4.) run "firebase deploy --only firestore"
+
+And that should be it I believe, at least it works like that on my machine
