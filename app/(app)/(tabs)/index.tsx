@@ -43,8 +43,6 @@ const HomeScreen = () => {
     }})
   };
 
-  // TODO: Create a Google Cloud API Project
-  // https://docs.expo.dev/versions/latest/sdk/map-view/#deploy-app-with-google-maps
   return (
     <View style={globalStyles.homeScreen}>
       <View style={containerStyles.buttonGroup}>
