@@ -1,10 +1,11 @@
 import { useState } from 'react';
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Text, TouchableOpacity, View } from 'react-native';
 
 import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
 
 import { containerStyles, textStyles } from '@/styles';
 import { SetState } from '@/utils';
+import { ErrorText } from './ErrorText';
 
 type DateTimeInputProps = {
   date: Date;
@@ -27,17 +28,18 @@ export const DateTimeInput: React.FC<DateTimeInputProps> = ({
   };
 
   return (
-    <View style={containerStyles.dateInput}>
-      <Text style={textStyles.sliderText}>
-        {date ? date.toDateString() : 'Select Sighting Date'}
-      </Text>
-      <TouchableOpacity  onPress={() => setShowPicker(true)}>
+    <TouchableOpacity onPress={() => setShowPicker(true)}>
+      <View style={containerStyles.dateInput}>
+        <Text style={textStyles.sliderText}>
+          {date ? date.toDateString() : 'Select Sighting Date'}
+        </Text>
         {showPicker ? <DateTimePicker
           value={date || new Date()}
           mode="date"
           display="default"
           onChange={onChange}/> : null}
-      </TouchableOpacity>
-      {error && <Text style={textStyles.errorText}>{error}</Text>}
-    </View>
+        <ErrorText error={error} />
+      </View>
+    </TouchableOpacity>
+  );
 };
