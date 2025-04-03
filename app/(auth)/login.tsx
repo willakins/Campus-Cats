@@ -1,7 +1,12 @@
-import { useRouter } from 'expo-router';
+import { useState } from 'react';
+import { KeyboardAvoidingView, Image } from 'react-native';
 
-import { LoginForm } from '@/components';
+import { useRouter } from 'expo-router';
+import { Snackbar } from 'react-native-paper';
+
+import { LoginForm } from '@/forms';
 import { useAuth } from '@/providers';
+import { containerStyles, globalStyles } from '@/styles';
 
 const LoginScreen = () => {
   const { login } = useAuth();
@@ -13,12 +18,16 @@ const LoginScreen = () => {
   };
 
   return (
-    <LoginForm
-      onSubmit={loginUser}
-      type='login'
-      onSwitchType={() => router.push('/create-account')}
-      forgotPassword
-    />
+    <KeyboardAvoidingView style={globalStyles.screen} behavior="padding">
+      <Image source={require('@/assets/images/campus_cats_logo.png')} style={containerStyles.logo}/>
+      <LoginForm
+        onSubmit={loginUser}
+        type="login"
+        onSwitchType={() => router.push('/create-account')}
+        forgotPassword
+      />
+    </KeyboardAvoidingView>
   );
 };
+
 export default LoginScreen;

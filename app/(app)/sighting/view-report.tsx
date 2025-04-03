@@ -9,11 +9,12 @@ import DatabaseService from '@/components/services/DatabaseService';
 import { useAuth } from '@/providers';
 import { Ionicons } from '@expo/vector-icons';
 import { globalStyles, buttonStyles, textStyles, containerStyles } from '@/styles';
+import { CatSightingObject } from '@/types';
 
 const CatSightingScreen = () => {
   const router = useRouter();
   const { docId, catDate, catFed, catHealth, catInfo, catPhoto, catLongitude, catLatitude, catName} = useLocalSearchParams();
-
+  
 
   const docRef:string = docId as string;
   const [date, setDate] = useState<Date>(new Date(JSON.parse(catDate as string)));
@@ -28,6 +29,7 @@ const CatSightingScreen = () => {
   const { signOut, user } = useAuth();
   const isAdmin = user.role === 1 || user.role === 2;
   const database = DatabaseService.getInstance();
+  const thisSighting = new CatSightingObject(docRef, name, info, photoUrl, fed, health, date, longitude, latitude);
 
   var location:LatLng = {
     latitude: latitude,
@@ -39,7 +41,7 @@ const CatSightingScreen = () => {
   }, []);
 
   const saveSighting = () => {
-    database.saveSighting(docRef, name, info, photoUrl, fed, health, date, longitude, latitude);
+    database.saveSighting(thisSighting);
     router.push('/(app)/(tabs)');
   }
 

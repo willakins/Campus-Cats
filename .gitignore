@@ -23,3 +23,9 @@ web-build/
 
 expo-env.d.ts
 # @end expo-cli
+
+# We intend to use prebuild
+/android
+/ios
+# Store APKs here
+/bin
