@@ -1,38 +1,11 @@
-import * as ImagePicker from 'expo-image-picker';
-import { PermissionResponse } from 'expo-modules-core';
-import { getDownloadURL, ref, uploadBytes } from 'firebase/storage';
+import { getDownloadURL, ref, uploadBytes, UploadResult } from 'firebase/storage';
 import 'react-native-get-random-values'; // Needed for uuid
 import { v4 as uuidv4 } from 'uuid';
 
 import { storage } from '@/config/firebase';
 
-type PickerOptionType = ImagePicker.ImagePickerOptions;
-type PickerResultType = ImagePicker.ImagePickerResult;
-type PickerFunctionType = (options?: PickerOptionType) => Promise<PickerResultType>;
-
-// Use a file picker
-export const getMediaFromPicker = async ({
-  requestPermissions,
-  pickMedia,
-  pickMediaOptions,
-  permissionsErrorMessage = 'Sorry, we need permissions to make this work!',
-}: {
-  requestPermissions: () => Promise<PermissionResponse>;
-  pickMedia: PickerFunctionType;
-  pickMediaOptions?: PickerOptionType;
-  permissionsErrorMessage: string;
-}): Promise<ImagePicker.ImagePickerAsset[] | null> => {
-  const { status } = await requestPermissions();
-  if (status !== 'granted') {
-    alert(permissionsErrorMessage);
-  }
-
-  const result = await pickMedia(pickMediaOptions);
-  return !result.canceled ? result.assets : null;
-};
-
 // Upload a file
-export const uploadFromURI = async (uploadDir: string, uri: string, filename?: string | undefined) => {
+export const uploadFromURI = async (uploadDir: string, uri: string, filename?: string | undefined): Promise<UploadResult> => {
   // Get a unique ref
   const filename_ = filename || uuidv4();
   const filepath = uploadDir + filename_;
