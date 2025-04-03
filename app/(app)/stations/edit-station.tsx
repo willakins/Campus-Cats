@@ -1,82 +1,126 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { Image, KeyboardAvoidingView, Platform, ScrollView, Text, View } from 'react-native';
 
 import { Ionicons } from '@expo/vector-icons';
-import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Snackbar } from 'react-native-paper';
 
 import { Button, TextInput, CameraButton, CatalogImageHandler } from '@/components';
 import DatabaseService from '@/components/services/DatabaseService';
 import { globalStyles, buttonStyles, textStyles, containerStyles } from '@/styles';
+import { StationEntryObject } from '@/types/StationEntryObject';
+import MapView, { LatLng, Marker } from 'react-native-maps';
 
 const edit_station = () => {
   const router = useRouter();
-  const { paramId, paramName, paramInfo} = useLocalSearchParams();
+  const { paramId, paramName, paramLong, paramLat, paramCats, paramLastStocked, paramStockingFreq} = useLocalSearchParams();
   const id = paramId as string;
-  const oldName = paramName as string;
   const [name, setName] = useState<string>(paramName as string);
-  const [info, setInfo] = useState<string>(paramInfo as string);
+  const originalName = name;
+  const [profilePic, setProfile] = useState<string>('');
+  const [longitude, setLongitude] = useState<number>(parseFloat(paramLong as string));
+  const [latitude, setLatitude] = useState<number>(parseFloat(paramLat as string));
+  const lastStocked = paramLastStocked as string;
+  const [stockingFreq, setStockingFreq] = useState<string>(paramStockingFreq as string);
+  const [knownCats, setKnownCats] = useState<string>(paramCats as string);
   const [visible, setVisible] = useState<boolean>(false);
-
-  const [profilePicUrl, setProfile] = useState<string>('');
-  const [extraPics, setImageUrls] = useState<string[]>([]);
-  const [newPics, setNewPics] = useState<{ url: string; name: string }[]>([]);
-  const [newPhotosAdded, setNewPhotos] = useState<boolean>(false);
   const database = DatabaseService.getInstance();
-  const imageHandler = new CatalogImageHandler({ 
-    setVisible,  
-    setImageUrls, 
-    setNewPics, 
-    setNewPhotos,
-    setProfile,
-    name, 
-    profilePicUrl});
-    
-  useFocusEffect(
-    useCallback(() => {
-      database.fetchCatImages(name, setProfile, setImageUrls);
-    }, [profilePicUrl])
-  );
+  const thisStation = new StationEntryObject(id, name, longitude, latitude, lastStocked, stockingFreq, knownCats);
+  const [profileChanged, setChanged] = useState<boolean>(false);
+  var location:LatLng = {
+      latitude: latitude,
+      longitude: longitude,
+  };
+  
+
+  useEffect(() => {
+    database.fetchStationImages(id, name, setProfile);
+  }, []);
+
+  const changeName = (text:string) => {
+    setName(text);
+    setChanged(true);
+  }
+
+  const changeFreq = (text:string) => {
+    setStockingFreq(text);
+    setChanged(true);
+  }
+
+  const changeCats = (text:string) => {
+    setKnownCats(text)
+    setChanged(true);
+  };
+
+  const changePic = () => {
+    database.deleteStation(id, profilePic, setVisible, router);
+    setChanged(true);
+  }
+
+  const handleMapPress = (event: { nativeEvent: { coordinate: { latitude: any; longitude: any; }; }; }) => {
+    const { latitude, longitude } = event.nativeEvent.coordinate;
+    setLatitude(latitude);
+    setLongitude(longitude);
+  };
 
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === 'ios' ? 'padding' : undefined} // iOS specific behavior
     >
-      <Button style={buttonStyles.logoutButton} onPress={() => router.push({
-        pathname: '/stations/view-station', params: { paramId:id, paramName:name, paramInfo:info }, })}>
+      <Button style={buttonStyles.logoutButton} onPress={router.back}>
         <Ionicons name="arrow-back-outline" size={25} color="#fff" />
       </Button>
       <Button style={buttonStyles.editButton} 
-      onPress={() => database.handleStationSave(name, oldName, info, newPics, newPhotosAdded, id, setVisible, router)}>
-        <Text style ={textStyles.editText}> Save Entry</Text>
+      onPress={() => database.saveStation(thisStation, profilePic, profileChanged, originalName, setVisible, router)}>
+        <Text style ={textStyles.editText}> Save Station</Text>
       </Button>
       <ScrollView contentContainerStyle={containerStyles.entryContainer}>
         <Text style={textStyles.title}>Edit A Station Entry</Text>
-        {profilePicUrl ? (<Image source={{ uri: profilePicUrl }} style={containerStyles.headlineImage} resizeMode="contain" />) : 
+        {profilePic ? (<Image source={{ uri: profilePic }} style={containerStyles.headlineImage} resizeMode="contain" />) : 
           <Text style={textStyles.title}>Loading image...</Text>}
           <View style={containerStyles.extraPicsContainer}>
           <Snackbar visible={visible} onDismiss={() => setVisible(false)}>
                 Saving...
           </Snackbar>
         </View>
+        <MapView
+              style={containerStyles.mapContainer}
+              initialRegion={{
+                latitude: 33.7756,
+                longitude: -84.3963,
+                latitudeDelta: 0.01,
+                longitudeDelta: 0.01,
+              }}
+              onPress={handleMapPress} // This updates the location correctly
+            >
+              {location ? <Marker coordinate={location} /> : null}
+            </MapView>
         <View style={containerStyles.loginContainer}>
           <Text style={textStyles.headline}>Station Name</Text>
           <TextInput 
             value={name}
             placeholderTextColor = "#888"
-            onChangeText={setName} 
+            onChangeText={changeName} 
             style={textStyles.input} />
+          <Text style={textStyles.headline}>Days Between Restocking</Text>
+          <TextInput
+            value={stockingFreq}
+            placeholderTextColor = "#888"
+            onChangeText={changeFreq} 
+            style={textStyles.input}/>
           <Text style={textStyles.headline}>Cats Known to Frequent This Station (optional)</Text>
           <TextInput
-            value={info}
+            value={knownCats}
             placeholderTextColor = "#888"
-            onChangeText={setInfo} 
+            onChangeText={changeCats} 
             style={textStyles.descInput} 
             multiline={true}/>
         </View>
         <Text style={textStyles.headline}> Change Profile Photo </Text>
-        <CameraButton onPhotoSelected={imageHandler.addPhoto}></CameraButton>
-        <Button style={buttonStyles.deleteButton}onPress={() => database.deleteCatalogEntry(name, id, setVisible, router)}> Delete Catalog Entry</Button>
+        <View style={containerStyles.cameraView}>
+          <CameraButton onPhotoSelected={setProfile}></CameraButton>
+        </View>
+        <Button style={buttonStyles.deleteButton}onPress={changePic}> Delete Station Entry</Button>
       </ScrollView>
     </KeyboardAvoidingView>
   );

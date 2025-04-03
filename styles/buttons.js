@@ -47,8 +47,7 @@ const buttonStyles = StyleSheet.create({
     reportButton: {
         position: 'absolute', // Position the button absolutely
         bottom: 20,           // Adjust distance from the bottom of the screen
-        left: '57%',          // Center horizontally
-        transform: [{ translateX: -75 }], // Offset to make the button centered (since width is 150)
+        alignSelf: 'center',
         backgroundColor: '#007bff', // Button background color
         paddingVertical: 10,  // Vertical padding
         paddingHorizontal: 20, // Horizontal padding
@@ -89,6 +88,22 @@ const buttonStyles = StyleSheet.create({
         margin: 5,
         display: 'flex',
         justifyContent: 'center',
+      },
+      refillButton: {
+        backgroundColor: '#333', /* Green color for a fresher, more inviting look */
+        paddingVertical: 12, /* More consistent vertical padding */
+        paddingHorizontal: 24, /* Added horizontal padding for a better balance */
+        borderRadius: 30, /* More rounded edges */
+        alignItems: 'center',
+        justifyContent: 'center',
+        width: '50%', /* Button takes up 50% of the container width */
+        margin: 10, /* Increased margin for better spacing */
+        display: 'flex',
+        elevation: 5, /* Add a subtle shadow effect for a 3D look */
+        shadowColor: '#000', /* Shadow color for iOS */
+        shadowOffset: { width: 0, height: 4 }, /* Shadow offset for iOS */
+        shadowOpacity: 0.1, /* Slight shadow for a soft look */
+        shadowRadius: 6, /* Radius for the shadow */
       },
       profileButton: {
         backgroundColor: '#007bff',
