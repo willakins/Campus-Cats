@@ -1,20 +1,20 @@
+import { SafeAreaView } from 'react-native';
+
 import { Slot } from 'expo-router';
 import { Provider as PaperProvider } from 'react-native-paper';
 
 import { AuthProvider } from '@/providers';
-import { Platform, SafeAreaView } from 'react-native';
 import { globalStyles } from '@/styles';
 
 const RootLayout = () => {
   return (
-    <PaperProvider>
+    <AuthProvider>
       <SafeAreaView style = {globalStyles.safeView}>
-        <AuthProvider>
-          {Platform.OS === 'web' && <script src="https://maps.googleapis.com/maps/api/js?key=<AIzaSyD2koOi8GGUrbCZVju5Dq8Ca_1hxHb1mb8>"></script>}
+        <PaperProvider>
           <Slot />
-        </AuthProvider>
+        </PaperProvider>
       </SafeAreaView>
-    </PaperProvider>
+    </AuthProvider>
   );
 };
 export default RootLayout;

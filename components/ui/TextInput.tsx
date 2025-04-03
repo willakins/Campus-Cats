@@ -1,8 +1,8 @@
 import { Control, FieldValues, Path, useController } from 'react-hook-form';
 import { StyleProp, Text, TextInput as RNTextInput, TextInputProps as RNTextInputProps, TextStyle, View } from 'react-native';
 import { globalStyles, buttonStyles, textStyles, containerStyles } from '@/styles';
-
 import { RuleType } from '@/types';
+import { ErrorText } from './ErrorText';
 
 export type TextInputProps = React.PropsWithoutRef<RNTextInputProps> & {
   label?: string;
@@ -31,25 +31,7 @@ export const TextInput: React.FC<TextInputProps> = ({
         style={style_}
         {...props}
       />
-      {error && <Text style={textStyles.errorText}>{error}</Text>}
+      <ErrorText error={error} />
     </View>
-  );
-};
-
-export const ControlledInput = <T extends FieldValues>({
-  control,
-  name,
-  rules,
-  ...props
-}: ControlledInputProps<T>) => {
-  const { field, fieldState } = useController({ control, name, rules });
-  return (
-    <TextInput
-      onChangeText={field.onChange}
-      value={field.value || ''}
-      {...props}
-      error={fieldState.error?.message}
-      style={textStyles.input}
-    />
   );
 };
