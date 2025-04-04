@@ -8,7 +8,7 @@ import { AnnouncementEntryObject } from '@/types';
 import DatabaseService from '../services/DatabaseService';
 import { globalStyles, buttonStyles, textStyles, containerStyles } from '@/styles';
 
-export const AnnouncementItem: React.FC<AnnouncementEntryObject> = ({ id, title, info, photos }) => {
+export const AnnouncementItem: React.FC<AnnouncementEntryObject> = ({ id, title, info, createdAt, createdBy }) => {
   const router = useRouter();
   const database = DatabaseService.getInstance();
 
@@ -16,7 +16,7 @@ export const AnnouncementItem: React.FC<AnnouncementEntryObject> = ({ id, title,
     <Button style={containerStyles.entryContainer} onPress={() => 
         router.push({
             pathname: '/announcements/view-ann',
-            params: { paramId:id, paramTitle:title, paramInfo:info, paramPhotos:photos },
+            params: { paramId:id, paramTitle:title, paramInfo:info, paramCreatedAt:createdAt, paramCreatedBy:createdBy },
           })
     }>
       <View style={containerStyles.entryElements}>

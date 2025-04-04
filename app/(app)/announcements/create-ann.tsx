@@ -16,11 +16,6 @@ const create_ann = () =>{
   const [title, setTitle] = useState<string>('');
   const [photos, setPhotos] = useState<string[]>([]);
   const database = DatabaseService.getInstance();
-  
-  const handleCreate = async () => {
-    await database.handleAnnouncementCreate(title, info, photos, setVisible);
-    router.push('/announcements');
-  }
 
   const addPhoto = (newPhotoUri: string) => {
     setPhotos((prevPics) => [
@@ -30,7 +25,7 @@ const create_ann = () =>{
   };
 
   const deleteImage = (imageUri: string) => {
-    setPhotos((prevPhotos) => prevPhotos.filter((pic) => pic !== imageUri));
+    
   };
 
   return (
@@ -38,7 +33,7 @@ const create_ann = () =>{
       <Button style={buttonStyles.logoutButton} onPress={() => router.push('/announcements')}>
         <Ionicons name="arrow-back-outline" size={25} color="#fff" />
       </Button>
-      <Button style={buttonStyles.editButton} onPress={handleCreate}>
+      <Button style={buttonStyles.editButton} onPress={() => database.handleAnnouncementCreate(title, info, photos, setVisible, router)}>
         <Text style={textStyles.editText}> Create Announcement</Text>
       </Button>
       <ScrollView contentContainerStyle={containerStyles.entryContainer}>
@@ -63,7 +58,7 @@ const create_ann = () =>{
           {photos ? (photos.map((pic, index) => (
           <View key={index} style={containerStyles.imageWrapper}>
             <Image source={{ uri: pic }} style={containerStyles.extraPic} />
-            <Button style={buttonStyles.deleteButton} onPress={() => deleteImage(pic)}>
+            <Button style={buttonStyles.deleteButton} onPress={() => setPhotos((prevPhotos) => prevPhotos.filter((pic) => pic !== imageUri))}>
               <Text style={textStyles.deleteButtonText}>Delete</Text>
             </Button>
           </View>

@@ -250,15 +250,20 @@ class DatabaseService {
   /**
    * Effect: pulls announcement images from storage
    */
-  public async fetchAnnouncementImages(folderPath:string, setImageUrls:Dispatch<SetStateAction<string[]>>) {
-    await DatabaseService.announcementsService.fetchAnnouncementImages(folderPath, setImageUrls);
+  public async fetchAnnouncementImages(id:string, setImageUrls:Dispatch<SetStateAction<string[]>>) {
+    await DatabaseService.announcementsService.fetchAnnouncementImages(id, setImageUrls);
   }
 
   /**
    * Effect: creates an announcement and stores it in firestore
    */
-  public async handleAnnouncementCreate(title:string, info:string, photos:string[], setVisible:Dispatch<SetStateAction<boolean>>) {
-    await DatabaseService.announcementsService.handleAnnouncementCreate(title, info, photos, setVisible);
+  public async handleAnnouncementCreate(
+    title:string, 
+    info:string, 
+    photos:string[], 
+    setVisible:Dispatch<SetStateAction<boolean>>,
+    router: Router) {
+    await DatabaseService.announcementsService.handleAnnouncementCreate(title, info, photos, setVisible, router);
   }
 
   /**
@@ -276,8 +281,8 @@ class DatabaseService {
   /**
    * Effect: Deletes an announcement from database
    */
-  public async deleteAnnouncement(photoPath:string, id:string) {
-    await DatabaseService.announcementsService.deleteAnnouncement(photoPath, id);
+  public async deleteAnnouncement(id:string) {
+    await DatabaseService.announcementsService.deleteAnnouncement(id);
   }
 
   /**
