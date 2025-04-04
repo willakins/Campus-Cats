@@ -16,7 +16,7 @@ export const AnnouncementItem: React.FC<AnnouncementEntryObject> = ({ id, title,
     <Button style={containerStyles.entryContainer} onPress={() => 
         router.push({
             pathname: '/announcements/view-ann',
-            params: { paramId:id, paramTitle:title, paramInfo:info, paramCreatedAt:createdAt, paramCreatedBy:createdBy },
+            params: { id:id, title:title, info:info, createdAt:createdAt, createdBy:createdBy },
           })
     }>
       <View style={containerStyles.entryElements}>

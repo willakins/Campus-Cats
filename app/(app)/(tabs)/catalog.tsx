@@ -30,10 +30,19 @@ const Catalog = () => {
       <ScrollView contentContainerStyle={containerStyles.scrollView}>
         {catalogEntries.map((entry) => (
           <CatalogItem
-            key={entry.id}
-            id={entry.id}
-            name={entry.name}
-            info={entry.info}
+          id={entry.id}
+          name={entry.name}
+          desc={entry.desc}
+          colorPattern={entry.colorPattern}
+          behavior={entry.behavior}
+          yearsRecorded={entry.yearsRecorded}
+          AoR={entry.AoR}
+          currentStatus={entry.currentStatus}
+          furLength={entry.furLength}
+          furPattern={entry.furPattern}
+          tnr={entry.tnr}
+          sex={entry.sex}
+          credits={entry.credits}
           />
         ))}
       </ScrollView>

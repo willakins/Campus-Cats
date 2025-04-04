@@ -7,10 +7,12 @@ import { Snackbar } from 'react-native-paper';
 import { Button, CameraButton, TextInput } from '@/components';
 import DatabaseService from '@/components/services/DatabaseService';
 import { globalStyles, buttonStyles, textStyles, containerStyles } from '@/styles';
+import { useAuth } from '@/providers/AuthProvider';
 
 
 const create_ann = () =>{
   const router = useRouter();
+  const { signOut, user } = useAuth();
   const [visible, setVisible] = useState<boolean>(false);
   const [info, setInfo] = useState<string>('');
   const [title, setTitle] = useState<string>('');
@@ -22,7 +24,7 @@ const create_ann = () =>{
       <Button style={buttonStyles.logoutButton} onPress={() => router.push('/announcements')}>
         <Ionicons name="arrow-back-outline" size={25} color="#fff" />
       </Button>
-      <Button style={buttonStyles.editButton} onPress={() => database.handleAnnouncementCreate(title, info, photos, setVisible, router)}>
+      <Button style={buttonStyles.editButton} onPress={() => database.handleAnnouncementCreate(title, info, photos, user, setVisible, router)}>
         <Text style={textStyles.editText}> Create Announcement</Text>
       </Button>
       <ScrollView contentContainerStyle={containerStyles.entryContainer}>

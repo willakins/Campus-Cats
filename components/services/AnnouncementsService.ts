@@ -1,6 +1,6 @@
 import { db, storage } from "@/config/firebase";
 import { useAuth } from "@/providers/AuthProvider";
-import { AnnouncementEntryObject } from "@/types";
+import { AnnouncementEntryObject, User } from "@/types";
 import { Router } from "expo-router";
 import { addDoc, collection, deleteDoc, doc, getDocs, serverTimestamp, updateDoc } from "firebase/firestore";
 import { deleteObject, getDownloadURL, listAll, ref, uploadBytes } from "firebase/storage";
@@ -22,8 +22,8 @@ class AnnouncementsService {
                 id: doc.id,
                 title: doc.data().title,
                 info: doc.data().info,
-                createdAt: doc.data().createdAt,
-                createdBy: doc.data().createdBy,
+                createdAt: this.getDateString(doc.data().createdAt.toDate()),
+                createdBy: doc.data().createdBy.email,
             }));
             setAnns(anns);
         } catch (error) {
@@ -38,6 +38,7 @@ class AnnouncementsService {
         title:string, 
         info:string, 
         photos:string[], 
+        user:User,
         setVisible:Dispatch<SetStateAction<boolean>>,
         router: Router) {
         try {
@@ -46,11 +47,10 @@ class AnnouncementsService {
                 setVisible(true);
     
                 // Save announcement document in Firestore
-                const { signOut, user } = useAuth();
                 const docRef = await addDoc(collection(db, 'announcements'), {
                 title,
                 info,
-                createdAt: serverTimestamp(),
+                createdAt: new Date(),
                 createdBy: user
                 });
 
@@ -195,6 +195,17 @@ class AnnouncementsService {
             return "Error: Info description cannot be empty.";
         }
         return "";
+    }
+
+    /**
+     * Private 4
+     */
+    private getDateString(date:Date) {
+        const monthNames = [
+            "January", "February", "March", "April", "May", "June", 
+            "July", "August", "September", "October", "November", "December"
+          ];
+        return`${monthNames[date.getMonth()]}, ${date.getDate()}, ${date.getFullYear()}`;
     }
 }
 export default AnnouncementsService;

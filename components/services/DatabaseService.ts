@@ -183,15 +183,13 @@ class DatabaseService {
    * Effect: Updates firestore and storage when editing a catalog entry
    */
   public async handleCatalogSave(
-    catName: string, 
+    thisEntry: CatalogEntryObject,
     oldName: string, 
-    info: string, 
     newPics: { url: string; name: string; }[], 
     newPhotosAdded: boolean, 
-    id: string, setVisible: 
-    Dispatch<SetStateAction<boolean>>, 
+    setVisible: Dispatch<SetStateAction<boolean>>, 
     router: Router) {
-    await DatabaseService.catalogService.handleCatalogSave(catName, oldName, info, newPics, newPhotosAdded, id, setVisible, router);
+    await DatabaseService.catalogService.handleCatalogSave(thisEntry, oldName, newPics, newPhotosAdded, setVisible, router);
   }
 
   /**
@@ -261,9 +259,10 @@ class DatabaseService {
     title:string, 
     info:string, 
     photos:string[], 
+    user:User,
     setVisible:Dispatch<SetStateAction<boolean>>,
     router: Router) {
-    await DatabaseService.announcementsService.handleAnnouncementCreate(title, info, photos, setVisible, router);
+    await DatabaseService.announcementsService.handleAnnouncementCreate(title, info, photos, user, setVisible, router);
   }
 
   /**

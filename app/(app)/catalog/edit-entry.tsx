@@ -8,29 +8,47 @@ import { Snackbar } from 'react-native-paper';
 import { Button, TextInput, ImageButton, CameraButton, CatalogImageHandler } from '@/components';
 import DatabaseService from '@/components/services/DatabaseService';
 import { globalStyles, buttonStyles, textStyles, containerStyles } from '@/styles';
+import { CatalogEntryObject } from '@/types/CatalogEntryObject';
 
 const edit_entry = () => {
   const router = useRouter();
-  const { paramId, paramName, paramInfo} = useLocalSearchParams();
-  const id = paramId as string;
-  const oldName = paramName as string;
-  const [name, setName] = useState<string>(paramName as string);
-  const [info, setInfo] = useState<string>(paramInfo as string);
+  const { id, name, desc, colorPattern, behavior, yearsRecorded, AoR, currentStatus, furLength, furPattern, tnr, sex, credits} = useLocalSearchParams() as 
+        { id: string, name: string, desc: string, colorPattern: string, behavior: string, yearsRecorded: string, AoR: string, currentStatus: string, 
+          furLength: string, furPattern: string, tnr: string, sex: string, credits:string};
+  const oldName = name;
+  const [formData, setFormData] = useState({
+    id,
+    name,
+    desc,
+    colorPattern,
+    behavior,
+    yearsRecorded,
+    AoR,
+    currentStatus,
+    furLength,
+    furPattern,
+    tnr,
+    sex,
+    credits
+  });
+  const thisEntry = new CatalogEntryObject(id, name, desc, colorPattern, behavior, yearsRecorded, AoR, currentStatus, furLength, furPattern, 
+    tnr, sex, credits)
   const [visible, setVisible] = useState<boolean>(false);
+  
+  // General update function for updating a specific field
+  const handleChange = (field: string, value: string) => {
+    setFormData(prevData => ({
+      ...prevData,
+      [field]: value
+    }));
+  };
 
   const [profilePicUrl, setProfile] = useState<string>('');
   const [extraPics, setImageUrls] = useState<string[]>([]);
   const [newPics, setNewPics] = useState<{ url: string; name: string }[]>([]);
   const [newPhotosAdded, setNewPhotos] = useState<boolean>(false);
   const database = DatabaseService.getInstance();
-  const imageHandler = new CatalogImageHandler({ 
-    setVisible,  
-    setImageUrls, 
-    setNewPics, 
-    setNewPhotos,
-    setProfile,
-    name, 
-    profilePicUrl});
+  const imageHandler = new CatalogImageHandler({ setVisible, setImageUrls, setNewPics, setNewPhotos, setProfile, name, profilePicUrl});
     
   useFocusEffect(
     useCallback(() => {
@@ -43,11 +61,13 @@ const edit_entry = () => {
       behavior={Platform.OS === 'ios' ? 'padding' : undefined} // iOS specific behavior
     >
       <Button style={buttonStyles.logoutButton} onPress={() => router.push({
-        pathname: '/catalog/view-entry', params: { paramId:id, paramName:name, paramInfo:info }, })}>
+        pathname: '/catalog/view-entry', 
+        params: { id:id, desc:desc, colorPattern:colorPattern, behavior:behavior, yearsRecorded:yearsRecorded, AoR:AoR, currentStatus:currentStatus,
+          furLength:furLength, furPattern:furPattern, tnr:tnr, sex:sex, credits:credits}, })}>
         <Ionicons name="arrow-back-outline" size={25} color="#fff" />
       </Button>
       <Button style={buttonStyles.editButton} 
-      onPress={() => database.handleCatalogSave(name, oldName, info, newPics, newPhotosAdded, id, setVisible, router)}>
+      onPress={() => database.handleCatalogSave(thisEntry, oldName, newPics, newPhotosAdded, setVisible, router)}>
         <Text style ={textStyles.editText}> Save Entry</Text>
       </Button>
       <ScrollView contentContainerStyle={containerStyles.entryContainer}>
@@ -64,13 +84,13 @@ const edit_entry = () => {
           <TextInput 
             value={name}
             placeholderTextColor = "#888"
-            onChangeText={setName} 
+            onChangeText={(text) => handleChange('name', text)} 
             style={textStyles.input} />
           <Text style={textStyles.headline}>Description</Text>
           <TextInput
-            value={info}
+            value={desc}
             placeholderTextColor = "#888"
-            onChangeText={setInfo} 
+            onChangeText={(text) => handleChange('desc', text)} 
             style={textStyles.descInput} 
             multiline={true}/>
         </View>

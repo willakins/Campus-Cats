@@ -22,7 +22,7 @@ const textStyles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#333',
     textAlign: 'center',
-    marginTop: 70,
+    marginTop: 10,
     marginBottom: 5, // Space between title and description
   },
   headline: {
