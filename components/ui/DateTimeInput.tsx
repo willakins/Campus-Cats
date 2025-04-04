@@ -5,18 +5,15 @@ import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/dat
 
 import { containerStyles, textStyles } from '@/styles';
 import { SetState } from '@/utils';
-import { ErrorText } from './ErrorText';
 
 type DateTimeInputProps = {
   date: Date;
   setDate: SetState<Date>;
-  error?: string;
 };
 
 export const DateTimeInput: React.FC<DateTimeInputProps> = ({
   date,
   setDate,
-  error,
 }) => {
   const [showPicker, setShowPicker] = useState<boolean>(false);
 
@@ -38,7 +35,6 @@ export const DateTimeInput: React.FC<DateTimeInputProps> = ({
           mode="date"
           display="default"
           onChange={onChange}/> : null}
-        <ErrorText error={error} />
       </View>
     </TouchableOpacity>
   );
