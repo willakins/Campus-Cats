@@ -39,27 +39,31 @@ class SightingsService {
         catName: string, 
         setSightings:Dispatch<SetStateAction<CatSightingObject[]>>) {
         try {
-        // Create ref, create query, search firestore with query at reference
-        const sightingsRef = collection(db, 'cat-sightings');
-        const q = query(sightingsRef, where('name', '==', catName));
-        const querySnapshot = await getDocs(q);
+            if (!catName || catName.trim() === "") {
+                console.warn("getSightings: catName is undefined or empty");
+                return;
+            }
+            // Create ref, create query, search firestore with query at reference
+            const sightingsRef = collection(db, 'cat-sightings');
+            const q = query(sightingsRef, where('name', '==', catName));
+            const querySnapshot = await getDocs(q);
 
-        // Map each successful query to cat sighting
-        const catSightings: CatSightingObject[] = querySnapshot.docs.map(doc => ({
-        id: doc.id,
-        date: doc.data().spotted_time.toDate(),
-        fed: doc.data().fed,
-        health: doc.data().health,
-        photoUrl: doc.data().image,
-        info: doc.data().info,
-        latitude: doc.data().latitude,
-        longitude: doc.data().longitude,
-        name: doc.data().name
-        // Include the document ID
-        }));
-        setSightings(catSightings);
+            // Map each successful query to cat sighting
+            const catSightings: CatSightingObject[] = querySnapshot.docs.map(doc => ({
+            id: doc.id,
+            date: doc.data().spotted_time.toDate(),
+            fed: doc.data().fed,
+            health: doc.data().health,
+            photoUrl: doc.data().image,
+            info: doc.data().info,
+            latitude: doc.data().latitude,
+            longitude: doc.data().longitude,
+            name: doc.data().name
+            // Include the document ID
+            }));
+            setSightings(catSightings);
         } catch (error) {
-        console.error('Error fetching cat sightings: ', error);
+            console.error('Error fetching cat sightings: ', error);
         }
     };
 

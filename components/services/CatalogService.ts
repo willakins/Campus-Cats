@@ -1,5 +1,5 @@
 import { db, storage } from "@/config/firebase";
-import { CatalogEntryObject, CatSightingObject } from "@/types";
+import { CatalogEntryObject, CatSightingObject, User } from "@/types";
 import { Router } from "expo-router";
 import { addDoc, collection, deleteDoc, doc, getDocs, query, updateDoc, where } from "firebase/firestore";
 import { deleteObject, getDownloadURL, getStorage, listAll, ref, uploadBytes, uploadBytesResumable } from "firebase/storage";
@@ -62,7 +62,8 @@ class CatalogService {
             const entries: CatalogEntryObject[] = querySnapshot.docs.map((doc) => ({
               id: doc.id,
               name: doc.data().name,
-              desc: doc.data().desc,
+              descShort: doc.data().descShort,
+              descLong: doc.data().descLong,
               colorPattern: doc.data().colorPattern,
               behavior: doc.data().behavior,
               yearsRecorded: doc.data().yearsRecorded,
@@ -101,7 +102,8 @@ class CatalogService {
             await updateDoc(catDocRef, { 
               id: thisEntry.id,
               name: thisEntry.name,
-              desc: thisEntry.desc,
+              descShort: thisEntry.descShort,
+              descLong: thisEntry.descLong,
               colorPattern: thisEntry.colorPattern,
               behavior: thisEntry.behavior,
               yearsRecorded: thisEntry.yearsRecorded,
@@ -152,9 +154,9 @@ class CatalogService {
             }
             router.push({
               pathname: '/catalog/view-entry',
-              params: { id:thisEntry.id, desc:thisEntry.desc, colorPattern:thisEntry.colorPattern, behavior:thisEntry.behavior, 
-                yearsRecorded:thisEntry.yearsRecorded, AoR:thisEntry.AoR, currentStatus:thisEntry.currentStatus, furLength:thisEntry.furLength, 
-                furPattern:thisEntry.furPattern, tnr:thisEntry.tnr, sex:thisEntry.sex, credits:thisEntry.credits},
+              params: { id:thisEntry.id, descShort:thisEntry.descShort, descLOng:thisEntry.descLong, ShortcolorPattern:thisEntry.colorPattern, 
+                behavior:thisEntry.behavior, yearsRecorded:thisEntry.yearsRecorded, AoR:thisEntry.AoR, currentStatus:thisEntry.currentStatus, 
+                furLength:thisEntry.furLength, furPattern:thisEntry.furPattern, tnr:thisEntry.tnr, sex:thisEntry.sex, credits:thisEntry.credits},
             })
           } else {
             Alert.alert(error_message);
@@ -171,40 +173,49 @@ class CatalogService {
      * 
      */
     public async handleCatalogCreate(
-      catName: string, 
-      info: string, 
+      thisEntry: CatalogEntryObject,
       profilePic: string, 
+      user: User,
       setVisible: Dispatch<SetStateAction<boolean>>, 
       router: Router) {
-        if (!catName.trim()) {
-          Alert.alert('Invalid Name', 'Cat name cannot be empty.');
-          return;
-        }
         try {
-          setVisible(true);
-          let profilePicUrl = '';
-    
-          if (profilePic) {
-            const response = await fetch(profilePic);
-            const blob = await response.blob();
-            const imageRef = ref(getStorage(), `cats/${catName}/${catName}_profile.jpg`);
-            await uploadBytes(imageRef, blob);
-           
+          const error_message = this.validateInput(thisEntry);
+          if (error_message == "") {
+            setVisible(true);
+            if (profilePic) {
+              const response = await fetch(profilePic);
+              const blob = await response.blob();
+              const imageRef = ref(getStorage(), `cats/${thisEntry.name}/${thisEntry.name}_profile.jpg`);
+              await uploadBytes(imageRef, blob);
+            
+            }
+            await addDoc(collection(db, 'catalog'), {
+              name: thisEntry.name,
+              descShort: thisEntry.descShort,
+              descLong: thisEntry.descLong,
+              colorPattern: thisEntry.colorPattern,
+              behavior: thisEntry.behavior,
+              yearsRecorded: thisEntry.yearsRecorded,
+              AoR: thisEntry.AoR,
+              currentStatus: thisEntry.currentStatus,
+              furLength: thisEntry.furLength,
+              furPattern: thisEntry.furPattern,
+              tnr: thisEntry.tnr,
+              sex: thisEntry.sex,
+              credits: thisEntry.credits,
+              createdAt: new Date(),
+              createdBy: user,
+            });
+            Alert.alert('Success', 'Cat entry created successfully!');
+            router.back();
+          } else {
+            Alert.alert(error_message)
           }
-    
-          await addDoc(collection(db, 'catalog'), {
-            catName,
-            info,
-            createdAt: new Date(),
-          });
-    
-          Alert.alert('Success', 'Cat entry created successfully!');
         } catch (error) {
           console.error('Error creating catalog entry:', error);
           Alert.alert('Error', 'Failed to create cat entry.');
         } finally {
           setVisible(false);
-          router.back();
         }
     };
 
@@ -330,10 +341,29 @@ class CatalogService {
      * Private 2
      */
     private validateInput(thisEntry:CatalogEntryObject) {
-      if (!thisEntry.name.trim()) {
-        return "Name field must not be empty"
+      const requiredFields = [
+        { key: 'name', label: 'Name' },
+        { key: 'descShort', label: 'Short Description' },
+        { key: 'descLong', label: 'Long Description' },
+        { key: 'colorPattern', label: 'Color pattern' },
+        { key: 'behavior', label: 'Behavior' },
+        { key: 'yearsRecorded', label: 'Years recorded' },
+        { key: 'AoR', label: 'Area of residence' },
+        { key: 'currentStatus', label: 'Current status' },
+        { key: 'furLength', label: 'Fur length' },
+        { key: 'furPattern', label: 'Fur pattern' },
+        { key: 'tnr', label: 'TNR status' },
+        { key: 'sex', label: 'Sex' },
+      ];
+    
+      for (const field of requiredFields) {
+        const value = (thisEntry as any)[field.key];
+        if (!value || !value.trim()) {
+          return `${field.label} field must not be empty`;
+        }
       }
-      return ""
+    
+      return "";
     }
 }
 export default CatalogService;

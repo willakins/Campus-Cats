@@ -196,12 +196,12 @@ class DatabaseService {
    * Effect: Creates a new catalog entry and stores it in firebase
    */
   public async handleCatalogCreate(
-    catName: string, 
-    info: string, 
+    thisEntry:CatalogEntryObject,
     profilePic: string, 
+    user: User,
     setVisible: Dispatch<SetStateAction<boolean>>, 
     router: Router) {
-    await DatabaseService.catalogService.handleCatalogCreate(catName, info, profilePic, setVisible, router);
+    await DatabaseService.catalogService.handleCatalogCreate(thisEntry, profilePic, user, setVisible, router);
   }
 
   /**
