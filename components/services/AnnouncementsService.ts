@@ -58,7 +58,7 @@ class AnnouncementsService {
                 const folderPath = `announcements/${docRef}`;
                 await this.uploadImagesToStorage(photos, folderPath);
                 Alert.alert('Announcement created successfully!');
-                router.push('/announcements');
+                router.navigate('/announcements');
             } else {
                 Alert.alert(error_message)
             }
@@ -77,6 +77,7 @@ class AnnouncementsService {
         thisAnn: AnnouncementEntryObject,
         newPhotos: string[], 
         isPicsChanged: boolean, 
+        user: User,
         setVisible: Dispatch<SetStateAction<boolean>>, 
         router: Router) {
         try {
@@ -88,8 +89,8 @@ class AnnouncementsService {
                 await updateDoc(announcementRef, { //Update firestore
                     title: thisAnn.title,
                     info: thisAnn.info,
-                    createdAt: new Date(),
-                    createdBy: thisAnn.createdBy
+                    createdAt: serverTimestamp(),
+                    createdBy: user,
                 });
 
                 //Update storage bucket
@@ -102,10 +103,11 @@ class AnnouncementsService {
                 router.push({
                     pathname: '/announcements/view-ann',
                     params: { 
-                        paramId:thisAnn.id, 
-                        paramTitle:thisAnn.title, 
-                        paramInfo:thisAnn.info, 
-                        paramCreated:thisAnn.createdAt },
+                        id:thisAnn.id, 
+                        title:thisAnn.title, 
+                        info:thisAnn.info, 
+                        createdAt:thisAnn.createdAt,
+                        createdBy:thisAnn.createdBy, },
                   });
             } else {
                 Alert.alert(error_message);
@@ -120,7 +122,7 @@ class AnnouncementsService {
     /**
     * Effect: Deletes an announcement from database
     */
-    public async deleteAnnouncement(id:string) {
+    public async deleteAnnouncement(id:string, router:Router) {
         try {
             const photoPath = `announcements/${id}`;
             if (photoPath) {
@@ -130,7 +132,7 @@ class AnnouncementsService {
             }
             await deleteDoc(doc(db, 'announcements', id));
             alert('Announcement deleted successfully!');
-            
+            router.navigate('/announcements');
         } catch (error) {
             alert(error);
         }
