@@ -38,8 +38,8 @@ const Announcements = () => {
             id={ann.id}
             title={ann.title}
             info={ann.info}
-            photos={ann.photos}
             createdAt={ann.createdAt}
+            createdBy={ann.createdBy}
           />
         ))}
       </ScrollView>

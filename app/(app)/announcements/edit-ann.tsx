@@ -12,22 +12,23 @@ import { AnnouncementEntryObject } from '@/types';
 
 const edit_ann = () => {
   const router = useRouter();
-  const { paramId, paramTitle, paramInfo, paramPhotos, paramCreated } = useLocalSearchParams();
+  const { paramId, paramTitle, paramInfo, paramPhotos, paramCreatedAt, paramCreatedBy } = useLocalSearchParams();
   
   const id = paramId as string;
   const [title, setTitle] = useState<string>(paramTitle as string);
   const [info, setInfo] = useState<string>(paramInfo as string);
-  const photoPath = paramPhotos as string;
+  const createdAt = paramCreatedAt as string;
+  const createdBy = paramCreatedBy as string;
+
   const [photos, setPhotos] = useState<string[]>([]);
-  const createdAt = paramCreated as string;
   const [isPicsChanged, setPicsChanged] = useState<boolean>(false);
-  const thisAnn = new AnnouncementEntryObject(id, title, info, photoPath, createdAt);
+  const thisAnn = new AnnouncementEntryObject(id, title, info, createdAt, createdBy);
 
   const [visible, setVisible] = useState<boolean>(false);
   const database = DatabaseService.getInstance();
 
   useEffect(() => {
-    database.fetchAnnouncementImages(photoPath, setPhotos);
+    database.fetchAnnouncementImages(id, setPhotos);
   }, [isPicsChanged]);
 
   const addPhoto = (newPhotoUri: string) => {
@@ -43,24 +44,14 @@ const edit_ann = () => {
     setPicsChanged(true);
   };
 
-  const handleAnnouncementSave = async () => {
-    await database.handleAnnouncementSave(thisAnn, photos, isPicsChanged, setVisible, router)
-    
-  }
-
-  const deleteAnnouncement = async () => {
-    await database.deleteAnnouncement(photoPath, id)
-    router.push('/announcements');
-  };
-
   return (
     <SafeAreaView style={containerStyles.container}>
       <Button style={buttonStyles.logoutButton} onPress={() => router.push({
         pathname: '/announcements/view-ann', 
-        params: { paramId:id, paramTitle:title, paramInfo:info, paramPhotos, paramCreated }, })}>
+        params: { paramId:id, paramTitle:title, paramInfo:info, paramPhotos, paramCreatedAt, paramCreatedBy }, })}>
         <Ionicons name="arrow-back-outline" size={25} color="#fff" />
       </Button>
-      <Button style={buttonStyles.editButton} onPress={handleAnnouncementSave}>
+      <Button style={buttonStyles.editButton} onPress={() => database.handleAnnouncementSave(thisAnn, photos, isPicsChanged, setVisible, router)}>
         <Text style ={textStyles.editText}> Save Announcement</Text>
       </Button>
       <ScrollView contentContainerStyle={containerStyles.entryContainer}>
@@ -97,7 +88,7 @@ const edit_ann = () => {
         </View>
         <Text style={textStyles.headline}> Upload Additional Photos</Text>
         <CameraButton onPhotoSelected={addPhoto}></CameraButton>
-        <Button style={buttonStyles.deleteButton}onPress={deleteAnnouncement}> Delete Announcement</Button>
+        <Button style={buttonStyles.deleteButton}onPress={() => database.deleteAnnouncement(id)}> Delete Announcement</Button>
       </ScrollView>
     </SafeAreaView>
   );
