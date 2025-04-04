@@ -254,5 +254,11 @@ const containerStyles = StyleSheet.create({
     paddingTop: 20,
     paddingHorizontal: 15,
   },
+  announcementDetails: {
+    fontSize: 15,
+    color: '#000',
+    textAlign: 'left',
+    marginTop: 50,
+  },
 });
 export { containerStyles };

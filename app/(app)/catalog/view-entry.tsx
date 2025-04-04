@@ -11,10 +11,9 @@ const view_entry = () =>{
   const { signOut, user } = useAuth();
   const isAdmin = user.role === 1 || user.role === 2;
   const router = useRouter();
-  const { paramId, paramName, paramInfo } = useLocalSearchParams();
-  const id = paramId as string;
-  const name = paramName as string;
-  const info = paramInfo as string;
+  const { id, name, desc, colorPattern, behavior, yearsRecorded, AoR, currentStatus, furLength, furPattern, tnr, sex, credits} = useLocalSearchParams() as 
+        { id: string, name: string, desc: string, colorPattern: string, behavior: string, yearsRecorded: string, AoR: string, currentStatus: string, 
+          furLength: string, furPattern: string, tnr: string, sex: string, credits:string};
 
   return (
     <SafeAreaView style={containerStyles.container}>
@@ -23,14 +22,25 @@ const view_entry = () =>{
       </Button>
       {isAdmin ? <Button style={buttonStyles.editButton} onPress={() => router.push({
         pathname: '/catalog/edit-entry',
-        params: { paramId:id, paramName:name, paramInfo:info },
+        params: { id:id, desc:desc, colorPattern:colorPattern, behavior:behavior, yearsRecorded:yearsRecorded, AoR:AoR, currentStatus:currentStatus,
+                  furLength:furLength, furPattern:furPattern, tnr:tnr, sex:sex, credits:credits},
       })}>
         <Text style ={textStyles.editText}> Edit Entry</Text>
       </Button> : null}
       <CatalogEntry
           id={id}
           name={name}
-          info={info}
+          desc={desc}
+          colorPattern={colorPattern}
+          behavior={behavior}
+          yearsRecorded={yearsRecorded}
+          AoR={AoR}
+          currentStatus={currentStatus}
+          furLength={furLength}
+          furPattern={furPattern}
+          tnr={tnr}
+          sex={sex}
+          credits={credits}
         />
     </SafeAreaView>
   );
