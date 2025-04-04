@@ -11,13 +11,8 @@ const view_entry = () =>{
   const { signOut, user } = useAuth();
   const isAdmin = user.role === 1 || user.role === 2;
   const router = useRouter();
-  const { paramId, paramTitle, paramInfo, paramCreatedAt, paramCreatedBy } = useLocalSearchParams();
-  const id = paramId as string;
-  const title = paramTitle as string;
-  const info = paramInfo as string;
-  const createdAt = paramCreatedAt as string;
-  const createdBy = paramCreatedBy as string;
-
+  const { id, title, info, createdAt, createdBy } = useLocalSearchParams() as {id:string, title:string, info:string, createdAt:string, createdBy:string};
+  
   return (
     <SafeAreaView style={containerStyles.container}>
       <Button style={buttonStyles.logoutButton} onPress={() => router.navigate("/announcements")}>

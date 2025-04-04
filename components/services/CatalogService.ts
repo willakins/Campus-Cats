@@ -60,9 +60,19 @@ class CatalogService {
         try {
             const querySnapshot = await getDocs(collection(db, 'catalog'));
             const entries: CatalogEntryObject[] = querySnapshot.docs.map((doc) => ({
-            id: doc.id,
-            name: doc.data().catName,
-            info: doc.data().info,
+              id: doc.id,
+              name: doc.data().name,
+              desc: doc.data().desc,
+              colorPattern: doc.data().colorPattern,
+              behavior: doc.data().behavior,
+              yearsRecorded: doc.data().yearsRecorded,
+              AoR: doc.data().AoR,
+              currentStatus: doc.data().currentStatus,
+              furLength: doc.data().furLength,
+              furPattern: doc.data().furPattern,
+              tnr: doc.data().tnr,
+              sex: doc.data().sex,
+              credits: doc.data().credits,
             }));
             setCatalogEntries(entries);
         } catch (error) {
@@ -74,74 +84,86 @@ class CatalogService {
     * Effect: Updates firestore and storage when editing a catalog entry
     */
     public async handleCatalogSave(
-      catName: string, 
+      thisEntry: CatalogEntryObject,
       oldName: string, 
-      info: string, 
       newPics: { url: string; name: string; }[], 
       newPhotosAdded: boolean, 
-      id: string, 
       setVisible: Dispatch<SetStateAction<boolean>>, 
       router: Router) {
-        if (!catName.trim()) {
-          alert('Invalid Name Cat name cannot be empty.');
-          return;
-        }
         try {
-          setVisible(true);
-          // Reference to the Firestore document using its ID
-          const catDocRef = doc(db, 'catalog', id);
-    
-          // Update the 'name' field in Firestore
-          await updateDoc(catDocRef, { 
-            catName: catName,
-            info: info
-          });
-          if (oldName !== catName) {
-            const oldFolderRef = ref(storage, `cats/${oldName}`);
-            const oldPhotos = await listAll(oldFolderRef);
-    
-            for (const item of oldPhotos.items) {
-              const oldPath = item.fullPath; // Full path of old image
-              const newPath = oldPath.replace(`cats/${oldName}`, `cats/${catName}`); // New path
-    
-              // Download old image data
-              const url = await getDownloadURL(item);
-              const response = await fetch(url);
-              const blob = await response.blob();
-    
-              // Upload to new location
-              const newImageRef = ref(storage, newPath);
-              await uploadBytes(newImageRef, blob);
-    
-              // Delete old image
-              await deleteObject(item);
+          const error_message = this.validateInput(thisEntry);
+          if (error_message == "") {
+            setVisible(true);
+            // Reference to the Firestore document using its ID
+            const catDocRef = doc(db, 'catalog', thisEntry.id);
+      
+            // Update the 'name' field in Firestore
+            await updateDoc(catDocRef, { 
+              id: thisEntry.id,
+              name: thisEntry.name,
+              desc: thisEntry.desc,
+              colorPattern: thisEntry.colorPattern,
+              behavior: thisEntry.behavior,
+              yearsRecorded: thisEntry.yearsRecorded,
+              AoR: thisEntry.AoR,
+              currentStatus: thisEntry.currentStatus,
+              furLength: thisEntry.furLength,
+              furPattern: thisEntry.furPattern,
+              tnr: thisEntry.tnr,
+              sex: thisEntry.sex,
+              credits: thisEntry.credits,
+            });
+            if (oldName !== thisEntry.name) {
+              const oldFolderRef = ref(storage, `cats/${oldName}`);
+              const oldPhotos = await listAll(oldFolderRef);
+      
+              for (const item of oldPhotos.items) {
+                const oldPath = item.fullPath; // Full path of old image
+                const newPath = oldPath.replace(`cats/${oldName}`, `cats/${thisEntry.name}`); // New path
+      
+                // Download old image data
+                const url = await getDownloadURL(item);
+                const response = await fetch(url);
+                const blob = await response.blob();
+      
+                // Upload to new location
+                const newImageRef = ref(storage, newPath);
+                await uploadBytes(newImageRef, blob);
+      
+                // Delete old image
+                await deleteObject(item);
+              }
             }
-          }
-          if (newPhotosAdded) {
-            const folderPath = `cats/${catName}/`; // Path in Firebase Storage
-            const folderRef = ref(storage, folderPath);
-    
-            // Step 3: Upload only new photos
-            for (const pic of newPics) {
-              const response = await fetch(pic.url);
-              const blob = await response.blob();
-              const existingFilesSnapshot = await listAll(folderRef);
-              const existingFiles = existingFilesSnapshot.items.map((item) => item.name);
-    
-              const unique_name = this.generateUniqueFileName(existingFiles, catName)
-              const photoRef = ref(storage, `${folderPath}${unique_name}`);
-              await uploadBytes(photoRef, blob);
+            if (newPhotosAdded) {
+              const folderPath = `cats/${thisEntry.name}/`; // Path in Firebase Storage
+              const folderRef = ref(storage, folderPath);
+      
+              // Step 3: Upload only new photos
+              for (const pic of newPics) {
+                const response = await fetch(pic.url);
+                const blob = await response.blob();
+                const existingFilesSnapshot = await listAll(folderRef);
+                const existingFiles = existingFilesSnapshot.items.map((item) => item.name);
+      
+                const unique_name = this.generateUniqueFileName(existingFiles, thisEntry.name)
+                const photoRef = ref(storage, `${folderPath}${unique_name}`);
+                await uploadBytes(photoRef, blob);
+              }
             }
+            router.push({
+              pathname: '/catalog/view-entry',
+              params: { id:thisEntry.id, desc:thisEntry.desc, colorPattern:thisEntry.colorPattern, behavior:thisEntry.behavior, 
+                yearsRecorded:thisEntry.yearsRecorded, AoR:thisEntry.AoR, currentStatus:thisEntry.currentStatus, furLength:thisEntry.furLength, 
+                furPattern:thisEntry.furPattern, tnr:thisEntry.tnr, sex:thisEntry.sex, credits:thisEntry.credits},
+            })
+          } else {
+            Alert.alert(error_message);
           }
         } catch (error) {
           console.error('Error updating name:', error);
           alert('Error Failed to update name.');
         } finally {
           setVisible(false);
-          router.push({
-            pathname: '/catalog/view-entry', // Dynamically navigate to the details page
-            params: { paramId:id, paramName:catName, paramInfo:info}, // Pass the details as query params
-          })
         }
     };
     
@@ -302,6 +324,16 @@ class CatalogService {
         } while (existingFiles.includes(newFileName)); // Ensure it's unique
 
         return newFileName;
+    }
+
+    /**
+     * Private 2
+     */
+    private validateInput(thisEntry:CatalogEntryObject) {
+      if (!thisEntry.name.trim()) {
+        return "Name field must not be empty"
+      }
+      return ""
     }
 }
 export default CatalogService;
