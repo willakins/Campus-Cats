@@ -31,7 +31,7 @@ const CatReportScreen = () => {
   };
 
   const handleSubmission = () => {
-    thisSighting = new CatSightingObject('-1', name, info, photoUrl, fed, health, date, longitude, latitude)
+    thisSighting = new CatSightingObject('-1', name, info, photoUrl, fed, health, date, latitude, longitude)
     database.handleReportSubmission(thisSighting, router);
     router.push('/(app)/(tabs)')
   }
