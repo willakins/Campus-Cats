@@ -96,11 +96,11 @@ const CatSightingScreen = () => {
               editable={false}
             />
             <View style={containerStyles.sliderContainer}>
-              <Switch value={health} disabled={true}/>
+              <Switch value={fed} disabled={true}/>
               <Text style={textStyles.sliderText}>Has been fed</Text>
             </View>
             <View style={containerStyles.sliderContainer}>
-              <Switch value={fed} disabled={true} />
+              <Switch value={health} disabled={true} />
               <Text style={textStyles.sliderText}>Is in good health</Text>
             </View>
           </View>
