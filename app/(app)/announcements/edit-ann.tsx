@@ -9,9 +9,11 @@ import { Button, TextInput, CameraButton } from '@/components';
 import DatabaseService from '@/components/services/DatabaseService';
 import { globalStyles, buttonStyles, textStyles, containerStyles } from '@/styles';
 import { AnnouncementEntryObject } from '@/types';
+import { useAuth } from '@/providers/AuthProvider';
 
 const edit_ann = () => {
   const router = useRouter();
+  const { signOut, user } = useAuth();
   const { paramId, paramTitle, paramInfo, paramPhotos, paramCreatedAt, paramCreatedBy } = useLocalSearchParams();
   
   const id = paramId as string;
@@ -51,7 +53,7 @@ const edit_ann = () => {
         params: { paramId:id, paramTitle:title, paramInfo:info, paramPhotos, paramCreatedAt, paramCreatedBy }, })}>
         <Ionicons name="arrow-back-outline" size={25} color="#fff" />
       </Button>
-      <Button style={buttonStyles.editButton} onPress={() => database.handleAnnouncementSave(thisAnn, photos, isPicsChanged, setVisible, router)}>
+      <Button style={buttonStyles.editButton} onPress={() => database.handleAnnouncementSave(thisAnn, photos, isPicsChanged, user, setVisible, router)}>
         <Text style ={textStyles.editText}> Save Announcement</Text>
       </Button>
       <ScrollView contentContainerStyle={containerStyles.entryContainer}>
@@ -88,7 +90,7 @@ const edit_ann = () => {
         </View>
         <Text style={textStyles.headline}> Upload Additional Photos</Text>
         <CameraButton onPhotoSelected={addPhoto}></CameraButton>
-        <Button style={buttonStyles.deleteButton}onPress={() => database.deleteAnnouncement(id)}> Delete Announcement</Button>
+        <Button style={buttonStyles.deleteButton}onPress={() => database.deleteAnnouncement(id, router)}> Delete Announcement</Button>
       </ScrollView>
     </SafeAreaView>
   );
