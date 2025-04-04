@@ -17,17 +17,6 @@ const create_ann = () =>{
   const [photos, setPhotos] = useState<string[]>([]);
   const database = DatabaseService.getInstance();
 
-  const addPhoto = (newPhotoUri: string) => {
-    setPhotos((prevPics) => [
-      ...prevPics,
-      newPhotoUri,
-    ]);
-  };
-
-  const deleteImage = (imageUri: string) => {
-    
-  };
-
   return (
     <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <Button style={buttonStyles.logoutButton} onPress={() => router.push('/announcements')}>
@@ -54,11 +43,12 @@ const create_ann = () =>{
             multiline={true}/>
             <Text style={textStyles.headline2}>Want to Add Photos?</Text>
         <View style={containerStyles.cameraView}>
-          <CameraButton onPhotoSelected={addPhoto}></CameraButton>
+          <CameraButton onPhotoSelected={(newPhotoUri) => setPhotos((prevPics) => 
+            [...prevPics,newPhotoUri,])}></CameraButton>
           {photos ? (photos.map((pic, index) => (
           <View key={index} style={containerStyles.imageWrapper}>
             <Image source={{ uri: pic }} style={containerStyles.extraPic} />
-            <Button style={buttonStyles.deleteButton} onPress={() => setPhotos((prevPhotos) => prevPhotos.filter((pic) => pic !== imageUri))}>
+            <Button style={buttonStyles.deleteButton} onPress={() => setPhotos((prevPhotos) => prevPhotos.filter((uri) => uri !== pic))}>
               <Text style={textStyles.deleteButtonText}>Delete</Text>
             </Button>
           </View>
