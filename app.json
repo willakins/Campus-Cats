@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "Campus Cats",
-    "slug": "campus_cats",
+    "slug": "campus-cats",
     "version": "0.3.1",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
@@ -63,8 +63,10 @@
         "origin": false
       },
       "eas": {
-        "projectId": "7f8a8e08-7f38-436a-b8af-44cd2d22c8e4"
+        "_comment": "7f8a8e08-7f38-436a-b8af-44cd2d22c8e4",
+        "projectId": "80da548d-e526-49ad-a08a-d2817eb4c8fb"
       }
-    }
+    },
+    "owner": "gtcampuscats"
   }
 }
