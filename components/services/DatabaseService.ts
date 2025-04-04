@@ -272,16 +272,17 @@ class DatabaseService {
     thisAnn: AnnouncementEntryObject,
     newPhotos: string[], 
     isPicsChanged: boolean, 
+    user: User,
     setVisible: Dispatch<SetStateAction<boolean>>, 
     router: Router) {
-    await DatabaseService.announcementsService.handleAnnouncementSave(thisAnn, newPhotos, isPicsChanged, setVisible, router);
+    await DatabaseService.announcementsService.handleAnnouncementSave(thisAnn, newPhotos, isPicsChanged, user, setVisible, router);
   }
 
   /**
    * Effect: Deletes an announcement from database
    */
-  public async deleteAnnouncement(id:string) {
-    await DatabaseService.announcementsService.deleteAnnouncement(id);
+  public async deleteAnnouncement(id:string, router:Router) {
+    await DatabaseService.announcementsService.deleteAnnouncement(id, router);
   }
 
   /**
