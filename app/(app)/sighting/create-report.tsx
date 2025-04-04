@@ -14,10 +14,7 @@ const CatReportScreen = () => {
   const router = useRouter();
 
   const handleSubmit = async (data: Sighting) => {
-    console.log("here0");
-    console.log(data);
     await addDoc(collection(db, sightingPath), data);
-    console.log("here1");
     router.push('/(app)/(tabs)')
   };
 
