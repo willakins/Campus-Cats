@@ -32,7 +32,8 @@ const Catalog = () => {
           <CatalogItem
           id={entry.id}
           name={entry.name}
-          desc={entry.desc}
+          descShort={entry.descShort}
+          descLong={entry.descLong}
           colorPattern={entry.colorPattern}
           behavior={entry.behavior}
           yearsRecorded={entry.yearsRecorded}

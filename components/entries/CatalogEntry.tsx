@@ -9,7 +9,7 @@ import DatabaseService from '../services/DatabaseService';
 import { globalStyles, buttonStyles, textStyles, containerStyles } from '@/styles';
 
 export const CatalogEntry: React.FC<CatalogEntryObject> = 
-  ({ id, name, desc, colorPattern, behavior, yearsRecorded, AoR, currentStatus, furLength, furPattern, tnr, sex, credits }) => {
+  ({ id, name, descShort, descLong, colorPattern, behavior, yearsRecorded, AoR, currentStatus, furLength, furPattern, tnr, sex, credits }) => {
   const [profileURL, setProfile] = useState<string>('');
   const [imageUrls, setImageUrls] = useState<string[]>([]);
   const [sightings, setSightings] = useState<CatSightingObject[]>([]);
@@ -23,9 +23,10 @@ export const CatalogEntry: React.FC<CatalogEntryObject> =
   return (
     <ScrollView contentContainerStyle={containerStyles.scrollView}>
       <Text style={textStyles.catalogTitle}>{name}</Text>
+      <Text style={textStyles.subHeading}> {descShort} </Text>
       {profileURL ? (<Image source={{ uri: profileURL }} style={containerStyles.headlineImage} resizeMode='contain'/>) : 
         <Text style={textStyles.catalogTitle}>Loading image...</Text>}
-      <Text style={textStyles.catalogDescription}>{desc}</Text>
+      <Text style={textStyles.catalogLongDescription}>{descLong}</Text>
       <Text style={textStyles.headline}> Sightings </Text>
       <MapView
         style={containerStyles.mapContainer}

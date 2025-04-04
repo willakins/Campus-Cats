@@ -260,5 +260,30 @@ const containerStyles = StyleSheet.create({
     textAlign: 'left',
     marginTop: 50,
   },
+  catalogInputContainer: {
+    width: '100%',
+    backgroundColor: '#f9f9f9',
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    elevation: 3,  // Adds shadow on Android
+    shadowColor: '#000',  // Adds shadow on iOS
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    borderRadius:10,
+  },
+  catalogEntryContainer: {
+    flexDirection: 'column', // Stack items vertically
+    justifyContent: 'center', // Center content vertically
+    alignItems: 'center', // Center content horizontally
+    padding: 15,
+    borderRadius:10,
+    backgroundColor: '#fff',
+    shadowColor: '#000',
+    shadowOpacity: 0.1,
+    shadowRadius: 10,
+    elevation: 5,
+    width:'100%'
+},
 });
 export { containerStyles };
