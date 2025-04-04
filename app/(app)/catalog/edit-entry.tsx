@@ -12,30 +12,18 @@ import { CatalogEntryObject } from '@/types/CatalogEntryObject';
 
 const edit_entry = () => {
   const router = useRouter();
-  const { id, name, desc, colorPattern, behavior, yearsRecorded, AoR, currentStatus, furLength, furPattern, tnr, sex, credits} = useLocalSearchParams() as 
-        { id: string, name: string, desc: string, colorPattern: string, behavior: string, yearsRecorded: string, AoR: string, currentStatus: string, 
-          furLength: string, furPattern: string, tnr: string, sex: string, credits:string};
+  const { id, name, descShort, descLong, colorPattern, behavior, yearsRecorded, AoR, currentStatus, furLength, furPattern, tnr, sex, credits} = useLocalSearchParams() as 
+        { id: string, name: string, descShort: string, descLong: string, colorPattern: string, behavior: string, yearsRecorded: string, AoR: string, 
+          currentStatus: string, furLength: string, furPattern: string, tnr: string, sex: string, credits:string};
   const oldName = name;
-  const [formData, setFormData] = useState({
-    id,
-    name,
-    desc,
-    colorPattern,
-    behavior,
-    yearsRecorded,
-    AoR,
-    currentStatus,
-    furLength,
-    furPattern,
-    tnr,
-    sex,
-    credits
-  });
-  const thisEntry = new CatalogEntryObject(id, name, desc, colorPattern, behavior, yearsRecorded, AoR, currentStatus, furLength, furPattern, 
-    tnr, sex, credits)
+
+  const [formData, setFormData] = useState({id, name, descShort, descLong, colorPattern, behavior, yearsRecorded, AoR, currentStatus, furLength, 
+    furPattern, tnr, sex, credits});
+
+  const thisEntry = new CatalogEntryObject(id, name, descShort, descLong, colorPattern, behavior, yearsRecorded, AoR, currentStatus, furLength, 
+    furPattern, tnr, sex, credits)
   const [visible, setVisible] = useState<boolean>(false);
   
-  // General update function for updating a specific field
   const handleChange = (field: string, value: string) => {
     setFormData(prevData => ({
       ...prevData,
@@ -62,8 +50,8 @@ const edit_entry = () => {
     >
       <Button style={buttonStyles.logoutButton} onPress={() => router.push({
         pathname: '/catalog/view-entry', 
-        params: { id:id, desc:desc, colorPattern:colorPattern, behavior:behavior, yearsRecorded:yearsRecorded, AoR:AoR, currentStatus:currentStatus,
-          furLength:furLength, furPattern:furPattern, tnr:tnr, sex:sex, credits:credits}, })}>
+        params: { id:id, name:name, descShort:descShort, descLong:descLong, colorPattern:colorPattern, behavior:behavior, yearsRecorded:yearsRecorded, AoR:AoR, 
+          currentStatus:currentStatus, furLength:furLength, furPattern:furPattern, tnr:tnr, sex:sex, credits:credits}, })}>
         <Ionicons name="arrow-back-outline" size={25} color="#fff" />
       </Button>
       <Button style={buttonStyles.editButton} 
@@ -86,13 +74,20 @@ const edit_entry = () => {
             placeholderTextColor = "#888"
             onChangeText={(text) => handleChange('name', text)} 
             style={textStyles.input} />
-          <Text style={textStyles.headline}>Description</Text>
+          <Text style={textStyles.headline}>Short Description</Text>
           <TextInput
-            value={desc}
+            value={descShort}
             placeholderTextColor = "#888"
-            onChangeText={(text) => handleChange('desc', text)} 
+            onChangeText={(text) => handleChange('descShort', text)} 
             style={textStyles.descInput} 
             multiline={true}/>
+          <Text style={textStyles.headline}>Long Description</Text>
+          <TextInput
+          value={descLong}
+          placeholderTextColor = "#888"
+          onChangeText={(text) => handleChange('descLong', text)} 
+          style={textStyles.descInput} 
+          multiline={true}/>
         </View>
         {extraPics.length > 0 ? <Text style={textStyles.headline}> Extra Photos</Text>: null}
         {extraPics.length > 0 ? <Text style={textStyles.subHeading}> The photo you click will turn into the cat's profile picture</Text>: null}

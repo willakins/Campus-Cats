@@ -9,7 +9,7 @@ import DatabaseService from '../services/DatabaseService';
 import { globalStyles, buttonStyles, textStyles, containerStyles } from '@/styles';
 
 export const CatalogItem: React.FC<CatalogEntryObject> = 
-({ id, name, desc, colorPattern, behavior, yearsRecorded, AoR, currentStatus, furLength, furPattern, tnr, sex, credits }) => {
+({ id, name, descShort, descLong, colorPattern, behavior, yearsRecorded, AoR, currentStatus, furLength, furPattern, tnr, sex, credits }) => {
   const router = useRouter();
   const [profileURL, setProfile] = useState<string>('');
   const database = DatabaseService.getInstance();
@@ -22,8 +22,8 @@ export const CatalogItem: React.FC<CatalogEntryObject> =
     <Button style={containerStyles.entryContainer} onPress={() =>
       router.push({
       pathname: '/catalog/view-entry',
-      params: { id:id, desc:desc, colorPattern:colorPattern, behavior:behavior, yearsRecorded:yearsRecorded, AoR:AoR, currentStatus:currentStatus,
-        furLength:furLength, furPattern:furPattern, tnr:tnr, sex:sex, credits:credits},
+      params: { id:id, name:name, descShort:descShort, descLong:descLong, colorPattern:colorPattern, behavior:behavior, yearsRecorded:yearsRecorded, AoR:AoR, 
+        currentStatus:currentStatus, furLength:furLength, furPattern:furPattern, tnr:tnr, sex:sex, credits:credits},
       })}>
       <View style={containerStyles.entryElements}>
         <Text style={textStyles.catalogTitle}>{name}</Text>

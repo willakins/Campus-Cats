@@ -1,7 +1,8 @@
 export class CatalogEntryObject {
     id: string;
     name: string;
-    desc: string;
+    descShort: string;
+    descLong: string;
     colorPattern: string;
     behavior: string;
     yearsRecorded: string;
@@ -16,7 +17,8 @@ export class CatalogEntryObject {
     constructor(
       id: string,
       name: string,
-      desc: string,
+      descShort: string,
+      descLong: string,
       colorPattern: string,
       behavior: string,
       yearsRecorded: string,
@@ -30,7 +32,8 @@ export class CatalogEntryObject {
     ) {
       this.id = id;
       this.name = name;
-      this.desc = desc;
+      this.descShort = descShort;
+      this.descLong = descLong;
       this.colorPattern = colorPattern;
       this.behavior = behavior;
       this.yearsRecorded = yearsRecorded;
