@@ -2,6 +2,7 @@ export * from './ui/Buttons';
 export { DateTimeInput } from './ui/DateTimeInput';
 export { ErrorText } from './ui/ErrorText';
 export { LoadingIndicator } from './ui/LoadingIndicator';
+export { Switch } from './ui/Switch';
 export * from './ui/TextInput';
 
 export { AdminView } from './AdminView'
