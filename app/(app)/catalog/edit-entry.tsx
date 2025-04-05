@@ -70,20 +70,20 @@ const edit_entry = () => {
         <View style={containerStyles.loginContainer}>
           <Text style={textStyles.headline}>Cat's Name</Text>
           <TextInput 
-            value={name}
+            value={formData.name}
             placeholderTextColor = "#888"
             onChangeText={(text) => handleChange('name', text)} 
             style={textStyles.input} />
           <Text style={textStyles.headline}>Short Description</Text>
           <TextInput
-            value={descShort}
+            value={formData.descShort}
             placeholderTextColor = "#888"
             onChangeText={(text) => handleChange('descShort', text)} 
-            style={textStyles.descInput} 
+            style={textStyles.descInput}
             multiline={true}/>
           <Text style={textStyles.headline}>Long Description</Text>
           <TextInput
-          value={descLong}
+          value={formData.descLong}
           placeholderTextColor = "#888"
           onChangeText={(text) => handleChange('descLong', text)} 
           style={textStyles.descInput} 
