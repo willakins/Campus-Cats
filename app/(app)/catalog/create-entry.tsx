@@ -14,7 +14,7 @@ const create_entry = () =>{
   const router = useRouter();
   const { signOut, user } = useAuth();
   const [visible, setVisible] = useState<boolean>(false);
-  const [formData, setFormData] = useState({id: "", name: "", descShort: "", descLong: "", colorPattern: "", behavior: "", yearsRecorded: "", AoR: "", 
+  const [formData, setFormData] = useState({name: "", descShort: "", descLong: "", colorPattern: "", behavior: "", yearsRecorded: "", AoR: "", 
     currentStatus: "", furLength: "", furPattern: "", tnr: "", sex: "",credits: ""});
 
   const handleChange = (field: string, value: string) => {
@@ -24,7 +24,8 @@ const create_entry = () =>{
     }));
   };
 
-  const thisEntry = new CatalogEntryObject(formData.id, formData.name, formData.descShort, formData.descLong, formData.colorPattern, formData.behavior, formData.yearsRecorded, 
+  const new_id = ""
+  const thisEntry = new CatalogEntryObject(new_id, formData.name, formData.descShort, formData.descLong, formData.colorPattern, formData.behavior, formData.yearsRecorded, 
     formData.AoR, formData.currentStatus, formData.furLength, formData.furPattern, formData.tnr, formData.sex, formData.credits)
 
   const [profile, setProfile] = useState<string>('');

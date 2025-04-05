@@ -14,14 +14,16 @@ import { useAuth } from '@/providers/AuthProvider';
 const edit_ann = () => {
   const router = useRouter();
   const { signOut, user } = useAuth();
-  const { paramId, paramTitle, paramInfo, paramPhotos, paramCreatedAt, paramCreatedBy } = useLocalSearchParams();
-  
-  const id = paramId as string;
-  const [title, setTitle] = useState<string>(paramTitle as string);
-  const [info, setInfo] = useState<string>(paramInfo as string);
-  const createdAt = paramCreatedAt as string;
-  const createdBy = paramCreatedBy as string;
+  const { id, title, info, createdAt, createdBy } = useLocalSearchParams() as {id:string, title:string, info:string, createdAt:string, createdBy:string};
 
+  const [formData, setFormData] = useState({title, info });
+  
+  const handleChange = (field: string, value: string) => {
+    setFormData(prevData => ({
+      ...prevData,
+      [field]: value
+    }));
+  };
   const [photos, setPhotos] = useState<string[]>([]);
   const [isPicsChanged, setPicsChanged] = useState<boolean>(false);
   const thisAnn = new AnnouncementEntryObject(id, title, info, createdAt, createdBy);
@@ -50,7 +52,7 @@ const edit_ann = () => {
     <SafeAreaView style={containerStyles.container}>
       <Button style={buttonStyles.logoutButton} onPress={() => router.push({
         pathname: '/announcements/view-ann', 
-        params: { paramId:id, paramTitle:title, paramInfo:info, paramPhotos, paramCreatedAt, paramCreatedBy }, })}>
+        params: { id:id, title:title, info:info, createdAt:createdAt, createdBy:createdBy }, })}>
         <Ionicons name="arrow-back-outline" size={25} color="#fff" />
       </Button>
       <Button style={buttonStyles.editButton} onPress={() => database.handleAnnouncementSave(thisAnn, photos, isPicsChanged, user, setVisible, router)}>
@@ -63,13 +65,13 @@ const edit_ann = () => {
         <TextInput 
           value={title}
           placeholderTextColor = "#888"
-          onChangeText={setTitle} 
+          onChangeText={(text) => handleChange('title', text)} 
           style={textStyles.input} />
         <Text style={textStyles.headline}>Description</Text>
         <TextInput
           value={info}
           placeholderTextColor = "#888"
-          onChangeText={setInfo} 
+          onChangeText={(text) => handleChange('info', text)} 
           style={textStyles.descInput} 
           multiline={true}/>
         </View>
