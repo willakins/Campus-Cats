@@ -101,9 +101,9 @@ class DatabaseService {
    * Effect: pulls cat sightings from firestore
    */
   public async getSightings(
-    catName: string, 
+    name: string, 
     setSightings:Dispatch<SetStateAction<CatSightingObject[]>>) {
-    await DatabaseService.sightingsService.getSightings(catName, setSightings);
+    await DatabaseService.sightingsService.getSightings(name, setSightings);
   }
 
   /**
