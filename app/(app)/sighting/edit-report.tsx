@@ -14,7 +14,7 @@ import { CatSightingObject } from '@/types';
 
 const CatSightingScreen = () => {
   const router = useRouter();
-  const { docId, catDate, catFed, catHealth, catInfo, catPhoto, catLongitude, catLatitude, catName} = useLocalSearchParams();
+  const { docId, catDate, catFed, catHealth, catInfo, catPhoto, catLongitude, catLatitude, catName, createdBy} = useLocalSearchParams();
 
 
   const docRef:string = docId as string;
@@ -26,9 +26,10 @@ const CatSightingScreen = () => {
   const longitude = parseFloat(catLongitude as string);
   const latitude = parseFloat(catLatitude as string);
   const name = catName as string;
+  const uid = createdBy as string;
   const [photoImage, setPhoto] = useState<string>('');
   const database = DatabaseService.getInstance();
-  const thisSighting: Sighting = {id: docRef, name, info, image: photoUrl, fed, health, spotted_time, latitude, longitude};
+  const thisSighting: Sighting = {id: docRef, name, info, image: photoUrl, fed, health, spotted_time, latitude, longitude, uid};
 
   useEffect(() => {
     database.fetchImage(photoUrl, setPhoto);
@@ -37,14 +38,15 @@ const CatSightingScreen = () => {
   const saveSighting = async (data: Sighting) => {
     const sightingObject = new CatSightingObject(
       docRef,
-      data.name || '',
-      data.info || '',
-      data.image || '',
+      data.name || name,
+      data.info || info,
+      data.image || photoUrl,
       data.fed,
       data.health,
       data.spotted_time || new Date(),
       data.latitude,
-      data.longitude
+      data.longitude,
+      uid, // ignore current user; always preserve original creator
     );
     database.saveSighting(sightingObject);
     router.push('/(app)/(tabs)');

@@ -1,13 +1,12 @@
 import { Image, ScrollView, Text, View } from 'react-native';
 
-import { doc } from 'firebase/firestore';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 
 import { Button, Errorbar } from '@/components';
 import { DefaultLocation } from '@/config/constants';
-import { auth, db } from '@/config/firebase';
+import { auth } from '@/config/firebase';
 import { ControlledDateTimeInput, ControlledFilePicker, ControlledInput, ControlledMapPicker, ControlledSwitch } from './controls';
 import { Sighting } from '@/models';
 import { textStyles, containerStyles, buttonStyles } from '@/styles';
@@ -34,16 +33,14 @@ const sightingFormConverter = async (data: ReportDataType): Promise<Sighting> =>
   // TODO: Instead of fullPath, switch to using name (uuid) so that we can
   // survive renaming the folder
   const storageUrls = (await Promise.all(uploadPromises)).map((upload) => upload.ref.fullPath);
-  // TODO: It's possible that the upload could succeed but the DB write could
-  // fail. Handle this case.
-
-  // Get current user
-  const userRef = auth.currentUser ? doc(db, 'users', auth.currentUser.uid) : null;
+  // TODO: It's possible for an image to be created but the database write
+  // fails; find a way to either make the entire operation atomic, or
+  // implement garbage collection on the storage bucket.
 
   // Transform the data to match Sighting schema
   const sightingData: Sighting = {
     id: null,
-    user: userRef,
+    uid: auth.currentUser?.uid || '',
     name: data.name,
     spotted_time: data.timestamp,
     image: storageUrls[0],
@@ -123,6 +120,7 @@ export const SightingReportForm: React.FC<ReportFormProps> = ({
             {type === 'create' ? 'Report A Sighting' : null}
             {type === 'edit' ? 'Edit A Sighting' : null}
           </Text>
+          {/* TODO: Abstract into a component. Make sure to handle firebase errors where image URL does not exist */}
           {type === 'edit' ? (imageURL
             ? (<Image source={{ uri: imageURL }} style={containerStyles.catImage} resizeMode='contain'/>)
             : (<Text style={containerStyles.catImage}>Loading image...</Text>)
