@@ -16,28 +16,15 @@ const LoginScreen = () => {
   };
 
   return (
-    <View style={globalStyles.screen}>
+    <KeyboardAvoidingView style={globalStyles.screen} behavior="padding">
       <Image source={require('@/assets/images/campus_cats_logo.png')} style={containerStyles.logo}/>
-      
-      {/* Only render KeyboardAvoidingView on mobile devices (iOS/Android) */}
-      {Platform.OS !== 'web' ? (
-        <KeyboardAvoidingView style={globalStyles.screen} behavior="padding">
-          <LoginForm
-            onSubmit={loginUser}
-            type="login"
-            onSwitchType={() => router.push('/create-account')}
-            forgotPassword
-          />
-        </KeyboardAvoidingView>
-      ) : (
-        <LoginForm
-          onSubmit={loginUser}
-          type="login"
-          onSwitchType={() => router.push('/create-account')}
-          forgotPassword
-        />
-      )}
-    </View>
+      <LoginForm
+        onSubmit={loginUser}
+        type="login"
+        onSwitchType={() => router.push('/create-account')}
+        forgotPassword
+      />
+    </KeyboardAvoidingView>
   );
 };
 
