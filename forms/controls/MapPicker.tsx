@@ -1,7 +1,7 @@
 import { FieldValues, useController } from 'react-hook-form';
 import { MapViewProps } from 'react-native-maps';
 
-import { MapPicker } from '@/components';
+import { ErrorText, MapPicker } from '@/components';
 import { DefaultLocation } from '@/config/constants';
 import { InputControllerType } from '@/types';
 
@@ -13,15 +13,15 @@ const ControlledMapPicker = <T extends FieldValues>({
   rules,
   ...props
 }: ControlledMapPickerProps<T>) => {
-  const { field } = useController({ control, name, rules });
+  const { field, fieldState } = useController({ control, name, rules });
   return (
     <>
       <MapPicker
         location={field.value || DefaultLocation}
         onChange={field.onChange}
         {...props}
-      >
-      </MapPicker>
+      />
+      <ErrorText error={fieldState.error?.message} />
     </>
   );
 };
