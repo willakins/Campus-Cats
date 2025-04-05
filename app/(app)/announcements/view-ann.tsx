@@ -20,7 +20,7 @@ const view_entry = () =>{
       </Button>
       {isAdmin ? <Button style={buttonStyles.editButton} onPress={() => router.push({
         pathname: '/announcements/edit-ann',
-        params: { paramId:id, paramTitle:title, paramInfo:info, paramCreatedAt:createdAt, paramCreatedBy:createdBy },
+        params: { id:id, title:title, info:info, createdAt:createdAt, createdBy:createdBy },
       })}>
         <Text style ={textStyles.editText}> Edit Announcement</Text>
       </Button> : null}
