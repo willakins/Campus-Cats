@@ -1,10 +1,8 @@
 import { z } from 'zod';
 
-import { firestoreDocRefSchema } from '@/types';
-
 const Sighting = z.object({
   id: z.string().nullable().default(null),
-  user: firestoreDocRefSchema.nullish(),
+  uid: z.string().nullish(),
   name: z.string().nullish(),
   spotted_time: z.date().nullish(),
   // TODO: make this an array of files eventually
