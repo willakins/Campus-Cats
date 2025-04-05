@@ -36,32 +36,33 @@ class SightingsService {
     * Effect: pulls cat sightings from firestore
     */
     public async getSightings(
-        catName: string, 
+        name: string, 
         setSightings:Dispatch<SetStateAction<CatSightingObject[]>>) {
         try {
-            if (!catName || catName.trim() === "") {
-                console.warn("getSightings: catName is undefined or empty");
-                return;
-            }
-            // Create ref, create query, search firestore with query at reference
-            const sightingsRef = collection(db, 'cat-sightings');
-            const q = query(sightingsRef, where('name', '==', catName));
-            const querySnapshot = await getDocs(q);
+            const error_message = this.validateInput(name);
+            if (error_message == "") {
+                // Create ref, create query, search firestore with query at reference
+                const sightingsRef = collection(db, 'cat-sightings');
+                const q = query(sightingsRef, where('name', '==', name));
+                const querySnapshot = await getDocs(q);
 
-            // Map each successful query to cat sighting
-            const catSightings: CatSightingObject[] = querySnapshot.docs.map(doc => ({
-            id: doc.id,
-            date: doc.data().spotted_time.toDate(),
-            fed: doc.data().fed,
-            health: doc.data().health,
-            photoUrl: doc.data().image,
-            info: doc.data().info,
-            latitude: doc.data().latitude,
-            longitude: doc.data().longitude,
-            name: doc.data().name
-            // Include the document ID
-            }));
-            setSightings(catSightings);
+                // Map each successful query to cat sighting
+                const catSightings: CatSightingObject[] = querySnapshot.docs.map(doc => ({
+                id: doc.id,
+                date: doc.data().spotted_time.toDate(),
+                fed: doc.data().fed,
+                health: doc.data().health,
+                photoUrl: doc.data().image,
+                info: doc.data().info,
+                latitude: doc.data().latitude,
+                longitude: doc.data().longitude,
+                name: doc.data().name
+                // Include the document ID
+                }));
+                setSightings(catSightings);
+            } else {
+                alert(error_message);
+            }
         } catch (error) {
             console.error('Error fetching cat sightings: ', error);
         }
@@ -167,6 +168,16 @@ class SightingsService {
         }
         return null;    // No errors
     };
+
+    /**
+     * Private 2
+     */
+    private validateInput(name:string) {
+        if (!name.trim) {
+            return "Name cannot be empty"
+        }
+        return ""
+    }
 }
 
 export default SightingsService;
