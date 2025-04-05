@@ -30,6 +30,7 @@ const Catalog = () => {
       <ScrollView contentContainerStyle={containerStyles.scrollView}>
         {catalogEntries.map((entry) => (
           <CatalogItem
+          key={entry.id}
           id={entry.id}
           name={entry.name}
           descShort={entry.descShort}
