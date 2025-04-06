@@ -166,7 +166,7 @@ const textStyles = StyleSheet.create({
     marginHorizontal: 10, // Add some horizontal padding for better readability
   },
   catalogInput: {
-    height: 30,
+    height: 40,
     width: '100%',
     //borderColor: '#ccc',
     //borderWidth: 1,

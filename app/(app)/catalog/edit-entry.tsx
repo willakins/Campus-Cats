@@ -20,8 +20,8 @@ const edit_entry = () => {
   const [formData, setFormData] = useState({id, name, descShort, descLong, colorPattern, behavior, yearsRecorded, AoR, currentStatus, furLength, 
     furPattern, tnr, sex, credits});
 
-  const thisEntry = new CatalogEntryObject(id, name, descShort, descLong, colorPattern, behavior, yearsRecorded, AoR, currentStatus, furLength, 
-    furPattern, tnr, sex, credits)
+  const thisEntry = new CatalogEntryObject(formData.id, formData.name, formData.descShort, formData.descLong, formData.colorPattern, formData.behavior, formData.yearsRecorded, formData.AoR, formData.currentStatus, formData.furLength, 
+    formData.furPattern, formData.tnr, formData.sex, formData.credits)
   const [visible, setVisible] = useState<boolean>(false);
   
   const handleChange = (field: string, value: string) => {
@@ -70,90 +70,90 @@ const edit_entry = () => {
         <View style={containerStyles.loginContainer}>
           <Text style={textStyles.headline}>Cat's Name</Text>
           <TextInput 
-            value={thisEntry.name}
+            value={formData.name}
             placeholderTextColor="#888"
             onChangeText={(text) => handleChange('name', text)} 
             style={textStyles.catalogInput} />
           <Text style={textStyles.headline}>Short Description</Text>
           <TextInput
-            value={thisEntry.descShort}
+            value={formData.descShort}
             placeholderTextColor="#888"
             onChangeText={(text) => handleChange('descShort', text)} 
             style={textStyles.catalogDescInput} 
             multiline={true}/>
           <Text style={textStyles.headline}>Long Description</Text>
           <TextInput
-            value={thisEntry.descLong}
+            value={formData.descLong}
             placeholderTextColor="#888"
             onChangeText={(text) => handleChange('descLong', text)} 
             style={textStyles.catalogDescInput} 
             multiline={true}/>
           <Text style={textStyles.headline}>Detailed Color Pattern</Text>
           <TextInput
-            value={thisEntry.colorPattern}
+            value={formData.colorPattern}
             placeholderTextColor="#888"
             onChangeText={(text) => handleChange('colorPattern', text)} 
             style={textStyles.catalogDescInput} 
             multiline={true}/>
           <Text style={textStyles.headline}>Behavior</Text>
           <TextInput
-            value={thisEntry.behavior}
+            value={formData.behavior}
             placeholderTextColor="#888"
             onChangeText={(text) => handleChange('behavior', text)} 
             style={textStyles.catalogDescInput} 
             multiline={true}/>
           <Text style={textStyles.headline}>Years Recorded</Text>
           <TextInput
-            value={thisEntry.yearsRecorded}
+            value={formData.yearsRecorded}
             placeholderTextColor="#888"
             onChangeText={(text) => handleChange('yearsRecorded', text)} 
             style={textStyles.catalogInput} 
             multiline={true}/>
           <Text style={textStyles.headline}>Area of Residence</Text>
           <TextInput
-            value={thisEntry.AoR}
+            value={formData.AoR}
             placeholderTextColor="#888"
             onChangeText={(text) => handleChange('AoR', text)} 
             style={textStyles.catalogInput} 
             multiline={true}/>
           <Text style={textStyles.headline}>Current Status</Text>
           <TextInput
-            value={thisEntry.currentStatus}
+            value={formData.currentStatus}
             placeholderTextColor="#888"
             onChangeText={(text) => handleChange('currentStatus', text)} 
             style={textStyles.catalogInput} 
             multiline={true}/>
           <Text style={textStyles.headline}>Fur Length</Text>
           <TextInput
-            value={thisEntry.furLength}
+            value={formData.furLength}
             placeholderTextColor="#888"
             onChangeText={(text) => handleChange('furLength', text)} 
             style={textStyles.catalogInput} 
             multiline={true}/>
           <Text style={textStyles.headline}>Fur Pattern</Text>
           <TextInput
-            value={thisEntry.furPattern}
+            value={formData.furPattern}
             placeholderTextColor="#888"
             onChangeText={(text) => handleChange('furPattern', text)} 
             style={textStyles.catalogInput} 
             multiline={true}/>
           <Text style={textStyles.headline}>Tnr</Text>
           <TextInput
-            value={thisEntry.tnr}
+            value={formData.tnr}
             placeholderTextColor="#888"
             onChangeText={(text) => handleChange('tnr', text)} 
             style={textStyles.catalogInput} 
             multiline={true}/>
           <Text style={textStyles.headline}>Sex</Text>
           <TextInput
-            value={thisEntry.sex}
+            value={formData.sex}
             placeholderTextColor="#888"
             onChangeText={(text) => handleChange('sex', text)} 
             style={textStyles.catalogInput} 
             multiline={true}/>
           <Text style={textStyles.headline}>Credits</Text>
           <TextInput
-            value={thisEntry.credits}
+            value={formData.credits}
             placeholderTextColor="#888"
             onChangeText={(text) => handleChange('credits', text)} 
             style={textStyles.catalogDescInput} 
