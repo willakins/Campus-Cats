@@ -8,29 +8,35 @@ import { Snackbar } from 'react-native-paper';
 import { Button, TextInput, ImageButton, CameraButton, CatalogImageHandler } from '@/components';
 import DatabaseService from '@/components/services/DatabaseService';
 import { globalStyles, buttonStyles, textStyles, containerStyles } from '@/styles';
+import { CatalogEntryObject } from '@/types/CatalogEntryObject';
 
 const edit_entry = () => {
   const router = useRouter();
-  const { paramId, paramName, paramInfo} = useLocalSearchParams();
-  const id = paramId as string;
-  const oldName = paramName as string;
-  const [name, setName] = useState<string>(paramName as string);
-  const [info, setInfo] = useState<string>(paramInfo as string);
+  const { id, name, descShort, descLong, colorPattern, behavior, yearsRecorded, AoR, currentStatus, furLength, furPattern, tnr, sex, credits} = useLocalSearchParams() as 
+        { id: string, name: string, descShort: string, descLong: string, colorPattern: string, behavior: string, yearsRecorded: string, AoR: string, 
+          currentStatus: string, furLength: string, furPattern: string, tnr: string, sex: string, credits:string};
+  const oldName = name;
+
+  const [formData, setFormData] = useState({id, name, descShort, descLong, colorPattern, behavior, yearsRecorded, AoR, currentStatus, furLength, 
+    furPattern, tnr, sex, credits});
+
+  const thisEntry = new CatalogEntryObject(formData.id, formData.name, formData.descShort, formData.descLong, formData.colorPattern, formData.behavior, formData.yearsRecorded, formData.AoR, formData.currentStatus, formData.furLength, 
+    formData.furPattern, formData.tnr, formData.sex, formData.credits)
   const [visible, setVisible] = useState<boolean>(false);
+  
+  const handleChange = (field: string, value: string) => {
+    setFormData(prevData => ({
+      ...prevData,
+      [field]: value
+    }));
+  };
 
   const [profilePicUrl, setProfile] = useState<string>('');
   const [extraPics, setImageUrls] = useState<string[]>([]);
   const [newPics, setNewPics] = useState<{ url: string; name: string }[]>([]);
   const [newPhotosAdded, setNewPhotos] = useState<boolean>(false);
   const database = DatabaseService.getInstance();
-  const imageHandler = new CatalogImageHandler({ 
-    setVisible,  
-    setImageUrls, 
-    setNewPics, 
-    setNewPhotos,
-    setProfile,
-    name, 
-    profilePicUrl});
+  const imageHandler = new CatalogImageHandler({ setVisible, setImageUrls, setNewPics, setNewPhotos, setProfile, name, profilePicUrl});
     
   useFocusEffect(
     useCallback(() => {
@@ -43,11 +49,13 @@ const edit_entry = () => {
       behavior={Platform.OS === 'ios' ? 'padding' : undefined} // iOS specific behavior
     >
       <Button style={buttonStyles.logoutButton} onPress={() => router.push({
-        pathname: '/catalog/view-entry', params: { paramId:id, paramName:name, paramInfo:info }, })}>
+        pathname: '/catalog/view-entry', 
+        params: { id:id, name:name, descShort:descShort, descLong:descLong, colorPattern:colorPattern, behavior:behavior, yearsRecorded:yearsRecorded, AoR:AoR, 
+          currentStatus:currentStatus, furLength:furLength, furPattern:furPattern, tnr:tnr, sex:sex, credits:credits}, })}>
         <Ionicons name="arrow-back-outline" size={25} color="#fff" />
       </Button>
       <Button style={buttonStyles.editButton} 
-      onPress={() => database.handleCatalogSave(name, oldName, info, newPics, newPhotosAdded, id, setVisible, router)}>
+      onPress={() => database.handleCatalogSave(thisEntry, oldName, newPics, newPhotosAdded, setVisible, router)}>
         <Text style ={textStyles.editText}> Save Entry</Text>
       </Button>
       <ScrollView contentContainerStyle={containerStyles.entryContainer}>
@@ -62,16 +70,93 @@ const edit_entry = () => {
         <View style={containerStyles.loginContainer}>
           <Text style={textStyles.headline}>Cat's Name</Text>
           <TextInput 
-            value={name}
-            placeholderTextColor = "#888"
-            onChangeText={setName} 
-            style={textStyles.input} />
-          <Text style={textStyles.headline}>Description</Text>
+            value={formData.name}
+            placeholderTextColor="#888"
+            onChangeText={(text) => handleChange('name', text)} 
+            style={textStyles.catalogInput} />
+          <Text style={textStyles.headline}>Short Description</Text>
           <TextInput
-            value={info}
-            placeholderTextColor = "#888"
-            onChangeText={setInfo} 
-            style={textStyles.descInput} 
+            value={formData.descShort}
+            placeholderTextColor="#888"
+            onChangeText={(text) => handleChange('descShort', text)} 
+            style={textStyles.catalogDescInput} 
+            multiline={true}/>
+          <Text style={textStyles.headline}>Long Description</Text>
+          <TextInput
+            value={formData.descLong}
+            placeholderTextColor="#888"
+            onChangeText={(text) => handleChange('descLong', text)} 
+            style={textStyles.catalogDescInput} 
+            multiline={true}/>
+          <Text style={textStyles.headline}>Detailed Color Pattern</Text>
+          <TextInput
+            value={formData.colorPattern}
+            placeholderTextColor="#888"
+            onChangeText={(text) => handleChange('colorPattern', text)} 
+            style={textStyles.catalogDescInput} 
+            multiline={true}/>
+          <Text style={textStyles.headline}>Behavior</Text>
+          <TextInput
+            value={formData.behavior}
+            placeholderTextColor="#888"
+            onChangeText={(text) => handleChange('behavior', text)} 
+            style={textStyles.catalogDescInput} 
+            multiline={true}/>
+          <Text style={textStyles.headline}>Years Recorded</Text>
+          <TextInput
+            value={formData.yearsRecorded}
+            placeholderTextColor="#888"
+            onChangeText={(text) => handleChange('yearsRecorded', text)} 
+            style={textStyles.catalogInput} 
+            multiline={true}/>
+          <Text style={textStyles.headline}>Area of Residence</Text>
+          <TextInput
+            value={formData.AoR}
+            placeholderTextColor="#888"
+            onChangeText={(text) => handleChange('AoR', text)} 
+            style={textStyles.catalogInput} 
+            multiline={true}/>
+          <Text style={textStyles.headline}>Current Status</Text>
+          <TextInput
+            value={formData.currentStatus}
+            placeholderTextColor="#888"
+            onChangeText={(text) => handleChange('currentStatus', text)} 
+            style={textStyles.catalogInput} 
+            multiline={true}/>
+          <Text style={textStyles.headline}>Fur Length</Text>
+          <TextInput
+            value={formData.furLength}
+            placeholderTextColor="#888"
+            onChangeText={(text) => handleChange('furLength', text)} 
+            style={textStyles.catalogInput} 
+            multiline={true}/>
+          <Text style={textStyles.headline}>Fur Pattern</Text>
+          <TextInput
+            value={formData.furPattern}
+            placeholderTextColor="#888"
+            onChangeText={(text) => handleChange('furPattern', text)} 
+            style={textStyles.catalogInput} 
+            multiline={true}/>
+          <Text style={textStyles.headline}>Tnr</Text>
+          <TextInput
+            value={formData.tnr}
+            placeholderTextColor="#888"
+            onChangeText={(text) => handleChange('tnr', text)} 
+            style={textStyles.catalogInput} 
+            multiline={true}/>
+          <Text style={textStyles.headline}>Sex</Text>
+          <TextInput
+            value={formData.sex}
+            placeholderTextColor="#888"
+            onChangeText={(text) => handleChange('sex', text)} 
+            style={textStyles.catalogInput} 
+            multiline={true}/>
+          <Text style={textStyles.headline}>Credits</Text>
+          <TextInput
+            value={formData.credits}
+            placeholderTextColor="#888"
+            onChangeText={(text) => handleChange('credits', text)} 
+            style={textStyles.catalogDescInput} 
             multiline={true}/>
         </View>
         {extraPics.length > 0 ? <Text style={textStyles.headline}> Extra Photos</Text>: null}
