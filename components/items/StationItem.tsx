@@ -8,11 +8,12 @@ import DatabaseService from '../services/DatabaseService';
 import { Checkbox } from "react-native-paper";
 import { globalStyles, buttonStyles, textStyles, containerStyles } from '@/styles';
 
-export const StationItem: React.FC<StationEntryObject> = ({ id, name, longitude, latitude, lastStocked, stockingFreq, 
+export const StationItem: React.FC<StationEntryObject> = ({ id, name, profile, longitude, latitude, lastStocked, stockingFreq, 
   knownCats, isStocked}) => {
   const router = useRouter();
-  const [profileURL, setProfile] = useState<string>('');
   const database = DatabaseService.getInstance();
+
+  const [profileURL, setProfile] = useState<string>('');
 
   useFocusEffect(() => {
     database.fetchStationImages(id, name, setProfile);
@@ -22,8 +23,8 @@ export const StationItem: React.FC<StationEntryObject> = ({ id, name, longitude,
     <Button style={containerStyles.entryContainer} onPress={() =>
       router.push({
       pathname: '/stations/view-station',
-      params: { paramId:id, paramName:name, paramLong:longitude, paramLat:latitude, paramStocked:JSON.stringify(isStocked), 
-        paramCats:knownCats, paramLastStocked:lastStocked, paramStockingFreq:stockingFreq},
+      params: { id:id, name:name, profile:profile, catLongitude:longitude, catLatitude:latitude, stocked:JSON.stringify(isStocked), 
+        knownCats:knownCats, lastStocked:lastStocked, stockingFreq:stockingFreq},
       })}>
       <View style={containerStyles.entryElements}>
         <Text style={textStyles.catalogTitle}>{name}</Text>

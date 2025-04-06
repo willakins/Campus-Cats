@@ -297,8 +297,8 @@ class DatabaseService {
   /**
    * Effect: Adds a new station to firebase
    */
-  public async createStation(thisStation:StationEntryObject, profilePic:string, router:Router) {
-    await DatabaseService.stationsService.createStation(thisStation, profilePic, router);
+  public async createStation(thisStation:StationEntryObject, setVisible: Dispatch<SetStateAction<boolean>>, router:Router) {
+    await DatabaseService.stationsService.createStation(thisStation, setVisible, router);
   }
 
   /**
@@ -311,15 +311,9 @@ class DatabaseService {
   /**
    * TODO
    */
-  public async saveStation(
-    thisStation: StationEntryObject, 
-    profilePic: string,
-    profileChanged: boolean,
-    originalName: string,
-    setVisible: Dispatch<SetStateAction<boolean>>, 
-    router: Router
-  ) {
-    await DatabaseService.stationsService.saveStation(thisStation, profilePic, profileChanged, originalName, setVisible, router);
+  public async saveStation(thisStation: StationEntryObject, profileChanged: boolean, setVisible: Dispatch<SetStateAction<boolean>>, 
+    router: Router) {
+    await DatabaseService.stationsService.saveStation(thisStation, profileChanged, setVisible, router);
   }
 
   /**

@@ -11,15 +11,11 @@ const view_entry = () =>{
   const { signOut, user } = useAuth();
   const isAdmin = user.role === 1 || user.role === 2;
   const router = useRouter();
-  const { paramId, paramName, paramLong, paramLat, paramStocked, paramCats, paramLastStocked, paramStockingFreq} = useLocalSearchParams();
-  const id = paramId as string;
-  const name = paramName as string;
-  const longitude = +(paramLong as string);
-  const latitude = +(paramLat as string);
-  const lastStocked = paramLastStocked as string;
-  const stockingFreq = paramStockingFreq as string;
-  const knownCats = paramCats as string;
-  const isStocked = paramStocked === "true";
+  const { id, name, profile, catLongitude, catLatitude, knownCats, lastStocked, stockingFreq, stocked} = useLocalSearchParams() as { id:string, name:string, profile:string, 
+    catLongitude:string, catLatitude:string, knownCats:string, lastStocked:string, stockingFreq:string, stocked:string};
+  const longitude = +(catLongitude);
+  const latitude = +(catLatitude);
+  const isStocked = stocked === "true";
 
   return (
     <SafeAreaView style={containerStyles.container}>
@@ -28,7 +24,7 @@ const view_entry = () =>{
       </Button>
       {isAdmin ? <Button style={buttonStyles.editButton} onPress={() => router.push({
         pathname: '/stations/edit-station',
-        params: { paramId:id, paramName:name, paramLong:paramLong, paramLat:paramLat, paramLastStocked:paramLastStocked, paramCats:knownCats, paramStockingFreq:paramStockingFreq },
+        params: { id:id, name:name, catLongitude:longitude, catLatitude:latitude, lastStocked:lastStocked, knownCats:knownCats, stockingFreq:stockingFreq },
       })}>
         <Text style ={textStyles.editText}> Edit Station</Text>
       </Button> : null}
@@ -36,6 +32,7 @@ const view_entry = () =>{
           key={id}
           id={id}
           name={name}
+          profile={profile}
           longitude={longitude}
           latitude={latitude}
           lastStocked={lastStocked}

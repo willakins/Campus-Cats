@@ -1,46 +1,43 @@
 import React, { useEffect, useState } from 'react';
-import { Image, Text, KeyboardAvoidingView, Platform, ScrollView, View } from 'react-native';
+import { KeyboardAvoidingView, Platform } from 'react-native';
 
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import MapView, { LatLng, Marker } from 'react-native-maps';
 
-import { Button, Switch, TextInput } from '@/components';
+import { Button } from '@/components';
 import DatabaseService from '@/components/services/DatabaseService';
 import { Ionicons } from '@expo/vector-icons';
 import { buttonStyles, textStyles, containerStyles } from '@/styles';
 import { SightingReportForm } from '@/forms';
 import { Sighting } from '@/models';
 import { CatSightingObject } from '@/types';
+import { Snackbar } from 'react-native-paper';
 
 const CatSightingScreen = () => {
   const router = useRouter();
-  const { docId, catDate, catFed, catHealth, catInfo, catPhoto, catLongitude, catLatitude, catName, createdBy} = useLocalSearchParams();
+  const { id, date, catFed, catHealth, info, photo, catLongitude, catLatitude, name, uid } = useLocalSearchParams() as { id: string, date: string,
+    catFed: string, catHealth: string, info: string, photo: string, catLongitude: string, catLatitude: string, name: string, uid: string};
 
+  const spotted_time = new Date(JSON.parse(date));
+  const fed = JSON.parse(catFed);
+  const health = JSON.parse(catHealth);
+  const longitude = parseFloat(catLongitude);
+  const latitude = parseFloat(catLatitude);
 
-  const docRef:string = docId as string;
-  const spotted_time = new Date(JSON.parse(catDate as string));
-  const fed = JSON.parse(catFed as string);
-  const health = JSON.parse(catHealth as string);
-  const photoUrl = catPhoto as string;
-  const info = catInfo as string;
-  const longitude = parseFloat(catLongitude as string);
-  const latitude = parseFloat(catLatitude as string);
-  const name = catName as string;
-  const uid = createdBy as string;
   const [photoImage, setPhoto] = useState<string>('');
   const database = DatabaseService.getInstance();
-  const thisSighting: Sighting = {id: docRef, name, info, image: photoUrl, fed, health, spotted_time, latitude, longitude, uid};
+  const thisSighting: Sighting = {id: id, name, info, image: photo, fed, health, spotted_time, latitude, longitude, uid};
+  const [visible, setVisible] = useState<boolean>(false);
 
   useEffect(() => {
-    database.fetchImage(photoUrl, setPhoto);
+    database.fetchImage(photo, setPhoto);
   }, []);
 
   const saveSighting = async (data: Sighting) => {
     const sightingObject = new CatSightingObject(
-      docRef,
+      id,
       data.name || name,
       data.info || info,
-      data.image || photoUrl,
+      data.image || photo,
       data.fed,
       data.health,
       data.spotted_time || new Date(),
@@ -48,12 +45,12 @@ const CatSightingScreen = () => {
       data.longitude,
       uid, // ignore current user; always preserve original creator
     );
-    database.saveSighting(sightingObject);
+    database.saveSighting(sightingObject, setVisible);
     router.push('/(app)/(tabs)');
   }
 
   const deleteSighting = async () => {
-    database.deleteSighting(photoUrl, docRef)
+    database.deleteSighting(photo, id)
     router.push('/(app)/(tabs)');
   };
 
@@ -71,6 +68,9 @@ const CatSightingScreen = () => {
         imageURL={photoImage}
         defaultValues={thisSighting}
       />
+      <Snackbar visible={visible} onDismiss={() => setVisible(false)} duration={2000}>
+        Saving...
+      </Snackbar>
     </KeyboardAvoidingView>
   );
 };
