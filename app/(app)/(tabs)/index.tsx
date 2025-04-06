@@ -39,7 +39,8 @@ const HomeScreen = () => {
       catInfo: pin.info,
       catLongitude: JSON.stringify(pin.longitude),
       catLatitude: JSON.stringify(pin.latitude),
-      catName: pin.name
+      catName: pin.name,
+      createdBy: pin.uid
     }})
   };
 

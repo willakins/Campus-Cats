@@ -25,7 +25,8 @@ class SightingsService {
         info: doc.data().info,
         latitude: doc.data().latitude,
         longitude: doc.data().longitude,
-        name: doc.data().name
+        name: doc.data().name,
+        uid: doc.data().uid || ''
         // Include the document ID
         }));
         setPins(pinsData);
@@ -149,6 +150,7 @@ class SightingsService {
             longitude: thisSighting.longitude,
             latitude: thisSighting.latitude,
             name: thisSighting.name,
+            uid: thisSighting.uid,
         });
 
         alert('Saved!');
