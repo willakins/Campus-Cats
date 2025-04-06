@@ -12,19 +12,17 @@ import { buttonStyles, textStyles, containerStyles } from '@/styles';
 
 const CatSightingScreen = () => {
   const router = useRouter();
-  const { docId, catDate, catFed, catHealth, catInfo, catPhoto, catLongitude, catLatitude, catName, createdBy} = useLocalSearchParams();
-
-  const date = new Date(JSON.parse(catDate as string));
-  const fed = JSON.parse(catFed as string);
-  const health = JSON.parse(catHealth as string);
-  const photoUrl = catPhoto as string;
-  const info = catInfo as string;
-  const longitude = parseFloat(catLongitude as string);
-  const latitude = parseFloat(catLatitude as string);
-  const name = catName as string;
+  const { id, date, catFed, catHealth, info, photo, catLongitude, catLatitude, name, uid } = useLocalSearchParams() as { id: string, date: string,
+      catFed: string, catHealth: string, info: string, photo: string, catLongitude: string, catLatitude: string, name: string, uid: string};
+  
+  const spotted_time = new Date(JSON.parse(date));
+  const fed = JSON.parse(catFed);
+  const health = JSON.parse(catHealth);
+  const longitude = parseFloat(catLongitude);
+  const latitude = parseFloat(catLatitude);
   const [photoImage, setPhoto] = useState<string>('');
   const { user } = useAuth();
-  const isAuthorized = user.role === 1 || user.role === 2 || user.id === createdBy;
+  const isAuthorized = user.role === 1 || user.role === 2 || user.id === uid;
   const database = DatabaseService.getInstance();
 
   var location:LatLng = {
@@ -33,21 +31,21 @@ const CatSightingScreen = () => {
   };
 
   useEffect(() => {
-    database.fetchImage(photoUrl, setPhoto);
+    database.fetchImage(photo, setPhoto);
   }, []);
 
   const editSighting = () => {
     router.push({ pathname: './edit-report', params: {
-      docId: docId,
-      catDate: catDate,
-      catFed: catFed,
-      catHealth: catHealth,
-      catPhoto: catPhoto,
-      catInfo: catInfo,
-      catLongitude: catLongitude,
-      catLatitude: catLatitude,
-      catName: catName,
-      createdBy: createdBy
+      id:id, 
+      date:date, 
+      catFed:catFed, 
+      catHealth:catHealth, 
+      info:info, 
+      photo:photo, 
+      catLongitude:catLongitude, 
+      catLatitude:catLatitude, 
+      name:name, 
+      uid:uid
     }})
   };
 

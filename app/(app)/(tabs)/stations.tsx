@@ -62,6 +62,7 @@ const Stations = () => {
               key={station.id}
               id={station.id}
               name={station.name}
+              profile={station.profile}
               longitude={station.longitude}
               latitude={station.latitude}
               lastStocked={station.lastStocked}
