@@ -89,6 +89,7 @@ const Settings = () => {
         </View>
         {isAdmin ? <Button style={buttonStyles.button} onPress={() => router.push('/settings/manage_users')}>Manage Users</Button>:null}
         {isAdmin ? <Button style={buttonStyles.button} onPress={() => router.push('/settings/manage_whitelist')}>Manage Whitelist</Button>:null}
+        <Button onPress={() => router.push('/(auth)/whitelist-app')}></Button>
       </ScrollView>
     </SafeAreaView>
   );
