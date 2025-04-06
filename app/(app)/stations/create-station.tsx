@@ -16,6 +16,7 @@ const create_station = () =>{
   const router = useRouter();
   const [visible, setVisible] = useState<boolean>(false);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
+  const [showPicker, setShowPicker] = useState<boolean>(true);
 
   const [name, setName] = useState<string>('');
   const [profile, setProfile] = useState<string>('');
@@ -45,6 +46,11 @@ const create_station = () =>{
       if (selectedDate) {
         setSelectedDate(selectedDate);
         setLastStocked(selectedDate.toISOString().split('T')[0]);
+        setShowPicker(false);
+        const timeout = setTimeout(() => {
+          setShowPicker(true);
+        }, 10);
+        
       }
     };
 
@@ -81,14 +87,14 @@ const create_station = () =>{
             <Text style={textStyles.subHeading2}>Last Time Stocked</Text>
             <View style={containerStyles.dateInput}>
               <Text style={textStyles.dateText}>{lastStocked ? lastStocked : "Unknown Date"}</Text>
-              <DateTimePicker
+              {showPicker && <DateTimePicker
                   testID="dateTimePicker"
                   value={selectedDate || new Date()}
                   mode="date"
                   display="default"
                   onChange={handleDateChange}
                   style={containerStyles.picker}
-                />
+                />}
             </View>
           <Text style={textStyles.subHeading2}>How Often Does This Station Need to be restocked? (in days)</Text>
           <TextInput
