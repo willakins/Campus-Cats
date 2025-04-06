@@ -40,16 +40,15 @@ class SightingsService {
         name: string, 
         setSightings:Dispatch<SetStateAction<CatSightingObject[]>>) {
         try {
-            const error_message = this.validateInput(name);
-            if (error_message == "") {
-                // Create ref, create query, search firestore with query at reference
-                const sightingsRef = collection(db, 'cat-sightings');
-                const q = query(sightingsRef, where('name', '==', name));
-                const querySnapshot = await getDocs(q);
+            // Create ref, create query, search firestore with query at reference
+            const sightingsRef = collection(db, 'cat-sightings');
+            const q = query(sightingsRef, where('name', '==', name));
+            const querySnapshot = await getDocs(q);
 
-                // Map each successful query to cat sighting
-                const catSightings: CatSightingObject[] = querySnapshot.docs.map(doc => ({
+            // Map each successful query to cat sighting
+            const catSightings: CatSightingObject[] = querySnapshot.docs.map(doc => ({
                 id: doc.id,
+                uid:doc.data().uid,
                 date: doc.data().spotted_time.toDate(),
                 fed: doc.data().fed,
                 health: doc.data().health,
@@ -59,11 +58,8 @@ class SightingsService {
                 longitude: doc.data().longitude,
                 name: doc.data().name
                 // Include the document ID
-                }));
-                setSightings(catSightings);
-            } else {
-                alert(error_message);
-            }
+            }));
+            setSightings(catSightings);
         } catch (error) {
             console.error('Error fetching cat sightings: ', error);
         }
@@ -74,39 +70,39 @@ class SightingsService {
     */
     public async handleReportSubmission(
         thisSighting:CatSightingObject,
+        setVisible: Dispatch<SetStateAction<boolean>>,
         router:Router) {
-        const errors = this.validateForm(thisSighting.name, thisSighting.info, thisSighting.photoUrl);
-        if (errors) {
-            alert(errors);
-            return;
-        }
-
         try {
-            const result = await uploadFromURI('photos/', thisSighting.photoUrl);
-
-            // TODO: It's possible for an image to be created but the database write
-            // fails; find a way to either make the entire operation atomic, or
-            // implement garbage collection on the storage bucket.
-            await addDoc(collection(db, 'cat-sightings'), {
-                timestamp: serverTimestamp(),
-                spotted_time: Timestamp.fromDate(thisSighting.date), // currently unused, but we may want to distinguish
-                // upload and sighting time in the future
-                latitude: thisSighting.latitude,
-                longitude: thisSighting.longitude,
-                name: thisSighting.name,
-                image: result.metadata.fullPath,
-                info: thisSighting.info,
-                healthy: thisSighting.health,
-                fed: thisSighting.fed,
-            });
-
-            alert('Cat submitted successfully!');
-
-        } catch (error) {
-            if (error instanceof Error) {
-                console.error('Error during upload:', error);
-                alert(`Upload failed: ${error.message}`);
+            setVisible(true);
+            const error_message = this.validateInput(thisSighting);
+            if (error_message == "") {
+                const result = await uploadFromURI('photos/', thisSighting.photoUrl);
+    
+                // TODO: It's possible for an image to be created but the database write
+                // fails; find a way to either make the entire operation atomic, or
+                // implement garbage collection on the storage bucket.
+                await addDoc(collection(db, 'cat-sightings'), {
+                    timestamp: serverTimestamp(),
+                    spotted_time: Timestamp.fromDate(thisSighting.date), // currently unused, but we may want to distinguish
+                    // upload and sighting time in the future
+                    latitude: thisSighting.latitude,
+                    longitude: thisSighting.longitude,
+                    name: thisSighting.name,
+                    image: result.metadata.fullPath,
+                    info: thisSighting.info,
+                    healthy: thisSighting.health,
+                    fed: thisSighting.fed,
+                });
+    
+                alert('Cat submitted successfully!');
+                router.navigate('/(app)/(tabs)');
+            } else {
+                alert(error_message);
             }
+        } catch (error) {
+            alert(`Upload failed`);
+        } finally {
+            setVisible(false);
         }
     };
 
@@ -131,52 +127,46 @@ class SightingsService {
    * Effect: updates firestore when editing a cat sighting
    */
     public async saveSighting(
-        thisSighting:CatSightingObject
+        thisSighting: CatSightingObject,
+        setVisible: Dispatch<SetStateAction<boolean>>
     ) {
-        const stamp = Timestamp.fromDate(thisSighting.date);
-        if (!thisSighting.id) {
-        alert('Error: docRef is undefined!');
-        return;
-        }
-
-        const sightingRef = doc(db, 'cat-sightings', thisSighting.id);
         try {
-        await updateDoc(sightingRef, {
-            timestamp: stamp,
-            fed: thisSighting.fed,
-            health: thisSighting.health,
-            image: thisSighting.photoUrl,
-            info: thisSighting.info,
-            longitude: thisSighting.longitude,
-            latitude: thisSighting.latitude,
-            name: thisSighting.name,
-            uid: thisSighting.uid,
-        });
-
-        alert('Saved!');
-        } catch (error: any) {
-        alert(error)
+            setVisible(true);
+            const error_message = this.validateInput(thisSighting);
+            if (error_message == "") {
+                const stamp = Timestamp.fromDate(thisSighting.date);
+                const sightingRef = doc(db, 'cat-sightings', thisSighting.id);
+                await updateDoc(sightingRef, {
+                    timestamp: stamp,
+                    fed: thisSighting.fed,
+                    health: thisSighting.health,
+                    image: thisSighting.photoUrl,
+                    info: thisSighting.info,
+                    longitude: thisSighting.longitude,
+                    latitude: thisSighting.latitude,
+                    name: thisSighting.name,
+                    uid: thisSighting.uid,
+                });
+            } else {
+                alert(error_message)
+            }
+        } catch (error) {
+            alert(error)
+        } finally {
+            setVisible(false);
         }
-    };
-
-    /**
-    * Private 1
-    */
-    private validateForm(catName:string, photoUrl:string, date:string) {
-        if (!photoUrl) {
-          return 'Please select a photo.';
-        } else if (catName == '' || !date) {
-          return 'Please enter all necessary information.';
-        }
-        return null;    // No errors
     };
 
     /**
      * Private 2
      */
-    private validateInput(name:string | undefined) {
-        if (!name?.trim()) {
-            return "Name cannot be empty"
+    private validateInput(thisSighting:CatSightingObject) {
+        if (!thisSighting.photoUrl) {
+            return 'Please select a photo.';
+        } else if (thisSighting.name == '') {
+            return 'Please enter a name for the cat.';
+        } else if (!thisSighting.date) {
+            return 'Please select a date for the sighting.';
         }
         return ""
     }

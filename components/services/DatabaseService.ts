@@ -110,9 +110,10 @@ class DatabaseService {
    * Effect: updates firestore when editing a cat sighting
    */
   public async saveSighting(
-   thisSighting:CatSightingObject
+   thisSighting:CatSightingObject,
+   setVisible: Dispatch<SetStateAction<boolean>>
    ) {
-    await DatabaseService.sightingsService.saveSighting(thisSighting);
+    await DatabaseService.sightingsService.saveSighting(thisSighting, setVisible);
   }
 
   /**
@@ -120,8 +121,9 @@ class DatabaseService {
    */
   public async handleReportSubmission(
     thisSighting:CatSightingObject,
+    setVisible: Dispatch<SetStateAction<boolean>>,
     router:Router) {
-    await DatabaseService.sightingsService.handleReportSubmission(thisSighting, router);
+    await DatabaseService.sightingsService.handleReportSubmission(thisSighting, setVisible, router);
   }
 
   /**
@@ -269,20 +271,20 @@ class DatabaseService {
    * Effect: updates an existing announcement in firestore
    */
   public async handleAnnouncementSave(
-    thisAnn: AnnouncementEntryObject,
-    newPhotos: string[], 
+    formData: {id: string, title: string, info: string, createdAt: string, createdBy: string},
+    photos: string[], 
     isPicsChanged: boolean, 
     user: User,
     setVisible: Dispatch<SetStateAction<boolean>>, 
     router: Router) {
-    await DatabaseService.announcementsService.handleAnnouncementSave(thisAnn, newPhotos, isPicsChanged, user, setVisible, router);
+    await DatabaseService.announcementsService.handleAnnouncementSave(formData, photos, isPicsChanged, user, setVisible, router);
   }
 
   /**
    * Effect: Deletes an announcement from database
    */
-  public async deleteAnnouncement(id:string, router:Router) {
-    await DatabaseService.announcementsService.deleteAnnouncement(id, router);
+  public async deleteAnnouncement(id:string, router:Router, setVisible: Dispatch<SetStateAction<boolean>>) {
+    await DatabaseService.announcementsService.deleteAnnouncement(id, router, setVisible);
   }
 
   /**
