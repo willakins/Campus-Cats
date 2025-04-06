@@ -10,12 +10,11 @@ import { User } from '@/types';
 
 const ManageWhitelist = () => {
   const router = useRouter();
-  const [notGTusers, setnotGTUsers] = useState<User[]>([]);
-  const [pendingUsers, setPendingUsers] = useState<User[]>([]);
+  const [applicants, setApplicants] = useState<User[]>([]);
   const database = DatabaseService.getInstance();
 
   useEffect(() => {
-    database.fetchUsers(setnotGTUsers);
+    database.fetchApplications(setApplicants);
   }, []);
 
   return (
@@ -24,15 +23,11 @@ const ManageWhitelist = () => {
         <Ionicons name="arrow-back-outline" size={25} color="#fff" />
       </Button>
 
-      <Text style={textStyles.title}>View Non-GT users</Text>
+      <Text style={textStyles.title}>View Whitelist Applications</Text>
 
       <ScrollView contentContainerStyle={containerStyles.scrollView}>
-        {notGTusers.map((user) => (
-          <UserItem key={user.id} user={user} setUsers={setnotGTUsers} />
-        ))}
-        <Text style={textStyles.headline2}>Pending users</Text>
-        {pendingUsers.map((user) => (
-          <UserItem key={user.id} user={user} setUsers={setPendingUsers} />
+        {applicants.map((app) => (
+          <UserItem key={app.id} user={user} setUsers={setnotGTUsers} />
         ))}
       </ScrollView>
     </SafeAreaView>

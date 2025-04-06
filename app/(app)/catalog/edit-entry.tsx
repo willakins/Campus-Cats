@@ -15,13 +15,10 @@ const edit_entry = () => {
   const { id, name, descShort, descLong, colorPattern, behavior, yearsRecorded, AoR, currentStatus, furLength, furPattern, tnr, sex, credits} = useLocalSearchParams() as 
         { id: string, name: string, descShort: string, descLong: string, colorPattern: string, behavior: string, yearsRecorded: string, AoR: string, 
           currentStatus: string, furLength: string, furPattern: string, tnr: string, sex: string, credits:string};
-  const oldName = name;
 
   const [formData, setFormData] = useState({id, name, descShort, descLong, colorPattern, behavior, yearsRecorded, AoR, currentStatus, furLength, 
     furPattern, tnr, sex, credits});
-
-  const thisEntry = new CatalogEntryObject(formData.id, formData.name, formData.descShort, formData.descLong, formData.colorPattern, formData.behavior, formData.yearsRecorded, formData.AoR, formData.currentStatus, formData.furLength, 
-    formData.furPattern, formData.tnr, formData.sex, formData.credits)
+  
   const [visible, setVisible] = useState<boolean>(false);
   
   const handleChange = (field: string, value: string) => {
@@ -36,13 +33,19 @@ const edit_entry = () => {
   const [newPics, setNewPics] = useState<{ url: string; name: string }[]>([]);
   const [newPhotosAdded, setNewPhotos] = useState<boolean>(false);
   const database = DatabaseService.getInstance();
-  const imageHandler = new CatalogImageHandler({ setVisible, setImageUrls, setNewPics, setNewPhotos, setProfile, name, profilePicUrl});
+  const imageHandler = new CatalogImageHandler({ setVisible, setImageUrls, setNewPics, setNewPhotos, setProfile, name, id, profilePicUrl});
     
   useFocusEffect(
     useCallback(() => {
-      database.fetchCatImages(name, setProfile, setImageUrls);
+      database.fetchCatImages(id, setProfile, setImageUrls);
     }, [profilePicUrl])
   );
+
+  const createObj = () => {
+    return new CatalogEntryObject(formData.id, formData.name, formData.descShort, formData.descLong, formData.colorPattern, formData.behavior, 
+      formData.yearsRecorded, formData.AoR, formData.currentStatus, formData.furLength, formData.furPattern, formData.tnr, formData.sex, 
+      formData.credits)
+  };
 
   return (
     <KeyboardAvoidingView
@@ -50,23 +53,19 @@ const edit_entry = () => {
     >
       <Button style={buttonStyles.logoutButton} onPress={() => router.push({
         pathname: '/catalog/view-entry', 
-        params: { id:id, name:name, descShort:descShort, descLong:descLong, colorPattern:colorPattern, behavior:behavior, yearsRecorded:yearsRecorded, AoR:AoR, 
-          currentStatus:currentStatus, furLength:furLength, furPattern:furPattern, tnr:tnr, sex:sex, credits:credits}, })}>
+        params: { id:formData.id, name:formData.name, descShort:formData.descShort, descLong:formData.descLong, colorPattern:formData.colorPattern, 
+          behavior:formData.behavior, yearsRecorded:formData.yearsRecorded, AoR:formData.AoR, currentStatus:formData.currentStatus, 
+          furLength:formData.furLength, furPattern:formData.furPattern, tnr:formData.tnr, sex:formData.sex, credits:formData.credits}, })}>
         <Ionicons name="arrow-back-outline" size={25} color="#fff" />
       </Button>
       <Button style={buttonStyles.editButton} 
-      onPress={() => database.handleCatalogSave(thisEntry, oldName, newPics, newPhotosAdded, setVisible, router)}>
+      onPress={() => database.handleCatalogSave(createObj(), newPics, newPhotosAdded, setVisible, router)}>
         <Text style ={textStyles.editText}> Save Entry</Text>
       </Button>
       <ScrollView contentContainerStyle={containerStyles.entryContainer}>
         <Text style={textStyles.title}>Edit A Catalog Entry</Text>
         {profilePicUrl ? (<Image source={{ uri: profilePicUrl }} style={containerStyles.headlineImage} resizeMode="contain" />) : 
           <Text style={textStyles.title}>Loading image...</Text>}
-          <View style={containerStyles.extraPicsContainer}>
-          <Snackbar visible={visible} onDismiss={() => setVisible(false)}>
-                Saving...
-          </Snackbar>
-        </View>
         <View style={containerStyles.loginContainer}>
           <Text style={textStyles.headline}>Cat's Name</Text>
           <TextInput 
@@ -177,6 +176,9 @@ const edit_entry = () => {
         <CameraButton onPhotoSelected={imageHandler.addPhoto}></CameraButton>
         <Button style={buttonStyles.deleteButton}onPress={() => database.deleteCatalogEntry(name, id, setVisible, router)}> Delete Catalog Entry</Button>
       </ScrollView>
+      <Snackbar visible={visible} onDismiss={() => setVisible(false)}>
+        Saving...
+      </Snackbar>
     </KeyboardAvoidingView>
   );
 }
