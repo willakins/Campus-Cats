@@ -17,17 +17,17 @@ class SightingsService {
     public async fetchPins(setPins:Dispatch<SetStateAction<CatSightingObject[]>>, setMapKey:Dispatch<SetStateAction<number>>) {
         const querySnapshot = await getDocs(collection(db, 'cat-sightings'));
         const pinsData: CatSightingObject[] = querySnapshot.docs.map(doc => ({
-        id: doc.id,
-        date: doc.data().spotted_time.toDate(),
-        fed: doc.data().fed,
-        health: doc.data().health,
-        photoUrl: doc.data().image,
-        info: doc.data().info,
-        latitude: doc.data().latitude,
-        longitude: doc.data().longitude,
-        name: doc.data().name,
-        uid: doc.data().uid || ''
-        // Include the document ID
+            id: doc.id,
+            date: doc.data().spotted_time.toDate(),
+            fed: doc.data().fed,
+            health: doc.data().health,
+            photoUrl: doc.data().image,
+            info: doc.data().info,
+            latitude: doc.data().latitude,
+            longitude: doc.data().longitude,
+            name: doc.data().name,
+            uid: doc.data().uid || ''
+            // Include the document ID
         }));
         setPins(pinsData);
         setMapKey(prev => prev + 1);

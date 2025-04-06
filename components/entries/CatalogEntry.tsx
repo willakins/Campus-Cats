@@ -7,16 +7,18 @@ import { CatalogEntryObject } from '@/types/CatalogEntryObject';
 import { CatSightingObject } from '@/types';
 import DatabaseService from '../services/DatabaseService';
 import { globalStyles, buttonStyles, textStyles, containerStyles } from '@/styles';
+import { Button } from '../ui/Buttons';
 
 export const CatalogEntry: React.FC<CatalogEntryObject> = 
   ({ id, name, descShort, descLong, colorPattern, behavior, yearsRecorded, AoR, currentStatus, furLength, furPattern, tnr, sex, credits }) => {
   const [profileURL, setProfile] = useState<string>('');
   const [imageUrls, setImageUrls] = useState<string[]>([]);
   const [sightings, setSightings] = useState<CatSightingObject[]>([]);
+  const [showDetails, setShowDetails] = useState<boolean>(false);
   const database = DatabaseService.getInstance();  
 
   useEffect(() => {
-    database.fetchCatImages(name, setProfile, setImageUrls);
+    database.fetchCatImages(id, setProfile, setImageUrls);
     database.getSightings(name, setSightings);
   }, []);
 
@@ -49,7 +51,10 @@ export const CatalogEntry: React.FC<CatalogEntryObject> =
         />
         ))}
       </MapView>
-      <Text style={textStyles.headline}>Detailed Color Pattern</Text>
+      <Button style={buttonStyles.button2}onPress={() => setShowDetails(!showDetails)}>
+        <Text style={textStyles.bigButtonText}> {showDetails ? "Show less details": "Show more details"}</Text>
+      </Button>
+      {showDetails ? <><Text style={textStyles.headline}>Detailed Color Pattern</Text>
       <Text style={textStyles.catalogDescription}>{colorPattern}</Text>
       <Text style={textStyles.headline}>Behavior</Text>
       <Text style={textStyles.catalogDescription}>{behavior}</Text>
@@ -69,8 +74,8 @@ export const CatalogEntry: React.FC<CatalogEntryObject> =
       <Text style={textStyles.headline}>Sex</Text>
       <Text style={textStyles.catalogDescription}>{sex}</Text>
 
-      <Text style={textStyles.headline}>Sources and Credits</Text>
-      <Text style={textStyles.catalogDescription}>{credits}</Text>
+      {credits.length > 0 ? <><Text style={textStyles.headline}>Sources and Credits</Text>
+      <Text style={textStyles.catalogDescription}>{credits}</Text></>: null}</>: null}
       {imageUrls.length > 0 ? <Text style={textStyles.subHeading}> Extra Photos</Text>: null}
       {imageUrls ? (imageUrls.map((url, index) => (
         <Image key={index} source={{ uri: url }} style={containerStyles.extraImage} resizeMode='contain'/>))) : <Text>Loading images...</Text>}  

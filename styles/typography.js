@@ -43,18 +43,18 @@ const textStyles = StyleSheet.create({
     textAlign: 'center',
     marginBottom: 0
   },
-    stationText1: {
-        fontSize: 15,
-        color: 'red',
-        textAlign: 'center',
-        padding: 30,
-    },
-    stationText2: {
-        fontSize: 20,
-        color: 'green',
-        textAlign: 'center',
-        padding:30,
-    },
+  stationText1: {
+      fontSize: 15,
+      color: 'red',
+      textAlign: 'center',
+      padding: 30,
+  },
+  stationText2: {
+      fontSize: 20,
+      color: 'green',
+      textAlign: 'center',
+      padding:30,
+  },
   normalText: {
     fontSize: 16,
     color: '#333',
@@ -197,6 +197,13 @@ const textStyles = StyleSheet.create({
     color: '#777',
     textAlign: 'left',
     marginHorizontal: 10, // Add some horizontal padding for better readability
+  },
+  bigButtonText: {
+    color: '#fff',
+    fontSize: 18,
+    fontWeight: '600',
+    textAlign: 'center',
+    letterSpacing: 0.5,
   },
 });
 export { textStyles };

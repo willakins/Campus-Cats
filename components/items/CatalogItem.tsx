@@ -15,7 +15,7 @@ export const CatalogItem: React.FC<CatalogEntryObject> =
   const database = DatabaseService.getInstance();
 
   useEffect(() => {
-    database.fetchCatImages(name, setProfile);
+    database.fetchCatImages(id, setProfile);
   }, []);
 
   return (

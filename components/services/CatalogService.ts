@@ -13,12 +13,12 @@ class CatalogService {
 
     // Overload signatures
     public async fetchCatImages(
-        catName: string,
+        id: string,
         setProfile: Dispatch<SetStateAction<string>>
     ): Promise<void>;
 
     public async fetchCatImages(
-        catName: string,
+        id: string,
         setProfile: Dispatch<SetStateAction<string>>,
         setImageUrls: Dispatch<SetStateAction<string[]>>
     ): Promise<void>;
@@ -28,18 +28,18 @@ class CatalogService {
      * Effect: Pulls images from firestore storage, sets profile picture, sets extra images if applicable
      */
     public async fetchCatImages(
-        catName: string,
+        id: string,
         setProfile: Dispatch<SetStateAction<string>>,
         setImageUrls?: Dispatch<SetStateAction<string[]>>
     ): Promise<void> {
         try {
-        const folderRef = ref(storage, `cats/${catName}/`);
+        const folderRef = ref(storage, `catalog/${id}/`);
         const result = await listAll(folderRef);
         let extraPicUrls: string[] = [];
 
         for (const itemRef of result.items) {
             const url = await getDownloadURL(itemRef);
-            if (itemRef.name.includes('_profile')) {
+            if (itemRef.name.includes('profile')) {
               setProfile(url);
             } else {
               extraPicUrls.push(url);
@@ -86,13 +86,12 @@ class CatalogService {
     */
     public async handleCatalogSave(
       thisEntry: CatalogEntryObject,
-      oldName: string, 
       newPics: { url: string; name: string; }[], 
       newPhotosAdded: boolean, 
       setVisible: Dispatch<SetStateAction<boolean>>, 
       router: Router) {
         try {
-          const error_message = this.validateInput(thisEntry);
+          const error_message = this.validateInput(thisEntry, '', 'save');
           if (error_message == "") {
             setVisible(true);
             // Reference to the Firestore document using its ID
@@ -115,29 +114,8 @@ class CatalogService {
               sex: thisEntry.sex,
               credits: thisEntry.credits,
             });
-            if (oldName !== thisEntry.name) {
-              const oldFolderRef = ref(storage, `cats/${oldName}`);
-              const oldPhotos = await listAll(oldFolderRef);
-      
-              for (const item of oldPhotos.items) {
-                const oldPath = item.fullPath; // Full path of old image
-                const newPath = oldPath.replace(`cats/${oldName}`, `cats/${thisEntry.name}`); // New path
-      
-                // Download old image data
-                const url = await getDownloadURL(item);
-                const response = await fetch(url);
-                const blob = await response.blob();
-      
-                // Upload to new location
-                const newImageRef = ref(storage, newPath);
-                await uploadBytes(newImageRef, blob);
-      
-                // Delete old image
-                await deleteObject(item);
-              }
-            }
             if (newPhotosAdded) {
-              const folderPath = `cats/${thisEntry.name}/`; // Path in Firebase Storage
+              const folderPath = `catalog/${thisEntry.id}/`; // Path in Firebase Storage
               const folderRef = ref(storage, folderPath);
       
               // Step 3: Upload only new photos
@@ -153,11 +131,10 @@ class CatalogService {
               }
             }
             router.push({
-              pathname: '/catalog/view-entry',
-              params: { id:thisEntry.id, descShort:thisEntry.descShort, descLOng:thisEntry.descLong, ShortcolorPattern:thisEntry.colorPattern, 
+              pathname: '/catalog/view-entry', 
+              params: { id:thisEntry.id, name:thisEntry.name, descShort:thisEntry.descShort, descLong:thisEntry.descLong, colorPattern:thisEntry.colorPattern, 
                 behavior:thisEntry.behavior, yearsRecorded:thisEntry.yearsRecorded, AoR:thisEntry.AoR, currentStatus:thisEntry.currentStatus, 
-                furLength:thisEntry.furLength, furPattern:thisEntry.furPattern, tnr:thisEntry.tnr, sex:thisEntry.sex, credits:thisEntry.credits},
-            })
+                furLength:thisEntry.furLength, furPattern:thisEntry.furPattern, tnr:thisEntry.tnr, sex:thisEntry.sex, credits:thisEntry.credits}, })
           } else {
             Alert.alert(error_message);
           }
@@ -179,17 +156,10 @@ class CatalogService {
       setVisible: Dispatch<SetStateAction<boolean>>, 
       router: Router) {
         try {
-          const error_message = this.validateInput(thisEntry);
+          const error_message = this.validateInput(thisEntry, profilePic, 'create');
           if (error_message == "") {
             setVisible(true);
-            if (profilePic) {
-              const response = await fetch(profilePic);
-              const blob = await response.blob();
-              const imageRef = ref(getStorage(), `cats/${thisEntry.name}/${thisEntry.name}_profile.jpg`);
-              await uploadBytes(imageRef, blob);
-            
-            }
-            await addDoc(collection(db, 'catalog'), {
+            const docRef = await addDoc(collection(db, 'catalog'), {
               name: thisEntry.name,
               descShort: thisEntry.descShort,
               descLong: thisEntry.descLong,
@@ -206,6 +176,13 @@ class CatalogService {
               createdAt: new Date(),
               createdBy: user,
             });
+            if (profilePic) {
+              const response = await fetch(profilePic);
+              const blob = await response.blob();
+              const imageRef = ref(getStorage(), `catalog/${docRef.id}/profile.jpg`);
+              await uploadBytes(imageRef, blob);
+            
+            }
             Alert.alert('Success', 'Cat entry created successfully!');
             router.back();
           } else {
@@ -223,44 +200,53 @@ class CatalogService {
     * Effect: Swaps the profile picture for a catalog entry
     */
     public async swapProfilePicture(
-        catName:string, 
-        picUrl:string, 
-        picName:string, 
-        profilePicUrl?:string, 
-        profilePicName?:string) {
-        const oldProfileRef = ref(storage, `cats/${catName}/${profilePicName}`);
-        const selectedPicRef = ref(storage, `cats/${catName}/${picName}`);
-    
-        // Fetch image blobs
-        const oldProfileBlob = await (await fetch(profilePicUrl!)).blob();
-        const selectedPicBlob = await (await fetch(picUrl)).blob();
-    
-        // Swap images:
-        // 1. Delete both files
-        await deleteObject(oldProfileRef);
-        await deleteObject(selectedPicRef);
-    
-        // 2. Re-upload old profile picture as selectedPic.name
-        const newExtraPicRef = ref(storage, `cats/${catName}/${picName}`);
-        await uploadBytesResumable(newExtraPicRef, oldProfileBlob);
-    
-        // 3. Re-upload selected picture as profile picture
-        const newProfilePicRef = ref(storage, `cats/${catName}/${catName}_profile.jpg`);
-        await uploadBytesResumable(newProfilePicRef, selectedPicBlob);
+      id:string, 
+      picUrl:string, 
+      picName:string, 
+      profilePicUrl?:string) {
+      const folderRef = ref(storage, `catalog/${id}`);
+      const listResult = await listAll(folderRef);
+      
+      // Find the profile picture regardless of extension
+      const profileFile = listResult.items.find((item) => {
+        const name = item.name.toLowerCase();
+        return name.startsWith("profile.") || name === "profile";
+      });
+      
+      const selectedPicRef = ref(storage, `catalog/${id}/${picName}`);
+  
+      // Fetch image blobs
+      const oldProfileBlob = await (await fetch(profilePicUrl!)).blob();
+      const selectedPicBlob = await (await fetch(picUrl)).blob();
+  
+      // Swap images:
+      // 1. Delete both files
+      if (profileFile) {
+        await deleteObject(profileFile);
+      }
+      await deleteObject(selectedPicRef);
+  
+      // 2. Re-upload old profile picture as selectedPic.name
+      const newExtraPicRef = ref(storage, `catalog/${id}/${picName}`);
+      await uploadBytesResumable(newExtraPicRef, oldProfileBlob);
+  
+      // 3. Re-upload selected picture as profile picture
+      const newProfilePicRef = ref(storage, `catalog/${id}/profile.jpg`);
+      await uploadBytesResumable(newProfilePicRef, selectedPicBlob);
     }
 
     /**
     * Effect: deletes a picture from a catalog entry
     */
     public async deleteCatalogPicture(
-        catName:string, 
+        id:string, 
         picName: string, 
         setProfile: Dispatch<SetStateAction<string>>,
         setImageUrls: Dispatch<SetStateAction<string[]>>) {
         try {
-            const imageRef = ref(storage, `cats/${catName}/${picName}`);
+            const imageRef = ref(storage, `catalog/${id}/${picName}`);
             await deleteObject(imageRef);
-            this.fetchCatImages(catName, setProfile, setImageUrls);
+            this.fetchCatImages(id, setProfile, setImageUrls);
     
             alert('Success Image deleted successfully!');
         } catch (error) {
@@ -307,7 +293,7 @@ class CatalogService {
         await deleteDoc(doc(db, 'catalog', id)); //Delete firestore document
 
         //Delete storage folder
-        const photoPath = `cats/${catName}`;
+        const photoPath = `catalog/${catName}`;
         const folderRef = ref(storage, photoPath);
         const result = await listAll(folderRef);
         await Promise.all(result.items.map((item) => deleteObject(item)));
@@ -340,13 +326,12 @@ class CatalogService {
     /**
      * Private 2
      */
-    private validateInput(thisEntry:CatalogEntryObject) {
+    private validateInput(thisEntry:CatalogEntryObject, profilePic:string, type:string) {
       const requiredFields = [
         { key: 'name', label: 'Name' },
         { key: 'descShort', label: 'Short Description' },
         { key: 'descLong', label: 'Long Description' },
         { key: 'colorPattern', label: 'Color pattern' },
-        { key: 'behavior', label: 'Behavior' },
         { key: 'yearsRecorded', label: 'Years recorded' },
         { key: 'AoR', label: 'Area of residence' },
         { key: 'currentStatus', label: 'Current status' },
@@ -361,6 +346,10 @@ class CatalogService {
         if (!value || !value.trim()) {
           return `${field.label} field must not be empty`;
         }
+      }
+
+      if (type == 'create' && (!profilePic || !profilePic.trim())) {
+        return 'Please upload a profile photo of the cat.'
       }
     
       return "";

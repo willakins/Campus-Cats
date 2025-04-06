@@ -284,6 +284,29 @@ const containerStyles = StyleSheet.create({
     shadowRadius: 10,
     elevation: 5,
     width:'100%'
-},
+  },
+  dropDownContainer: {
+    marginVertical: 10, /* Spacing above and below the dropdown */
+    borderRadius: 8, /* Softer, rounded edges */
+    borderWidth: 1, /* Border width for a subtle frame */
+    borderColor: '#ccc', /* Light grey border color */
+    backgroundColor: '#fff', /* White background for clarity */
+    elevation: 3, /* Light shadow to elevate the dropdown */
+    paddingHorizontal: 12, /* Padding inside the dropdown */
+    paddingVertical: 8, /* Padding for the height of the dropdown */
+  },
+  dropDown: {
+    borderRadius: 8, /* Rounded edges for the dropdown */
+    backgroundColor: '#fff', /* White background */
+    color: '#333', /* Text color */
+    fontSize: 16, /* Medium text size */
+    paddingVertical: 10, /* Padding to make the dropdown easy to interact with */
+    borderColor: '#ccc', /* Light border color */
+    borderWidth: 1, /* Thin border around the dropdown */
+    height: 50, /* Consistent height */
+    justifyContent: 'center', /* Center content vertically */
+    alignItems: 'center', /* Center content horizontally */
+    boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.1)', /* Soft shadow effect */
+  },
 });
 export { containerStyles };
