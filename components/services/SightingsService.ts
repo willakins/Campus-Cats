@@ -172,8 +172,8 @@ class SightingsService {
     /**
      * Private 2
      */
-    private validateInput(name:string) {
-        if (!name.trim) {
+    private validateInput(name:string | undefined) {
+        if (!name?.trim()) {
             return "Name cannot be empty"
         }
         return ""
