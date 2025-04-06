@@ -125,7 +125,7 @@ const textStyles = StyleSheet.create({
     color: '#000',
   },
   descInput: {
-    height: '5%',
+    height: 60,
     width: '100%',
     borderColor: '#ccc',
     borderWidth: 1,

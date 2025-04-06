@@ -16,7 +16,7 @@ const edit_ann = () => {
   const { signOut, user } = useAuth();
   const { id, title, info, createdAt, createdBy } = useLocalSearchParams() as {id:string, title:string, info:string, createdAt:string, createdBy:string};
 
-  const [formData, setFormData] = useState({title, info });
+  const [formData, setFormData] = useState({id, title, info, createdAt, createdBy });
   
   const handleChange = (field: string, value: string) => {
     setFormData(prevData => ({
@@ -26,18 +26,17 @@ const edit_ann = () => {
   };
   const [photos, setPhotos] = useState<string[]>([]);
   const [isPicsChanged, setPicsChanged] = useState<boolean>(false);
-  const thisAnn = new AnnouncementEntryObject(id, title, info, createdAt, createdBy);
 
   const [visible, setVisible] = useState<boolean>(false);
   const database = DatabaseService.getInstance();
 
   useEffect(() => {
     database.fetchAnnouncementImages(id, setPhotos);
-  }, [isPicsChanged]);
+  }, []);
 
   const addPhoto = (newPhotoUri: string) => {
-    setPhotos((prevPics) => [
-      ...prevPics,
+    setPhotos((photos) => [
+      ...photos,
       newPhotoUri,
     ]);
     setPicsChanged(true);
@@ -55,7 +54,7 @@ const edit_ann = () => {
         params: { id:id, title:title, info:info, createdAt:createdAt, createdBy:createdBy }, })}>
         <Ionicons name="arrow-back-outline" size={25} color="#fff" />
       </Button>
-      <Button style={buttonStyles.editButton} onPress={() => database.handleAnnouncementSave(thisAnn, photos, isPicsChanged, user, setVisible, router)}>
+      <Button style={buttonStyles.editButton} onPress={() => database.handleAnnouncementSave(formData, photos, isPicsChanged, user, setVisible, router)}>
         <Text style ={textStyles.editText}> Save Announcement</Text>
       </Button>
       <ScrollView contentContainerStyle={containerStyles.entryContainer}>
@@ -92,7 +91,7 @@ const edit_ann = () => {
         </View>
         <Text style={textStyles.headline}> Upload Additional Photos</Text>
         <CameraButton onPhotoSelected={addPhoto}></CameraButton>
-        <Button style={buttonStyles.deleteButton}onPress={() => database.deleteAnnouncement(id, router)}> Delete Announcement</Button>
+        <Button style={buttonStyles.deleteButton}onPress={() => database.deleteAnnouncement(id, router, setVisible)}> Delete Announcement</Button>
       </ScrollView>
     </SafeAreaView>
   );
