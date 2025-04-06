@@ -12,7 +12,7 @@ import { buttonStyles, textStyles, containerStyles } from '@/styles';
 
 const CatSightingScreen = () => {
   const router = useRouter();
-  const { docId, catDate, catFed, catHealth, catInfo, catPhoto, catLongitude, catLatitude, catName} = useLocalSearchParams();
+  const { docId, catDate, catFed, catHealth, catInfo, catPhoto, catLongitude, catLatitude, catName, createdBy} = useLocalSearchParams();
 
   const date = new Date(JSON.parse(catDate as string));
   const fed = JSON.parse(catFed as string);
@@ -24,7 +24,7 @@ const CatSightingScreen = () => {
   const name = catName as string;
   const [photoImage, setPhoto] = useState<string>('');
   const { user } = useAuth();
-  const isAdmin = user.role === 1 || user.role === 2;
+  const isAuthorized = user.role === 1 || user.role === 2 || user.id === createdBy;
   const database = DatabaseService.getInstance();
 
   var location:LatLng = {
@@ -46,7 +46,8 @@ const CatSightingScreen = () => {
       catInfo: catInfo,
       catLongitude: catLongitude,
       catLatitude: catLatitude,
-      catName: catName
+      catName: catName,
+      createdBy: createdBy
     }})
   };
 
@@ -58,7 +59,7 @@ const CatSightingScreen = () => {
       <Button style={buttonStyles.logoutButton} onPress={router.back}>
         <Ionicons name="arrow-back-outline" size={25} color="#fff" />
       </Button>
-      {isAdmin ? <Button style={buttonStyles.editButton} onPress={editSighting}>
+      {isAuthorized ? <Button style={buttonStyles.editButton} onPress={editSighting}>
         <Text style= {textStyles.editText}>Edit</Text>
       </Button> : null}
       <ScrollView contentContainerStyle={containerStyles.scrollView}>
