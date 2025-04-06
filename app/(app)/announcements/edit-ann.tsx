@@ -9,25 +9,30 @@ import { Button, TextInput, CameraButton } from '@/components';
 import DatabaseService from '@/components/services/DatabaseService';
 import { globalStyles, buttonStyles, textStyles, containerStyles } from '@/styles';
 import { AnnouncementEntryObject } from '@/types';
+import { useAuth } from '@/providers/AuthProvider';
 
 const edit_ann = () => {
   const router = useRouter();
-  const { paramId, paramTitle, paramInfo, paramPhotos, paramCreated } = useLocalSearchParams();
+  const { signOut, user } = useAuth();
+  const { id, title, info, createdAt, createdBy } = useLocalSearchParams() as {id:string, title:string, info:string, createdAt:string, createdBy:string};
+
+  const [formData, setFormData] = useState({title, info });
   
-  const id = paramId as string;
-  const [title, setTitle] = useState<string>(paramTitle as string);
-  const [info, setInfo] = useState<string>(paramInfo as string);
-  const photoPath = paramPhotos as string;
+  const handleChange = (field: string, value: string) => {
+    setFormData(prevData => ({
+      ...prevData,
+      [field]: value
+    }));
+  };
   const [photos, setPhotos] = useState<string[]>([]);
-  const createdAt = paramCreated as string;
   const [isPicsChanged, setPicsChanged] = useState<boolean>(false);
-  const thisAnn = new AnnouncementEntryObject(id, title, info, photoPath, createdAt);
+  const thisAnn = new AnnouncementEntryObject(id, title, info, createdAt, createdBy);
 
   const [visible, setVisible] = useState<boolean>(false);
   const database = DatabaseService.getInstance();
 
   useEffect(() => {
-    database.fetchAnnouncementImages(photoPath, setPhotos);
+    database.fetchAnnouncementImages(id, setPhotos);
   }, [isPicsChanged]);
 
   const addPhoto = (newPhotoUri: string) => {
@@ -43,24 +48,14 @@ const edit_ann = () => {
     setPicsChanged(true);
   };
 
-  const handleAnnouncementSave = async () => {
-    await database.handleAnnouncementSave(thisAnn, photos, isPicsChanged, setVisible, router)
-    
-  }
-
-  const deleteAnnouncement = async () => {
-    await database.deleteAnnouncement(photoPath, id)
-    router.push('/announcements');
-  };
-
   return (
     <SafeAreaView style={containerStyles.container}>
       <Button style={buttonStyles.logoutButton} onPress={() => router.push({
         pathname: '/announcements/view-ann', 
-        params: { paramId:id, paramTitle:title, paramInfo:info, paramPhotos, paramCreated }, })}>
+        params: { id:id, title:title, info:info, createdAt:createdAt, createdBy:createdBy }, })}>
         <Ionicons name="arrow-back-outline" size={25} color="#fff" />
       </Button>
-      <Button style={buttonStyles.editButton} onPress={handleAnnouncementSave}>
+      <Button style={buttonStyles.editButton} onPress={() => database.handleAnnouncementSave(thisAnn, photos, isPicsChanged, user, setVisible, router)}>
         <Text style ={textStyles.editText}> Save Announcement</Text>
       </Button>
       <ScrollView contentContainerStyle={containerStyles.entryContainer}>
@@ -68,15 +63,15 @@ const edit_ann = () => {
         <View style={containerStyles.loginContainer}>
         <Text style={textStyles.headline}>Title</Text>
         <TextInput 
-          value={title}
+          value={formData.title}
           placeholderTextColor = "#888"
-          onChangeText={setTitle} 
+          onChangeText={(text) => handleChange('title', text)} 
           style={textStyles.input} />
         <Text style={textStyles.headline}>Description</Text>
         <TextInput
-          value={info}
+          value={formData.info}
           placeholderTextColor = "#888"
-          onChangeText={setInfo} 
+          onChangeText={(text) => handleChange('info', text)} 
           style={textStyles.descInput} 
           multiline={true}/>
         </View>
@@ -97,7 +92,7 @@ const edit_ann = () => {
         </View>
         <Text style={textStyles.headline}> Upload Additional Photos</Text>
         <CameraButton onPhotoSelected={addPhoto}></CameraButton>
-        <Button style={buttonStyles.deleteButton}onPress={deleteAnnouncement}> Delete Announcement</Button>
+        <Button style={buttonStyles.deleteButton}onPress={() => database.deleteAnnouncement(id, router)}> Delete Announcement</Button>
       </ScrollView>
     </SafeAreaView>
   );

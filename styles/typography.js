@@ -22,7 +22,7 @@ const textStyles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#333',
     textAlign: 'center',
-    marginTop: 70,
+    marginTop: 10,
     marginBottom: 5, // Space between title and description
   },
   headline: {
@@ -125,7 +125,7 @@ const textStyles = StyleSheet.create({
     color: '#000',
   },
   descInput: {
-    height: 120,
+    height: '5%',
     width: '100%',
     borderColor: '#ccc',
     borderWidth: 1,
@@ -161,6 +161,39 @@ const textStyles = StyleSheet.create({
   },
   announcementDescription: {
     fontSize: 18,
+    color: '#777',
+    textAlign: 'left',
+    marginHorizontal: 10, // Add some horizontal padding for better readability
+  },
+  catalogInput: {
+    height: 40,
+    width: '100%',
+    //borderColor: '#ccc',
+    //borderWidth: 1,
+    //borderRadius: 5,
+    //marginBottom: 15,
+    //paddingHorizontal: 10,
+    //backgroundColor: '#fff',
+    color: '#000',
+  },
+  catalogDescInput: {
+    height: 50,
+    width: '100%',
+    //borderColor: '#ccc',
+    //borderWidth: 1,
+    //borderRadius: 5,
+    //marginBottom: 15,
+    //paddingHorizontal: 10,
+    //backgroundColor: '#fff',
+    color: '#000',
+    //elevation: 3,  // Adds shadow on Android
+    //shadowColor: '#000',  // Adds shadow on iOS
+    //shadowOffset: { width: 0, height: 2 },
+    //shadowOpacity: 0.1,
+    //shadowRadius: 4,
+  },
+  catalogLongDescription: {
+    fontSize: 14,
     color: '#777',
     textAlign: 'left',
     marginHorizontal: 10, // Add some horizontal padding for better readability

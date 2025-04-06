@@ -1,9 +1,7 @@
 import { useState } from 'react';
-import { KeyboardAvoidingView, Image } from 'react-native';
-
+import { Image, KeyboardAvoidingView, Platform, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Snackbar } from 'react-native-paper';
-
 import { LoginForm } from '@/forms';
 import { useAuth } from '@/providers';
 import { containerStyles, globalStyles } from '@/styles';

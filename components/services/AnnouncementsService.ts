@@ -1,5 +1,6 @@
 import { db, storage } from "@/config/firebase";
-import { AnnouncementEntryObject } from "@/types";
+import { useAuth } from "@/providers/AuthProvider";
+import { AnnouncementEntryObject, User } from "@/types";
 import { Router } from "expo-router";
 import { addDoc, collection, deleteDoc, doc, getDocs, serverTimestamp, updateDoc } from "firebase/firestore";
 import { deleteObject, getDownloadURL, listAll, ref, uploadBytes } from "firebase/storage";
@@ -21,8 +22,8 @@ class AnnouncementsService {
                 id: doc.id,
                 title: doc.data().title,
                 info: doc.data().info,
-                photos: doc.data().photos,
-                createdAt: doc.data().createdAt,
+                createdAt: this.getDateString(doc.data().createdAt.toDate()),
+                createdBy: doc.data().createdBy.email,
             }));
             setAnns(anns);
         } catch (error) {
@@ -33,32 +34,37 @@ class AnnouncementsService {
     /**
     * Effect: creates an announcement and stores it in firestore
     */
-    public async handleAnnouncementCreate(title:string, info:string, photos:string[], setVisible:Dispatch<SetStateAction<boolean>>) {
-        if (!title.trim() || !info.trim()) {
-          Alert.alert('Invalid Title', 'title cannot be empty.');
-          return;
-        }
+    public async handleAnnouncementCreate(
+        title:string, 
+        info:string, 
+        photos:string[], 
+        user:User,
+        setVisible:Dispatch<SetStateAction<boolean>>,
+        router: Router) {
         try {
-          setVisible(true);
+            const error_message = this.validate_input(title, info)
+            if (error_message == "") {
+                setVisible(true);
     
-          // Create a unique folder path for this announcement
-          const folderPath = `announcements/${Date.now()}-${Math.random()}`;
-    
-          // Upload images to Firebase Storage
-          await this.uploadImagesToStorage(photos, folderPath);
-    
-          // Save announcement document in Firestore
-          const docRef = await addDoc(collection(db, 'announcements'), {
-            title,
-            info,
-            photos: folderPath, // Store only the folder path, not individual URLs
-            createdAt: serverTimestamp(),
-          });
-    
-          Alert.alert('Success', 'Announcement created successfully!');
+                // Save announcement document in Firestore
+                const docRef = await addDoc(collection(db, 'announcements'), {
+                title,
+                info,
+                createdAt: new Date(),
+                createdBy: user
+                });
+
+                // Create a unique folder path for this announcement
+                const folderPath = `announcements/${docRef}`;
+                await this.uploadImagesToStorage(photos, folderPath);
+                Alert.alert('Announcement created successfully!');
+                router.navigate('/announcements');
+            } else {
+                Alert.alert(error_message)
+            }
         } catch (error) {
           console.error('Error creating announcement:', error);
-          Alert.alert('Error', 'Failed to create announcement.');
+          Alert.alert('Failed to create announcement.');
         } finally {
           setVisible(false);
         }
@@ -71,66 +77,73 @@ class AnnouncementsService {
         thisAnn: AnnouncementEntryObject,
         newPhotos: string[], 
         isPicsChanged: boolean, 
+        user: User,
         setVisible: Dispatch<SetStateAction<boolean>>, 
         router: Router) {
         try {
-            setVisible(true);
-            const announcementRef = doc(db, 'announcements', thisAnn.id);
-            
-            await updateDoc(announcementRef, { //Update firestore
-                title: thisAnn.title,
-                info: thisAnn.info,
-                photos: thisAnn.photos,
-                updatedAt: new Date(),
-            });
+            const error_message = this.validate_input(thisAnn.title, thisAnn.info);
+            if (error_message == "") {
+                setVisible(true);
+                const announcementRef = doc(db, 'announcements', thisAnn.id);
+                
+                await updateDoc(announcementRef, { //Update firestore
+                    title: thisAnn.title,
+                    info: thisAnn.info,
+                    createdAt: serverTimestamp(),
+                    createdBy: user,
+                });
 
-            //Update storage bucket
-            if (isPicsChanged) {
-                await this.deleteAllImagesInFolder(thisAnn.photos);
-                await this.uploadImagesToStorage(newPhotos, thisAnn.photos);
+                //Update storage bucket
+                if (isPicsChanged) {
+                    await this.deleteAllImagesInFolder(`announcements/${announcementRef}`);
+                    await this.uploadImagesToStorage(newPhotos, `announcements/${announcementRef}`);
+                }
+            
+                console.log('Announcement updated successfully');
+                router.push({
+                    pathname: '/announcements/view-ann',
+                    params: { 
+                        id:thisAnn.id, 
+                        title:thisAnn.title, 
+                        info:thisAnn.info, 
+                        createdAt:thisAnn.createdAt,
+                        createdBy:thisAnn.createdBy, },
+                  });
+            } else {
+                Alert.alert(error_message);
             }
-        
-            console.log('Announcement updated successfully');
         } catch (error) {
             console.error('Error updating announcement: ', error);
         } finally {
             setVisible(false);
-            router.push({
-                pathname: '/announcements/view-ann',
-                params: { 
-                    paramId:thisAnn.id, 
-                    paramTitle:thisAnn.title, 
-                    paramInfo:thisAnn.info, 
-                    paramPhotos:thisAnn.photos, 
-                    paramCreated:thisAnn.createdAt },
-              });
         }
     }
 
     /**
     * Effect: Deletes an announcement from database
     */
-    public async deleteAnnouncement(photoPath:string, id:string) {
+    public async deleteAnnouncement(id:string, router:Router) {
         try {
-          if (photoPath) {
-            const folderRef = ref(storage, photoPath);
-            const result = await listAll(folderRef);
-            await Promise.all(result.items.map((item) => deleteObject(item)));
-          }
-          await deleteDoc(doc(db, 'announcements', id));
-          alert('Announcement deleted successfully!');
-          
+            const photoPath = `announcements/${id}`;
+            if (photoPath) {
+                const folderRef = ref(storage, photoPath);
+                const result = await listAll(folderRef);
+                await Promise.all(result.items.map((item) => deleteObject(item)));
+            }
+            await deleteDoc(doc(db, 'announcements', id));
+            alert('Announcement deleted successfully!');
+            router.navigate('/announcements');
         } catch (error) {
-          alert(error);
+            alert(error);
         }
     }
 
     /**
      * Effect: pulls announcement images from storage
      */
-    public async fetchAnnouncementImages(folderPath:string, setImageUrls:Dispatch<SetStateAction<string[]>>) {
+    public async fetchAnnouncementImages(id:string, setImageUrls:Dispatch<SetStateAction<string[]>>) {
         try {
-            const folderRef = ref(storage, folderPath);
+            const folderRef = ref(storage, `announcements/${id}`);
             const result = await listAll(folderRef); // Get all files in the folder
         
             // Fetch URLs for each file
@@ -138,7 +151,6 @@ class AnnouncementsService {
             setImageUrls(urls); // Return the list of URLs
         } catch (error) {
             console.error('Error fetching image URLs:', error);
-            throw error;
         }
     }
 
@@ -173,6 +185,29 @@ class AnnouncementsService {
         throw error;
         }
     }
-}
 
+    /**
+     * Private 3
+     */
+    private validate_input(title:string, info:string) {
+        if (!title.trim()) {
+            return "Error: Title cannot be empty.";
+        }
+        if (!info.trim()) {
+            return "Error: Info description cannot be empty.";
+        }
+        return "";
+    }
+
+    /**
+     * Private 4
+     */
+    private getDateString(date:Date) {
+        const monthNames = [
+            "January", "February", "March", "April", "May", "June", 
+            "July", "August", "September", "October", "November", "December"
+          ];
+        return`${monthNames[date.getMonth()]}, ${date.getDate()}, ${date.getFullYear()}`;
+    }
+}
 export default AnnouncementsService;

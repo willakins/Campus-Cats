@@ -101,9 +101,9 @@ class DatabaseService {
    * Effect: pulls cat sightings from firestore
    */
   public async getSightings(
-    catName: string, 
+    name: string, 
     setSightings:Dispatch<SetStateAction<CatSightingObject[]>>) {
-    await DatabaseService.sightingsService.getSightings(catName, setSightings);
+    await DatabaseService.sightingsService.getSightings(name, setSightings);
   }
 
   /**
@@ -183,27 +183,25 @@ class DatabaseService {
    * Effect: Updates firestore and storage when editing a catalog entry
    */
   public async handleCatalogSave(
-    catName: string, 
+    thisEntry: CatalogEntryObject,
     oldName: string, 
-    info: string, 
     newPics: { url: string; name: string; }[], 
     newPhotosAdded: boolean, 
-    id: string, setVisible: 
-    Dispatch<SetStateAction<boolean>>, 
+    setVisible: Dispatch<SetStateAction<boolean>>, 
     router: Router) {
-    await DatabaseService.catalogService.handleCatalogSave(catName, oldName, info, newPics, newPhotosAdded, id, setVisible, router);
+    await DatabaseService.catalogService.handleCatalogSave(thisEntry, oldName, newPics, newPhotosAdded, setVisible, router);
   }
 
   /**
    * Effect: Creates a new catalog entry and stores it in firebase
    */
   public async handleCatalogCreate(
-    catName: string, 
-    info: string, 
+    thisEntry:CatalogEntryObject,
     profilePic: string, 
+    user: User,
     setVisible: Dispatch<SetStateAction<boolean>>, 
     router: Router) {
-    await DatabaseService.catalogService.handleCatalogCreate(catName, info, profilePic, setVisible, router);
+    await DatabaseService.catalogService.handleCatalogCreate(thisEntry, profilePic, user, setVisible, router);
   }
 
   /**
@@ -250,15 +248,21 @@ class DatabaseService {
   /**
    * Effect: pulls announcement images from storage
    */
-  public async fetchAnnouncementImages(folderPath:string, setImageUrls:Dispatch<SetStateAction<string[]>>) {
-    await DatabaseService.announcementsService.fetchAnnouncementImages(folderPath, setImageUrls);
+  public async fetchAnnouncementImages(id:string, setImageUrls:Dispatch<SetStateAction<string[]>>) {
+    await DatabaseService.announcementsService.fetchAnnouncementImages(id, setImageUrls);
   }
 
   /**
    * Effect: creates an announcement and stores it in firestore
    */
-  public async handleAnnouncementCreate(title:string, info:string, photos:string[], setVisible:Dispatch<SetStateAction<boolean>>) {
-    await DatabaseService.announcementsService.handleAnnouncementCreate(title, info, photos, setVisible);
+  public async handleAnnouncementCreate(
+    title:string, 
+    info:string, 
+    photos:string[], 
+    user:User,
+    setVisible:Dispatch<SetStateAction<boolean>>,
+    router: Router) {
+    await DatabaseService.announcementsService.handleAnnouncementCreate(title, info, photos, user, setVisible, router);
   }
 
   /**
@@ -268,16 +272,17 @@ class DatabaseService {
     thisAnn: AnnouncementEntryObject,
     newPhotos: string[], 
     isPicsChanged: boolean, 
+    user: User,
     setVisible: Dispatch<SetStateAction<boolean>>, 
     router: Router) {
-    await DatabaseService.announcementsService.handleAnnouncementSave(thisAnn, newPhotos, isPicsChanged, setVisible, router);
+    await DatabaseService.announcementsService.handleAnnouncementSave(thisAnn, newPhotos, isPicsChanged, user, setVisible, router);
   }
 
   /**
    * Effect: Deletes an announcement from database
    */
-  public async deleteAnnouncement(photoPath:string, id:string) {
-    await DatabaseService.announcementsService.deleteAnnouncement(photoPath, id);
+  public async deleteAnnouncement(id:string, router:Router) {
+    await DatabaseService.announcementsService.deleteAnnouncement(id, router);
   }
 
   /**

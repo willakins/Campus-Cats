@@ -7,38 +7,24 @@ import { Snackbar } from 'react-native-paper';
 import { Button, CameraButton, TextInput } from '@/components';
 import DatabaseService from '@/components/services/DatabaseService';
 import { globalStyles, buttonStyles, textStyles, containerStyles } from '@/styles';
+import { useAuth } from '@/providers/AuthProvider';
 
 
 const create_ann = () =>{
   const router = useRouter();
+  const { signOut, user } = useAuth();
   const [visible, setVisible] = useState<boolean>(false);
   const [info, setInfo] = useState<string>('');
   const [title, setTitle] = useState<string>('');
   const [photos, setPhotos] = useState<string[]>([]);
   const database = DatabaseService.getInstance();
-  
-  const handleCreate = async () => {
-    await database.handleAnnouncementCreate(title, info, photos, setVisible);
-    router.push('/announcements');
-  }
-
-  const addPhoto = (newPhotoUri: string) => {
-    setPhotos((prevPics) => [
-      ...prevPics,
-      newPhotoUri,
-    ]);
-  };
-
-  const deleteImage = (imageUri: string) => {
-    setPhotos((prevPhotos) => prevPhotos.filter((pic) => pic !== imageUri));
-  };
 
   return (
     <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <Button style={buttonStyles.logoutButton} onPress={() => router.push('/announcements')}>
         <Ionicons name="arrow-back-outline" size={25} color="#fff" />
       </Button>
-      <Button style={buttonStyles.editButton} onPress={handleCreate}>
+      <Button style={buttonStyles.editButton} onPress={() => database.handleAnnouncementCreate(title, info, photos, user, setVisible, router)}>
         <Text style={textStyles.editText}> Create Announcement</Text>
       </Button>
       <ScrollView contentContainerStyle={containerStyles.entryContainer}>
@@ -59,11 +45,12 @@ const create_ann = () =>{
             multiline={true}/>
             <Text style={textStyles.headline2}>Want to Add Photos?</Text>
         <View style={containerStyles.cameraView}>
-          <CameraButton onPhotoSelected={addPhoto}></CameraButton>
+          <CameraButton onPhotoSelected={(newPhotoUri) => setPhotos((prevPics) => 
+            [...prevPics,newPhotoUri,])}></CameraButton>
           {photos ? (photos.map((pic, index) => (
           <View key={index} style={containerStyles.imageWrapper}>
             <Image source={{ uri: pic }} style={containerStyles.extraPic} />
-            <Button style={buttonStyles.deleteButton} onPress={() => deleteImage(pic)}>
+            <Button style={buttonStyles.deleteButton} onPress={() => setPhotos((prevPhotos) => prevPhotos.filter((uri) => uri !== pic))}>
               <Text style={textStyles.deleteButtonText}>Delete</Text>
             </Button>
           </View>

@@ -24,6 +24,7 @@
     "@react-navigation/stack": "^7.1.1",
     "@teovilla/react-native-web-maps": "^0.9.5",
     "@types/babel-traverse": "^6.25.10",
+    "eas-cli": "^16.2.1",
     "expo": "~52.0.42",
     "expo-camera": "~16.0.18",
     "expo-constants": "~17.0.4",
