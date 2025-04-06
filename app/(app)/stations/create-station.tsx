@@ -4,54 +4,43 @@ import { Image, KeyboardAvoidingView, Platform, ScrollView, Text, View } from 'r
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Snackbar } from 'react-native-paper';
-import { Button, CameraButton, TextInput } from '@/components';
+import { Button, CameraButton, DateTimeInput, TextInput } from '@/components';
 import DatabaseService from '@/components/services/DatabaseService';
 import { globalStyles, buttonStyles, textStyles, containerStyles } from '@/styles';
 import MapView, { LatLng, MapPressEvent, Marker } from 'react-native-maps';
-import DateTimePicker from '@react-native-community/datetimepicker';
 import { StationEntryObject } from '@/types';
 
 
 const create_station = () =>{
   const router = useRouter();
   const [visible, setVisible] = useState<boolean>(false);
-  const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
-  const [showPicker, setShowPicker] = useState<boolean>(true);
+  const [date, setDate] = useState<Date>(new Date());
 
-  const [name, setName] = useState<string>('');
-  const [profile, setProfile] = useState<string>('');
-  const [longitude, setLongitude] = useState<number>(-84.3963);
-  const [latitude, setLatitude] = useState<number>(33.7756);
-  const [lastStocked, setLastStocked] = useState<string>('');
-  const [stockingFreq, setStockingFreq] = useState<string>("7");
-  const [cats, setCats] = useState<string>('');
-  const thisStation:StationEntryObject = 
-    new StationEntryObject('-1', name, longitude, latitude, lastStocked, stockingFreq, cats);
+  const [formData, setFormData] = useState({name: "", profile: "", longitude: 0, latitude: 0, stockingFreq: "7", cats: ""});
 
+  const handleChange = (field: string, value: string | number) => {
+    setFormData(prevData => ({
+      ...prevData,
+      [field]: value
+    }));
+  };
+    
   const database = DatabaseService.getInstance();
   
+  const createObj = () => {
+    return new StationEntryObject('-1', formData.name, formData.profile, formData.longitude, formData.latitude, date.toISOString().split('T')[0], 
+    formData.stockingFreq, formData.cats);
+  }
 
   var location:LatLng = {
-      latitude: latitude,
-      longitude: longitude,
+      latitude: formData.latitude,
+      longitude: formData.longitude,
   };
 
   const handleMapPress = (event: MapPressEvent) => {
       const { latitude, longitude } = event.nativeEvent.coordinate;
-      setLatitude(latitude);
-      setLongitude(longitude);
-    };
-  
-    const handleDateChange = (event: any, selectedDate: Date | undefined) => {
-      if (selectedDate) {
-        setSelectedDate(selectedDate);
-        setLastStocked(selectedDate.toISOString().split('T')[0]);
-        setShowPicker(false);
-        const timeout = setTimeout(() => {
-          setShowPicker(true);
-        }, 10);
-        
-      }
+      handleChange('latitude', latitude)
+      handleChange('longitude', longitude)
     };
 
   return (
@@ -59,7 +48,7 @@ const create_station = () =>{
       <Button style={buttonStyles.logoutButton} onPress={() => router.back()}>
         <Ionicons name="arrow-back-outline" size={25} color="#fff" />
       </Button>
-      <Button style={buttonStyles.editButton} onPress={() => database.createStation(thisStation, profile, router)}>
+      <Button style={buttonStyles.editButton} onPress={() => database.createStation(createObj(), setVisible, router)}>
         <Text style={textStyles.editText}> Create Station</Text>
       </Button>
       <ScrollView contentContainerStyle={containerStyles.entryContainer}>
@@ -69,7 +58,7 @@ const create_station = () =>{
           <TextInput 
             placeholder="What should this station be called?"
             placeholderTextColor="#888"
-            onChangeText={setName} 
+            onChangeText={(text) => handleChange('name', text)} 
             style={textStyles.input} />
           <Text style={textStyles.headline}>Station Location</Text>
           <MapView
@@ -85,40 +74,30 @@ const create_station = () =>{
               {location ? <Marker coordinate={location} /> : null}
             </MapView>
             <Text style={textStyles.subHeading2}>Last Time Stocked</Text>
-            <View style={containerStyles.dateInput}>
-              <Text style={textStyles.dateText}>{lastStocked ? lastStocked : "Unknown Date"}</Text>
-              {showPicker && <DateTimePicker
-                  testID="dateTimePicker"
-                  value={selectedDate || new Date()}
-                  mode="date"
-                  display="default"
-                  onChange={handleDateChange}
-                  style={containerStyles.picker}
-                />}
-            </View>
+            <DateTimeInput date={date || new Date()} setDate={setDate}/>
           <Text style={textStyles.subHeading2}>How Often Does This Station Need to be restocked? (in days)</Text>
           <TextInput
-            placeholder={stockingFreq}
+            placeholder={formData.stockingFreq}
             placeholderTextColor="#888"
-            onChangeText={(text) => setStockingFreq(text)}
+            onChangeText={(text) => handleChange('stockingFreq', text)}
             style={textStyles.input}/>
           <Text style={textStyles.subHeading2}>Cats Known to Frequent This Station (optional)</Text>
           <TextInput
             placeholder="Common cats"
             placeholderTextColor="#888"
-            onChangeText={setCats} 
+            onChangeText={(text) => handleChange('cats', text)} 
             style={textStyles.descInput}
             multiline={true} />
           <Text style={textStyles.headline2}>Select Profile Picture</Text>
           <View style={containerStyles.cameraView}>
-            <CameraButton onPhotoSelected={setProfile}></CameraButton>
-            {profile ? <Image source={{ uri: profile }} style={containerStyles.selectedPreview} /> : null}
+            <CameraButton onPhotoSelected={(text) => handleChange('profile', text)}></CameraButton>
+            {formData.profile ? <Image source={{ uri: formData.profile }} style={containerStyles.selectedPreview} /> : null}
           </View>
         </View>
-        <Snackbar visible={visible} onDismiss={() => setVisible(false)} duration={2000}>
+      </ScrollView>
+      <Snackbar visible={visible} onDismiss={() => setVisible(false)} duration={2000}>
           Creating Entry...
         </Snackbar>
-      </ScrollView>
     </KeyboardAvoidingView>
   );
 }

@@ -31,16 +31,16 @@ const HomeScreen = () => {
 
   const viewSighting = (pin: CatSightingObject) => {
     router.push({ pathname: '/sighting/view-report', params: {
-      docId: pin.id,
-      catDate: JSON.stringify(pin.date),
+      id: pin.id,
+      date: JSON.stringify(pin.date),
       catFed: pin.fed ? 'true':'false',
       catHealth: pin.health ? 'true':'false',
-      catPhoto: pin.photoUrl,
-      catInfo: pin.info,
+      photo: pin.photoUrl,
+      info: pin.info,
       catLongitude: JSON.stringify(pin.longitude),
       catLatitude: JSON.stringify(pin.latitude),
-      catName: pin.name,
-      createdBy: pin.uid
+      name: pin.name,
+      uid: pin.uid
     }})
   };
 
