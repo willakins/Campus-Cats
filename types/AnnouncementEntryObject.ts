@@ -2,14 +2,14 @@ export class AnnouncementEntryObject {
     id: string;
     title: string;
     info: string;
-    photos: string;
     createdAt:string;
+    createdBy:string;
 
-    constructor(id: string, title: string, info: string, photos: string, createdAt: string) {
+    constructor(id: string, title: string, info: string, createdAt: string, createdBy:string) {
         this.id = id;
         this.title = title;
         this.info = info;
-        this.photos = photos;
         this.createdAt = createdAt;
+        this.createdBy = createdBy;
     }
 }

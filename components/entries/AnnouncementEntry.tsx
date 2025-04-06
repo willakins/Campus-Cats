@@ -1,20 +1,24 @@
 import React, { useEffect, useState } from 'react';
-import { Text, Image, ScrollView } from 'react-native';
+import { Text, Image, ScrollView, View } from 'react-native';
 
 import { AnnouncementEntryObject } from '@/types';
 import DatabaseService from '../services/DatabaseService';
 import { globalStyles, buttonStyles, textStyles, containerStyles } from '@/styles';
 
-export const AnnouncementEntry: React.FC<AnnouncementEntryObject> = ({ id, title, info, photos }) => {
+export const AnnouncementEntry: React.FC<AnnouncementEntryObject> = ({ id, title, info, createdAt, createdBy }) => {
   const [imageUrls, setImageUrls] = useState<string[]>([]);
   const database = DatabaseService.getInstance();  
-
+  
   useEffect(() => {
-    database.fetchAnnouncementImages(photos, setImageUrls);
+    database.fetchAnnouncementImages(id, setImageUrls);
   }, []);
 
   return (
     <ScrollView contentContainerStyle={containerStyles.scrollView}>
+      <View style={containerStyles.announcementDetails}>
+        <Text style={textStyles.subHeading2}>Author: {createdBy}</Text>
+        <Text style={textStyles.subHeading2}>Announced At: {createdAt}</Text>
+      </View>
       <Text style={textStyles.announcementTitle}>{title}</Text>
       <Text style={textStyles.announcementDescription}>{info}</Text>
       {imageUrls.length > 0 ? <Text style={textStyles.headline2}> Photos</Text> : null}
