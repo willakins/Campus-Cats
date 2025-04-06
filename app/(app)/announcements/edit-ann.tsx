@@ -63,13 +63,13 @@ const edit_ann = () => {
         <View style={containerStyles.loginContainer}>
         <Text style={textStyles.headline}>Title</Text>
         <TextInput 
-          value={title}
+          value={formData.title}
           placeholderTextColor = "#888"
           onChangeText={(text) => handleChange('title', text)} 
           style={textStyles.input} />
         <Text style={textStyles.headline}>Description</Text>
         <TextInput
-          value={info}
+          value={formData.info}
           placeholderTextColor = "#888"
           onChangeText={(text) => handleChange('info', text)} 
           style={textStyles.descInput} 
