@@ -147,12 +147,12 @@ class DatabaseService {
 
   // Overload signatures
   public async fetchCatImages(
-      catName: string,
+      id: string,
       setProfile: Dispatch<SetStateAction<string>>
   ): Promise<void>;
 
   public async fetchCatImages(
-      catName: string,
+      id: string,
       setProfile: Dispatch<SetStateAction<string>>,
       setImageUrls: Dispatch<SetStateAction<string[]>>
   ): Promise<void>;
@@ -162,14 +162,14 @@ class DatabaseService {
    * Effect: Pulls images from firestore storage, sets profile picture, sets extra images if applicable
    */
   public async fetchCatImages(
-    catName: string,
+    id: string,
     setProfile: Dispatch<SetStateAction<string>>,
     setImageUrls?: Dispatch<SetStateAction<string[]>>
   ): Promise<void> {
     if (setImageUrls){
-      await DatabaseService.catalogService.fetchCatImages(catName, setProfile, setImageUrls);
+      await DatabaseService.catalogService.fetchCatImages(id, setProfile, setImageUrls);
     } else {
-      await DatabaseService.catalogService.fetchCatImages(catName, setProfile);
+      await DatabaseService.catalogService.fetchCatImages(id, setProfile);
     }
   }
 
@@ -186,12 +186,11 @@ class DatabaseService {
    */
   public async handleCatalogSave(
     thisEntry: CatalogEntryObject,
-    oldName: string, 
     newPics: { url: string; name: string; }[], 
     newPhotosAdded: boolean, 
     setVisible: Dispatch<SetStateAction<boolean>>, 
     router: Router) {
-    await DatabaseService.catalogService.handleCatalogSave(thisEntry, oldName, newPics, newPhotosAdded, setVisible, router);
+    await DatabaseService.catalogService.handleCatalogSave(thisEntry, newPics, newPhotosAdded, setVisible, router);
   }
 
   /**
@@ -221,23 +220,22 @@ class DatabaseService {
    * Effect: Swaps the profile picture for a catalog entry
    */
   public async swapProfilePicture(
-    catName:string, 
+    id:string, 
     picUrl:string, 
     picName:string, 
-    profilePicUrl?:string, 
-    profilePicName?:string) {
-    await DatabaseService.catalogService.swapProfilePicture(catName, picUrl, picName, profilePicUrl, profilePicName);
+    profilePicUrl?:string) {
+    await DatabaseService.catalogService.swapProfilePicture(id, picUrl, picName, profilePicUrl);
   }
 
   /**
   * Effect: deletes a picture from a catalog entry
   */
   public async deleteCatalogPicture(
-    catName:string, 
+    id:string, 
     picName: string, 
     setProfile: Dispatch<SetStateAction<string>>,
     setImageUrls: Dispatch<SetStateAction<string[]>>) {
-    await DatabaseService.catalogService.deleteCatalogPicture(catName, picName, setProfile, setImageUrls);
+    await DatabaseService.catalogService.deleteCatalogPicture(id, picName, setProfile, setImageUrls);
   }
 
   /**

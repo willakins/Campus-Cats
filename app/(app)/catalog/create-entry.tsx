@@ -12,7 +12,7 @@ import { useAuth } from '@/providers/AuthProvider';
 
 const create_entry = () =>{
   const router = useRouter();
-  const { signOut, user } = useAuth();
+  const { user } = useAuth();
   const [visible, setVisible] = useState<boolean>(false);
   const [formData, setFormData] = useState({name: "", descShort: "", descLong: "", colorPattern: "", behavior: "", yearsRecorded: "", AoR: "", 
     currentStatus: "", furLength: "", furPattern: "", tnr: "", sex: "",credits: ""});

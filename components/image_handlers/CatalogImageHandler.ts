@@ -9,6 +9,7 @@ interface CatalogImageHandlerProps {
   setNewPhotos: React.Dispatch<React.SetStateAction<boolean>>;
   setProfile: React.Dispatch<React.SetStateAction<string>>;
   name: string; // Assuming the cat's name is passed to the handler
+  id: string;
   profilePicName?: string;
   profilePicUrl?: string;
 }
@@ -20,6 +21,7 @@ class CatalogImageHandler {
   private setNewPhotos: React.Dispatch<React.SetStateAction<boolean>>;
   private setProfile: React.Dispatch<React.SetStateAction<string>>;
   private name: string;
+  private id: string;
   private profilePicName?: string;
   private profilePicUrl?: string;
   private database = DatabaseService.getInstance();
@@ -31,6 +33,7 @@ class CatalogImageHandler {
     setNewPhotos,
     setProfile,
     name,
+    id,
     profilePicUrl
   }: CatalogImageHandlerProps) {
     this.setVisible = setVisible;
@@ -39,7 +42,7 @@ class CatalogImageHandler {
     this.setNewPhotos = setNewPhotos;
     this.setProfile = setProfile;
     this.name = name;
-    this.profilePicName = name + '_profile.jpg';
+    this.id = id;
     this.profilePicUrl = profilePicUrl;
   }
 
@@ -47,12 +50,12 @@ class CatalogImageHandler {
     const picName = this.getFileNameFromUrl(picUrl);
     try {
       this.setVisible(true);
-      if (!this.profilePicName || !picName) {
+      if (!picName) {
         alert('Error Could not find profile picture or selected picture.');
         return;
       }
-      await this.database.swapProfilePicture(this.name, picUrl, picName, this.profilePicUrl, this.profilePicName);
-      this.database.fetchCatImages(this.name, this.setProfile, this.setImageUrls);
+      await this.database.swapProfilePicture(this.id, picUrl, picName, this.profilePicUrl);
+      this.database.fetchCatImages(this.id, this.setProfile, this.setImageUrls);
     } catch (error) {
       console.error('Error swapping profile picture:', error);
       alert('Error Failed to swap profile picture.');
@@ -69,7 +72,7 @@ class CatalogImageHandler {
       [
         {
           text: 'Delete Forever',
-          onPress: async () => await this.database.deleteCatalogPicture(this.name, picName, this.setProfile, this.setImageUrls),
+          onPress: async () => await this.database.deleteCatalogPicture(this.id, picName, this.setProfile, this.setImageUrls),
         },
         {
           text: 'Cancel',
