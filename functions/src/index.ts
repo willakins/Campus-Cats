@@ -49,7 +49,6 @@ export const createWhitelistUser = functions.https.onCall(
     if (!email || !password) {
       throw new functions.https.HttpsError('invalid-argument', 'Missing email or password');
     }
-
     try {
       const userRecord = await admin.auth().createUser({
         email,
@@ -58,6 +57,7 @@ export const createWhitelistUser = functions.https.onCall(
       logger.debug("userRecord.uid", userRecord.uid);
       await admin.firestore().collection('users').doc(userRecord.uid).set({
         email,
+        password,
         role: 0,
       });
 
