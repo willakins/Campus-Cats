@@ -1,0 +1,12 @@
+specVersion: "v1"
+serviceId: "JIC-4331-ScrapCats"
+location: "us-east1"
+schema:
+  source: "./schema"
+  datasource:
+    postgresql:
+      database: "fdcdb"
+      cloudSql:
+        instanceId: "jic-4331-scrapcats-fdc"
+      # schemaValidation: "COMPATIBLE"
+connectorDirs: ["./connector"]

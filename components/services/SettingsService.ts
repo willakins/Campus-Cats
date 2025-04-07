@@ -1,10 +1,9 @@
-import { auth, db } from "@/config/firebase";
+import { app, auth, db } from "@/config/firebase";
 import { ContactInfo, User, WhitelistApp } from "@/types";
 import { Router } from "expo-router";
 import { addDoc, collection, deleteDoc, doc, getDocs, updateDoc } from "firebase/firestore";
 import { Dispatch, SetStateAction } from "react";
 import { Alert } from "react-native";
-import { createUserWithEmailAndPassword } from '@firebase/auth';
 import { getFunctions, httpsCallable } from 'firebase/functions';
 
 //Wrapper class for settings database funcitonality
@@ -206,6 +205,7 @@ class SettingsService {
             email: app.email,
             codeWord: app.codeWord
           });
+          alert('Submited! An officer will review your application. If accepted, you will receive an email, check your spam.')
           router.push('/login')
       } else {
         alert(error_message);
@@ -240,7 +240,7 @@ class SettingsService {
    * Effect: Accepts or denies a whitelist applicaton
    */
   public async whitelistDecide(
-    app:WhitelistApp, 
+    application:WhitelistApp, 
     decision:string,
     setApps:Dispatch<SetStateAction<WhitelistApp[]>>, 
     setVisible:Dispatch<SetStateAction<boolean>>) {
@@ -248,35 +248,35 @@ class SettingsService {
       setVisible(true);
       if (decision == 'accept') {
         const password = this.generatePassword(10);
-        const functions = getFunctions();
+        const functions = getFunctions(app);
+
         const sendWhitelistEmail = httpsCallable(functions, 'sendWhitelistEmail');
+        const createWhitelistUser = httpsCallable(functions, 'createWhitelistUser');
+        
         await sendWhitelistEmail({
-          email: app.email,
+          email: application.email,
           password: password
         });
-        //TODO prevent sign in of new user (probably sign out and sign back in with current user)
-        const userCredential = await createUserWithEmailAndPassword(auth, app.email, password);
-        const authUser = userCredential.user;
+        
+        await createWhitelistUser({
+          email: application.email,
+          password: password
+        });
         await addDoc(collection(db, 'users'), {
-          email:app.email,
+          email:application.email,
+          password:password,
           role: 0
         });
       }
-      const appRef = doc(db, "whitelist", app.id);
+      const appRef = doc(db, "whitelist", application.id);
       await deleteDoc(appRef);
-      setApps((prevApps) => prevApps.filter((a) => a.id !== app.id));
+      setApps((prevApps) => prevApps.filter((a) => a.id !== application.id));
     } catch (error) {
       alert(error);
     } finally {
       setVisible(false);
     }
   }
-
-  /**
-   * try {
-          
-        } catch (error) {}
-   */
 
   /**
    * Private 1
