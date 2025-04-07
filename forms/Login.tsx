@@ -62,15 +62,8 @@ export const LoginForm: React.FC<LoginProps> = ({
       </Button>
       {onSwitchType !== undefined ?
         <Button onPress={onSwitchType}>
-          {type === 'login' ? 'Create Account' : 'Go Back'}
+          {type === 'login' ? 'Apply For Whitelist' : 'Go Back'}
         </Button>
-        : null}
-      {forgotPassword ?
-        <BorderlessButton
-          onPress={() => alert("Contact an Administrator")}
-          textStyle={textStyles.forgotPassword}>
-          Forgot password?
-        </BorderlessButton>
         : null}
       <Errorbar error={error} onDismiss={() => setError('')} />
     </View>

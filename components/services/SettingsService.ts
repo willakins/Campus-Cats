@@ -1,9 +1,11 @@
+import { useAuth } from '@/providers';
 import { db } from "@/config/firebase";
 import { ContactInfo, User, WhitelistApp } from "@/types";
 import { Router } from "expo-router";
 import { addDoc, collection, deleteDoc, doc, getDocs, updateDoc } from "firebase/firestore";
 import { Dispatch, SetStateAction } from "react";
 import { Alert } from "react-native";
+import { getFunctions, httpsCallable } from 'firebase/functions';
 
 //Wrapper class for settings database funcitonality
 class SettingsService {
@@ -193,7 +195,7 @@ class SettingsService {
   /**
    * Effect: Sends a whitelist application to the database
    */
-  public async submitWhitelist(app:WhitelistApp, setVisible:Dispatch<SetStateAction<boolean>>) {
+  public async submitWhitelist(app:WhitelistApp, setVisible:Dispatch<SetStateAction<boolean>>, router:Router) {
     try {
       setVisible(true);
       const error_message = this.validateInput(app);
@@ -204,6 +206,7 @@ class SettingsService {
             email: app.email,
             codeWord: app.codeWord
           });
+          router.push('/login')
       } else {
         alert(error_message);
       }
@@ -219,7 +222,7 @@ class SettingsService {
    */
   public async fetchWhitelist(setWhitelist: Dispatch<SetStateAction<WhitelistApp[]>>) {
     try {
-      const querySnapshot = await getDocs(collection(db, 'catalog'));
+      const querySnapshot = await getDocs(collection(db, 'whitelist'));
       const whitelist: WhitelistApp[] = querySnapshot.docs.map((doc) => ({
         id: doc.id,
         name: doc.data().name,
@@ -243,7 +246,22 @@ class SettingsService {
     setVisible:Dispatch<SetStateAction<boolean>>) {
     try {
       setVisible(true);
-      //TODO
+      if (decision == "accept") {
+        const { createAccount } = useAuth();
+        const password = this.generatePassword(10);
+        await createAccount(app.email, password);
+        const functions = getFunctions();
+        const sendWhitelistEmail = httpsCallable(functions, 'sendWhitelistEmail');
+
+        await sendWhitelistEmail({
+          email: app.email,
+          password: password
+        });
+      }
+      const appRef = doc(db, "whitelist", app.id);
+      await deleteDoc(appRef);
+      setApps((prevApps) => prevApps.filter((a) => a.id !== app.id));
+      // Dont forget to implement monring, afternoon, night sightings
     } catch (error) {
       alert(error);
     } finally {
@@ -269,6 +287,19 @@ class SettingsService {
       }
     }
     return "";
+  }
+
+  /**
+   * Private 2
+   */
+  private generatePassword(length:number) {
+    const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()";
+    let password = "";
+    for (let i = 0; i < length; i++) {
+      const randomChar = charset.charAt(Math.floor(Math.random() * charset.length));
+      password += randomChar;
+    }
+    return password;
   }
 }
 export default SettingsService;

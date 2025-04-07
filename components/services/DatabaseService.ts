@@ -421,9 +421,10 @@ class DatabaseService {
    */
   public async submitWhitelist(
     app:WhitelistApp,
-    setVisible: Dispatch<SetStateAction<boolean>>
+    setVisible: Dispatch<SetStateAction<boolean>>,
+    router:Router
   ) {
-    await DatabaseService.settingsService.submitWhitelist(app, setVisible)
+    await DatabaseService.settingsService.submitWhitelist(app, setVisible, router)
   }
 
   /**
