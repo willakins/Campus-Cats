@@ -14,8 +14,8 @@ import { Snackbar } from 'react-native-paper';
 
 const CatSightingScreen = () => {
   const router = useRouter();
-  const { id, date, catFed, catHealth, info, photo, catLongitude, catLatitude, name, uid } = useLocalSearchParams() as { id: string, date: string,
-    catFed: string, catHealth: string, info: string, photo: string, catLongitude: string, catLatitude: string, name: string, uid: string};
+  const { id, date, catFed, catHealth, info, photo, catLongitude, catLatitude, name, uid, timeofDay } = useLocalSearchParams() as { id: string, date: string,
+    catFed: string, catHealth: string, info: string, photo: string, catLongitude: string, catLatitude: string, name: string, uid: string, timeofDay:string};
 
   const spotted_time = new Date(JSON.parse(date));
   const fed = JSON.parse(catFed);
@@ -25,7 +25,7 @@ const CatSightingScreen = () => {
 
   const [photoImage, setPhoto] = useState<string>('');
   const database = DatabaseService.getInstance();
-  const thisSighting: Sighting = {id: id, name, info, image: photo, fed, health, spotted_time, latitude, longitude, uid};
+  const thisSighting: Sighting = {id: id, name, info, image: photo, fed, health, spotted_time, latitude, longitude, uid, timeofDay};
   const [visible, setVisible] = useState<boolean>(false);
 
   useEffect(() => {
@@ -34,7 +34,7 @@ const CatSightingScreen = () => {
 
   const createObj = (data: Sighting) => {
     return new CatSightingObject(id, data.name || name, data.info || info, data.image || photo, data.fed, data.health, data.spotted_time || new Date(),
-      data.latitude, data.longitude, uid);
+      data.latitude, data.longitude, uid, data.timeofDay);
   }
 
   return (

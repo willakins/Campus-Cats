@@ -26,8 +26,8 @@ class SightingsService {
             latitude: doc.data().latitude,
             longitude: doc.data().longitude,
             name: doc.data().name,
-            uid: doc.data().uid || ''
-            // Include the document ID
+            uid: doc.data().uid || '',
+            timeofDay: doc.data().timeofDay
         }));
         setPins(pinsData);
         setMapKey(prev => prev + 1);
@@ -56,8 +56,8 @@ class SightingsService {
                 info: doc.data().info,
                 latitude: doc.data().latitude,
                 longitude: doc.data().longitude,
-                name: doc.data().name
-                // Include the document ID
+                name: doc.data().name,
+                timeofDay: doc.data().timeofDay
             }));
             setSightings(catSightings);
         } catch (error) {
@@ -92,6 +92,7 @@ class SightingsService {
                     info: thisSighting.info,
                     healthy: thisSighting.health,
                     fed: thisSighting.fed,
+                    timeofDay: thisSighting.timeofDay
                 });
     
                 alert('Cat submitted successfully!');
@@ -148,6 +149,7 @@ class SightingsService {
                     latitude: thisSighting.latitude,
                     name: thisSighting.name,
                     uid: thisSighting.uid,
+                    timeofDay: thisSighting.timeofDay
                 });
                 router.push('/(app)/(tabs)');
             } else {
@@ -170,6 +172,8 @@ class SightingsService {
             return 'Please enter a name for the cat.';
         } else if (!thisSighting.date) {
             return 'Please select a date for the sighting.';
+        } else if (!thisSighting.timeofDay) {
+            return 'Please select a time of day for the sighting.';
         }
         return ""
     }

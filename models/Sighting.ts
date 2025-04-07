@@ -14,6 +14,7 @@ const Sighting = z.object({
   info: z.string(),
   fed: z.boolean(),
   health: z.boolean(),
+  timeofDay: z.string(),
 });
 
 type Sighting = z.infer<typeof Sighting>;

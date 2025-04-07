@@ -9,6 +9,7 @@ export class CatSightingObject {
   latitude: number;
   longitude: number;
   uid: string;
+  timeofDay:string;
 
 
   constructor(
@@ -21,7 +22,8 @@ export class CatSightingObject {
     date: Date,
     latitude: number,
     longitude: number,
-    uid: string
+    uid: string,
+    timeofDay:string,
   ) {
     this.id = id;
     this.date = date;
@@ -33,6 +35,7 @@ export class CatSightingObject {
     this.longitude = longitude;
     this.name = name;
     this.uid =uid;
+    this.timeofDay = timeofDay;
   }
 }
 
