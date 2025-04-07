@@ -31,6 +31,7 @@ export { CatalogEntryObject } from './CatalogEntryObject';
 export { AnnouncementEntryObject } from './AnnouncementEntryObject';
 export { CatSightingObject } from './CatSightingObject';
 export { StationEntryObject } from './StationEntryObject';
+export { WhitelistApp } from './WhitelistApp';
 export { ContactInfo } from './ContactInfo';
 export { User } from './User';
 export { firestoreDocRefSchema } from './firestore';

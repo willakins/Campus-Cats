@@ -4,17 +4,19 @@ import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { globalStyles, buttonStyles, textStyles, containerStyles } from '@/styles';
 import { Button } from '@/components';
-import { UserItem } from '@/components';
 import DatabaseService from '@/components/services/DatabaseService';
-import { User } from '@/types';
+import { WhitelistApp } from '@/types';
+import { WhitelistItem } from '@/components/items/WhitelistItem';
+import { Snackbar } from 'react-native-paper';
 
 const ManageWhitelist = () => {
   const router = useRouter();
-  const [applicants, setApplicants] = useState<User[]>([]);
   const database = DatabaseService.getInstance();
+  const [visible, setVisible] = useState<boolean>(false);
+  const [applicants, setApplicants] = useState<WhitelistApp[]>([]);
 
   useEffect(() => {
-    database.fetchApplications(setApplicants);
+    database.fetchWhitelist(setApplicants);
   }, []);
 
   return (
@@ -27,9 +29,16 @@ const ManageWhitelist = () => {
 
       <ScrollView contentContainerStyle={containerStyles.scrollView}>
         {applicants.map((app) => (
-          <UserItem key={app.id} user={user} setUsers={setnotGTUsers} />
+          <WhitelistItem 
+            key={app.id} 
+            app={app}
+            setApps={setApplicants}
+            setVisible={setVisible} />
         ))}
       </ScrollView>
+      <Snackbar visible={visible} onDismiss={() => setVisible(false)}>
+        Saving...
+      </Snackbar>
     </SafeAreaView>
   );
 };

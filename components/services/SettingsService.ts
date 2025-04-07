@@ -1,5 +1,5 @@
 import { db } from "@/config/firebase";
-import { ContactInfo, User } from "@/types";
+import { ContactInfo, User, WhitelistApp } from "@/types";
 import { Router } from "expo-router";
 import { addDoc, collection, deleteDoc, doc, getDocs, updateDoc } from "firebase/firestore";
 import { Dispatch, SetStateAction } from "react";
@@ -188,6 +188,87 @@ class SettingsService {
     } catch (error) {
       console.error("Error promoting user:", error);
     }
+  }
+
+  /**
+   * Effect: Sends a whitelist application to the database
+   */
+  public async submitWhitelist(app:WhitelistApp, setVisible:Dispatch<SetStateAction<boolean>>) {
+    try {
+      setVisible(true);
+      const error_message = this.validateInput(app);
+      if (error_message == "") {
+        const docRef = await addDoc(collection(db, 'whitelist'), {
+            name: app.name,
+            graduationYear: app.graduationYear,
+            email: app.email,
+            codeWord: app.codeWord
+          });
+      } else {
+        alert(error_message);
+      }
+    } catch (error) {
+      alert(error)
+    } finally {
+      setVisible(false);
+    }
+  }
+
+  /**
+   * Effect: retrieves the whitelist application list from database
+   */
+  public async fetchWhitelist(setWhitelist: Dispatch<SetStateAction<WhitelistApp[]>>) {
+    try {
+      const querySnapshot = await getDocs(collection(db, 'catalog'));
+      const whitelist: WhitelistApp[] = querySnapshot.docs.map((doc) => ({
+        id: doc.id,
+        name: doc.data().name,
+        graduationYear: doc.data().graduationYear,
+        email: doc.data().email,
+        codeWord: doc.data().codeWord
+      }));
+      setWhitelist(whitelist);
+    } catch (error) {
+      alert(error);
+    }
+  } 
+
+  /**
+   * Effect: Accepts or denies a whitelist applicaton
+   */
+  public async whitelistDecide(
+    app:WhitelistApp, 
+    decision:string, 
+    setApps:Dispatch<SetStateAction<WhitelistApp[]>>, 
+    setVisible:Dispatch<SetStateAction<boolean>>) {
+    try {
+      setVisible(true);
+      //TODO
+    } catch (error) {
+      alert(error);
+    } finally {
+      setVisible(false);
+    }
+  }
+
+
+  /**
+   * Private 1
+   */
+  private validateInput(app:WhitelistApp) {
+    const requiredFields = [
+      { key: 'name', label: 'Name' },
+      { key: 'graduationYear', label: 'Graduation Year' },
+      { key: 'email', label: 'Email' },
+    ];
+  
+    for (const field of requiredFields) {
+      const value = (app as any)[field.key];
+      if (!value || !value.trim()) {
+        return `${field.label} field must not be empty`;
+      }
+    }
+    return "";
   }
 }
 export default SettingsService;

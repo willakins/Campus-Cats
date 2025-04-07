@@ -1,7 +1,7 @@
 import { deleteObject, getDownloadURL, getStorage, listAll, ref, uploadBytes, uploadBytesResumable } from 'firebase/storage';
 import { getDocs, getDoc, updateDoc, doc, collection, query, where, DocumentData, getFirestore, addDoc, serverTimestamp, Timestamp, deleteDoc } from 'firebase/firestore';
 import { auth, db, storage } from '@/config/firebase';
-import { AnnouncementEntryObject, CatalogEntryObject, CatSightingObject, ContactInfo, StationEntryObject, User } from '@/types';
+import { AnnouncementEntryObject, CatalogEntryObject, CatSightingObject, ContactInfo, StationEntryObject, User, WhitelistApp } from '@/types';
 import { Dispatch, SetStateAction } from 'react';
 import { Alert } from 'react-native';
 import { uploadFromURI } from '@/utils';
@@ -414,6 +414,34 @@ class DatabaseService {
     name:string,
     setProfile: Dispatch<SetStateAction<string>>) {
       await DatabaseService.stationsService.fetchStationImages(id, name, setProfile);
+  }
+
+  /**
+   * Effect: Submits a whitelist application to the firestore
+   */
+  public async submitWhitelist(
+    app:WhitelistApp,
+    setVisible: Dispatch<SetStateAction<boolean>>
+  ) {
+    await DatabaseService.settingsService.submitWhitelist(app, setVisible)
+  }
+
+  /**
+   * Effect: retrieves the whitelist application list from database
+   */
+  public async fetchWhitelist(setWhitelist: Dispatch<SetStateAction<WhitelistApp[]>>) {
+    await DatabaseService.settingsService.fetchWhitelist(setWhitelist);
+  }
+
+  /**
+   * Effect: Accepts or denies a whitelist applicaton
+   */
+  public async whitelistDecide(
+    app:WhitelistApp, 
+    decision:string, 
+    setApps:Dispatch<SetStateAction<WhitelistApp[]>>, 
+    setVisible:Dispatch<SetStateAction<boolean>>) {
+    await DatabaseService.settingsService.whitelistDecide(app, decision, setApps, setVisible);
   }
 
   /**
