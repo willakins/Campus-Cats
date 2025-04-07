@@ -1,10 +1,10 @@
-import { useAuth } from '@/providers';
-import { db } from "@/config/firebase";
+import { auth, db } from "@/config/firebase";
 import { ContactInfo, User, WhitelistApp } from "@/types";
 import { Router } from "expo-router";
 import { addDoc, collection, deleteDoc, doc, getDocs, updateDoc } from "firebase/firestore";
 import { Dispatch, SetStateAction } from "react";
 import { Alert } from "react-native";
+import { createUserWithEmailAndPassword } from '@firebase/auth';
 import { getFunctions, httpsCallable } from 'firebase/functions';
 
 //Wrapper class for settings database funcitonality
@@ -241,27 +241,30 @@ class SettingsService {
    */
   public async whitelistDecide(
     app:WhitelistApp, 
-    decision:string, 
+    decision:string,
     setApps:Dispatch<SetStateAction<WhitelistApp[]>>, 
     setVisible:Dispatch<SetStateAction<boolean>>) {
     try {
       setVisible(true);
-      if (decision == "accept") {
-        const { createAccount } = useAuth();
+      if (decision == 'accept') {
         const password = this.generatePassword(10);
-        await createAccount(app.email, password);
         const functions = getFunctions();
         const sendWhitelistEmail = httpsCallable(functions, 'sendWhitelistEmail');
-
         await sendWhitelistEmail({
           email: app.email,
           password: password
+        });
+        //TODO prevent sign in of new user (probably sign out and sign back in with current user)
+        const userCredential = await createUserWithEmailAndPassword(auth, app.email, password);
+        const authUser = userCredential.user;
+        await addDoc(collection(db, 'users'), {
+          email:app.email,
+          role: 0
         });
       }
       const appRef = doc(db, "whitelist", app.id);
       await deleteDoc(appRef);
       setApps((prevApps) => prevApps.filter((a) => a.id !== app.id));
-      // Dont forget to implement monring, afternoon, night sightings
     } catch (error) {
       alert(error);
     } finally {
@@ -269,6 +272,11 @@ class SettingsService {
     }
   }
 
+  /**
+   * try {
+          
+        } catch (error) {}
+   */
 
   /**
    * Private 1

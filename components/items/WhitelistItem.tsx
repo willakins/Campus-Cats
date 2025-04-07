@@ -1,15 +1,13 @@
 import React from 'react';
 import { Text, View } from 'react-native';
 
-import { useRouter } from 'expo-router';
 import { Button } from '../ui/Buttons';
-import { User, WhitelistApp } from '@/types';
+import { WhitelistApp } from '@/types';
 import DatabaseService from '../services/DatabaseService';
 import { globalStyles, buttonStyles, textStyles, containerStyles } from '@/styles';
 
 export const WhitelistItem: React.FC<{ app: WhitelistApp; setApps: React.Dispatch<React.SetStateAction<WhitelistApp[]>>; setVisible: React.Dispatch<React.SetStateAction<boolean>> }> = 
 ({ app, setApps, setVisible }) => {
-  const router = useRouter();
   const database = DatabaseService.getInstance();
 
   return (
