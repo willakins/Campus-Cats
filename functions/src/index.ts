@@ -5,7 +5,11 @@ import sgMail from '@sendgrid/mail';
 admin.initializeApp();
 
 // 🔑 Replace with your actual SendGrid API key (set in env)
-sgMail.setApiKey(functions.config().sendgrid.key);
+const sendgridApiKey = "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"; // Access via environment variable
+if (!sendgridApiKey) {
+  throw new Error('SENDGRID_API_KEY is not set.');
+}
+sgMail.setApiKey(sendgridApiKey);
 
 export const sendWhitelistEmail = functions.https.onCall(async (request) => {
     const { email, password } = request.data; // Access the email and password from the request data

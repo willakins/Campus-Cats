@@ -439,7 +439,7 @@ class DatabaseService {
    */
   public async whitelistDecide(
     app:WhitelistApp, 
-    decision:string, 
+    decision:string,
     setApps:Dispatch<SetStateAction<WhitelistApp[]>>, 
     setVisible:Dispatch<SetStateAction<boolean>>) {
     await DatabaseService.settingsService.whitelistDecide(app, decision, setApps, setVisible);
