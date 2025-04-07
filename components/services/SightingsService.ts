@@ -109,13 +109,14 @@ class SightingsService {
     /**
      * Effect: updates firestore when deleting a cat sighting
      */
-    public async deleteSighting(photoUrl:string, docRef:string) {
+    public async deleteSighting(photoUrl:string, docRef:string, router:Router) {
         try {
         if (photoUrl) {
             const imageRef = ref(storage, photoUrl);
             await deleteObject(imageRef);
         }
         await deleteDoc(doc(db, 'cat-sightings', docRef));
+        router.push('/(app)/(tabs)');
         alert('Cat sighting deleted successfully!');
         
         } catch (error) {
@@ -128,7 +129,8 @@ class SightingsService {
    */
     public async saveSighting(
         thisSighting: CatSightingObject,
-        setVisible: Dispatch<SetStateAction<boolean>>
+        setVisible: Dispatch<SetStateAction<boolean>>,
+        router: Router
     ) {
         try {
             setVisible(true);
@@ -147,6 +149,7 @@ class SightingsService {
                     name: thisSighting.name,
                     uid: thisSighting.uid,
                 });
+                router.push('/(app)/(tabs)');
             } else {
                 alert(error_message)
             }
