@@ -12,7 +12,6 @@ const LoginScreen = () => {
 
   const loginUser = async (username: string, password: string) => {
     await login(username, password);
-    alert('hello')
     router.replace('/(app)/(tabs)');
   };
 

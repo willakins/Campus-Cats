@@ -20,8 +20,7 @@ export const sendWhitelistEmail = functions.https.onCall(
     throw new functions.https.HttpsError("unauthenticated", "You need to be authenticated to perform this action")
   }
   const { email, password } = request.data; // Access the email and password from the request data
-  logger.debug('Request data:', request.data);
-  logger.debug("request.auth:", request.auth);
+  
   if (!email || !password) {
       throw new functions.https.HttpsError('invalid-argument', 'Email and password are required');
   }
@@ -56,8 +55,8 @@ export const createWhitelistUser = functions.https.onCall(
         email,
         password,
       });
-
-      await admin.firestore().collection('users').add({
+      logger.debug("userRecord.uid", userRecord.uid);
+      await admin.firestore().collection('users').doc(userRecord.uid).set({
         email,
         role: 0,
       });

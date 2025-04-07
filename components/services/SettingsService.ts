@@ -262,11 +262,6 @@ class SettingsService {
           email: application.email,
           password: password
         });
-        await addDoc(collection(db, 'users'), {
-          email:application.email,
-          password:password,
-          role: 0
-        });
       }
       const appRef = doc(db, "whitelist", application.id);
       await deleteDoc(appRef);
