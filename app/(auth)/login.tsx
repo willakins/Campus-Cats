@@ -21,7 +21,7 @@ const LoginScreen = () => {
       <LoginForm
         onSubmit={loginUser}
         type="login"
-        onSwitchType={() => router.push('/create-account')}
+        onSwitchType={() => router.push('/whitelist')}
         forgotPassword
       />
     </KeyboardAvoidingView>

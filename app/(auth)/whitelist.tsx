@@ -32,30 +32,30 @@ const Whitelist = () => {
         </Button>
 
         <Text style={textStyles.title}>Apply to be Whitelisted to The App</Text>
-        <ScrollView contentContainerStyle={containerStyles.scrollView}>
-            <View style={containerStyles.entryContainer}>
-                <Text style={textStyles.subHeading}>Enter your full name</Text>
+        <ScrollView contentContainerStyle={containerStyles.catalogEntryContainer}>
+            <View style={containerStyles.catalogInputContainer}>
+                <Text style={textStyles.headline}>Enter your full name</Text>
                     <TextInput
                     value={formData.name}
                     placeholderTextColor="#888"
                     onChangeText={(text) => handleChange('name', text)} 
                     style={textStyles.catalogInput} 
                     multiline={false}/>
-                <Text style={textStyles.subHeading}>What year did you graduate Georgia Tech?</Text>
+                <Text style={textStyles.headline}>What year did you graduate Georgia Tech?</Text>
                     <TextInput
                     value={formData.graduationYear}
                     placeholderTextColor="#888"
                     onChangeText={(text) => handleChange('graduationYear', text)} 
                     style={textStyles.catalogInput} 
                     multiline={false}/>
-                <Text style={textStyles.subHeading}>What email would you like to use to login?</Text>
+                <Text style={textStyles.headline}>What email would you like to use to login?</Text>
                     <TextInput
                     value={formData.email}
                     placeholderTextColor="#888"
                     onChangeText={(text) => handleChange('email', text)} 
                     style={textStyles.catalogInput} 
                     multiline={false}/>
-                <Text style={textStyles.subHeading}>Do you have a secret security word from an officer? (optional)</Text>
+                <Text style={textStyles.headline}>Do you have a secret security word from an officer? (optional)</Text>
                     <TextInput
                     value={formData.codeWord}
                     placeholderTextColor="#888"
@@ -64,7 +64,7 @@ const Whitelist = () => {
                     multiline={false}/>
             </View>
         </ScrollView>
-        <Button style={buttonStyles.button2} onPress={() => database.submitWhitelist(createObj(), setVisible)}>
+        <Button style={buttonStyles.button2} onPress={() => database.submitWhitelist(createObj(), setVisible, router)}>
             <Text style={textStyles.bigButtonText}>Submit Application</Text>
         </Button>
         <Snackbar visible={visible} onDismiss={() => setVisible(false)}>
@@ -73,5 +73,4 @@ const Whitelist = () => {
     </SafeAreaView>
     );
 };
-
 export default Whitelist;

@@ -22,6 +22,7 @@
     "@react-navigation/bottom-tabs": "^7.2.0",
     "@react-navigation/native": "^7.0.14",
     "@react-navigation/stack": "^7.1.1",
+    "@sendgrid/mail": "^8.1.4",
     "@teovilla/react-native-web-maps": "^0.9.5",
     "@types/babel-traverse": "^6.25.10",
     "eas-cli": "^16.2.1",
