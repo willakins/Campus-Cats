@@ -12,6 +12,8 @@ import { buttonStyles, textStyles, containerStyles } from '@/styles';
 
 const CatSightingScreen = () => {
   const router = useRouter();
+  const { user } = useAuth();
+  const database = DatabaseService.getInstance();
   const { id, date, catFed, catHealth, info, photo, catLongitude, catLatitude, name, uid } = useLocalSearchParams() as { id: string, date: string,
       catFed: string, catHealth: string, info: string, photo: string, catLongitude: string, catLatitude: string, name: string, uid: string};
   
@@ -21,9 +23,18 @@ const CatSightingScreen = () => {
   const longitude = parseFloat(catLongitude);
   const latitude = parseFloat(catLatitude);
   const [photoImage, setPhoto] = useState<string>('');
-  const { user } = useAuth();
+  
   const isAuthorized = user.role === 1 || user.role === 2 || user.id === uid;
-  const database = DatabaseService.getInstance();
+
+  const getDateString = (date:Date) => {
+    const monthNames = [
+        "January", "February", "March", "April", "May", "June", 
+        "July", "August", "September", "October", "November", "December"
+      ];
+    return`${monthNames[date.getMonth()]}, ${date.getDate()}, ${date.getFullYear()}`;
+}
+  
+  const dateString = timeofDay + ' of ' + getDateString(spotted_time);
 
   var location:LatLng = {
     latitude: latitude,
@@ -91,7 +102,7 @@ const CatSightingScreen = () => {
             />
             <Text style={textStyles.sliderText}>Date Sighted</Text>
             <TextInput
-              value={date.toString()}
+              value={dateString}
               editable={false}
             />
             <View style={containerStyles.sliderContainer}>
