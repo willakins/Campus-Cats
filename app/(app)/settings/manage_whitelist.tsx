@@ -33,7 +33,7 @@ const ManageWhitelist = () => {
             key={app.id} 
             app={app}
             setApps={setApplicants}
-            setVisible={setVisible} />
+            setVisible={setVisible}/>
         ))}
       </ScrollView>
       <Snackbar visible={visible} onDismiss={() => setVisible(false)}>
