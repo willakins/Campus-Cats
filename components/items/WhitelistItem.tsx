@@ -2,7 +2,7 @@ import React from 'react';
 import { Text, View } from 'react-native';
 
 import { Button } from '../ui/Buttons';
-import { WhitelistApp } from '@/types';
+import { User, WhitelistApp } from '@/types';
 import DatabaseService from '../services/DatabaseService';
 import { globalStyles, buttonStyles, textStyles, containerStyles } from '@/styles';
 

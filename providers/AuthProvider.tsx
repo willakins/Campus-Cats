@@ -24,6 +24,7 @@ const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const login = async (email: string, password: string) => {
     await signInWithEmailAndPassword(auth, email, password);
+    alert('hi!')
   };
 
   const createAccount = async (email: string, password: string) => {
