@@ -22,6 +22,20 @@ SplashScreen.setOptions({
 
 const App = () => {
   const { loading } = useAuth();
+  const router = useRouter();
+
+  // Handle navigation after loading
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (auth.currentUser) {
+        router.replace('/(app)/(tabs)');
+      } else {
+        router.replace('/login');
+      }
+    }, 1000);
+
+    return () => clearTimeout(timer);
+  }, [loading, router]);
 
   const onLayoutRootView = useCallback(() => {
     if (!loading) {
@@ -39,34 +53,8 @@ const App = () => {
   }
 
   return (
-    <SafeAreaView onLayout={onLayoutRootView} style={globalStyles.screen}>
-      <AppSplashScreen />
-    </SafeAreaView>
+    <SafeAreaView onLayout={onLayoutRootView} style={globalStyles.screen} />
   );
 };
 
 export default App;
-
-const AppSplashScreen: React.FC<{}> = () => {
-  const router = useRouter();
-
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      if (auth.currentUser) {
-        router.push('/(app)/(tabs)');
-      } else {
-        router.push('/login');
-      }
-    }, 1000);
-
-    return () => clearTimeout(timer);
-  }, []);
-
-  return(
-    <Image
-      style={containerStyles.splashImage}
-      resizeMode='contain'
-      source={require('@/assets/images/app-icon.png')}
-    />
-  );
-};
