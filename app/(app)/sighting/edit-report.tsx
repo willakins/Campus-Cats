@@ -32,27 +32,10 @@ const CatSightingScreen = () => {
     database.fetchImage(photo, setPhoto);
   }, []);
 
-  const saveSighting = async (data: Sighting) => {
-    const sightingObject = new CatSightingObject(
-      id,
-      data.name || name,
-      data.info || info,
-      data.image || photo,
-      data.fed,
-      data.health,
-      data.spotted_time || new Date(),
-      data.latitude,
-      data.longitude,
-      uid, // ignore current user; always preserve original creator
-    );
-    database.saveSighting(sightingObject, setVisible);
-    router.push('/(app)/(tabs)');
+  const createObj = (data: Sighting) => {
+    return new CatSightingObject(id, data.name || name, data.info || info, data.image || photo, data.fed, data.health, data.spotted_time || new Date(),
+      data.latitude, data.longitude, uid);
   }
-
-  const deleteSighting = async () => {
-    database.deleteSighting(photo, id)
-    router.push('/(app)/(tabs)');
-  };
 
   return (
     <KeyboardAvoidingView
@@ -63,8 +46,8 @@ const CatSightingScreen = () => {
         <Ionicons name="arrow-back-outline" size={25} color="#fff" />
       </Button>
       <SightingReportForm type="edit"
-        onSubmit={saveSighting}
-        onDelete={deleteSighting}
+        onSubmit={(data) => database.saveSighting(createObj(data), setVisible, router)}
+        onDelete={() => database.deleteSighting(photo, id, router)}
         imageURL={photoImage}
         defaultValues={thisSighting}
       />

@@ -111,9 +111,10 @@ class DatabaseService {
    */
   public async saveSighting(
    thisSighting:CatSightingObject,
-   setVisible: Dispatch<SetStateAction<boolean>>
+   setVisible: Dispatch<SetStateAction<boolean>>,
+   router:Router
    ) {
-    await DatabaseService.sightingsService.saveSighting(thisSighting, setVisible);
+    await DatabaseService.sightingsService.saveSighting(thisSighting, setVisible, router);
   }
 
   /**
@@ -129,8 +130,8 @@ class DatabaseService {
   /**
    * Effect: updates firestore when deleting a cat sighting
    */
-  public async deleteSighting(photoUrl:string, docRef:string) {
-    await DatabaseService.sightingsService.deleteSighting(photoUrl, docRef);
+  public async deleteSighting(photoUrl:string, docRef:string, router:Router) {
+    await DatabaseService.sightingsService.deleteSighting(photoUrl, docRef, router);
   }
 
   /**
