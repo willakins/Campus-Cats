@@ -14,8 +14,9 @@ const CatSightingScreen = () => {
   const router = useRouter();
   const { user } = useAuth();
   const database = DatabaseService.getInstance();
-  const { id, date, catFed, catHealth, info, photo, catLongitude, catLatitude, name, uid } = useLocalSearchParams() as { id: string, date: string,
-      catFed: string, catHealth: string, info: string, photo: string, catLongitude: string, catLatitude: string, name: string, uid: string};
+  const { id, date, catFed, catHealth, info, photo, catLongitude, catLatitude, name, uid, timeofDay } = useLocalSearchParams() as { id: string, 
+    date: string, catFed: string, catHealth: string, info: string, photo: string, catLongitude: string, catLatitude: string, name: string, 
+    uid: string, timeofDay:string};
   
   const spotted_time = new Date(JSON.parse(date));
   const fed = JSON.parse(catFed);
@@ -32,8 +33,7 @@ const CatSightingScreen = () => {
         "July", "August", "September", "October", "November", "December"
       ];
     return`${monthNames[date.getMonth()]}, ${date.getDate()}, ${date.getFullYear()}`;
-}
-  
+  }
   const dateString = timeofDay + ' of ' + getDateString(spotted_time);
 
   var location:LatLng = {
@@ -45,21 +45,6 @@ const CatSightingScreen = () => {
     database.fetchImage(photo, setPhoto);
   }, []);
 
-  const editSighting = () => {
-    router.push({ pathname: './edit-report', params: {
-      id:id, 
-      date:date, 
-      catFed:catFed, 
-      catHealth:catHealth, 
-      info:info, 
-      photo:photo, 
-      catLongitude:catLongitude, 
-      catLatitude:catLatitude, 
-      name:name, 
-      uid:uid
-    }})
-  };
-
   return (
     <KeyboardAvoidingView
       style={containerStyles.container}
@@ -68,7 +53,9 @@ const CatSightingScreen = () => {
       <Button style={buttonStyles.logoutButton} onPress={router.back}>
         <Ionicons name="arrow-back-outline" size={25} color="#fff" />
       </Button>
-      {isAuthorized ? <Button style={buttonStyles.editButton} onPress={editSighting}>
+      {isAuthorized ? <Button style={buttonStyles.editButton} onPress={() => router.push({ pathname: './edit-report', params: {
+        id:id, date:date, catFed:catFed, catHealth:catHealth, info:info, photo:photo, catLongitude:catLongitude, catLatitude:catLatitude, 
+        name:name, uid:uid, timeofDay:timeofDay}})}>
         <Text style= {textStyles.editText}>Edit</Text>
       </Button> : null}
       <ScrollView contentContainerStyle={containerStyles.scrollView}>
@@ -76,6 +63,7 @@ const CatSightingScreen = () => {
           View A Cat Sighting
         </Text>
         <View style={containerStyles.container}>
+          {isAuthorized ? <Text>Created by: {uid}</Text>: null}
           {photoImage ? (<Image source={{ uri: photoImage }} style={containerStyles.catImage} resizeMode='contain'/>) : 
             (<Text style={containerStyles.catImage}>Loading image...</Text>)}
           <View style={containerStyles.inputContainer}>

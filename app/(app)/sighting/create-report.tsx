@@ -20,7 +20,8 @@ const CatReportScreen = () => {
   const [visible, setVisible] = useState<boolean>(false);
 
   const createObj = (data: Sighting) => {
-    return new CatSightingObject(data.id, data.name, data.info, data.image, data.fed, data.health, data.spotted_time, data.latitude, data.longitude, data.uid);
+    return new CatSightingObject(data.id, data.name, data.info, data.image, data.fed, data.health, data.spotted_time, data.latitude, data.longitude,
+       data.uid, data.timeofDay);
   }
 
   return (
