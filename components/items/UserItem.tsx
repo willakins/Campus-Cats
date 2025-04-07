@@ -12,7 +12,7 @@ export const UserItem: React.FC<{ user: User; setUsers: React.Dispatch<React.Set
   const router = useRouter();
   const database = DatabaseService.getInstance();
   const { signOut, user: currentUser } = useAuth();
-  const isHigher = currentUser.role > user.role;
+  const isHigher = currentUser.role == 2 || currentUser.role > user.role;
 
   const handleUserUpdate = async (action: () => Promise<void>) => {
     await action();
