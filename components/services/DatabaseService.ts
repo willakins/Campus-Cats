@@ -111,10 +111,19 @@ class DatabaseService {
    */
   public async saveSighting(
    thisSighting:CatSightingObject,
+   photos: string[],
+   isPicsChanged:boolean,
    setVisible: Dispatch<SetStateAction<boolean>>,
    router:Router
    ) {
-    await DatabaseService.sightingsService.saveSighting(thisSighting, setVisible, router);
+    await DatabaseService.sightingsService.saveSighting(thisSighting, photos, isPicsChanged, setVisible, router);
+  }
+
+  /**
+   * Effect: pulls sighting images from storage
+   */
+  public async fetchSightingImages(id:string, setPhotos:Dispatch<SetStateAction<string[]>>) {
+    await DatabaseService.sightingsService.fetchSightingImages(id, setPhotos)
   }
 
   /**
@@ -122,16 +131,17 @@ class DatabaseService {
    */
   public async handleReportSubmission(
     thisSighting:CatSightingObject,
+    photos: string[],
     setVisible: Dispatch<SetStateAction<boolean>>,
     router:Router) {
-    await DatabaseService.sightingsService.handleReportSubmission(thisSighting, setVisible, router);
+    await DatabaseService.sightingsService.handleReportSubmission(thisSighting, photos, setVisible, router);
   }
 
   /**
    * Effect: updates firestore when deleting a cat sighting
    */
-  public async deleteSighting(photoUrl:string, docRef:string, router:Router) {
-    await DatabaseService.sightingsService.deleteSighting(photoUrl, docRef, router);
+  public async deleteSighting(id:string, setVisible:Dispatch<SetStateAction<boolean>>, router:Router) {
+    await DatabaseService.sightingsService.deleteSighting(id, setVisible, router);
   }
 
   /**
@@ -210,11 +220,10 @@ class DatabaseService {
    * Effect: Deletes an existing catalog entry from firebase
    */
   public async deleteCatalogEntry(
-    catName: string, 
     id: string, 
     setVisible: Dispatch<SetStateAction<boolean>>, 
     router: Router,) {
-    await DatabaseService.catalogService.deleteCatalogEntry(catName, id, setVisible, router);
+    await DatabaseService.catalogService.deleteCatalogEntry(id, setVisible, router);
   }
 
   /**
@@ -257,26 +266,25 @@ class DatabaseService {
    * Effect: creates an announcement and stores it in firestore
    */
   public async handleAnnouncementCreate(
-    title:string, 
-    info:string, 
+    thisAnn:AnnouncementEntryObject,
     photos:string[], 
     user:User,
     setVisible:Dispatch<SetStateAction<boolean>>,
     router: Router) {
-    await DatabaseService.announcementsService.handleAnnouncementCreate(title, info, photos, user, setVisible, router);
+    await DatabaseService.announcementsService.handleAnnouncementCreate(thisAnn, photos, user, setVisible, router);
   }
 
   /**
    * Effect: updates an existing announcement in firestore
    */
   public async handleAnnouncementSave(
-    formData: {id: string, title: string, info: string, createdAt: string, createdBy: string},
+    thisAnn:AnnouncementEntryObject,
     photos: string[], 
     isPicsChanged: boolean, 
     user: User,
     setVisible: Dispatch<SetStateAction<boolean>>, 
     router: Router) {
-    await DatabaseService.announcementsService.handleAnnouncementSave(formData, photos, isPicsChanged, user, setVisible, router);
+    await DatabaseService.announcementsService.handleAnnouncementSave(thisAnn, photos, isPicsChanged, user, setVisible, router);
   }
 
   /**
@@ -303,8 +311,8 @@ class DatabaseService {
   /**
    * Effect: Stocks a station
    */
-  public async stockStation(thisStation: StationEntryObject, router:Router,  setVisible: Dispatch<SetStateAction<boolean>>, ) {
-    await DatabaseService.stationsService.stockStation(thisStation, router, setVisible);
+  public async stockStation(thisStation: StationEntryObject, router:Router) {
+    await DatabaseService.stationsService.stockStation(thisStation, router);
   }
 
   /**

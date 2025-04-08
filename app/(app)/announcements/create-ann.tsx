@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Image, KeyboardAvoidingView, Platform, ScrollView, Text, View } from 'react-native';
+import { Image, SafeAreaView, ScrollView, Text, View } from 'react-native';
 
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -8,45 +8,72 @@ import { Button, CameraButton, TextInput } from '@/components';
 import DatabaseService from '@/components/services/DatabaseService';
 import { globalStyles, buttonStyles, textStyles, containerStyles } from '@/styles';
 import { useAuth } from '@/providers/AuthProvider';
+import { AnnouncementEntryObject } from '@/types';
 
 
 const create_ann = () =>{
   const router = useRouter();
-  const { signOut, user } = useAuth();
+  const { user } = useAuth();
   const [visible, setVisible] = useState<boolean>(false);
   const [info, setInfo] = useState<string>('');
   const [title, setTitle] = useState<string>('');
+  const [createdBy, setCreatedBy] = useState<string>('');
   const [photos, setPhotos] = useState<string[]>([]);
   const database = DatabaseService.getInstance();
 
+  const createObj = () => {
+    return new AnnouncementEntryObject("-1", title, info, '', createdBy)
+  }
+
   return (
-    <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+    <SafeAreaView style={containerStyles.wrapper}>
       <Button style={buttonStyles.logoutButton} onPress={() => router.push('/announcements')}>
         <Ionicons name="arrow-back-outline" size={25} color="#fff" />
       </Button>
-      <Button style={buttonStyles.editButton} onPress={() => database.handleAnnouncementCreate(title, info, photos, user, setVisible, router)}>
-        <Text style={textStyles.editText}> Create Announcement</Text>
-      </Button>
-      <ScrollView contentContainerStyle={containerStyles.entryContainer}>
-        <Text style={textStyles.title}>Create An Announcement</Text>
-        <View style={containerStyles.inputContainer}>
-          <Text style={textStyles.headline}>Title</Text>
-          <TextInput 
-            placeholder="title"
-            placeholderTextColor="#888"
-            onChangeText={setTitle} 
-            style={textStyles.input} />
-          <Text style={textStyles.headline}>Description</Text>
-          <TextInput
-            placeholder="Type a description about the announcement."
-            placeholderTextColor="#888"
-            onChangeText={setInfo} 
-            style={textStyles.descInput} 
-            multiline={true}/>
-            <Text style={textStyles.headline2}>Want to Add Photos?</Text>
-        <View style={containerStyles.cameraView}>
+      <View style={containerStyles.snackbarContainer}>
+        <Snackbar
+          visible={visible}
+          onDismiss={() => setVisible(false)}
+          duration={2000}
+          style={containerStyles.snackbar}
+        >
+          Saving Announcement...
+        </Snackbar>
+      </View>
+      <Text style={textStyles.announcementTitle}>Create Announcement</Text>
+      <ScrollView contentContainerStyle={containerStyles.scrollView}>
+        <View style={containerStyles.card}>
+          <Text style={textStyles.label}>Title</Text>
+          <View style={containerStyles.inputContainer2}>
+            <TextInput 
+              placeholder="title"
+              placeholderTextColor="#888"
+              onChangeText={setTitle} 
+              style={textStyles.input} />
+          </View>
+          <Text style={textStyles.label}>Description</Text>
+          <View style={containerStyles.inputContainer2}>
+            <TextInput
+              placeholder="Type a description about the announcement."
+              placeholderTextColor="#888"
+              onChangeText={setInfo} 
+              style={textStyles.descInput} 
+              multiline={true}/>
+          </View>
+          <Text style={textStyles.label}>Alias (optional)</Text>
+          <View style={containerStyles.inputContainer2}>
+            <TextInput
+              placeholder="Choose an author alias to replace id"
+              placeholderTextColor="#888"
+              onChangeText={setCreatedBy} 
+              style={textStyles.descInput} 
+              multiline={false}/>
+          </View>
+          
+          <Text style={textStyles.headline2}>Add Photos (optional)</Text>
           <CameraButton onPhotoSelected={(newPhotoUri) => setPhotos((prevPics) => 
             [...prevPics,newPhotoUri,])}></CameraButton>
+        <View style={containerStyles.extraPicsContainer}>
           {photos ? (photos.map((pic, index) => (
           <View key={index} style={containerStyles.imageWrapper}>
             <Image source={{ uri: pic }} style={containerStyles.extraPic} />
@@ -57,12 +84,11 @@ const create_ann = () =>{
           ))):<Text>Loading images...</Text>}
         </View>
         </View>
-        
-        <Snackbar visible={visible} onDismiss={() => setVisible(false)} duration={2000}>
-          Creating Announcement...
-        </Snackbar>
       </ScrollView>
-    </KeyboardAvoidingView>
+      <Button style={buttonStyles.button2} onPress={() => database.handleAnnouncementCreate(createObj(), photos, user, setVisible, router)}>
+        <Text style={textStyles.bigButtonText}> Create Announcement</Text>
+      </Button>
+    </SafeAreaView>
   );
 }
 export default create_ann;

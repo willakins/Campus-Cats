@@ -12,7 +12,7 @@ import { globalStyles, buttonStyles, textStyles, containerStyles } from '@/style
 
 const Catalog = () => {
   const [catalogEntries, setCatalogEntries] = useState<CatalogEntryObject[]>([]);
-  const { signOut, user } = useAuth();
+  const { user } = useAuth();
   const router = useRouter();
   const database = DatabaseService.getInstance();
   const adminStatus = user.role === 1 || user.role === 2;

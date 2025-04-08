@@ -26,11 +26,8 @@ const Announcements = () => {
   );
 
   return (
-    <SafeAreaView style={containerStyles.container}>
+    <SafeAreaView style={containerStyles.wrapper}>
       <Text style={textStyles.title}>Announcements</Text>
-      {isAdmin ? <Button style={buttonStyles.editButton} onPress={() => router.push('/announcements/create-ann')}>
-        <Text style ={textStyles.editText}> Create Announcement</Text>
-      </Button> : null}
       <ScrollView contentContainerStyle={containerStyles.scrollView}>
         {anns.map((ann) => (
           <AnnouncementItem
@@ -43,6 +40,9 @@ const Announcements = () => {
           />
         ))}
       </ScrollView>
+      {isAdmin ? <Button style={buttonStyles.button2} onPress={() => router.push('/announcements/create-ann')}>
+        <Text style ={textStyles.bigButtonText}> Create Announcement</Text>
+      </Button> : null}
     </SafeAreaView>
   );
 };

@@ -259,18 +259,17 @@ class CatalogService {
     * Effect: Deletes an existing catalog entry from firebase
     */
     public async deleteCatalogEntry(
-      catName: string, 
       id: string, 
       setVisible: Dispatch<SetStateAction<boolean>>, 
       router: Router,
     ) {
       Alert.alert(
         'Select Option',
-        'Are you sure you want to delete this image forever?',
+        'Are you sure you want to delete this Catalog entry forever?',
         [
           {
             text: 'Delete Forever',
-            onPress: async () => await this.confirmDeleteCatalogEntry(catName, id, setVisible, router),
+            onPress: async () => await this.confirmDeleteCatalogEntry(id, setVisible, router),
           },
           {
             text: 'Cancel',
@@ -284,7 +283,6 @@ class CatalogService {
      * Private 1
      */
     private async confirmDeleteCatalogEntry(
-      catName: string, 
       id: string, 
       setVisible: Dispatch<SetStateAction<boolean>>, 
       router: Router) {
@@ -293,7 +291,7 @@ class CatalogService {
         await deleteDoc(doc(db, 'catalog', id)); //Delete firestore document
 
         //Delete storage folder
-        const photoPath = `catalog/${catName}`;
+        const photoPath = `catalog/${id}`;
         const folderRef = ref(storage, photoPath);
         const result = await listAll(folderRef);
         await Promise.all(result.items.map((item) => deleteObject(item)));

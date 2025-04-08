@@ -1,29 +1,32 @@
 import React, { useEffect, useState } from 'react';
-import { Text, Image, ScrollView, View } from 'react-native';
+import { Text, Image, View } from 'react-native';
 
 import { AnnouncementEntryObject } from '@/types';
 import DatabaseService from '../services/DatabaseService';
 import { globalStyles, buttonStyles, textStyles, containerStyles } from '@/styles';
 
 export const AnnouncementEntry: React.FC<AnnouncementEntryObject> = ({ id, title, info, createdAt, createdBy }) => {
-  const [imageUrls, setImageUrls] = useState<string[]>([]);
+  const [photos, setPhotos] = useState<string[]>([]);
   const database = DatabaseService.getInstance();  
   
   useEffect(() => {
-    database.fetchAnnouncementImages(id, setImageUrls);
+    database.fetchAnnouncementImages(id, setPhotos);
   }, []);
 
   return (
-    <ScrollView contentContainerStyle={containerStyles.scrollView}>
-      <View style={containerStyles.announcementDetails}>
-        <Text style={textStyles.subHeading2}>Author: {createdBy}</Text>
-        <Text style={textStyles.subHeading2}>Announced At: {createdAt}</Text>
+    <View style={containerStyles.card}>
+      <Text style={textStyles.label}>{title}</Text>
+      <Text style={textStyles.detail}>{info}</Text>
+
+      {photos.length > 0 && <Text style={textStyles.label}>Photos</Text>}
+      {photos.map((url, index) => (
+        <Image key={index} source={{ uri: url }} style={containerStyles.imageMain} />
+      ))}
+
+      <View style={containerStyles.footer}>
+        <Text style={textStyles.footerText}>Author: {createdBy}</Text>
+        <Text style={textStyles.footerText}>Announced At: {createdAt}</Text>
       </View>
-      <Text style={textStyles.announcementTitle}>{title}</Text>
-      <Text style={textStyles.announcementDescription}>{info}</Text>
-      {imageUrls.length > 0 ? <Text style={textStyles.headline2}> Photos</Text> : null}
-      {imageUrls ? (imageUrls.map((url, index) => (
-        <Image key={index} source={{ uri: url }} style={containerStyles.headlineImage} />))) : <Text>Loading images...</Text>}
-    </ScrollView>
+    </View>
   );
 };

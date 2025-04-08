@@ -71,7 +71,7 @@ const buttonStyles = StyleSheet.create({
   },
   logoutButton: {
     position: 'absolute',
-    top: 10,
+    marginTop: '5%',
     left: 20,
     flexDirection: 'row',
     alignItems: 'center',
@@ -145,6 +145,33 @@ const buttonStyles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 5,
     elevation: 3,
-  }
+  },
+  button3: {
+    backgroundColor: '#cf0418',
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: 30, 
+    alignItems: 'center',
+    justifyContent: 'center',
+    margin: 10, 
+    shadowColor: '#000',
+    shadowOpacity: 0.1,
+    shadowRadius: 5,
+    elevation: 3,
+  },
+  backBtn: {
+    position: 'absolute',
+    top: 20,
+    left: 20,
+    zIndex: 10,
+    backgroundColor: '#4285F4',
+    padding: 10,
+    borderRadius: 50,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.2,
+    shadowRadius: 2,
+    elevation: 3,
+  },
 });
 export { buttonStyles };

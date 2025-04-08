@@ -163,9 +163,8 @@ class StationsService {
     /**
     * Effect: Stocks a station
     */
-    public async stockStation(thisStation: StationEntryObject, router:Router,  setVisible: Dispatch<SetStateAction<boolean>>, ) {
+    public async stockStation(thisStation: StationEntryObject, router:Router) {
         try{
-            setVisible(true);
             const stationDocRef = doc(db, 'stations', thisStation.id);
             thisStation.lastStocked = (new Date()).toISOString().split('T')[0];
             await updateDoc(stationDocRef, { 
@@ -177,7 +176,6 @@ class StationsService {
                 stockingFreq:thisStation.stockingFreq
             });
         } catch(error) {} finally {
-            setVisible(false);
             setTimeout(() => {
                 router.navigate('/stations');
               }, 500);

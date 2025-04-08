@@ -13,15 +13,15 @@ export const AnnouncementItem: React.FC<AnnouncementEntryObject> = ({ id, title,
   const database = DatabaseService.getInstance();
 
   return (
-    <Button style={containerStyles.entryContainer} onPress={() => 
+    <Button style={containerStyles.card} onPress={() => 
         router.push({
             pathname: '/announcements/view-ann',
             params: { id:id, title:title, info:info, createdAt:createdAt, createdBy:createdBy },
           })
     }>
       <View style={containerStyles.entryElements}>
-        <Text style={textStyles.catalogTitle}>{title}</Text>
-        <Text style={textStyles.catalogDescription}>{info}</Text>
+        <Text style={textStyles.label2}>{title}</Text>
+        <Text style={textStyles.detail}>{info}</Text>
       </View>
     </Button>
   );
