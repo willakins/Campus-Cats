@@ -58,4 +58,4 @@ abstract class BaseImageHandler {
   protected abstract onPhotoSelected(uri: string): void;
 }
 
-export default BaseImageHandler;
+export { BaseImageHandler };
