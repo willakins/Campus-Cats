@@ -3,7 +3,7 @@ import { getSelectedStation } from "@/stores/stationStores";
 import { Station } from "@/types";
 import { Router } from "expo-router";
 import { addDoc, collection, deleteDoc, doc, getDocs, updateDoc } from "firebase/firestore";
-import { deleteObject, getDownloadURL, listAll, ref, uploadBytes } from "firebase/storage";
+import { deleteObject, getDownloadURL, listAll, ref, uploadBytes, uploadBytesResumable } from "firebase/storage";
 import { Dispatch, SetStateAction } from "react";
 import { Alert } from "react-native";
 
@@ -51,7 +51,7 @@ class StationsService {
     /**
      * Effect: Creates a firestore document inside of the 'stations' collection
      */
-    public async createStation(profile:string, setVisible: Dispatch<SetStateAction<boolean>>, router:Router) {
+    public async createStation(photos:string[], setVisible: Dispatch<SetStateAction<boolean>>, router:Router) {
         try {
             setVisible(true);
             const station = getSelectedStation();
@@ -67,14 +67,12 @@ class StationsService {
                     createdBy: station.createdBy,
                 });
 
-
-                const profilePath = `stations/${docRef.id}/profile.jpg`;
-                const storageRef = ref(storage, profilePath);
-                const response = await fetch(profile);
-                const blob = await response.blob();
-                await uploadBytes(storageRef, blob);
-            
-                console.log('Station successfully created with ID: ', docRef.id);
+                const profilePhoto = photos[0];
+                await this.uploadImageToStorage(profilePhoto, `stations/${docRef.id}/profile.jpg`);
+  
+                const otherPhotos = photos.slice(1);
+                await this.uploadImagesToStorage(otherPhotos, `stations/${docRef.id}`);
+        
                 router.navigate('/stations');
             } else {
                 alert(error_message);
@@ -261,5 +259,76 @@ class StationsService {
         // If all fields are valid, return an empty string
         return '';
     }
+    // Helper method to delete an image from Firebase Storage
+        private async deleteImageFromStorage(imageUrl: string): Promise<void> {
+          try {
+            const imageRef = ref(storage, imageUrl); // Reference to the image in Firebase Storage
+            await deleteObject(imageRef); // Delete the image from Firebase Storage
+            console.log(`Image ${imageUrl} deleted from storage.`);
+          } catch (error) {
+            console.error('Error deleting image from storage: ', error);
+          }
+        }
+        
+      // Helper function to upload a single image (used for profile picture)
+      private async uploadImageToStorage(
+        photoUri: string, 
+        filePath: string
+      ) {
+        const storageRef = ref(storage, filePath);
+        const response = await fetch(photoUri);
+        const blob = await response.blob();
+        await uploadBytes(storageRef, blob);
+      }
+        
+    
+      // Helper method to upload images to Firebase Storage
+      private async uploadImagesToStorage(images: string[], folderPath: string): Promise<void> {
+        try {
+          for (const imageUri of images) {
+            const uniqueFilename = this.generateUniqueFileName([], '');
+            const imageRef = ref(storage, `${folderPath}/${uniqueFilename}`);  // Create a unique ref based on timestamp
+            const response = await fetch(imageUri);
+            const blob = await response.blob();
+            await uploadBytesResumable(imageRef, blob); // Upload image to Firebase Storage
+            console.log(`Image ${imageUri} uploaded to ${imageRef.fullPath}`);
+          }
+        } catch (error) {
+          console.error('Error uploading images to storage: ', error);
+        }
+      }
+    
+      // Helper method to fetch existing images URLs from Firebase Storage folder
+      private async fetchExistingImagesFromStorage(folderPath: string): Promise<string[]> {
+        try {
+            const folderRef = ref(storage, folderPath);
+            const listResult = await listAll(folderRef);  // List all files in the folder
+            const existingImageUrls = await Promise.all(
+                listResult.items.map(async (itemRef) => {
+                    const downloadURL = await getDownloadURL(itemRef); // Get the download URL for each file
+                    return downloadURL;
+                })
+            );
+            return existingImageUrls;
+        } catch (error) {
+            console.error('Error fetching existing images: ', error);
+            return [];
+        }
+      }
+    
+       /**
+        * Private 4
+        */
+       private generateUniqueFileName(existingFiles: string[], originalName: string) {
+        let fileNameBase = originalName.replace(/\.[^/.]+$/, ''); // Remove extension
+        let newFileName: string;
+    
+        do {
+            let randomInt = Math.floor(Math.random() * 1000000000); // Generate random number (0-9999)
+            newFileName = `${fileNameBase}_${randomInt}.jpg`;
+        } while (existingFiles.includes(newFileName)); // Ensure it's unique
+    
+        return newFileName;
+      }
 }
 export default StationsService;
