@@ -1,8 +1,9 @@
 import { db, storage } from "@/config/firebase";
+import { getSelectedSighting } from "@/stores/sightingStores";
 import { Sighting } from "@/types";
 import { Router } from "expo-router";
 import { addDoc, collection, deleteDoc, doc, getDoc, getDocs, query, serverTimestamp, Timestamp, updateDoc, where } from "firebase/firestore";
-import { deleteObject, getDownloadURL, listAll, ref, uploadBytesResumable } from "firebase/storage";
+import { deleteObject, getDownloadURL, listAll, ref, uploadBytes, uploadBytesResumable } from "firebase/storage";
 import { Dispatch, SetStateAction } from "react";
 import { Alert } from "react-native";
 
@@ -24,14 +25,13 @@ class SightingsService {
       // First gather all raw sightings
       const pins: Sighting[] = querySnapshot.docs.map(doc => ({
         id: doc.id,
-        date: this.getDateString(doc.data().spotted_time.toDate()),
+        date: doc.data().spotted_time.toDate(),
         fed: doc.data().fed,
         health: doc.data().health,
         info: doc.data().info,
-        latitude: doc.data().latitude,
-        longitude: doc.data().longitude,
+        location: doc.data().location,
         name: doc.data().name,
-        uid: doc.data().uid,
+        user: doc.data().user,
         timeofDay: doc.data().timeofDay
       }));
     
@@ -45,19 +45,27 @@ class SightingsService {
   /**
    * Effect: pulls sighting images from storage
    */
-  public async fetchSightingImages(id:string, setPhotos:Dispatch<SetStateAction<string[]>>) {
+  public async fetchSightingImages(
+    id: string, 
+    setProfile: Dispatch<SetStateAction<string>>, 
+    setPhotos: Dispatch<SetStateAction<string[]>>
+  ) {
     try {
       const folderRef = ref(storage, `cat-sightings/${id}`);
-      const result = await listAll(folderRef); // Get all files in the folder
-  
-      // Fetch URLs for each file
+      const result = await listAll(folderRef);
       const urls = await Promise.all(result.items.map((item) => getDownloadURL(item)));
-      setPhotos(urls); // Return the list of URLs
-  } catch (error) {
-      console.error('Error fetching image URLs:', error);
-  }
-  }
       
+      // Separate the profile image and other images
+      const profileImage = urls.find(url => result.items.some(item => item.name.toLowerCase().includes('profile')));
+      if (profileImage) {setProfile(profileImage)} //Guaranteed to be true
+  
+      // Filter out the profile image and set the rest as photos
+      const otherImages = urls.filter(url => !result.items.some(async item => item.name.toLowerCase().includes('profile') && await getDownloadURL(item) === url));
+      setPhotos(otherImages);
+    } catch (error) {
+      console.error('Error fetching image URLs:', error);
+    }
+  }
 
   /**
   * Effect: pulls sightings for one specific cat from firestore
@@ -71,17 +79,15 @@ class SightingsService {
       const q = query(sightingsRef, where('name', '==', name));
       const querySnapshot = await getDocs(q);
   
-      // Fetch all sightings first
       const sightings: Sighting[] = querySnapshot.docs.map(doc => ({
         id: doc.id,
-        date: this.getDateString(doc.data().spotted_time.toDate()),
+        date: doc.data().spotted_time.toDate(),
         fed: doc.data().fed,
         health: doc.data().health,
         info: doc.data().info,
-        latitude: doc.data().latitude,
-        longitude: doc.data().longitude,
+        location: doc.data().location,
         name: doc.data().name,
-        uid: doc.data().uid,
+        user: doc.data().user,
         timeofDay: doc.data().timeofDay
       }));
   
@@ -94,29 +100,34 @@ class SightingsService {
   /**
   * Effect: Submits a new cat sighting to firestore
   */
-  public async handleReportSubmission(
-    thisSighting:Sighting,
-    photos:string[],
-    setVisible: Dispatch<SetStateAction<boolean>>,
-    router:Router) {
+  public async createSighting(
+    photos: string[], 
+    setVisible: Dispatch<SetStateAction<boolean>>, 
+    router: Router
+  ) {
     try {
       setVisible(true);
-      const error_message = this.validateInput(thisSighting, photos);
-      if (error_message == "") {
+      const sighting = getSelectedSighting();
+      const error_message = this.validateInput(sighting, photos);
+      
+      if (error_message === "") {
         const docRef = await addDoc(collection(db, 'cat-sightings'), {
-          timestamp: serverTimestamp(),
-          spotted_time: Timestamp.fromDate(new Date(thisSighting.date)),
-          latitude: thisSighting.latitude,
-          longitude: thisSighting.longitude,
-          name: thisSighting.name,
-          info: thisSighting.info,
-          healthy: thisSighting.health,
-          fed: thisSighting.fed,
-          timeofDay: thisSighting.timeofDay,
-          uid: thisSighting.uid,
+          createdAt: serverTimestamp(),
+          user: sighting.user,
+          spotted_time: Timestamp.fromDate(sighting.date),
+          location: sighting.location,
+          name: sighting.name,
+          info: sighting.info,
+          healthy: sighting.health,
+          fed: sighting.fed,
+          timeofDay: sighting.timeofDay,
         });
-        const folderPath = `cat-sightings/${docRef.id}`;
-        await this.uploadImagesToStorage(photos, folderPath);
+        const profilePhoto = photos[0];
+        await this.uploadImageToStorage(profilePhoto, `cat-sightings/${docRef.id}/profile.jpg`);
+  
+        const otherPhotos = photos.slice(1);
+        await this.uploadImagesToStorage(otherPhotos, `cat-sightings/${docRef.id}`);
+  
         alert('Cat submitted successfully!');
         router.navigate('/(app)/(tabs)');
       } else {
@@ -127,7 +138,7 @@ class SightingsService {
     } finally {
       setVisible(false);
     }
-  };
+  }
 
     /**
      * Effect: updates firestore when deleting a cat sighting
@@ -169,7 +180,6 @@ class SightingsService {
    * Effect: updates firestore when editing a cat sighting
    */
     public async saveSighting(
-        thisSighting: CatSightingObject,
         photos: string[],
         isPicsChanged: boolean,
         setVisible: Dispatch<SetStateAction<boolean>>,
@@ -177,25 +187,25 @@ class SightingsService {
     ) {
         try {
           setVisible(true);
-          const error_message = this.validateInput(thisSighting, photos);
+          const sighting = getSelectedSighting();
+          const error_message = this.validateInput(sighting, photos);
           if (error_message == "") {
-              const stamp = Timestamp.fromDate(new Date(thisSighting.date));
-              const sightingRef = doc(db, 'cat-sightings', thisSighting.id);
+              const stamp = Timestamp.fromDate(new Date(sighting.date));
+              const sightingRef = doc(db, 'cat-sightings', sighting.id);
               const docRef = await updateDoc(sightingRef, {
                   spotted_time: stamp,
                   timestamp:serverTimestamp(),
-                  fed: thisSighting.fed,
-                  health: thisSighting.health,
-                  info: thisSighting.info,
-                  longitude: thisSighting.longitude,
-                  latitude: thisSighting.latitude,
-                  name: thisSighting.name,
-                  uid: thisSighting.uid,
-                  timeofDay: thisSighting.timeofDay
+                  fed: sighting.fed,
+                  health: sighting.health,
+                  info: sighting.info,
+                  location: sighting.location,
+                  name: sighting.name,
+                  uid: sighting.id,
+                  timeofDay: sighting.timeofDay
               });
               if (isPicsChanged) {
                 // Fetch existing images from Firebase Storage
-                const existingImages = await this.fetchExistingImagesFromStorage(`cat-sightings/${thisSighting.id}`);
+                const existingImages = await this.fetchExistingImagesFromStorage(`cat-sightings/${sighting.id}`);
 
                 // 3. Compare new photos with existing ones
                 const newImages = photos.filter(photo => !existingImages.includes(photo)); // Only new images
@@ -208,7 +218,7 @@ class SightingsService {
 
                 // 5. Upload new images
                 if (newImages.length > 0) {
-                    await this.uploadImagesToStorage(newImages, `cat-sightings/${thisSighting.id}`);
+                    await this.uploadImagesToStorage(newImages, `cat-sightings/${sighting.id}`);
                 }
             }
               router.push('/(app)/(tabs)');
@@ -225,12 +235,13 @@ class SightingsService {
     /**
      * Private 2
      */
-    private validateInput(thisSighting:CatSightingObject, photos:string[]) {
-        if (thisSighting.name == '') {
+    private validateInput(sighting:Sighting, photos:string[]) {
+        if (sighting.name == '') {
           return 'Please enter a name for the cat.';
-        } else if (isNaN(thisSighting.longitude) || thisSighting.longitude === 0 || isNaN(thisSighting.latitude) || thisSighting.latitude === 0) {
+        } else if (isNaN(sighting.location.longitude) || sighting.location.longitude === 0 || 
+                  isNaN(sighting.location.latitude) || sighting.location.latitude === 0) {
           return 'Please Select a location on the map';
-        } else if (!thisSighting.timeofDay) {
+        } else if (!sighting.timeofDay) {
           return 'Please select a time of day for the sighting.';
         } else if (photos.length == 0) {
           return 'Please select a photo.';
@@ -248,6 +259,18 @@ class SightingsService {
         console.error('Error deleting image from storage: ', error);
       }
     }
+    
+  // Helper function to upload a single image (used for profile picture)
+  public async uploadImageToStorage(
+    photoUri: string, 
+    filePath: string
+  ) {
+    const storageRef = ref(storage, filePath);
+    const response = await fetch(photoUri);
+    const blob = await response.blob();
+    await uploadBytes(storageRef, blob);
+  }
+    
 
   // Helper method to upload images to Firebase Storage
   private async uploadImagesToStorage(images: string[], folderPath: string): Promise<void> {

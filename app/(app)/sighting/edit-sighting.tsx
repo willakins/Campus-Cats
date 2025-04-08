@@ -9,9 +9,9 @@ import { useAuth } from '@/providers';
 import MapView, { LatLng, MapPressEvent, Marker } from 'react-native-maps';
 import { buttonStyles, textStyles, containerStyles } from '@/styles';
 import { CameraButton, DateTimeInput, Button, ImageButton, CatalogImageHandler } from '@/components';
-import { CatSightingObject } from '@/types';
+import { Sighting } from '@/types';
 
-const CatSightingScreen = () => {
+const SightingEditScreen = () => {
   const router = useRouter();
   const database = DatabaseService.getInstance();
   const [visible, setVisible] = useState<boolean>(false);
@@ -241,4 +241,4 @@ const CatSightingScreen = () => {
   );
 };
 
-export default CatSightingScreen;
+export default SightingEditScreen;

@@ -1,13 +1,15 @@
+import { User } from './User';
+import { LatLng } from 'react-native-maps';
+
 interface SightingProps {
   id: string;
   name: string;
   info: string;
   fed: boolean;
   health: boolean;
-  date: string;
-  latitude: number;
-  longitude: number;
-  uid: string;
+  date: Date;
+  location: LatLng;
+  user: User;
   timeofDay: string;
 }
 
@@ -17,10 +19,9 @@ class Sighting {
   info: string;
   fed: boolean;
   health: boolean;
-  date: string;
-  latitude: number;
-  longitude: number;
-  uid: string;
+  date: Date;
+  location: LatLng;
+  user: User;
   timeofDay: string;
 
   constructor({
@@ -30,9 +31,8 @@ class Sighting {
     fed,
     health,
     date,
-    latitude,
-    longitude,
-    uid,
+    location,
+    user,
     timeofDay,
   }: SightingProps) {
     this.id = id;
@@ -41,10 +41,27 @@ class Sighting {
     this.fed = fed;
     this.health = health;
     this.date = date;
-    this.latitude = latitude;
-    this.longitude = longitude;
-    this.uid = uid;
+    this.location = location;
+    this.user = user;
     this.timeofDay = timeofDay;
   }
+
+  static readonly dummy = new Sighting({
+    id: "dummy",
+    name: "Unknown Cat",
+    info: "This is a placeholder sighting.",
+    fed: false,
+    health: false,
+    date: new Date(),
+    location: { latitude: 0, longitude: 0 },
+    user: User.dummy,
+    timeofDay: "Unknown",
+  });
+
+  static getDateString (sighting:Sighting) {
+    const dateString = sighting.date.toISOString().split('T')[0];
+    return `${sighting.timeofDay} of ${dateString}`;
+  }
 }
-export { Sighting };
+
+export { Sighting, SightingProps };
