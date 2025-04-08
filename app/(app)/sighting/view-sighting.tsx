@@ -11,7 +11,7 @@ import { SightingEntry } from '@/components';
 const SightingScreen = () => {
   const router = useRouter();
   const { user } = useAuth();
-  const isAuthorized = user.role === 1 || user.role === 2 || user.id === getSelectedSighting().user.id;
+  const isAuthorized = user.role === 1 || user.role === 2 || user.id === getSelectedSighting().createdBy.id;
 
   return (
     <SafeAreaView style={containerStyles.wrapper}>
