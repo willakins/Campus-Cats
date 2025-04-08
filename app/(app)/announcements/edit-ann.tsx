@@ -26,7 +26,7 @@ const edit_ann = () => {
   const [photos, setPhotos] = useState<string[]>([]);
   const [isPicsChanged, setPicsChanged] = useState<boolean>(false);
 
-  const [visible, setVisible] = useState<boolean>(true);
+  const [visible, setVisible] = useState<boolean>(false);
   const database = DatabaseService.getInstance();
 
   useEffect(() => {

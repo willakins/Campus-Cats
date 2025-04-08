@@ -24,7 +24,7 @@ const SightingEditScreen = () => {
   const [visible, setVisible] = useState<boolean>(false);
   const imageHandler = new CatalogImageHandler({ type:'sightings', id:sighting.id, photos, profile, setPhotos, setProfile, setPicsChanged, setVisible});
   
-  const [value, setValue] = useState("");
+  const [value, setValue] = useState(sighting.timeofDay);
   const [open, setOpen] = useState(false);
   const [items, setItems] = useState([
     { label: 'Morning', value: 'morning' },
@@ -85,6 +85,7 @@ const SightingEditScreen = () => {
             items={items}
             setItems={setItems}
             photos={photos}
+            profile={profile}
             setPhotos={setPhotos}
             setPicsChanged={setPicsChanged}
             imageHandler={imageHandler}
@@ -92,7 +93,7 @@ const SightingEditScreen = () => {
           />)}/>
       <Button style={buttonStyles.button2} onPress={() => {
           createObj();
-          database.saveSighting(photos, isPicsChanged, setVisible, router);
+          database.saveSighting(photos, profile, isPicsChanged, setVisible, router);
         }}>
         <Text style={textStyles.bigButtonText}>Save Report</Text>
       </Button>
