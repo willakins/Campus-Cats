@@ -8,7 +8,7 @@ import { Snackbar } from 'react-native-paper';
 import { Button, TextInput, CameraButton } from '@/components';
 import DatabaseService from '@/services/DatabaseService';
 import { globalStyles, buttonStyles, textStyles, containerStyles } from '@/styles';
-import { StationEntryObject } from '@/types/StationEntryObject';
+import { StationEntryObject } from '@/types/Station';
 import MapView, { LatLng, Marker } from 'react-native-maps';
 
 const edit_station = () => {

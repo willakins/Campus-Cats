@@ -6,17 +6,17 @@ import { Button, StationItem } from '@/components';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useState } from 'react';
 import DatabaseService from '@/services/DatabaseService';
-import { StationEntryObject } from '@/types';
+import { Station } from '@/types';
 
 const Stations = () => {
-  const { signOut, user } = useAuth();
+  const { user } = useAuth();
   const isAdmin = user.role === 1 || user.role === 2;
   const router = useRouter();
   const database = DatabaseService.getInstance();
 
   if (!isAdmin) { // Double safety so important info isn't leaked
     return (
-      <SafeAreaView style={containerStyles.container}>
+      <SafeAreaView style={containerStyles.wrapper}>
         <Text style={textStyles.catalogTitle}> You should not be here!</Text>
         <Button style={buttonStyles.logoutButton} onPress={() => router.push('/(app)/(tabs)')}>
           <Ionicons name="arrow-back-outline" size={25} color="#fff" />
@@ -24,7 +24,7 @@ const Stations = () => {
       </SafeAreaView>
     );
   } else {
-    const [stationEntries, setStationEntries] = useState<StationEntryObject[]>([]);
+    const [stationEntries, setStationEntries] = useState<Station[]>([]);
     const [filter, setFilter] = useState<'All' | 'Stocked' | 'Unstocked'>('All');
 
     useFocusEffect(() => {
@@ -38,12 +38,8 @@ const Stations = () => {
     });
 
     return (
-      <SafeAreaView style={containerStyles.container}>
+      <SafeAreaView style={containerStyles.wrapper}>
         <Text style={textStyles.title}>Feeding Stations</Text>
-        <Button style={buttonStyles.editButton} onPress={() => router.push('/stations/create-station')}>
-          <Text style={textStyles.editText}> Create Entry</Text>
-        </Button>
-
         <View style={containerStyles.buttonGroup}>
           {['Stocked', 'Unstocked', 'All'].map((label) => (
             <Button
@@ -62,16 +58,18 @@ const Stations = () => {
               key={station.id}
               id={station.id}
               name={station.name}
-              profile={station.profile}
-              longitude={station.longitude}
-              latitude={station.latitude}
+              location={station.location}
               lastStocked={station.lastStocked}
               stockingFreq={station.stockingFreq}
               knownCats={station.knownCats}
               isStocked={station.isStocked}
+              createdBy={station.createdBy}
             />
           ))}
         </ScrollView>
+        <Button style={buttonStyles.button2} onPress={() => router.push('/stations/create-station')}>
+          <Text style={textStyles.bigButtonText}> Create Station</Text>
+        </Button>
       </SafeAreaView>
     );
   }
