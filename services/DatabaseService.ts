@@ -1,7 +1,7 @@
 import { getDownloadURL, ref } from 'firebase/storage';
 import { getDocs, getDoc, updateDoc, doc, collection, query, where, DocumentData, getFirestore } from 'firebase/firestore';
 import { auth, db, storage } from '@/config/firebase';
-import { Announcement, CatalogEntryObject, ContactInfo, Sighting, StationEntryObject, User, WhitelistApp } from '@/types';
+import { Announcement, CatalogEntryObject, ContactInfo, Sighting, Station, User, WhitelistApp } from '@/types';
 import { Dispatch, SetStateAction } from 'react';
 import { Alert } from 'react-native';
 import CatalogService from './CatalogService';
@@ -303,42 +303,41 @@ class DatabaseService {
   /**
    * Effect: Gets all stations from firebase
    */
-  public async fetchStations(setStationEntries:Dispatch<SetStateAction<StationEntryObject[]>>) {
+  public async fetchStations(setStationEntries:Dispatch<SetStateAction<Station[]>>) {
     await DatabaseService.stationsService.fetchStations(setStationEntries);
   }
 
   /**
    * Effect: Adds a new station to firebase
    */
-  public async createStation(thisStation:StationEntryObject, setVisible: Dispatch<SetStateAction<boolean>>, router:Router) {
-    await DatabaseService.stationsService.createStation(thisStation, setVisible, router);
+  public async createStation(profile:string, setVisible: Dispatch<SetStateAction<boolean>>, router:Router) {
+    await DatabaseService.stationsService.createStation(profile, setVisible, router);
   }
 
   /**
    * Effect: Stocks a station
    */
-  public async stockStation(thisStation: StationEntryObject, router:Router) {
-    await DatabaseService.stationsService.stockStation(thisStation, router);
+  public async stockStation(router:Router) {
+    await DatabaseService.stationsService.stockStation(router);
   }
 
   /**
    * TODO
    */
-  public async saveStation(thisStation: StationEntryObject, profileChanged: boolean, setVisible: Dispatch<SetStateAction<boolean>>, 
+  public async saveStation(profile:string, profileChanged: boolean, setVisible: Dispatch<SetStateAction<boolean>>, 
     router: Router) {
-    await DatabaseService.stationsService.saveStation(thisStation, profileChanged, setVisible, router);
+    await DatabaseService.stationsService.saveStation(profile, profileChanged, setVisible, router);
   }
 
   /**
    * TODO
    */
   public async deleteStation(
-    id: string, 
-    photoUrl:string,
+    profile:string,
     setVisible: Dispatch<SetStateAction<boolean>>, 
     router: Router
   ) {
-    await DatabaseService.stationsService.deleteStation(id, photoUrl, setVisible, router);
+    await DatabaseService.stationsService.deleteStation(profile, setVisible, router);
   }
 
   /**
