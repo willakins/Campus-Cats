@@ -31,23 +31,6 @@ const HomeScreen = () => {
     return new Date(pin.date) >= cutoffDate;
   };
 
-  const viewSighting = (pin: Sighting) => {
-    setSelectedSighting(pin);
-    router.push('sighting/view-sighting');
-    router.push({ pathname: '/sighting/view-report', params: {
-      id: pin.id,
-      date: pin.date,
-      catFed: pin.fed ? 'true':'false',
-      catHealth: pin.health ? 'true':'false',
-      info: pin.info,
-      catLongitude: JSON.stringify(pin.longitude),
-      catLatitude: JSON.stringify(pin.latitude),
-      name: pin.name,
-      uid: pin.uid,
-      timeofDay: pin.timeofDay,
-    }})
-  };
-
   return (
     <View style={globalStyles.homeScreen}>
       <View style={containerStyles.buttonGroup}>
@@ -74,7 +57,10 @@ const HomeScreen = () => {
           latitudeDelta: 0.01,
           longitudeDelta: 0.01,
         }}
-        onPerMarkerPress={viewSighting}
+        onPerMarkerPress={(pin) => {
+          setSelectedSighting(pin);
+          router.push('/sighting/view-sighting');
+        }}
       />
       <Button
         style={buttonStyles.reportButton}
