@@ -1,7 +1,7 @@
 // stores/sightingStore.ts
 import { Sighting } from '@/types';
 
-let selectedSighting: Sighting | null = null;
+let selectedSighting: Sighting = Sighting.dummy;
 
 export const setSelectedSighting = (sighting: Sighting) => {
   selectedSighting = sighting;

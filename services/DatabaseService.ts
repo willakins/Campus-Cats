@@ -1,4 +1,4 @@
-import { getDownloadURL } from 'firebase/storage';
+import { getDownloadURL, ref } from 'firebase/storage';
 import { getDocs, getDoc, updateDoc, doc, collection, query, where, DocumentData, getFirestore } from 'firebase/firestore';
 import { auth, db, storage } from '@/config/firebase';
 import { AnnouncementEntryObject, CatalogEntryObject, ContactInfo, Sighting, StationEntryObject, User, WhitelistApp } from '@/types';
@@ -109,31 +109,29 @@ class DatabaseService {
    * Effect: updates firestore when editing a cat sighting
    */
   public async saveSighting(
-   thisSighting:Sighting,
    photos: string[],
    isPicsChanged:boolean,
    setVisible: Dispatch<SetStateAction<boolean>>,
    router:Router
    ) {
-    await DatabaseService.sightingsService.saveSighting(thisSighting, photos, isPicsChanged, setVisible, router);
+    await DatabaseService.sightingsService.saveSighting(photos, isPicsChanged, setVisible, router);
   }
 
   /**
    * Effect: pulls sighting images from storage
    */
-  public async fetchSightingImages(id:string, setPhotos:Dispatch<SetStateAction<string[]>>) {
-    await DatabaseService.sightingsService.fetchSightingImages(id, setPhotos)
+  public async fetchSightingImages(id:string,  setProfile:Dispatch<SetStateAction<string>>, setPhotos:Dispatch<SetStateAction<string[]>>) {
+    await DatabaseService.sightingsService.fetchSightingImages(id, setProfile, setPhotos)
   }
 
   /**
    * Effect: Submits a new cat sighting to firestore
    */
-  public async handleReportSubmission(
-    thisSighting:CatSightingObject,
+  public async createSighting(
     photos: string[],
     setVisible: Dispatch<SetStateAction<boolean>>,
     router:Router) {
-    await DatabaseService.sightingsService.handleReportSubmission(thisSighting, photos, setVisible, router);
+    await DatabaseService.sightingsService.createSighting(photos, setVisible, router);
   }
 
   /**

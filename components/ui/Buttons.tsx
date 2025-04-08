@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { StyleProp, Text, TextStyle, TouchableOpacity, TouchableOpacityProps, View, ViewStyle } from 'react-native';
-import { PhotoHandler } from '../image_handlers/PhotoHandler';
+import { PhotoHandler } from '../../image_handlers/PhotoHandler';
 import { globalStyles, buttonStyles, textStyles, containerStyles } from '@/styles';
 
 type IoniconsName = React.ComponentProps<typeof Ionicons>['name'];
