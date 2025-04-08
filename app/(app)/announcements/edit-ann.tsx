@@ -8,8 +8,8 @@ import { Snackbar } from 'react-native-paper';
 import { Button, TextInput, CameraButton } from '@/components';
 import DatabaseService from '@/components/services/DatabaseService';
 import { globalStyles, buttonStyles, textStyles, containerStyles } from '@/styles';
-import { AnnouncementEntryObject } from '@/types';
 import { useAuth } from '@/providers/AuthProvider';
+import { AnnouncementEntryObject } from '@/types';
 
 const edit_ann = () => {
   const router = useRouter();
@@ -47,35 +47,57 @@ const edit_ann = () => {
     setPicsChanged(true);
   };
 
+  const createObj = () => {
+    return new AnnouncementEntryObject(id, formData.title, formData.info, '', formData.createdBy);
+  }
+
   return (
-    <SafeAreaView style={containerStyles.container}>
-      <Button style={buttonStyles.logoutButton} onPress={() => router.push({
-        pathname: '/announcements/view-ann', 
-        params: { id:id, title:title, info:info, createdAt:createdAt, createdBy:createdBy }, })}>
+    <SafeAreaView style={containerStyles.wrapper}>
+      <Button style={buttonStyles.logoutButton} onPress={() => router.back()}>
         <Ionicons name="arrow-back-outline" size={25} color="#fff" />
       </Button>
-      <Button style={buttonStyles.editButton} onPress={() => database.handleAnnouncementSave(formData, photos, isPicsChanged, user, setVisible, router)}>
-        <Text style ={textStyles.editText}> Save Announcement</Text>
-      </Button>
-      <ScrollView contentContainerStyle={containerStyles.entryContainer}>
-        <Text style={textStyles.title}>Edit An Announcement</Text>
-        <View style={containerStyles.loginContainer}>
-        <Text style={textStyles.headline}>Title</Text>
-        <TextInput 
-          value={formData.title}
-          placeholderTextColor = "#888"
-          onChangeText={(text) => handleChange('title', text)} 
-          style={textStyles.input} />
-        <Text style={textStyles.headline}>Description</Text>
-        <TextInput
-          value={formData.info}
-          placeholderTextColor = "#888"
-          onChangeText={(text) => handleChange('info', text)} 
-          style={textStyles.descInput} 
-          multiline={true}/>
-        </View>
-        
-        {photos.length > 0 ? <Text style={textStyles.headline2}> Photos</Text> : null}
+      <View style={containerStyles.snackbarContainer}>
+        <Snackbar
+          visible={visible}
+          onDismiss={() => setVisible(false)}
+          duration={2000}
+          style={containerStyles.snackbar}
+        >
+          Saving Announcement...
+        </Snackbar>
+      </View>
+      <Text style={textStyles.announcementTitle}>Edit Announcement</Text>
+      <ScrollView contentContainerStyle={containerStyles.scrollView}>
+        <View style={containerStyles.card}>
+          <View style={containerStyles.inputContainer2}>
+            <TextInput 
+              value={formData.title}
+              placeholderTextColor = "#888"
+              onChangeText={(text) => handleChange('title', text)} 
+              style={textStyles.input} />
+          </View>
+          <View style={containerStyles.inputContainer2}>
+            <TextInput
+              value={formData.info}
+              placeholderTextColor = "#888"
+              onChangeText={(text) => handleChange('info', text)} 
+              style={textStyles.descInput} 
+              multiline={true}/>
+          </View>
+          <View style={containerStyles.inputContainer2}>
+            <TextInput
+              placeholder="Choose an author alias to replace id"
+              placeholderTextColor="#888"
+              onChangeText={(text) => handleChange('createdBy', text)} 
+              style={textStyles.descInput} 
+              multiline={false}/>
+          </View>
+        <Text style={textStyles.titleCentered}>Add a picture</Text>
+          <CameraButton onPhotoSelected={(newPhotoUri) => {
+            setPhotos((prevPics) => [...prevPics, newPhotoUri]);
+            setPicsChanged(true);
+            }}/>
+          {photos.length > 0 ? <Text style={textStyles.label}> Photos</Text> : null}
         <View style={containerStyles.extraPicsContainer}>
           {photos ? (photos.map((pic, index) => (
             <View key={index} style={containerStyles.imageWrapper}>
@@ -85,14 +107,15 @@ const edit_ann = () => {
               </Button>
             </View>
           ))):<Text>Loading images...</Text>}
-          <Snackbar visible={visible} onDismiss={() => setVisible(false)} duration={2000}>
-            Saving...
-          </Snackbar>
         </View>
-        <Text style={textStyles.headline}> Upload Additional Photos</Text>
-        <CameraButton onPhotoSelected={addPhoto}></CameraButton>
-        <Button style={buttonStyles.deleteButton}onPress={() => database.deleteAnnouncement(id, router, setVisible)}> Delete Announcement</Button>
+        </View> 
       </ScrollView>
+      <Button style={buttonStyles.button2} onPress={() => database.handleAnnouncementSave(createObj(), photos, isPicsChanged, user, setVisible, router)}>
+        <Text style ={textStyles.bigButtonText}> Save Announcement</Text>
+      </Button>
+      <Button style={buttonStyles.button3}onPress={() => database.deleteAnnouncement(id, router, setVisible)}> 
+        <Text style={textStyles.bigButtonText}>Delete Announcement</Text>
+      </Button>
     </SafeAreaView>
   );
 }

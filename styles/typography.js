@@ -7,7 +7,7 @@ const textStyles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#333',
     textAlign: 'center',
-    marginTop: 40,
+    marginTop: '5%',
   },
   catalogTitle: {
     fontSize: 30,
@@ -18,12 +18,11 @@ const textStyles = StyleSheet.create({
     marginBottom: 5, // Space between title and description
   },
   announcementTitle: {
-    fontSize: 30,
+    fontSize: 32,
     fontWeight: 'bold',
     color: '#333',
     textAlign: 'center',
-    marginTop: 10,
-    marginBottom: 5, // Space between title and description
+    paddingTop: '15%',
   },
   headline: {
     fontSize: 20,
@@ -107,38 +106,23 @@ const textStyles = StyleSheet.create({
     fontWeight: 'bold',
   },
   sliderText: {
-    color: 'black',
-    fontSize: 12,
-    fontWeight: 'bold',
-    textAlign: 'left',
-    padding: 10,
+    fontSize: 16,
+    color: '#333',
+    marginLeft: 12,
+    flex: 1,
   },
   input: {
-    height: 40,
+    fontSize:15,
+    fontWeight: '600',
+    color: '#1A1A1A',
     width: '100%',
-    borderColor: '#ccc',
-    borderWidth: 1,
-    borderRadius: 5,
-    marginBottom: 15,
-    paddingHorizontal: 10,
-    backgroundColor: '#fff',
-    color: '#000',
   },
   descInput: {
-    height: 60,
+    fontsize:15,
+    color: '#555',
     width: '100%',
-    borderColor: '#ccc',
-    borderWidth: 1,
-    borderRadius: 5,
-    marginBottom: 15,
-    paddingHorizontal: 10,
-    backgroundColor: '#fff',
+    fontWeight: 'light',
     color: '#000',
-    elevation: 3,  // Adds shadow on Android
-    shadowColor: '#000',  // Adds shadow on iOS
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
   },
   forgotPassword: {
     marginTop: 10,
@@ -204,6 +188,57 @@ const textStyles = StyleSheet.create({
     fontWeight: '600',
     textAlign: 'center',
     letterSpacing: 0.5,
+  },
+  titleCentered: {
+    fontSize: 22,
+    fontWeight: 'bold',
+    paddingTop: 30,
+    color: '#333',
+    textAlign: 'center',
+  },
+  label: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#1A1A1A',
+    marginTop: '5%',
+  },
+  label2: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#1A1A1A',
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#333',
+    marginTop: 20,
+    marginBottom: 10,
+  },
+  detail: {
+    fontSize: 16,
+    color: '#555',
+    marginVertical: 4,
+  },
+  statusText: {
+    fontSize: 16,
+    color: '#333',
+  },
+  switchLabel: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: '#333',
+    marginRight: 10,
+  },
+  picker: {
+    height: 30,
+    width: '100%',
+    borderWidth: 1,
+    borderColor: '#ccc',
+    borderRadius: 5,
+  },
+  footerText: {
+    fontSize: 13,
+    color: '#888',
   },
 });
 export { textStyles };

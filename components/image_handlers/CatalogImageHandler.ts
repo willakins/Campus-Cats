@@ -4,7 +4,7 @@ import DatabaseService from '../services/DatabaseService';
 
 interface CatalogImageHandlerProps {
   setVisible: (visible: boolean) => void;
-  setImageUrls: React.Dispatch<React.SetStateAction<string[]>>;
+  setPhotos: React.Dispatch<React.SetStateAction<string[]>>;
   setNewPics: React.Dispatch<React.SetStateAction<{ url: string; name: string }[]>>;
   setNewPhotos: React.Dispatch<React.SetStateAction<boolean>>;
   setProfile: React.Dispatch<React.SetStateAction<string>>;
@@ -16,7 +16,7 @@ interface CatalogImageHandlerProps {
 
 class CatalogImageHandler {
   private setVisible: (visible: boolean) => void;
-  private setImageUrls: React.Dispatch<React.SetStateAction<string[]>>;
+  private setPhotos: React.Dispatch<React.SetStateAction<string[]>>;
   private setNewPics: React.Dispatch<React.SetStateAction<{ url: string; name: string }[]>>;
   private setNewPhotos: React.Dispatch<React.SetStateAction<boolean>>;
   private setProfile: React.Dispatch<React.SetStateAction<string>>;
@@ -28,7 +28,7 @@ class CatalogImageHandler {
 
   constructor({
     setVisible,
-    setImageUrls,
+    setPhotos,
     setNewPics,
     setNewPhotos,
     setProfile,
@@ -37,7 +37,7 @@ class CatalogImageHandler {
     profilePicUrl
   }: CatalogImageHandlerProps) {
     this.setVisible = setVisible;
-    this.setImageUrls = setImageUrls;
+    this.setPhotos = setPhotos;
     this.setNewPics = setNewPics;
     this.setNewPhotos = setNewPhotos;
     this.setProfile = setProfile;
@@ -55,7 +55,7 @@ class CatalogImageHandler {
         return;
       }
       await this.database.swapProfilePicture(this.id, picUrl, picName, this.profilePicUrl);
-      this.database.fetchCatImages(this.id, this.setProfile, this.setImageUrls);
+      this.database.fetchCatImages(this.id, this.setProfile, this.setPhotos);
     } catch (error) {
       console.error('Error swapping profile picture:', error);
       alert('Error Failed to swap profile picture.');
@@ -72,7 +72,7 @@ class CatalogImageHandler {
       [
         {
           text: 'Delete Forever',
-          onPress: async () => await this.database.deleteCatalogPicture(this.id, picName, this.setProfile, this.setImageUrls),
+          onPress: async () => await this.database.deleteCatalogPicture(this.id, picName, this.setProfile, this.setPhotos),
         },
         {
           text: 'Cancel',
@@ -85,7 +85,7 @@ class CatalogImageHandler {
 
   public addPhoto = (newPhotoUri: string) => {
     console.log('adding photos!')
-    this.setImageUrls((prevPics) => [
+    this.setPhotos((prevPics) => [
       ...prevPics,
       newPhotoUri,
     ]);
