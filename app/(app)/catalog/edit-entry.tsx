@@ -5,13 +5,15 @@ import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { Snackbar } from 'react-native-paper';
 
-import { Button, TextInput, ImageButton, CameraButton, CatalogImageHandler } from '@/components';
+import { Button, TextInput, ImageButton, CameraButton} from '@/components';
 import DatabaseService from '@/services/DatabaseService';
 import { globalStyles, buttonStyles, textStyles, containerStyles } from '@/styles';
 import { CatalogEntryObject } from '@/types/CatalogEntryObject';
+import { CatalogImageHandler } from '@/image_handlers/CatalogImageHandler';
 
 const edit_entry = () => {
   const router = useRouter();
+  const database = DatabaseService.getInstance();
   const { id, name, descShort, descLong, colorPattern, behavior, yearsRecorded, AoR, currentStatus, furLength, furPattern, tnr, sex, credits} = useLocalSearchParams() as 
         { id: string, name: string, descShort: string, descLong: string, colorPattern: string, behavior: string, yearsRecorded: string, AoR: string, 
           currentStatus: string, furLength: string, furPattern: string, tnr: string, sex: string, credits:string};
@@ -32,8 +34,8 @@ const edit_entry = () => {
   const [extraPics, setPhotos] = useState<string[]>([]);
   const [newPics, setNewPics] = useState<{ url: string; name: string }[]>([]);
   const [newPhotosAdded, setNewPhotos] = useState<boolean>(false);
-  const database = DatabaseService.getInstance();
-  const imageHandler = new CatalogImageHandler({ setVisible, setPhotos, setNewPics, setNewPhotos, setProfile, name, id, profilePicUrl});
+  
+  const imageHandler = new CatalogImageHandler({ setVisible, setPhotos, setNewPics, setNewPhotos, setProfile, name, id, profilePic});
     
   useFocusEffect(
     useCallback(() => {
@@ -59,7 +61,7 @@ const edit_entry = () => {
         <Ionicons name="arrow-back-outline" size={25} color="#fff" />
       </Button>
       <Button style={buttonStyles.editButton} 
-      onPress={() => database.handleCatalogSave(createObj(), newPics, newPhotosAdded, setVisible, router)}>
+      onPress={() => database.handleCatalogSave(newPics, newPhotosAdded, setVisible, router)}>
         <Text style ={textStyles.editText}> Save Entry</Text>
       </Button>
       <ScrollView contentContainerStyle={containerStyles.entryContainer}>

@@ -180,7 +180,7 @@ class SightingsService {
    * Effect: updates firestore when editing a cat sighting
    */
     public async saveSighting(
-        photos: string[],
+        photos:string[], 
         isPicsChanged: boolean,
         setVisible: Dispatch<SetStateAction<boolean>>,
         router: Router
@@ -231,6 +231,61 @@ class SightingsService {
             setVisible(false);
         }
     };
+
+    /**
+    * Effect: Swaps the profile picture for a catalog entry
+    */
+    public async swapProfilePicture(
+      id:string, 
+      picUrl:string, 
+      picName:string, 
+      profilePicUrl?:string) {
+      const folderRef = ref(storage, `cat-sightings/${id}`);
+      const listResult = await listAll(folderRef);
+      
+      // Find the profile picture regardless of extension
+      const profileFile = listResult.items.find((item) => {
+        const name = item.name.toLowerCase();
+        return name.startsWith("profile.") || name === "profile";
+      });
+      
+      const selectedPicRef = ref(storage, `cat-sightings/${id}/${picName}`);
+  
+      // Fetch image blobs
+      const oldProfileBlob = await (await fetch(profilePicUrl!)).blob();
+      const selectedPicBlob = await (await fetch(picUrl)).blob();
+  
+      // Swap images:
+      // 1. Delete both files
+      if (profileFile) {
+        await deleteObject(profileFile);
+      }
+      await deleteObject(selectedPicRef);
+  
+      // 2. Re-upload old profile picture as selectedPic.name
+      const newExtraPicRef = ref(storage, `cat-sightings/${id}/${picName}`);
+      await uploadBytesResumable(newExtraPicRef, oldProfileBlob);
+  
+      // 3. Re-upload selected picture as profile picture
+      const newProfilePicRef = ref(storage, `cat-sightings/${id}/profile.jpg`);
+      await uploadBytesResumable(newProfilePicRef, selectedPicBlob);
+    }
+
+    /**
+    * Effect: deletes a picture from a catalog entry
+    */
+    public async deleteSightingPicture(
+      id:string, 
+      picName: string) {
+      try {
+          const imageRef = ref(storage, `cat-sightings/${id}/${picName}`);
+          await deleteObject(imageRef);
+          alert('Success Image deleted successfully!');
+      } catch (error) {
+          alert('Error Failed to delete the image.');
+          console.error('Error deleting image: ', error);
+      }
+  };
 
     /**
      * Private 2
