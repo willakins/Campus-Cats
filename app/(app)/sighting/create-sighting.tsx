@@ -5,7 +5,6 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 
 import { Button, SightingForm, SnackbarMessage } from '@/components';
-console.log({ Button, SightingForm, SnackbarMessage });
 import { buttonStyles, textStyles, containerStyles } from '@/styles';
 import { setSelectedSighting } from '@/stores/sightingStores';
 import DatabaseService from '@/services/DatabaseService';

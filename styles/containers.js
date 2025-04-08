@@ -411,11 +411,18 @@ const containerStyles = StyleSheet.create({
     width: '100%',
     paddingVertical: 8,
   },
-  snackbar: {
+  snackbarContainer: {
     position: 'absolute',
-    top: '20%',
-    alignSelf: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.9)',
+    top: '15%',
+    left: '3%',
+    right: '3%',
+    zIndex: 1000,  // Ensure the snackbar is above other content
+  },
+  snackbar: {
+    width: '100%',
+    height: '20%',
+    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+    color: 'white',
     borderRadius: 5,
   },
   footer: {
