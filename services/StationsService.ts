@@ -1,5 +1,6 @@
 import { db, storage } from "@/config/firebase";
-import { StationEntryObject } from "@/types";
+import { getSelectedStation } from "@/stores/stationStores";
+import { Station } from "@/types";
 import { Router } from "expo-router";
 import { addDoc, collection, deleteDoc, doc, getDocs, updateDoc } from "firebase/firestore";
 import { deleteObject, getDownloadURL, listAll, ref, uploadBytes } from "firebase/storage";
@@ -13,19 +14,18 @@ class StationsService {
     /**
     * Effect: Pulls a list of stations from firestore
     */
-    public async fetchStations(setStationEntries:Dispatch<SetStateAction<StationEntryObject[]>>) {
+    public async fetchStations(setStationEntries:Dispatch<SetStateAction<Station[]>>) {
         try {
             const querySnapshot = await getDocs(collection(db, 'stations'));
-            const stations: StationEntryObject[] = querySnapshot.docs.map((doc) => ({
+            const stations: Station[] = querySnapshot.docs.map((doc) => ({
                 id: doc.id,
                 name: doc.data().name,
-                profile:"",
-                longitude: doc.data().longitude,
-                latitude: doc.data().latitude,
+                location: doc.data().location,
                 lastStocked: doc.data().lastStocked,
                 stockingFreq: doc.data().stockingFreq,
                 knownCats: doc.data().knownCats,
-                isStocked:StationEntryObject.calculateStocked(doc.data().lastStocked, doc.data().stockingFreq),
+                isStocked: Station.calculateStocked(doc.data().lastStocked, doc.data().stockingFreq),
+                createdBy: doc.data().createdBy,
             }));
             setStationEntries(stations);
         } catch (error) {
@@ -51,25 +51,26 @@ class StationsService {
     /**
      * Effect: Creates a firestore document inside of the 'stations' collection
      */
-    public async createStation(thisStation:StationEntryObject, setVisible: Dispatch<SetStateAction<boolean>>, router:Router) {
+    public async createStation(profile:string, setVisible: Dispatch<SetStateAction<boolean>>, router:Router) {
         try {
             setVisible(true);
-            const error_message = this.validateInput(thisStation, 'create');
+            const station = getSelectedStation();
+            const error_message = this.validateInput(station, 'create');
             if (error_message == "") {
                 const stationCollectionRef = collection(db, 'stations');
                 const docRef = await addDoc(stationCollectionRef, {
-                    name: thisStation.name,
-                    longitude: thisStation.longitude,
-                    latitude: thisStation.latitude,
-                    lastStocked: thisStation.lastStocked,
-                    stockingFreq: thisStation.stockingFreq,
-                    knownCats: thisStation.knownCats,
+                    name: station.name,
+                    location: station.location,
+                    lastStocked: station.lastStocked,
+                    stockingFreq: station.stockingFreq,
+                    knownCats: station.knownCats,
+                    createdBy: station.createdBy,
                 });
 
 
                 const profilePath = `stations/${docRef.id}/profile.jpg`;
                 const storageRef = ref(storage, profilePath);
-                const response = await fetch(thisStation.profile);
+                const response = await fetch(profile);
                 const blob = await response.blob();
                 await uploadBytes(storageRef, blob);
             
@@ -89,24 +90,25 @@ class StationsService {
      * Effect: saves the station to the firestore database
      */
     public async saveStation(
-        thisStation: StationEntryObject, 
+        profile: string,
         profileChanged: boolean,
         setVisible: Dispatch<SetStateAction<boolean>>, 
         router: Router
     ) {
         try {
             setVisible(true);
-            const error_message = this.validateInput(thisStation, 'save');
+            const station = getSelectedStation();
+            const error_message = this.validateInput(station, 'save');
             if (error_message == "") {
                 // Reference to the Firestore document using its ID
-                const stationDocRef = doc(db, 'stations', thisStation.id);
+                const stationDocRef = doc(db, 'stations', station.id);
                 await updateDoc(stationDocRef, { 
-                    knownCats: thisStation.knownCats,
-                    name: thisStation.name,
-                    lastStocked: thisStation.lastStocked,
-                    latitude: thisStation.latitude,
-                    longitude:thisStation.longitude,
-                    stockingFreq:thisStation.stockingFreq
+                    name: station.name,
+                    location: station.location,
+                    lastStocked: station.lastStocked,
+                    stockingFreq: station.stockingFreq,
+                    knownCats: station.knownCats,
+                    createdBy: station.createdBy,
                 });
                 if (profileChanged) {
                     //Delete old profile 
@@ -117,8 +119,8 @@ class StationsService {
                     //Upload new profile
                     const profilePath = `stations/${stationDocRef.id}/profile.jpg`;
                     const storageRef = ref(storage, profilePath);
-                    console.log('Profile URL:', thisStation.profile);
-                    const response = await fetch(thisStation.profile);
+                    console.log('Profile URL:', profile);
+                    const response = await fetch(profile);
                     const blob = await response.blob();
                     await uploadBytes(storageRef, blob);
                 }
@@ -138,18 +140,17 @@ class StationsService {
      * Deletes the station from the database
      */
     public async deleteStation(
-        id: string, 
-        photoUrl:string,
+        profile:string,
         setVisible: Dispatch<SetStateAction<boolean>>, 
         router: Router
     ) {
-    Alert.alert(
+        Alert.alert(
             'Select Option',
             'Are you sure you want to delete this image forever?',
             [
                 {
                 text: 'Delete Forever',
-                onPress: async () => await this.confirmDeleteStationEntry(id, photoUrl, setVisible, router),
+                onPress: async () => await this.confirmDeleteStationEntry(profile, setVisible, router),
                 },
                 {
                 text: 'Cancel',
@@ -157,23 +158,25 @@ class StationsService {
                 },
             ],
             { cancelable: true }
-            );
+        );
     }
 
     /**
     * Effect: Stocks a station
     */
-    public async stockStation(thisStation: StationEntryObject, router:Router) {
+    public async stockStation(router:Router) {
         try{
-            const stationDocRef = doc(db, 'stations', thisStation.id);
-            thisStation.lastStocked = (new Date()).toISOString().split('T')[0];
+            const station = getSelectedStation();
+
+            station.lastStocked = new Date();
+            const stationDocRef = doc(db, 'stations', station.id);
             await updateDoc(stationDocRef, { 
-                knownCats: thisStation.knownCats,
-                name: thisStation.name,
-                lastStocked: thisStation.lastStocked,
-                latitude: thisStation.latitude,
-                longitude:thisStation.longitude,
-                stockingFreq:thisStation.stockingFreq
+                name: station.name,
+                location: station.location,
+                lastStocked: station.lastStocked,
+                stockingFreq: station.stockingFreq,
+                knownCats: station.knownCats,
+                createdBy: station.createdBy,
             });
         } catch(error) {} finally {
             setTimeout(() => {
@@ -186,16 +189,16 @@ class StationsService {
     * Private 1
     */
     private async confirmDeleteStationEntry(
-        id: string, 
-        photoUrl:string,
+        profile:string,
         setVisible: Dispatch<SetStateAction<boolean>>, 
         router: Router) {
         try {
             setVisible(true);
-            await deleteDoc(doc(db, 'stations', id)); //Delete firestore document
+            const station = getSelectedStation();
+            await deleteDoc(doc(db, 'stations', station.id)); //Delete firestore document
 
-            if (photoUrl) {
-                const imageRef = ref(storage, photoUrl);
+            if (profile) {
+                const imageRef = ref(storage, profile);
                 await deleteObject(imageRef);
             }
     
@@ -212,7 +215,7 @@ class StationsService {
     /**
      * Private 2
      */
-    private validateInput(thisStation:StationEntryObject, type:string) {
+    private validateInput(station:Station, type:string) {
         var requiredFields;
         if (type == 'create') {
             requiredFields = [
@@ -232,26 +235,26 @@ class StationsService {
         
         // Check for missing or empty required fields
         for (const field of requiredFields) {
-            const value = (thisStation as any)[field.key];
+            const value = (station as any)[field.key];
             if (!value || !value.trim()) {
                 return `${field.label} field must not be empty`;
             }
         }
     
         // Validate longitude and latitude are valid numbers
-        if (isNaN(thisStation.longitude) || thisStation.longitude === 0 || isNaN(thisStation.latitude) || thisStation.latitude === 0) {
+        if (isNaN(station.location.longitude) || station.location.longitude === 0 || 
+            isNaN(station.location.latitude) || station.location.latitude === 0) {
             return 'Please Select a location on the map';
         }
     
         // Validate that lastStocked is a valid date
-        const lastStockedDate = new Date(thisStation.lastStocked);
+        const lastStockedDate = new Date(station.lastStocked);
         if (isNaN(lastStockedDate.getTime())) {
             return 'Last Stocked date is invalid';
         }
     
         // Validate stockingFreq is a positive number
-        const stockingFreqNumber = parseInt(thisStation.stockingFreq);
-        if (isNaN(stockingFreqNumber) || stockingFreqNumber <= 0) {
+        if (isNaN(station.stockingFreq) || station.stockingFreq <= 0) {
         return 'Stocking Frequency must be a positive number';
         }
     

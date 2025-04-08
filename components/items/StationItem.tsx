@@ -3,29 +3,41 @@ import { Image, Text, View } from 'react-native';
 
 import { useFocusEffect, useRouter } from 'expo-router';
 import { Button } from '../ui/Buttons';
-import { StationEntryObject } from '@/types';
+import { Station } from '@/types';
 import DatabaseService from '../../services/DatabaseService';
 import { Checkbox } from "react-native-paper";
 import { globalStyles, buttonStyles, textStyles, containerStyles } from '@/styles';
+import { setSelectedStation } from '@/stores/stationStores';
 
-export const StationItem: React.FC<StationEntryObject> = ({ id, name, profile, longitude, latitude, lastStocked, stockingFreq, 
-  knownCats, isStocked}) => {
+export const StationItem: React.FC<Station> = ({ id, name, location, lastStocked, stockingFreq, 
+  knownCats, isStocked, createdBy}) => {
   const router = useRouter();
   const database = DatabaseService.getInstance();
 
   const [profileURL, setProfile] = useState<string>('');
+
+  const createObj = () => {
+    const newStation = new Station({
+      id, 
+      name, 
+      location, 
+      lastStocked, 
+      stockingFreq, 
+      knownCats, 
+      isStocked, 
+      createdBy});
+    setSelectedStation(newStation);
+  }
 
   useFocusEffect(() => {
     database.fetchStationImages(id, name, setProfile);
   });
 
   return (
-    <Button style={containerStyles.entryContainer} onPress={() =>
-      router.push({
-      pathname: '/stations/view-station',
-      params: { id:id, name:name, profile:profile, catLongitude:longitude, catLatitude:latitude, stocked:JSON.stringify(isStocked), 
-        knownCats:knownCats, lastStocked:lastStocked, stockingFreq:stockingFreq},
-      })}>
+    <Button style={containerStyles.entryContainer} onPress={() => {
+      createObj();
+      router.push('/stations/view-station')
+    }}>
       <View style={containerStyles.entryElements}>
         <Text style={textStyles.catalogTitle}>{name}</Text>
         <View style={containerStyles.stationsEntry}>
