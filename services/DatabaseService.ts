@@ -193,12 +193,11 @@ class DatabaseService {
    * Effect: Updates firestore and storage when editing a catalog entry
    */
   public async handleCatalogSave(
-    thisEntry: CatalogEntryObject,
     newPics: { url: string; name: string; }[], 
     newPhotosAdded: boolean, 
     setVisible: Dispatch<SetStateAction<boolean>>, 
     router: Router) {
-    await DatabaseService.catalogService.handleCatalogSave(thisEntry, newPics, newPhotosAdded, setVisible, router);
+    await DatabaseService.catalogService.handleCatalogSave(newPics, newPhotosAdded, setVisible, router);
   }
 
   /**
@@ -227,11 +226,17 @@ class DatabaseService {
    * Effect: Swaps the profile picture for a catalog entry
    */
   public async swapProfilePicture(
+    type:string,
     id:string, 
     picUrl:string, 
     picName:string, 
     profilePicUrl?:string) {
-    await DatabaseService.catalogService.swapProfilePicture(id, picUrl, picName, profilePicUrl);
+      if (type == 'catalog') {
+        await DatabaseService.catalogService.swapProfilePicture(id, picUrl, picName, profilePicUrl);
+      } else if (type == 'sightings') {
+        await DatabaseService.sightingsService.swapProfilePicture(id, picUrl, picName, profilePicUrl);
+      }
+    
   }
 
   /**
@@ -239,10 +244,17 @@ class DatabaseService {
   */
   public async deleteCatalogPicture(
     id:string, 
-    picName: string, 
-    setProfile: Dispatch<SetStateAction<string>>,
-    setImageUrls: Dispatch<SetStateAction<string[]>>) {
-    await DatabaseService.catalogService.deleteCatalogPicture(id, picName, setProfile, setImageUrls);
+    picName: string, ) {
+    await DatabaseService.catalogService.deleteCatalogPicture(id, picName);
+  }
+
+  /**
+    * Effect: deletes a picture from a catalog entry
+    */
+  public async deleteSightingPicture(
+    id:string, 
+    picName: string, ) {
+      await DatabaseService.sightingsService.deleteSightingPicture(id, picName);
   }
 
   /**

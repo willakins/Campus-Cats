@@ -1,5 +1,4 @@
-// PhotoHandler.ts
-import { BaseImageHandler } from "./BaseImageHandler";
+import BaseImageHandler from "./BaseImageHandler";
 
 class PhotoHandler extends BaseImageHandler {
   private onPhotoCallback: (uri: string) => void;
@@ -13,5 +12,4 @@ class PhotoHandler extends BaseImageHandler {
     this.onPhotoCallback(uri);
   }
 }
-
 export { PhotoHandler };
