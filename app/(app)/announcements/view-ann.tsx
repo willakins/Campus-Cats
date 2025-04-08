@@ -1,4 +1,4 @@
-import { SafeAreaView, Text } from 'react-native';
+import { SafeAreaView, ScrollView, Text } from 'react-native';
 
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -14,16 +14,11 @@ const view_entry = () =>{
   const { id, title, info, createdAt, createdBy } = useLocalSearchParams() as {id:string, title:string, info:string, createdAt:string, createdBy:string};
   
   return (
-    <SafeAreaView style={containerStyles.container}>
+    <SafeAreaView style={containerStyles.wrapper}>
       <Button style={buttonStyles.logoutButton} onPress={() => router.navigate("/announcements")}>
         <Ionicons name="arrow-back-outline" size={25} color="#fff" />
       </Button>
-      {isAdmin ? <Button style={buttonStyles.editButton} onPress={() => router.push({
-        pathname: '/announcements/edit-ann',
-        params: { id:id, title:title, info:info, createdAt:createdAt, createdBy:createdBy },
-      })}>
-        <Text style ={textStyles.editText}> Edit Announcement</Text>
-      </Button> : null}
+      <ScrollView contentContainerStyle={[containerStyles.scrollView, {paddingTop:'10%'}]}>
       <AnnouncementEntry
         id={id}
         title={title}
@@ -31,6 +26,13 @@ const view_entry = () =>{
         createdAt={createdAt}
         createdBy={createdBy}
       />
+      </ScrollView>
+      {isAdmin ? <Button style={buttonStyles.button2} onPress={() => router.push({
+        pathname: '/announcements/edit-ann',
+        params: { id:id, title:title, info:info, createdAt:createdAt, createdBy:createdBy },
+      })}>
+        <Text style ={textStyles.bigButtonText}> Edit Announcement</Text>
+      </Button> : null}
     </SafeAreaView>
   );
 }

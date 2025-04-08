@@ -3,16 +3,18 @@ import { View } from 'react-native';
 
 import { useFocusEffect, useRouter } from 'expo-router';
 
-import { Button, SightingMapView } from '@/components';
-import { CatSightingObject } from '@/types';
 import DatabaseService from '@/components/services/DatabaseService';
+import { Button, SightingMapView } from '@/components';
+import { Sighting} from '@/types';
+import { setSelectedSighting } from '@/stores/sightingStore';
+
 import { globalStyles, buttonStyles, textStyles, containerStyles } from '@/styles';
 
 const HomeScreen = () => {
   const router = useRouter();
   const [filter, setFilter] = useState('all');
   const [mapKey, setMapKey] = useState(0);
-  const [pins, setPins] = useState<CatSightingObject[]>([]);
+  const [pins, setPins] = useState<Sighting[]>([]);
   const database = DatabaseService.getInstance();
 
   useFocusEffect(
@@ -21,7 +23,7 @@ const HomeScreen = () => {
     }, [])
   );
 
-  const filterPins = (pin: CatSightingObject) => {
+  const filterPins = (pin: Sighting) => {
     if (filter === 'all') return true;
     const days = parseInt(filter);
     const cutoffDate = new Date();
@@ -29,18 +31,20 @@ const HomeScreen = () => {
     return new Date(pin.date) >= cutoffDate;
   };
 
-  const viewSighting = (pin: CatSightingObject) => {
+  const viewSighting = (pin: Sighting) => {
+    setSelectedSighting(pin);
+    router.push('sighting/view-sighting');
     router.push({ pathname: '/sighting/view-report', params: {
       id: pin.id,
-      date: JSON.stringify(pin.date),
+      date: pin.date,
       catFed: pin.fed ? 'true':'false',
       catHealth: pin.health ? 'true':'false',
-      photo: pin.photoUrl,
       info: pin.info,
       catLongitude: JSON.stringify(pin.longitude),
       catLatitude: JSON.stringify(pin.latitude),
       name: pin.name,
-      uid: pin.uid
+      uid: pin.uid,
+      timeofDay: pin.timeofDay,
     }})
   };
 

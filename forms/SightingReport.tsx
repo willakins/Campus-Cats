@@ -18,37 +18,39 @@ const reportSchema = z.object({
   name: z.string(),
   location: LatLngSchema.default(DefaultLocation),
   notes: z.string(),
-  files: z.array(z.string()),
+  file: z.string(),
   timestamp: z.date().default(new Date()),
   fed: z.boolean().default(false),
   health: z.boolean().default(false),
+  timeofDay: z.string(),
 });
 
 type ReportDataType = z.infer<typeof reportSchema>;
 
 const sightingFormConverter = async (data: ReportDataType): Promise<Sighting> => {
   // Upload all files to storage and get their refs
-  const sightingStoragePath = 'photos/';
-  const uploadPromises = data.files.map((file) => uploadFromURI(sightingStoragePath, file));
+  const sightingStoragePath = '/';
+  const uploadPromise = uploadFromURI(sightingStoragePath, data.file);
   // TODO: Instead of fullPath, switch to using name (uuid) so that we can
   // survive renaming the folder
-  const storageUrls = (await Promise.all(uploadPromises)).map((upload) => upload.ref.fullPath);
+  const storageUrls = (await uploadPromise).ref.fullPath;
   // TODO: It's possible for an image to be created but the database write
   // fails; find a way to either make the entire operation atomic, or
   // implement garbage collection on the storage bucket.
 
   // Transform the data to match Sighting schema
   const sightingData: Sighting = {
-    id: null,
+    id: '-1',
     uid: auth.currentUser?.uid || '',
     name: data.name,
     spotted_time: data.timestamp,
-    image: storageUrls[0],
+    image: storageUrls,
     latitude: data.location.latitude,
     longitude: data.location.longitude,
     info: data.notes,
     fed: data.fed,
     health: data.health,
+    timeofDay: data.timeofDay,
   };
 
   return Sighting.parse(sightingData);
@@ -62,10 +64,11 @@ const sightingConverter = (data: Sighting): ReportDataType => {
       longitude: data.longitude,
     },
     notes: data.info || '',
-    files: [],
+    file: data.image,
     timestamp: data.spotted_time || new Date(),
     fed: data.fed,
     health: data.health,
+    timeofDay: data.timeofDay
   };
 };
 
@@ -128,6 +131,11 @@ export const SightingReportForm: React.FC<ReportFormProps> = ({
           <View style={containerStyles.inputContainer}>
             <ControlledMapPicker control={control} name="location" />
             <ControlledDateTimeInput control={control} name="timestamp" />
+            <ControlledInput control={control} name="timeofDay"
+              placeholder="Time of sighting (morning, afternoon, night)"
+              placeholderTextColor="#888"
+              style={textStyles.input}
+            />
             <ControlledInput control={control} name="name"
               placeholder="Cat's name"
               placeholderTextColor="#888"
@@ -138,7 +146,7 @@ export const SightingReportForm: React.FC<ReportFormProps> = ({
               placeholderTextColor="#888"
               style={textStyles.input}
             />
-            <ControlledFilePicker control={control} name="files" />
+            <ControlledFilePicker control={control} name="file" />
             <ControlledSwitch control={control} name="fed" label="Has been fed" />
             <ControlledSwitch control={control} name="health" label="Is in good health" />
           </View>

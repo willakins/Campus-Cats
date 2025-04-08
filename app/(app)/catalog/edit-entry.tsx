@@ -29,15 +29,15 @@ const edit_entry = () => {
   };
 
   const [profilePicUrl, setProfile] = useState<string>('');
-  const [extraPics, setImageUrls] = useState<string[]>([]);
+  const [extraPics, setPhotos] = useState<string[]>([]);
   const [newPics, setNewPics] = useState<{ url: string; name: string }[]>([]);
   const [newPhotosAdded, setNewPhotos] = useState<boolean>(false);
   const database = DatabaseService.getInstance();
-  const imageHandler = new CatalogImageHandler({ setVisible, setImageUrls, setNewPics, setNewPhotos, setProfile, name, id, profilePicUrl});
+  const imageHandler = new CatalogImageHandler({ setVisible, setPhotos, setNewPics, setNewPhotos, setProfile, name, id, profilePicUrl});
     
   useFocusEffect(
     useCallback(() => {
-      database.fetchCatImages(id, setProfile, setImageUrls);
+      database.fetchCatImages(id, setProfile, setPhotos);
     }, [profilePicUrl])
   );
 

@@ -1,5 +1,5 @@
 //Container styles
-import { StyleSheet } from 'react-native';
+import { Platform, StyleSheet } from 'react-native';
 
 const containerStyles = StyleSheet.create({
     container: {
@@ -9,7 +9,8 @@ const containerStyles = StyleSheet.create({
         paddingHorizontal: 15,
     },
     scrollView: {
-        padding: 10,
+        paddingTop: 20, 
+        paddingBottom: 40 
     },
     scrollView2: {
         padding:10,
@@ -30,10 +31,6 @@ const containerStyles = StyleSheet.create({
     },
     homeContainer: {
         flex: 1,
-    },
-    cameraView: {
-        alignItems: 'center',
-        paddingVertical: 20,  // Vertical padding
     },
     selectedPreview: {
         margin: 'auto', // Center the image
@@ -85,6 +82,11 @@ const containerStyles = StyleSheet.create({
         flexDirection: "column", // Ensures each item is stacked vertically
         alignItems: "center",
     },
+    entryElements2: {
+      flexDirection: "column", // Ensures each item is stacked vertically
+      alignItems: "center",
+      padding: '10%',
+  },
     entryRowElements: {
         flexDirection: "row", // Ensures each item is stacked vertically
         alignItems: "center",
@@ -94,21 +96,12 @@ const containerStyles = StyleSheet.create({
         flexWrap: 'wrap',
         justifyContent: 'center',
     },
-    imageWrapper: {
-        alignItems: 'center',
-        margin: 10,
-    },
     logo: {
         height: '40%',
         width: '80%',
         marginBottom: 20,
         borderRadius:50,
         aspectRatio: 1
-    },
-    extraPic: {
-        width: 100,
-        height: 100,
-        borderRadius: 10,
     },
     headlineImage: {
         width: '100%',  // Set a fixed width for the profile picture
@@ -149,14 +142,6 @@ const containerStyles = StyleSheet.create({
     width: 200,
     height: 200,
   },
-  mapContainer: {
-    width: '100%', 
-    height: 200, 
-    paddingHorizontal: 5, 
-    borderRadius:10,
-    marginTop: 10,
-    marginBottom: 10,
-  },
   inputContainer: {
     width: '100%',
     backgroundColor: '#f9f9f9',
@@ -168,6 +153,17 @@ const containerStyles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 4,
     borderRadius:10,
+  },
+  inputContainer2: {
+    padding:10,
+    width: '100%',
+    borderColor: '#ccc',
+    borderWidth: 1,
+    borderRadius: 5,
+    marginBottom: 15,
+    paddingHorizontal: 10,
+    backgroundColor: '#fff',
+    color: '#000',
   },
   loginContainer: {
     width: '80%',
@@ -193,10 +189,6 @@ const containerStyles = StyleSheet.create({
     marginVertical: 8,
     marginHorizontal: 16,
   },
-  sliderContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
   picker: {
     backgroundColor: '#fff',
     flex: 1,
@@ -205,18 +197,15 @@ const containerStyles = StyleSheet.create({
   dateInput: {
     height: 70,
     width: '100%',
+    padding:15,
+    flexDirection: 'row', 
     borderColor: '#ccc',
     borderWidth: 1,
     borderRadius: 5,
-    marginBottom:10,
-    padding:15,
+    marginBottom: 15,
+    paddingHorizontal: 10,
     backgroundColor: '#fff',
-    flexDirection: 'row', 
-    elevation: 3,  // Adds shadow on Android
-    shadowColor: '#000',  // Adds shadow on iOS
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
+    color: '#000',
   },
   stationsEntry: {
     flexDirection: "row",
@@ -258,7 +247,7 @@ const containerStyles = StyleSheet.create({
     fontSize: 15,
     color: '#000',
     textAlign: 'left',
-    marginTop: 50,
+    marginTop: 0,
   },
   catalogInputContainer: {
     width: '100%',
@@ -284,6 +273,148 @@ const containerStyles = StyleSheet.create({
     shadowRadius: 10,
     elevation: 5,
     width:'100%'
+  },
+  wrapper: {
+    flex: 1,
+    backgroundColor: '#FAFAFA',
+    paddingTop: '10%',
+  },
+  card: {
+    padding: '5%',
+    backgroundColor: '#fff',
+    borderRadius: '4%',
+    marginHorizontal: '3%',
+    marginBottom: '5%',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  block: {
+    marginTop: 10,
+  },
+  map: {
+    width: '100%',
+    height: 200,
+    borderRadius: 12,
+    marginVertical: 10,
+    overflow: 'hidden',
+  },
+  imageMain: {
+    width: '100%',
+    height: 220,
+    borderRadius: 12,
+    marginBottom: 16,
+  },
+  sectionBox: {
+    marginTop: 16,
+    padding: 16,
+    backgroundColor: '#F0F4F8',
+    borderRadius: 12,
+  },
+  sectionRow: {
+    flexDirection: 'column',
+    gap: 12,
+  },
+  rowItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  checkWrap: {
+    marginLeft: 8,
+  },
+  formSection: {
+    backgroundColor: '#fff',
+    padding: 16,
+    borderRadius: 16,
+    marginBottom: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.1,
+    shadowRadius: 6,
+    elevation: 3,
+  },
+
+  cameraView: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 10,
+  },
+
+  imageWrapper: {
+    position: 'relative',
+    margin: 5,
+    alignItems: 'center',
+  },
+
+  extraPic: {
+    width: 100,
+    height: 100,
+    borderRadius: 12,
+    resizeMode: 'cover',
+  },
+
+  sliderContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    backgroundColor: '#f0f0f0',
+    borderRadius: 12,
+    marginTop: 10,
+  },
+
+  mapContainer: {
+    height: 200,
+    width: '100%',
+    borderRadius: 12,
+    marginBottom: 12,
+  },
+  safeContainer: {
+    flex: 1,
+    paddingTop: Platform.OS === 'android' ? 25 : 0,
+    backgroundColor: '#f9f9f9',
+  },
+  contentContainer: {
+    flexGrow: 1,
+    paddingBottom: 32,
+    paddingHorizontal: 16,
+    gap: 16,
+    alignItems: 'center',
+  },
+  switchRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    width: '100%',
+    paddingVertical: 8,
+  },
+  snackbarContainer: {
+    position: 'absolute',
+    alignItems: 'center',
+    width: '90%',
+    height:'10%',
+    left:'3%',
+    top:'5%',
+    zIndex: 1000,  // Ensure the snackbar is above other content
+  },
+  snackbar: {
+    width: '100%',
+    heigh: '100%',  // You can adjust this width based on your design
+    backgroundColor: 'rgba(0, 0, 0, 0.8)',  // Optional: Style the snackbar
+    color: 'white',
+    borderRadius: 5,  // Optional: Add border radius to the snackbar
+  },
+  footer: {
+    marginTop: 20,
+    borderTopWidth: 1,
+    borderTopColor: '#eee',
+    paddingTop: 10,
   },
 });
 export { containerStyles };

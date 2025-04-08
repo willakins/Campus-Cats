@@ -28,7 +28,7 @@ class AnnouncementsService {
                 title: doc.data().title,
                 info: doc.data().info,
                 createdAt: this.getDateString(doc.data().createdAt.toDate()),
-                createdBy: doc.data().createdBy.email,
+                createdBy: doc.data().createdBy,
             }));
             setAnns(anns);
         } catch (error) {
@@ -40,23 +40,27 @@ class AnnouncementsService {
     * Effect: creates an announcement and stores it in firestore
     */
     public async handleAnnouncementCreate(
-        title:string, 
-        info:string, 
+        thisAnn:AnnouncementEntryObject,
         photos:string[], 
         user:User,
         setVisible:Dispatch<SetStateAction<boolean>>,
         router: Router) {
         try {
-            const error_message = this.validate_input(title, info)
+            const error_message = this.validate_input(thisAnn.title, thisAnn.info)
             if (error_message == "") {
                 setVisible(true);
-    
+                var creator;
+                if (thisAnn.createdBy == '') {
+                    creator = user.id;
+                } else {
+                    creator = thisAnn.createdBy;
+                }
                 // Save announcement document in Firestore
                 const docRef = await addDoc(collection(db, 'announcements'), {
-                    title,
-                    info,
+                    title:thisAnn.title,
+                    info:thisAnn.info,
                     createdAt: new Date(),
-                    createdBy: user
+                    createdBy: creator,
                 });
 
                 // Create a unique folder path for this announcement
@@ -79,7 +83,7 @@ class AnnouncementsService {
     * Effect: updates an existing announcement in firestore
     */
     public async handleAnnouncementSave(
-        thisAnn: {id: string, title: string, info: string, createdAt: string, createdBy: string},
+        thisAnn:AnnouncementEntryObject,
         photos: string[], 
         isPicsChanged: boolean, 
         user: User,
@@ -89,13 +93,18 @@ class AnnouncementsService {
             setVisible(true);
             const error_message = this.validate_input(thisAnn.title, thisAnn.info);
             if (error_message == "") {
-                
+                var creator;
+                if (thisAnn.createdBy == '') {
+                    creator = user.id;
+                } else {
+                    creator = thisAnn.createdBy;
+                }
                 const announcementRef = doc(db, 'announcements', thisAnn.id);
                 await updateDoc(announcementRef, { //Update firestore
                     title: thisAnn.title,
                     info: thisAnn.info,
                     createdAt: serverTimestamp(),
-                    createdBy: user,
+                    createdBy: creator,
                 });
 
                 //Update storage bucket
@@ -117,7 +126,6 @@ class AnnouncementsService {
                         await this.uploadImagesToStorage(newImages, `announcements/${announcementRef.id}`);
                     }
                 }
-            
                 console.log('Announcement updated successfully');
                 router.push({
                     pathname: '/announcements/view-ann',
@@ -125,7 +133,7 @@ class AnnouncementsService {
                         id:thisAnn.id, 
                         title:thisAnn.title, 
                         info:thisAnn.info, 
-                        createdAt:thisAnn.createdAt,
+                        createdAt: this.getDateString(new Date()),
                         createdBy:thisAnn.createdBy, },
                   });
             } else {
@@ -213,7 +221,7 @@ class AnnouncementsService {
             "January", "February", "March", "April", "May", "June", 
             "July", "August", "September", "October", "November", "December"
           ];
-        return`${monthNames[date.getMonth()]}, ${date.getDate()}, ${date.getFullYear()}`;
+        return`${monthNames[date.getMonth()]} ${date.getDate()}, ${date.getFullYear()}`;
     }
 
     // Helper method to fetch existing images URLs from Firebase Storage folder
