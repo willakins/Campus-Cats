@@ -110,11 +110,12 @@ class DatabaseService {
    */
   public async saveSighting(
    photos: string[],
+   profile: string,
    isPicsChanged:boolean,
    setVisible: Dispatch<SetStateAction<boolean>>,
    router:Router
    ) {
-    await DatabaseService.sightingsService.saveSighting(photos, isPicsChanged, setVisible, router);
+    await DatabaseService.sightingsService.saveSighting(photos, profile, isPicsChanged, setVisible, router);
   }
 
   /**
