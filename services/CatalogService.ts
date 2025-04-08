@@ -30,27 +30,39 @@ class CatalogService {
     public async fetchCatImages(
         id: string,
         setProfile: Dispatch<SetStateAction<string>>,
-        setImageUrls?: Dispatch<SetStateAction<string[]>>
+        setPhotos?: Dispatch<SetStateAction<string[]>>
     ): Promise<void> {
-        try {
-        const folderRef = ref(storage, `catalog/${id}/`);
+      try {
+        const folderRef = ref(storage, `catalog/${id}`);
         const result = await listAll(folderRef);
-        let extraPicUrls: string[] = [];
-
-        for (const itemRef of result.items) {
-            const url = await getDownloadURL(itemRef);
-            if (itemRef.name.includes('profile')) {
-              setProfile(url);
-            } else {
-              extraPicUrls.push(url);
-            }
+        
+        // Fetch all download URLs
+        const urls = await Promise.all(result.items.map((item) => getDownloadURL(item)));
+        
+        // Separate the profile image and other images
+        const profileImage = urls.find((url, index) => {
+          // Check if the file name contains 'profile'
+          return result.items[index].name.toLowerCase().includes('profile');
+        });
+    
+        // If a profile image is found, set it
+        if (profileImage) {
+          setProfile(profileImage);
         }
-        if (setImageUrls) {
-          setImageUrls(extraPicUrls);
-        }
-        } catch (error) {
-        console.error('Error fetching images: ', error);
-        }
+    
+        // Filter out the profile image and set the rest as photos
+        const otherImages = urls.filter((url, index) => {
+          // Check if the file name does NOT contain 'profile'
+          return !result.items[index].name.toLowerCase().includes('profile');
+        });
+    
+        // Set the photos
+        alert(otherImages)
+        if (setPhotos) {setPhotos(otherImages)};
+        
+      } catch (error) {
+        console.error('Error fetching image URLs:', error);
+      }
     }
 
     /**
