@@ -1,4 +1,3 @@
-// stores/sightingStore.ts
 import { Sighting } from '@/types';
 
 let selectedSighting: Sighting = Sighting.dummy;

@@ -1,6 +1,7 @@
 import { db, storage } from "@/config/firebase";
 import { useAuth } from "@/providers/AuthProvider";
-import { AnnouncementEntryObject, User } from "@/types";
+import { getSelectedAnnouncement } from "@/stores/announcementStores";
+import { Announcement} from "@/types";
 import { Router } from "expo-router";
 import { addDoc, collection, deleteDoc, doc, getDoc, getDocs, orderBy, query, serverTimestamp, updateDoc } from "firebase/firestore";
 import { deleteObject, getDownloadURL, listAll, ref, uploadBytes, uploadBytesResumable } from "firebase/storage";
@@ -15,7 +16,7 @@ class AnnouncementsService {
     /**
     * Effect: pulls announcement data from firestore
     */
-    public async fetchAnnouncementData(setAnns:Dispatch<SetStateAction<AnnouncementEntryObject[]>>) {
+    public async fetchAnnouncementData(setAnns:Dispatch<SetStateAction<Announcement[]>>) {
         try {
             const annsQuery = query(
                 collection(db, 'announcements'),
@@ -23,12 +24,13 @@ class AnnouncementsService {
               );
           
             const querySnapshot = await getDocs(annsQuery);
-            const anns: AnnouncementEntryObject[] = querySnapshot.docs.map( (doc) => ({
+            const anns: Announcement[] = querySnapshot.docs.map( (doc) => ({
                 id: doc.id,
                 title: doc.data().title,
                 info: doc.data().info,
-                createdAt: this.getDateString(doc.data().createdAt.toDate()),
+                createdAt: doc.data().createdAt.toDate(),
                 createdBy: doc.data().createdBy,
+                authorAlias: doc.data().authorAlias,
             }));
             setAnns(anns);
         } catch (error) {
@@ -40,27 +42,21 @@ class AnnouncementsService {
     * Effect: creates an announcement and stores it in firestore
     */
     public async handleAnnouncementCreate(
-        thisAnn:AnnouncementEntryObject,
         photos:string[], 
-        user:User,
         setVisible:Dispatch<SetStateAction<boolean>>,
         router: Router) {
         try {
-            const error_message = this.validate_input(thisAnn.title, thisAnn.info)
+            const ann = getSelectedAnnouncement();
+            const error_message = this.validate_input(ann)
             if (error_message == "") {
                 setVisible(true);
-                var creator;
-                if (thisAnn.createdBy == '') {
-                    creator = user.id;
-                } else {
-                    creator = thisAnn.createdBy;
-                }
                 // Save announcement document in Firestore
                 const docRef = await addDoc(collection(db, 'announcements'), {
-                    title:thisAnn.title,
-                    info:thisAnn.info,
+                    title:ann.title,
+                    info:ann.info,
                     createdAt: new Date(),
-                    createdBy: creator,
+                    createdBy: ann.createdBy,
+                    authorAlias: ann.authorAlias,
                 });
 
                 // Create a unique folder path for this announcement
@@ -83,28 +79,22 @@ class AnnouncementsService {
     * Effect: updates an existing announcement in firestore
     */
     public async handleAnnouncementSave(
-        thisAnn:AnnouncementEntryObject,
         photos: string[], 
         isPicsChanged: boolean, 
-        user: User,
         setVisible: Dispatch<SetStateAction<boolean>>, 
         router: Router) {
         try {
             setVisible(true);
-            const error_message = this.validate_input(thisAnn.title, thisAnn.info);
+            const ann = getSelectedAnnouncement();
+            const error_message = this.validate_input(ann);
             if (error_message == "") {
-                var creator;
-                if (thisAnn.createdBy == '') {
-                    creator = user.id;
-                } else {
-                    creator = thisAnn.createdBy;
-                }
-                const announcementRef = doc(db, 'announcements', thisAnn.id);
+                const announcementRef = doc(db, 'announcements', ann.id);
                 await updateDoc(announcementRef, { //Update firestore
-                    title: thisAnn.title,
-                    info: thisAnn.info,
+                    title: ann.title,
+                    info: ann.info,
                     createdAt: serverTimestamp(),
-                    createdBy: creator,
+                    createdBy: ann.createdBy,
+                    authorAlias: ann.authorAlias,
                 });
 
                 //Update storage bucket
@@ -126,16 +116,7 @@ class AnnouncementsService {
                         await this.uploadImagesToStorage(newImages, `announcements/${announcementRef.id}`);
                     }
                 }
-                console.log('Announcement updated successfully');
-                router.push({
-                    pathname: '/announcements/view-ann',
-                    params: { 
-                        id:thisAnn.id, 
-                        title:thisAnn.title, 
-                        info:thisAnn.info, 
-                        createdAt: this.getDateString(new Date()),
-                        createdBy:thisAnn.createdBy, },
-                  });
+                router.push('/(app)/announcements/view-ann');
             } else {
                 Alert.alert(error_message);
             }
@@ -203,11 +184,11 @@ class AnnouncementsService {
     /**
      * Private 3
      */
-    private validate_input(title:string, info:string) {
-        if (!title.trim()) {
+    private validate_input(ann:Announcement) {
+        if (!ann.title.trim()) {
             return "Title cannot be empty.";
         }
-        if (!info.trim()) {
+        if (!ann.info.trim()) {
             return "Description cannot be empty.";
         }
         return "";
