@@ -1,7 +1,7 @@
 import { getDownloadURL, ref } from 'firebase/storage';
 import { getDocs, getDoc, updateDoc, doc, collection, query, where, DocumentData, getFirestore } from 'firebase/firestore';
 import { auth, db, storage } from '@/config/firebase';
-import { AnnouncementEntryObject, CatalogEntryObject, ContactInfo, Sighting, StationEntryObject, User, WhitelistApp } from '@/types';
+import { Announcement, CatalogEntryObject, ContactInfo, Sighting, StationEntryObject, User, WhitelistApp } from '@/types';
 import { Dispatch, SetStateAction } from 'react';
 import { Alert } from 'react-native';
 import CatalogService from './CatalogService';
@@ -261,7 +261,7 @@ class DatabaseService {
   /**
    * Effect: pulls announcement data from firestore
    */
-  public async fetchAnnouncementData(setAnns:Dispatch<SetStateAction<AnnouncementEntryObject[]>>) {
+  public async fetchAnnouncementData(setAnns:Dispatch<SetStateAction<Announcement[]>>) {
     await DatabaseService.announcementsService.fetchAnnouncementData(setAnns);
   }
 
@@ -276,25 +276,21 @@ class DatabaseService {
    * Effect: creates an announcement and stores it in firestore
    */
   public async handleAnnouncementCreate(
-    thisAnn:AnnouncementEntryObject,
     photos:string[], 
-    user:User,
     setVisible:Dispatch<SetStateAction<boolean>>,
     router: Router) {
-    await DatabaseService.announcementsService.handleAnnouncementCreate(thisAnn, photos, user, setVisible, router);
+    await DatabaseService.announcementsService.handleAnnouncementCreate(photos, setVisible, router);
   }
 
   /**
    * Effect: updates an existing announcement in firestore
    */
   public async handleAnnouncementSave(
-    thisAnn:AnnouncementEntryObject,
     photos: string[], 
     isPicsChanged: boolean, 
-    user: User,
     setVisible: Dispatch<SetStateAction<boolean>>, 
     router: Router) {
-    await DatabaseService.announcementsService.handleAnnouncementSave(thisAnn, photos, isPicsChanged, user, setVisible, router);
+    await DatabaseService.announcementsService.handleAnnouncementSave(photos, isPicsChanged, setVisible, router);
   }
 
   /**

@@ -28,7 +28,7 @@ export const LatLngSchema = z.object({
 
 // File exports
 export { CatalogEntryObject } from './CatalogEntryObject';
-export { AnnouncementEntryObject } from './AnnouncementEntryObject';
+export { Announcement } from './Announcement';
 export { Sighting } from './Sighting';
 export { StationEntryObject } from './StationEntryObject';
 export { WhitelistApp } from './WhitelistApp';
