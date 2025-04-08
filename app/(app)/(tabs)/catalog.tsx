@@ -5,7 +5,7 @@ import { useFocusEffect, useRouter } from 'expo-router';
 
 import { Button, CatalogItem } from '@/components';
 import { CatalogEntryObject } from '@/types';
-import DatabaseService from '@/components/services/DatabaseService';
+import DatabaseService from '@/services/DatabaseService';
 import { useAuth } from '@/providers';
 
 import { globalStyles, buttonStyles, textStyles, containerStyles } from '@/styles';

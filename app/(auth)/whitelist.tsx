@@ -4,7 +4,7 @@ import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { globalStyles, buttonStyles, textStyles, containerStyles } from '@/styles';
 import { Button, TextInput } from '@/components';
-import DatabaseService from '@/components/services/DatabaseService';
+import DatabaseService from '@/services/DatabaseService';
 import { WhitelistApp } from "@/types";
 import { Snackbar } from 'react-native-paper';
 

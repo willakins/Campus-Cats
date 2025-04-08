@@ -4,7 +4,7 @@ import { Image, Text, View } from 'react-native';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { Button } from '../ui/Buttons';
 import { StationEntryObject } from '@/types';
-import DatabaseService from '../services/DatabaseService';
+import DatabaseService from '../../services/DatabaseService';
 import { Checkbox } from "react-native-paper";
 import { globalStyles, buttonStyles, textStyles, containerStyles } from '@/styles';
 

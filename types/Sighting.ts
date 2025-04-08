@@ -23,17 +23,28 @@ class Sighting {
   uid: string;
   timeofDay: string;
 
-  constructor(props: SightingProps) {
-    this.id = props.id;
-    this.name = props.name;
-    this.info = props.info;
-    this.fed = props.fed;
-    this.health = props.health;
-    this.date = props.date;
-    this.latitude = props.latitude;
-    this.longitude = props.longitude;
-    this.uid = props.uid;
-    this.timeofDay = props.timeofDay;
+  constructor({
+    id,
+    name,
+    info,
+    fed,
+    health,
+    date,
+    latitude,
+    longitude,
+    uid,
+    timeofDay,
+  }: SightingProps) {
+    this.id = id;
+    this.name = name;
+    this.info = info;
+    this.fed = fed;
+    this.health = health;
+    this.date = date;
+    this.latitude = latitude;
+    this.longitude = longitude;
+    this.uid = uid;
+    this.timeofDay = timeofDay;
   }
 }
 export { Sighting };

@@ -4,12 +4,12 @@ import { Ionicons } from '@expo/vector-icons';
 import DropdownPicker from 'react-native-dropdown-picker';
 import { useRouter } from 'expo-router';
 import { Snackbar } from 'react-native-paper';
-import DatabaseService from '@/components/services/DatabaseService';
+import DatabaseService from '@/services/DatabaseService';
 import { useAuth } from '@/providers';
 import MapView, { LatLng, MapPressEvent, Marker } from 'react-native-maps';
 import { buttonStyles, textStyles, containerStyles } from '@/styles';
 import { CameraButton, DateTimeInput, Button } from '@/components';
-import { CatSightingObject } from '@/types';
+import { Sighting } from '@/types';
 
 const CatReportScreen = () => {
   const router = useRouter();
@@ -47,7 +47,7 @@ const CatReportScreen = () => {
 
   // Function to create CatSighting object
   const createObj = () => {
-    return new CatSightingObject(
+    return new Sighting(
       "-1",
       formData.name,
       formData.info,
