@@ -118,7 +118,7 @@ class SightingsService {
           location: sighting.location,
           name: sighting.name,
           info: sighting.info,
-          healthy: sighting.health,
+          health: sighting.health,
           fed: sighting.fed,
           timeofDay: sighting.timeofDay,
         });
@@ -181,6 +181,7 @@ class SightingsService {
    */
     public async saveSighting(
         photos:string[], 
+        profile:string,
         isPicsChanged: boolean,
         setVisible: Dispatch<SetStateAction<boolean>>,
         router: Router
@@ -188,7 +189,7 @@ class SightingsService {
         try {
           setVisible(true);
           const sighting = getSelectedSighting();
-          const error_message = this.validateInput(sighting, photos);
+          const error_message = this.validateInput(sighting, [profile]);
           if (error_message == "") {
               const stamp = Timestamp.fromDate(new Date(sighting.date));
               const sightingRef = doc(db, 'cat-sightings', sighting.id);
