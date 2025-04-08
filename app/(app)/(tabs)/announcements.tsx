@@ -7,13 +7,13 @@ import { AnnouncementItem, Button, LoadingIndicator } from '@/components';
 import { useAuth } from '@/providers';
 import { router, useFocusEffect } from 'expo-router';
 import DatabaseService from '@/services/DatabaseService';
-import { AnnouncementEntryObject } from '@/types';
+import { Announcement } from '@/types';
 
 const Announcements = () => {
   const { user, loading } = useAuth();
   const isAdmin = user.role === 1 || user.role === 2;
   const database = DatabaseService.getInstance();
-  const [anns, setAnns] = useState<AnnouncementEntryObject[]>([]);
+  const [anns, setAnns] = useState<Announcement[]>([]);
 
   if (loading) {
     return <LoadingIndicator />;
@@ -37,6 +37,7 @@ const Announcements = () => {
             info={ann.info}
             createdAt={ann.createdAt}
             createdBy={ann.createdBy}
+            authorAlias={ann.authorAlias}
           />
         ))}
       </ScrollView>
