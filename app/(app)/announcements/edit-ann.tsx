@@ -3,9 +3,8 @@ import { Image, SafeAreaView, ScrollView, Text, View } from 'react-native';
 
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { Snackbar } from 'react-native-paper';
 
-import { Button, TextInput, CameraButton } from '@/components';
+import { Button, TextInput, CameraButton, SnackbarMessage } from '@/components';
 import DatabaseService from '@/services/DatabaseService';
 import { globalStyles, buttonStyles, textStyles, containerStyles } from '@/styles';
 import { useAuth } from '@/providers/AuthProvider';
@@ -13,7 +12,7 @@ import { AnnouncementEntryObject } from '@/types';
 
 const edit_ann = () => {
   const router = useRouter();
-  const { signOut, user } = useAuth();
+  const { user } = useAuth();
   const { id, title, info, createdAt, createdBy } = useLocalSearchParams() as {id:string, title:string, info:string, createdAt:string, createdBy:string};
 
   const [formData, setFormData] = useState({id, title, info, createdAt, createdBy });
@@ -27,7 +26,7 @@ const edit_ann = () => {
   const [photos, setPhotos] = useState<string[]>([]);
   const [isPicsChanged, setPicsChanged] = useState<boolean>(false);
 
-  const [visible, setVisible] = useState<boolean>(false);
+  const [visible, setVisible] = useState<boolean>(true);
   const database = DatabaseService.getInstance();
 
   useEffect(() => {
@@ -56,16 +55,7 @@ const edit_ann = () => {
       <Button style={buttonStyles.logoutButton} onPress={() => router.back()}>
         <Ionicons name="arrow-back-outline" size={25} color="#fff" />
       </Button>
-      <View style={containerStyles.snackbarContainer}>
-        <Snackbar
-          visible={visible}
-          onDismiss={() => setVisible(false)}
-          duration={2000}
-          style={containerStyles.snackbar}
-        >
-          Saving Announcement...
-        </Snackbar>
-      </View>
+      <SnackbarMessage text="Saving Announcement..." visible={visible} setVisible={setVisible} />
       <Text style={textStyles.announcementTitle}>Edit Announcement</Text>
       <ScrollView contentContainerStyle={containerStyles.scrollView}>
         <View style={containerStyles.card}>
