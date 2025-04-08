@@ -39,7 +39,7 @@ const SightingEditScreen = () => {
     health: sighting.health,
     location: sighting.location,
     createdBy: sighting.createdBy,
-    date: new Date(),
+    date: sighting.date,
   });
 
   const createObj = () => {
@@ -73,7 +73,7 @@ const SightingEditScreen = () => {
       <FlatList
         data={[1]}  // A dummy array to make FlatList scrollable
         keyExtractor={() => '1'}
-        contentContainerStyle={containerStyles.scrollView}
+        contentContainerStyle={[containerStyles.scrollView, {paddingBottom:'50%'}]}
         renderItem={() => (
           <SightingForm
             formData={formData}

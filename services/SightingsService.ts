@@ -53,19 +53,35 @@ class SightingsService {
     try {
       const folderRef = ref(storage, `cat-sightings/${id}`);
       const result = await listAll(folderRef);
+      
+      // Fetch all download URLs
       const urls = await Promise.all(result.items.map((item) => getDownloadURL(item)));
       
       // Separate the profile image and other images
-      const profileImage = urls.find(url => result.items.some(item => item.name.toLowerCase().includes('profile')));
-      if (profileImage) {setProfile(profileImage)} //Guaranteed to be true
+      const profileImage = urls.find((url, index) => {
+        // Check if the file name contains 'profile'
+        return result.items[index].name.toLowerCase().includes('profile');
+      });
+  
+      // If a profile image is found, set it
+      if (profileImage) {
+        setProfile(profileImage);
+      }
   
       // Filter out the profile image and set the rest as photos
-      const otherImages = urls.filter(url => !result.items.some(async item => item.name.toLowerCase().includes('profile') && await getDownloadURL(item) === url));
+      const otherImages = urls.filter((url, index) => {
+        // Check if the file name does NOT contain 'profile'
+        return !result.items[index].name.toLowerCase().includes('profile');
+      });
+  
+      // Set the photos
       setPhotos(otherImages);
+      
     } catch (error) {
       console.error('Error fetching image URLs:', error);
     }
   }
+  
 
   /**
   * Effect: pulls sightings for one specific cat from firestore
@@ -207,7 +223,7 @@ class SightingsService {
               if (isPicsChanged) {
                 // Fetch existing images from Firebase Storage
                 const existingImages = await this.fetchExistingImagesFromStorage(`cat-sightings/${sighting.id}`);
-
+                photos = [...photos, profile];
                 // 3. Compare new photos with existing ones
                 const newImages = photos.filter(photo => !existingImages.includes(photo)); // Only new images
                 const imagesToDelete = existingImages.filter((image: string) => !photos.includes(image)); // Images to remove
@@ -222,7 +238,7 @@ class SightingsService {
                     await this.uploadImagesToStorage(newImages, `cat-sightings/${sighting.id}`);
                 }
             }
-              router.push('/(app)/(tabs)');
+              router.push('/(app)/sighting/view-sighting');
           } else {
               alert(error_message)
           }
@@ -317,7 +333,7 @@ class SightingsService {
     }
     
   // Helper function to upload a single image (used for profile picture)
-  public async uploadImageToStorage(
+  private async uploadImageToStorage(
     photoUri: string, 
     filePath: string
   ) {
@@ -332,7 +348,8 @@ class SightingsService {
   private async uploadImagesToStorage(images: string[], folderPath: string): Promise<void> {
     try {
       for (const imageUri of images) {
-        const imageRef = ref(storage, `${folderPath}/${new Date().toISOString()}`);  // Create a unique ref based on timestamp
+        const uniqueFilename = this.generateUniqueFileName([], '');
+        const imageRef = ref(storage, `${folderPath}/${uniqueFilename}`);  // Create a unique ref based on timestamp
         const response = await fetch(imageUri);
         const blob = await response.blob();
         await uploadBytesResumable(imageRef, blob); // Upload image to Firebase Storage
@@ -359,6 +376,21 @@ class SightingsService {
         console.error('Error fetching existing images: ', error);
         return [];
     }
+  }
+
+   /**
+    * Private 4
+    */
+   private generateUniqueFileName(existingFiles: string[], originalName: string) {
+    let fileNameBase = originalName.replace(/\.[^/.]+$/, ''); // Remove extension
+    let newFileName: string;
+
+    do {
+        let randomInt = Math.floor(Math.random() * 1000000000); // Generate random number (0-9999)
+        newFileName = `${fileNameBase}_${randomInt}.jpg`;
+    } while (existingFiles.includes(newFileName)); // Ensure it's unique
+
+    return newFileName;
   }
 }
 export default SightingsService;

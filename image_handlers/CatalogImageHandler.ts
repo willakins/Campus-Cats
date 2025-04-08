@@ -60,7 +60,11 @@ class CatalogImageHandler extends BaseImageHandler {
         return;
       }
       await this.database.swapProfilePicture(this.type, this.id, picUrl, picName, this.profile);
-      this.database.fetchCatImages(this.id, this.setProfile, this.setPhotos);
+      if (this.type == 'catalog') {
+        this.database.fetchCatImages(this.id, this.setProfile, this.setPhotos);
+      } else if (this.type == 'sightings') {
+        this.database.fetchSightingImages(this.id, this.setProfile, this.setPhotos);
+      }
     } catch (error) {
       console.error('Swap error:', error);
       alert('Failed to swap profile picture.');
@@ -80,10 +84,12 @@ class CatalogImageHandler extends BaseImageHandler {
           onPress: async () => {
             if (this.type == 'catalog'){
               await this.database.deleteCatalogPicture(this.id, picName)
+              this.database.fetchCatImages(this.id, this.setProfile, this.setPhotos);
             } else if (this.type == 'sightings') {
-              await this.database.deleteSightingPicture(this.id, picName)
+              await this.database.deleteSightingPicture(this.id, picName);
+              this.database.fetchSightingImages(this.id, this.setProfile, this.setPhotos);
             }
-            this.database.fetchCatImages(this.id, this.setProfile, this.setPhotos);
+            
           },
             
         },

@@ -15,7 +15,7 @@ export const SnackbarMessage: React.FC<SnackbarMessageProps> = ({ text, visible,
       <Snackbar
         visible={visible}
         onDismiss={() => setVisible(false)}
-        duration={2000}
+        duration={10000}
         style={containerStyles.snackbar}
       >
         {text}
