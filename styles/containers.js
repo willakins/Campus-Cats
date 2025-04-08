@@ -394,15 +394,6 @@ const containerStyles = StyleSheet.create({
     width: '100%',
     paddingVertical: 8,
   },
-  snackbarContainer: {
-    position: 'absolute',
-    alignItems: 'center',
-    width: '90%',
-    height:'10%',
-    left:'3%',
-    top:'5%',
-    zIndex: 1000,  // Ensure the snackbar is above other content
-  },
   snackbar: {
     width: '100%',
     heigh: '100%',  // You can adjust this width based on your design

@@ -4,7 +4,8 @@ import { SafeAreaView, Text, FlatList } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 
-import { Button, SightingForm, SnackBarMessage } from '@/components';
+import { Button, SightingForm, SnackbarMessage } from '@/components';
+console.log({ Button, SightingForm, SnackbarMessage });
 import { buttonStyles, textStyles, containerStyles } from '@/styles';
 import { setSelectedSighting } from '@/stores/sightingStores';
 import DatabaseService from '@/services/DatabaseService';
@@ -60,7 +61,7 @@ const SightingCreateScreen = () => {
         <Ionicons name="arrow-back-outline" size={25} color="#fff" />
       </Button>
 
-      <SnackBarMessage text="Creating Report..." visible={visible} setVisible={setVisible} />
+      <SnackbarMessage text="Creating Report..." visible={visible} setVisible={setVisible} />
 
       <Text style={textStyles.title}>Create A Report</Text>
       <FlatList

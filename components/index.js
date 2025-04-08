@@ -4,7 +4,7 @@ export { ErrorText } from './ui/ErrorText';
 export { LoadingIndicator } from './ui/LoadingIndicator';
 export { Switch } from './ui/Switch';
 export * from './ui/TextInput';
-export { SnackBarMessage } from './ui/SnackBarMessage'
+export { SnackbarMessage } from './ui/SnackBarMessage'
 
 export { AdminView } from './AdminView'
 export { Errorbar } from './ErrorBar'

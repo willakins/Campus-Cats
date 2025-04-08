@@ -1,6 +1,5 @@
 import React from 'react';
-import { View } from 'react-native';
-import { Snackbar } from 'react-native-paper';
+import { Portal, Snackbar } from 'react-native-paper';
 import { containerStyles } from '@/styles';
 
 interface SnackbarMessageProps {
@@ -9,9 +8,9 @@ interface SnackbarMessageProps {
   setVisible: (value: boolean) => void;
 }
 
-const SnackbarMessage: React.FC<SnackbarMessageProps> = ({ text, visible, setVisible }) => {
+export const SnackbarMessage: React.FC<SnackbarMessageProps> = ({ text, visible, setVisible }) => {
   return (
-    <View style={containerStyles.snackbarContainer}>
+    <Portal>
       <Snackbar
         visible={visible}
         onDismiss={() => setVisible(false)}
@@ -20,7 +19,6 @@ const SnackbarMessage: React.FC<SnackbarMessageProps> = ({ text, visible, setVis
       >
         {text}
       </Snackbar>
-    </View>
+    </Portal>
   );
 };
-export default SnackbarMessage;
