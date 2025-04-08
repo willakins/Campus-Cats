@@ -20,7 +20,7 @@ const AnnouncementForm: React.FC<AnnouncementFormProps> = ({
     };
 
     return (
-        <View style={containerStyles.card}>
+        <View style={[containerStyles.card, {paddingBottom:'10%'}]}>
           <Text style={textStyles.label}>Title</Text>
           <View style={containerStyles.inputContainer2}>
             <TextInput 
@@ -31,13 +31,13 @@ const AnnouncementForm: React.FC<AnnouncementFormProps> = ({
                 style={textStyles.input} />
           </View>
           <Text style={textStyles.label}>Description</Text>
-          <View style={containerStyles.inputContainer2}>
+          <View style={[containerStyles.descInputContainer, {height:'30%'}]}>
             <TextInput
                 value={formData.info || ''}
                 placeholder="Type a description about the announcement."
                 placeholderTextColor="#888"
                 onChangeText={(text) => handleChange('info', text)} 
-                style={textStyles.descInput} 
+                style={textStyles.input} 
                 multiline={true}/>
           </View>
           <Text style={textStyles.label}>Alias (optional)</Text>
