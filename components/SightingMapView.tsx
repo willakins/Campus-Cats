@@ -23,8 +23,8 @@ const SightingMapView: React.FC<SightingMapViewProps> = ({
         <Marker
           key={item.id}
           coordinate={{
-            latitude: item.latitude,
-            longitude: item.longitude,
+            latitude: item.location.latitude,
+            longitude: item.location.longitude,
           }}
           title={item.name}
           description={item.info}

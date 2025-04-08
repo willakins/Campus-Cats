@@ -9,7 +9,7 @@ interface SightingProps {
   health: boolean;
   date: Date;
   location: LatLng;
-  user: User;
+  createdBy: User;
   timeofDay: string;
 }
 
@@ -21,7 +21,7 @@ class Sighting {
   health: boolean;
   date: Date;
   location: LatLng;
-  user: User;
+  createdBy: User;
   timeofDay: string;
 
   constructor({
@@ -32,7 +32,7 @@ class Sighting {
     health,
     date,
     location,
-    user,
+    createdBy,
     timeofDay,
   }: SightingProps) {
     this.id = id;
@@ -42,7 +42,7 @@ class Sighting {
     this.health = health;
     this.date = date;
     this.location = location;
-    this.user = user;
+    this.createdBy = createdBy;
     this.timeofDay = timeofDay;
   }
 
@@ -54,13 +54,21 @@ class Sighting {
     health: false,
     date: new Date(),
     location: { latitude: 0, longitude: 0 },
-    user: User.dummy,
+    createdBy: User.dummy,
     timeofDay: "Unknown",
   });
 
   static getDateString (sighting:Sighting) {
-    const dateString = sighting.date.toISOString().split('T')[0];
+    const dateString = Sighting.getNiceDateString(sighting.date);
     return `${sighting.timeofDay} of ${dateString}`;
+  }
+
+  private static getNiceDateString(date:Date) {
+    const monthNames = [
+        "January", "February", "March", "April", "May", "June", 
+        "July", "August", "September", "October", "November", "December"
+      ];
+    return`${monthNames[date.getMonth()]} ${date.getDate()}, ${date.getFullYear()}`;
   }
 }
 

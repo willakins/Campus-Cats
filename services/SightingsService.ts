@@ -31,7 +31,7 @@ class SightingsService {
         info: doc.data().info,
         location: doc.data().location,
         name: doc.data().name,
-        user: doc.data().user,
+        createdBy: doc.data().createdBy,
         timeofDay: doc.data().timeofDay
       }));
     
@@ -87,7 +87,7 @@ class SightingsService {
         info: doc.data().info,
         location: doc.data().location,
         name: doc.data().name,
-        user: doc.data().user,
+        createdBy: doc.data().createdBy,
         timeofDay: doc.data().timeofDay
       }));
   
@@ -113,7 +113,7 @@ class SightingsService {
       if (error_message === "") {
         const docRef = await addDoc(collection(db, 'cat-sightings'), {
           createdAt: serverTimestamp(),
-          user: sighting.user,
+          createdBy: sighting.createdBy,
           spotted_time: Timestamp.fromDate(sighting.date),
           location: sighting.location,
           name: sighting.name,
@@ -200,7 +200,7 @@ class SightingsService {
                   info: sighting.info,
                   location: sighting.location,
                   name: sighting.name,
-                  uid: sighting.id,
+                  createdBy: sighting.createdBy,
                   timeofDay: sighting.timeofDay
               });
               if (isPicsChanged) {
@@ -303,17 +303,6 @@ class SightingsService {
         console.error('Error fetching existing images: ', error);
         return [];
     }
-  }
-
-  /**
-     * Private 4
-     */
-  private getDateString(date:Date) {
-    const monthNames = [
-        "January", "February", "March", "April", "May", "June", 
-        "July", "August", "September", "October", "November", "December"
-      ];
-    return`${monthNames[date.getMonth()]} ${date.getDate()}, ${date.getFullYear()}`;
   }
 }
 export default SightingsService;

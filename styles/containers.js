@@ -157,6 +157,7 @@ const containerStyles = StyleSheet.create({
   inputContainer2: {
     padding:10,
     width: '100%',
+    height: '5%',
     borderColor: '#ccc',
     borderWidth: 1,
     borderRadius: 5,
@@ -164,6 +165,22 @@ const containerStyles = StyleSheet.create({
     paddingHorizontal: 10,
     backgroundColor: '#fff',
     color: '#000',
+    justifyContent: 'center',
+    textAlign: 'left',
+    flex: 1,
+  },
+  descInputContainer: {
+    padding:10,
+    width: '100%',
+    height: '10%',
+    borderColor: '#ccc',
+    borderWidth: 1,
+    borderRadius: 5,
+    marginBottom: 15,
+    paddingHorizontal: 10,
+    backgroundColor: '#fff',
+    color: '#000',
+    textAlign: 'left',
   },
   loginContainer: {
     width: '80%',
@@ -395,11 +412,11 @@ const containerStyles = StyleSheet.create({
     paddingVertical: 8,
   },
   snackbar: {
-    width: '100%',
-    heigh: '100%',  // You can adjust this width based on your design
-    backgroundColor: 'rgba(0, 0, 0, 0.8)',  // Optional: Style the snackbar
-    color: 'white',
-    borderRadius: 5,  // Optional: Add border radius to the snackbar
+    position: 'absolute',
+    top: '20%',
+    alignSelf: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.9)',
+    borderRadius: 5,
   },
   footer: {
     marginTop: 20,

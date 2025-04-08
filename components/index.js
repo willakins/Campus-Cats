@@ -12,7 +12,7 @@ export { FilePicker } from './FilePicker'
 export { MapPicker } from './MapPicker'
 
 export { SightingMapView } from './SightingMapView';
-export { SightingEntry } from './entries/CatalogEntry';
+export { SightingEntry } from './entries/SightingEntry';
 export { CatalogEntry } from './entries/CatalogEntry';
 export { AnnouncementEntry } from './entries/AnnouncementEntry';
 export { StationEntry } from './entries/StationEntry';
