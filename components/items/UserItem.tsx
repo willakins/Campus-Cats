@@ -4,7 +4,7 @@ import { Image, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Button } from '../ui/Buttons';
 import { User } from '@/types';
-import DatabaseService from '../services/DatabaseService';
+import DatabaseService from '../../services/DatabaseService';
 import { globalStyles, buttonStyles, textStyles, containerStyles } from '@/styles';
 import { useAuth } from '@/providers';
 

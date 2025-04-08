@@ -6,7 +6,7 @@ import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { Snackbar } from 'react-native-paper';
 
 import { Button, TextInput, ImageButton, CameraButton, CatalogImageHandler } from '@/components';
-import DatabaseService from '@/components/services/DatabaseService';
+import DatabaseService from '@/services/DatabaseService';
 import { globalStyles, buttonStyles, textStyles, containerStyles } from '@/styles';
 import { CatalogEntryObject } from '@/types/CatalogEntryObject';
 

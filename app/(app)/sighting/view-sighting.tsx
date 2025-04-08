@@ -3,23 +3,18 @@ import { Image, Text, ScrollView, View, SafeAreaView } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import MapView, { LatLng, Marker } from 'react-native-maps';
 import { Button } from '@/components';
-import DatabaseService from '@/components/services/DatabaseService';
+import DatabaseService from '@/services/DatabaseService';
 import { useAuth } from '@/providers';
 import { Ionicons } from '@expo/vector-icons';
 import { Checkbox } from 'react-native-paper';
 import { buttonStyles, textStyles, containerStyles } from '@/styles';
+import { getSelectedSighting } from '@/stores/sightingStores';
 
 const CatSightingScreen = () => {
   const router = useRouter();
   const { user } = useAuth();
   const database = DatabaseService.getInstance();
-  const {
-    id, date, catFed, catHealth, info,
-    catLongitude, catLatitude, name, uid, timeofDay
-  } = useLocalSearchParams() as {
-    id: string, date: string, catFed: string, catHealth: string, info: string,
-    catLongitude: string, catLatitude: string, name: string, uid: string, timeofDay: string
-  };
+  const sighting = getSelectedSighting();
 
   const fed = JSON.parse(catFed);
   const health = JSON.parse(catHealth);

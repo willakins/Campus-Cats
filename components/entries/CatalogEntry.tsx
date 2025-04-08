@@ -5,7 +5,7 @@ import MapView, { Marker } from 'react-native-maps';
 
 import { CatalogEntryObject } from '@/types/CatalogEntryObject';
 import { CatSightingObject } from '@/types';
-import DatabaseService from '../services/DatabaseService';
+import DatabaseService from '../../services/DatabaseService';
 import { globalStyles, buttonStyles, textStyles, containerStyles } from '@/styles';
 import { Button } from '../ui/Buttons';
 

@@ -6,7 +6,7 @@ import { globalStyles, buttonStyles, textStyles, containerStyles } from '@/style
 import { useAuth } from '@/providers';
 import { Button } from '@/components';
 import { useEffect, useState } from 'react';
-import DatabaseService from '@/components/services/DatabaseService';
+import DatabaseService from '@/services/DatabaseService';
 import { ContactInfo } from '@/types';
 
 const Settings = () => {

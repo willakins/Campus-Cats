@@ -5,7 +5,7 @@ import { useEffect, useState } from 'react';
 import { globalStyles, buttonStyles, textStyles, containerStyles } from '@/styles';
 import { Button } from '@/components';
 import { UserItem } from '@/components';
-import DatabaseService from '@/components/services/DatabaseService';
+import DatabaseService from '@/services/DatabaseService';
 import { User } from '@/types';
 
 const ManageUsers = () => {
