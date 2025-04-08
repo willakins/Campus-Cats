@@ -1,113 +1,67 @@
 import React, { useEffect, useState } from 'react';
-import { SafeAreaView, View, Text, Switch, TextInput, Image, FlatList } from 'react-native';
+import { SafeAreaView, Text, FlatList } from 'react-native';
+
 import { Ionicons } from '@expo/vector-icons';
-import DropdownPicker from 'react-native-dropdown-picker';
-import { useLocalSearchParams, useRouter } from 'expo-router';
-import { Snackbar } from 'react-native-paper';
+import { useRouter } from 'expo-router';
+
+import { Button, CatalogImageHandler, SnackbarMessage, SightingForm } from '@/components';
+import { getSelectedSighting, setSelectedSighting } from '@/stores/sightingStores';
+import { buttonStyles, textStyles, containerStyles } from '@/styles';
 import DatabaseService from '@/services/DatabaseService';
 import { useAuth } from '@/providers';
-import MapView, { LatLng, MapPressEvent, Marker } from 'react-native-maps';
-import { buttonStyles, textStyles, containerStyles } from '@/styles';
-import { CameraButton, DateTimeInput, Button, ImageButton, CatalogImageHandler } from '@/components';
 import { Sighting } from '@/types';
+
 
 const SightingEditScreen = () => {
   const router = useRouter();
+   const { user } = useAuth();
   const database = DatabaseService.getInstance();
+  const sighting = getSelectedSighting();
   const [visible, setVisible] = useState<boolean>(false);
-  const [photos, setPhotos] = useState<string[]>([]);
   const [isPicsChanged, setPicsChanged] = useState<boolean>(false);
   
-  const {
-      id, paramDate, catFed, catHealth, info,
-      catLongitude, catLatitude, name, uid, timeofDay
-    } = useLocalSearchParams() as {
-      id: string, paramDate: string, catFed: string, catHealth: string, info: string,
-      catLongitude: string, catLatitude: string, name: string, uid: string, timeofDay: string
-    };
-  const [profilePicUrl, setProfile] = useState<string>('');
-  const [newPics, setNewPics] = useState<{ url: string; name: string }[]>([]);
-  const [newPhotosAdded, setNewPhotos] = useState<boolean>(false);
-  const imageHandler = new CatalogImageHandler({ setVisible, setPhotos, setNewPics, setNewPhotos, setProfile, name, id, profilePicUrl});
-  const [value, setValue] = useState(timeofDay);
+  const [value, setValue] = useState("");
+  const [open, setOpen] = useState(false);
   const [items, setItems] = useState([
     { label: 'Morning', value: 'morning' },
     { label: 'Afternoon', value: 'afternoon' },
     { label: 'Night', value: 'night' },
-  ])
+  ]);
 
-  const parseDateString = (dateStr: string): Date => {
-    const monthNames = [
-      "January", "February", "March", "April", "May", "June", 
-      "July", "August", "September", "October", "November", "December"
-    ];
-  
-    const [monthStr, dayWithComma, yearStr] = dateStr.split(' ');
-    const monthIndex = monthNames.indexOf(monthStr);
-    const day = parseInt(dayWithComma.replace(',', ''));
-    const year = parseInt(yearStr);
-  
-    if (monthIndex === -1 || isNaN(day) || isNaN(year)) {
-      throw new Error("Invalid date string format");
-    }
-  
-    return new Date(year, monthIndex, day);
-  }
-  const [date, setDate] = useState<Date>(parseDateString(paramDate));
-  const fed = JSON.parse(catFed);
-  const health = JSON.parse(catHealth);
-  const longitude = parseFloat(catLongitude);
-  const latitude = parseFloat(catLatitude);
+  const [photos, setPhotos] = useState<string[]>([]);
+  const [profile, setProfile] = useState<string>('');
   const [formData, setFormData] = useState({
-    name: name,
-    info: info,
-    fed: fed,
-    health: health,
-    latitude: latitude,
-    longitude: longitude,
-    uid: uid,
+    name: sighting.name,
+    info: sighting.info,
+    fed: sighting.fed,
+    health: sighting.health,
+    location: sighting.location,
+    createdBy: sighting.createdBy,
+    date: new Date(),
   });
 
-  const [open, setOpen] = useState(false);
-
-  // Update state when form fields change
-  const handleChange = (field: string, value: any) => {
-    setFormData((prevData) => ({
-      ...prevData,
-      [field]: value,
-    }));
-  };
-
-  // Function to create CatSighting object
   const createObj = () => {
-    return new CatSightingObject(
-      id,
-      formData.name,
-      formData.info,
-      formData.fed,
-      formData.health,
-      date.toISOString(),
-      formData.latitude,
-      formData.longitude,
-      formData.uid,
-      value
-    );
-  };
+    const newSighting = new Sighting({
+      id: sighting.id,
+      name: formData.name,
+      info: formData.info,
+      fed: formData.fed,
+      health: formData.health,
+      date: formData.date,
+      location: formData.location,
+      createdBy: user,
+      timeofDay: value,
+    });
 
-  // Handle map press to set latitude and longitude
-  const location: LatLng = {
-    latitude: formData.latitude,
-    longitude: formData.longitude,
+    setSelectedSighting(newSighting);
   };
-
-  const handleMapPress = (event: MapPressEvent) => {
-    const { latitude, longitude } = event.nativeEvent.coordinate;
-    handleChange('latitude', latitude);
-    handleChange('longitude', longitude);
-  };
-
+  
+  const [newPics, setNewPics] = useState<{ url: string; name: string }[]>([]);
+  const [newPhotosAdded, setNewPhotos] = useState<boolean>(false);
+  const imageHandler = new CatalogImageHandler({ setVisible, setPhotos, setNewPics, setNewPhotos, setProfile, name, id, profilePicUrl});  
+    
   useEffect(() => {
-    database.fetchSightingImages(id, setPhotos);
+    database.fetchSightingImages(sighting.id, setProfile, setPhotos);
   }, []);
 
   return (
@@ -115,130 +69,39 @@ const SightingEditScreen = () => {
       <Button style={buttonStyles.logoutButton} onPress={() => router.back()}>
         <Ionicons name="arrow-back-outline" size={25} color="#fff" />
       </Button>
-      <View style={containerStyles.snackbarContainer}>
-        <Snackbar
-          visible={visible}
-          onDismiss={() => setVisible(false)}
-          duration={2000}
-          style={containerStyles.snackbar}
-        >
-          Saving Report...
-        </Snackbar>
-      </View>
-      <Text style={textStyles.title}>Edit A Report</Text>
+      <SnackbarMessage text="Saving Report..." visible={visible} setVisible={setVisible} />
+      <Text style={textStyles.title}>Edit Report</Text>
       
       <FlatList
         data={[1]}  // A dummy array to make FlatList scrollable
         keyExtractor={() => '1'}
         contentContainerStyle={containerStyles.scrollView}
         renderItem={() => (
-          <View style={containerStyles.card}>
-            <Text style={textStyles.detail}>Created by: {uid}</Text>
-              {photos.length > 0 ? (
-                <Image source={{ uri: photos[0] }} style={containerStyles.imageMain} />
-              ) : (
-                <Text style={textStyles.titleCentered}>Loading image...</Text>
-              )}
-            <Text style={textStyles.label}>Location</Text>
-            <MapView
-              style={containerStyles.map}
-              initialRegion={{
-                latitude: 33.7756,
-                longitude: -84.3963,
-                latitudeDelta: 0.01,
-                longitudeDelta: 0.01,
-              }}
-              onPress={handleMapPress}
-            >
-              <Marker coordinate={location} />
-            </MapView>
-
-            <Text style={textStyles.label}>Cat's Name</Text>
-            <View style={containerStyles.inputContainer2}>
-            <TextInput
-              value={formData.name}
-              placeholderTextColor="#888"
-              onChangeText={(text) => handleChange('name', text)}
-              style={textStyles.input}
-            />
-            </View>
-            
-
-            <Text style={textStyles.label}>Day of Sighting</Text>
-            <DateTimeInput date={date} setDate={setDate} />
-
-            <Text style={textStyles.label}>Time of Sighting</Text>
-            <DropdownPicker
-              open={open}
-              value={value}
-              items={items}
-              setOpen={setOpen}
-              setValue={setValue}
-              setItems={setItems}
-
-
-              multiple={false}
-              theme="LIGHT"
-              mode="SIMPLE"
-              style={containerStyles.inputContainer2}
-            />
-
-            <Text style={textStyles.label}>Additional Notes</Text>
-            <TextInput
-              value={formData.info}
-              placeholderTextColor="#888"
-              onChangeText={(text) => handleChange('info', text)}
-              style={textStyles.descInput}
-              multiline={true}
-            />
-
-            <View style={containerStyles.switchRow}>
-              <Switch value={formData.fed} onValueChange={(val) => handleChange('fed', val)} />
-              <Text style={textStyles.label}>Has been fed</Text>
-            </View>
-
-            <View style={containerStyles.switchRow}>
-              <Switch value={formData.health} onValueChange={(val) => handleChange('health', val)} />
-              <Text style={textStyles.label}>Is in good health</Text>
-            </View>
-
-            <Text style={textStyles.titleCentered}>Add a picture</Text>
-            <CameraButton onPhotoSelected={(newPhotoUri) => {
-              setPhotos((prevPics) => [...prevPics, newPhotoUri]);
-              setPicsChanged(true);
-              }}/>
-            {photos.length > 1 ? <><Text style={textStyles.label}>Extra Photos</Text>
-            {photos.length > 0 ? <Text style={textStyles.subHeading}> The photo you click will turn into the cat's profile picture</Text>: null}
-            <View style={containerStyles.extraPicsContainer}>
-              {photos ? (photos.map((pic, index) => (
-                <View key={index} style={containerStyles.imageWrapper}>
-                  <ImageButton key={index} onPress={() => imageHandler.swapProfilePicture(pic)}>
-                    <Image source={{ uri: pic }} style={containerStyles.extraPic} />
-                  </ImageButton>
-                  <Button style={buttonStyles.deleteButton} onPress={() => imageHandler.confirmDeletion(pic)}>
-                    <Text style={textStyles.deleteButtonText}>Delete</Text>
-                  </Button>
-                </View>
-              ))):<Text>Loading images...</Text>}
-            </View></>: null}
-          </View>
-        )}
-      />
-
-      <Button
-        style={buttonStyles.button2}
-        onPress={() => database.saveSighting(createObj(), photos, isPicsChanged, setVisible, router)}
-      >
+          <SightingForm
+            formData={formData}
+            setFormData={setFormData}
+            value={value}
+            setValue={setValue}
+            open={open}
+            setOpen={setOpen}
+            items={items}
+            setItems={setItems}
+            photos={photos}
+            setPhotos={setPhotos}
+            setPicsChanged={setPicsChanged}
+            imageHandler={imageHandler}
+            isCreate={false}
+          />)}/>
+      <Button style={buttonStyles.button2} onPress={() => {
+          createObj();
+          database.saveSighting(photos, isPicsChanged, setVisible, router);
+        }}>
         <Text style={textStyles.bigButtonText}>Save Report</Text>
       </Button>
-      <Button
-        style={buttonStyles.button3}
-        onPress={() => database.deleteSighting(id, setVisible, router)}
-      >
+      <Button style={buttonStyles.button3} onPress={() => database.deleteSighting(sighting.id, setVisible, router)}>
         <Text style={textStyles.bigButtonText}>Delete Report</Text>
       </Button>
     </SafeAreaView>
   );
 };
-
 export default SightingEditScreen;

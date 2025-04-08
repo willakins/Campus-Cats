@@ -35,7 +35,6 @@ const SightingCreateScreen = () => {
     fed: false,
     health: false,
     location: { latitude: 0, longitude: 0 },
-    user: user,
     date: new Date(),
   });
 
@@ -48,7 +47,7 @@ const SightingCreateScreen = () => {
       health: formData.health,
       date: formData.date,
       location: formData.location,
-      user: formData.user,
+      createdBy: user,
       timeofDay: value,
     });
 
@@ -80,6 +79,7 @@ const SightingCreateScreen = () => {
             setItems={setItems}
             photos={photos}
             setPhotos={setPhotos}
+            isCreate={true}
           />
         )}
       />
