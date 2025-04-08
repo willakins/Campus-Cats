@@ -34,29 +34,32 @@ export const StationItem: React.FC<Station> = ({ id, name, location, lastStocked
   });
 
   return (
-    <Button style={containerStyles.entryContainer} onPress={() => {
+    <Button style={containerStyles.card} onPress={() => {
       createObj();
       router.push('/stations/view-station')
     }}>
-      <View style={containerStyles.entryElements}>
-        <Text style={textStyles.catalogTitle}>{name}</Text>
-        <View style={containerStyles.stationsEntry}>
-          {profileURL ? (<Image source={{ uri: profileURL }} style={containerStyles.listImage2} />) : 
-          <Text style={textStyles.title}>Loading image...</Text>}
-          <View style={containerStyles.stockContainer}>
-            <Text style={[textStyles.normalText, { color: isStocked ? "green" : "red"}]}>
-              {isStocked ? "Has Food" : "Needs Food"}
-            </Text>
-            <View style={containerStyles.checkboxContainer}>
-              <Checkbox
-                status={isStocked ? "checked" : "unchecked"}
-                color={isStocked ? "green" : "green"} // Red when needs restocking, green when stocked
-              />
-            </View>
-          </View>
-        </View> 
-        <Text style={textStyles.catalogDescription}>Known Cats: {knownCats}</Text>
-      </View>
+      <View>
+    <View style={containerStyles.stationHeader}>
+      {profileURL ? (
+        <Image source={{ uri: profileURL }} style={containerStyles.stationImage} />
+      ) : (
+        <Text style={textStyles.stationTitle}>Loading...</Text>
+      )}
+      <Text style={textStyles.stationTitle}>{name}</Text>
+    </View>
+    
+    <View style={containerStyles.statusContainer}>
+      <Text style={[textStyles.statusText2, { color: isStocked ? "green" : "red" }]}>
+        {isStocked ? "Has Food" : "Needs Food"}
+      </Text>
+      <Checkbox
+        status={isStocked ? "checked" : "unchecked"}
+        color={isStocked ? "green" : "green"}
+      />
+    </View>
+
+    <Text style={textStyles.knownCats}>Known Cats: {knownCats}</Text>
+  </View>
     </Button>
   );
 };

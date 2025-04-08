@@ -52,7 +52,7 @@ const Stations = () => {
             </Button>
           ))}
         </View>
-        <ScrollView contentContainerStyle={containerStyles.scrollView}>
+        <ScrollView contentContainerStyle={containerStyles.listContainer}>
           {filteredStations.map((station) => (
             <StationItem
               key={station.id}

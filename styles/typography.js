@@ -24,6 +24,12 @@ const textStyles = StyleSheet.create({
     textAlign: 'center',
     paddingTop: '15%',
   },
+  stationTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    flexShrink: 1,
+    color: '#333',
+  },
   headline: {
     fontSize: 20,
     color: 'black',
@@ -222,6 +228,15 @@ const textStyles = StyleSheet.create({
   statusText: {
     fontSize: 16,
     color: '#333',
+  },
+  statusText2: {
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  knownCats: {
+    fontSize: 13,
+    color: '#666',
+    marginTop: 8,
   },
   switchLabel: {
     fontSize: 16,
