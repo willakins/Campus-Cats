@@ -4,7 +4,7 @@ import { Image, SafeAreaView, ScrollView, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Snackbar } from 'react-native-paper';
-import { Button, CameraButton, TextInput } from '@/components';
+import { Button, CameraButton, SnackbarMessage, TextInput } from '@/components';
 import DatabaseService from '@/services/DatabaseService';
 import { globalStyles, buttonStyles, textStyles, containerStyles } from '@/styles';
 import { useAuth } from '@/providers/AuthProvider';
@@ -30,16 +30,7 @@ const create_ann = () =>{
       <Button style={buttonStyles.logoutButton} onPress={() => router.push('/announcements')}>
         <Ionicons name="arrow-back-outline" size={25} color="#fff" />
       </Button>
-      <View style={containerStyles.snackbarContainer}>
-        <Snackbar
-          visible={visible}
-          onDismiss={() => setVisible(false)}
-          duration={2000}
-          style={containerStyles.snackbar}
-        >
-          Saving Announcement...
-        </Snackbar>
-      </View>
+      <SnackbarMessage text="Creating Announcement..." visible={visible} setVisible={setVisible} />
       <Text style={textStyles.announcementTitle}>Create Announcement</Text>
       <ScrollView contentContainerStyle={containerStyles.scrollView}>
         <View style={containerStyles.card}>

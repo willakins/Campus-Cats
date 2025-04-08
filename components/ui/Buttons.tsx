@@ -97,7 +97,7 @@ export const CameraButton: React.FC<CameraButtonProps> = ({ onPhotoSelected, sty
   
   return (
     <View style={containerStyles.cameraView}>
-      <Button style={buttonStyles.cameraButton} onPress={() => photoHandler.handlePress()}>
+      <Button style={buttonStyles.cameraButton} onPress={() => photoHandler.promptForImageSource()}>
         <Ionicons name="camera-outline" size={29} color="#fff" />
       </Button>
     </View>
