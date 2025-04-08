@@ -1,4 +1,3 @@
-// components/SightingForm.tsx
 import React, { Dispatch } from 'react';
 import { View, Text, Switch, TextInput, Image } from 'react-native';
 import MapView, { Marker } from 'react-native-maps';
