@@ -3,12 +3,12 @@ import { View } from 'react-native';
 
 import { useFocusEffect, useRouter } from 'expo-router';
 
-import DatabaseService from '@/components/services/DatabaseService';
+import DatabaseService from '@/services/DatabaseService';
 import { Button, SightingMapView } from '@/components';
 import { Sighting} from '@/types';
-import { setSelectedSighting } from '@/stores/sightingStore';
 
 import { globalStyles, buttonStyles, textStyles, containerStyles } from '@/styles';
+import { setSelectedSighting } from '@/stores/sightingStores';
 
 const HomeScreen = () => {
   const router = useRouter();
@@ -64,7 +64,7 @@ const HomeScreen = () => {
       />
       <Button
         style={buttonStyles.reportButton}
-        onPress={() => router.push('/sighting/create-report')}
+        onPress={() => router.push('/sighting/create-sighting')}
         textStyle={textStyles.buttonText}
       >
         Report

@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Text, Image, View } from 'react-native';
 
 import { AnnouncementEntryObject } from '@/types';
-import DatabaseService from '../services/DatabaseService';
+import DatabaseService from '../../services/DatabaseService';
 import { globalStyles, buttonStyles, textStyles, containerStyles } from '@/styles';
 
 export const AnnouncementEntry: React.FC<AnnouncementEntryObject> = ({ id, title, info, createdAt, createdBy }) => {

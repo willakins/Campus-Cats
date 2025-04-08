@@ -4,7 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import DropdownPicker from 'react-native-dropdown-picker';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Snackbar } from 'react-native-paper';
-import DatabaseService from '@/components/services/DatabaseService';
+import DatabaseService from '@/services/DatabaseService';
 import { useAuth } from '@/providers';
 import MapView, { LatLng, MapPressEvent, Marker } from 'react-native-maps';
 import { buttonStyles, textStyles, containerStyles } from '@/styles';

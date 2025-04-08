@@ -1,5 +1,5 @@
 import { db, storage } from "@/config/firebase";
-import { CatSightingObject } from "@/types";
+import { Sighting } from "@/types";
 import { Router } from "expo-router";
 import { addDoc, collection, deleteDoc, doc, getDoc, getDocs, query, serverTimestamp, Timestamp, updateDoc, where } from "firebase/firestore";
 import { deleteObject, getDownloadURL, listAll, ref, uploadBytesResumable } from "firebase/storage";
@@ -15,14 +15,14 @@ class SightingsService {
    * Effect: Pulls cat sightings from firestore and stores them in Marker friendly format
    */
   public async fetchPins(
-    setPins: Dispatch<SetStateAction<CatSightingObject[]>>,
+    setPins: Dispatch<SetStateAction<Sighting[]>>,
     setMapKey: Dispatch<SetStateAction<number>>
   ) {
     try {
       const querySnapshot = await getDocs(collection(db, 'cat-sightings'));
   
       // First gather all raw sightings
-      const pins: CatSightingObject[] = querySnapshot.docs.map(doc => ({
+      const pins: Sighting[] = querySnapshot.docs.map(doc => ({
         id: doc.id,
         date: this.getDateString(doc.data().spotted_time.toDate()),
         fed: doc.data().fed,
@@ -31,7 +31,7 @@ class SightingsService {
         latitude: doc.data().latitude,
         longitude: doc.data().longitude,
         name: doc.data().name,
-        uid: doc.data().uid || '',
+        uid: doc.data().uid,
         timeofDay: doc.data().timeofDay
       }));
     
@@ -60,11 +60,11 @@ class SightingsService {
       
 
   /**
-  * Effect: pulls cat sightings from firestore
+  * Effect: pulls sightings for one specific cat from firestore
   */
   public async getSightings(
     name: string,
-    setSightings: Dispatch<SetStateAction<CatSightingObject[]>>
+    setSightings: Dispatch<SetStateAction<Sighting[]>>
   ) {
     try {
       const sightingsRef = collection(db, 'cat-sightings');
@@ -72,9 +72,8 @@ class SightingsService {
       const querySnapshot = await getDocs(q);
   
       // Fetch all sightings first
-      const catSightingsRaw = querySnapshot.docs.map(doc => ({
+      const sightings: Sighting[] = querySnapshot.docs.map(doc => ({
         id: doc.id,
-        uid: doc.data().uid,
         date: this.getDateString(doc.data().spotted_time.toDate()),
         fed: doc.data().fed,
         health: doc.data().health,
@@ -82,24 +81,11 @@ class SightingsService {
         latitude: doc.data().latitude,
         longitude: doc.data().longitude,
         name: doc.data().name,
+        uid: doc.data().uid,
         timeofDay: doc.data().timeofDay
       }));
   
-      // Convert each UID to email using parallel fetches
-      const catSightingsWithEmails = await Promise.all(
-        catSightingsRaw.map(async sighting => {
-          try {
-            const userDoc = await getDoc(doc(db, 'users', sighting.uid));
-            const email = userDoc.exists() ? userDoc.data().email : 'Unknown user';
-            return { ...sighting, uid: email };
-          } catch (err) {
-            console.error(`Failed to fetch email for UID ${sighting.uid}`, err);
-            return { ...sighting, uid: 'Error fetching email' };
-          }
-        })
-      );
-  
-      setSightings(catSightingsWithEmails);
+      setSightings(sightings);
     } catch (error) {
       console.error('Error fetching cat sightings: ', error);
     }
@@ -109,7 +95,7 @@ class SightingsService {
   * Effect: Submits a new cat sighting to firestore
   */
   public async handleReportSubmission(
-    thisSighting:CatSightingObject,
+    thisSighting:Sighting,
     photos:string[],
     setVisible: Dispatch<SetStateAction<boolean>>,
     router:Router) {

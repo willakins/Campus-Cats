@@ -1,10 +1,9 @@
-import { deleteObject, getDownloadURL, getStorage, listAll, ref, uploadBytes, uploadBytesResumable } from 'firebase/storage';
-import { getDocs, getDoc, updateDoc, doc, collection, query, where, DocumentData, getFirestore, addDoc, serverTimestamp, Timestamp, deleteDoc } from 'firebase/firestore';
+import { getDownloadURL } from 'firebase/storage';
+import { getDocs, getDoc, updateDoc, doc, collection, query, where, DocumentData, getFirestore } from 'firebase/firestore';
 import { auth, db, storage } from '@/config/firebase';
-import { AnnouncementEntryObject, CatalogEntryObject, CatSightingObject, ContactInfo, StationEntryObject, User, WhitelistApp } from '@/types';
+import { AnnouncementEntryObject, CatalogEntryObject, ContactInfo, Sighting, StationEntryObject, User, WhitelistApp } from '@/types';
 import { Dispatch, SetStateAction } from 'react';
 import { Alert } from 'react-native';
-import { uploadFromURI } from '@/utils';
 import CatalogService from './CatalogService';
 import SightingsService from './SightingsService';
 import AnnouncementsService from './AnnouncementsService';
@@ -93,7 +92,7 @@ class DatabaseService {
   /**
    * Effect: Pulls cat sightings from firestore and stores them in Marker friendly format
    */
-  public async fetchPins(setPins:Dispatch<SetStateAction<CatSightingObject[]>>, setMapKey:Dispatch<SetStateAction<number>>) {
+  public async fetchPins(setPins:Dispatch<SetStateAction<Sighting[]>>, setMapKey:Dispatch<SetStateAction<number>>) {
     await DatabaseService.sightingsService.fetchPins(setPins, setMapKey);
   }
 
@@ -102,7 +101,7 @@ class DatabaseService {
    */
   public async getSightings(
     name: string, 
-    setSightings:Dispatch<SetStateAction<CatSightingObject[]>>) {
+    setSightings:Dispatch<SetStateAction<Sighting[]>>) {
     await DatabaseService.sightingsService.getSightings(name, setSightings);
   }
 
@@ -110,7 +109,7 @@ class DatabaseService {
    * Effect: updates firestore when editing a cat sighting
    */
   public async saveSighting(
-   thisSighting:CatSightingObject,
+   thisSighting:Sighting,
    photos: string[],
    isPicsChanged:boolean,
    setVisible: Dispatch<SetStateAction<boolean>>,
