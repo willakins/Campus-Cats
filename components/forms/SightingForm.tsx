@@ -34,6 +34,7 @@ const SightingForm: React.FC<SightingFormProps> = ({
   return (
     <View style={containerStyles.card}>
       {!isCreate && profile ?  (<Image source={{ uri: profile }} style={containerStyles.imageMain} />): null}
+
       <Text style={textStyles.label}>Location</Text>
       <MapView
         style={containerStyles.map}
@@ -51,10 +52,10 @@ const SightingForm: React.FC<SightingFormProps> = ({
       <Text style={textStyles.label}>Cat's Name</Text>
       <View style={containerStyles.inputContainer2}>
         <TextInput
-          value={isCreate ? '' : formData.name} // if isCreate is false, use formData
-          placeholder={isCreate ? 'name' : ''}
+          value={formData.name || ''} // controlled component value, default to '' if undefined
+          placeholder="name"
           placeholderTextColor="#888"
-          onChangeText={(text) => handleChange('name', text)}
+          onChangeText={(text) => handleChange('name', text)} // Update state on text change
           style={textStyles.input}
         />
       </View>
@@ -78,10 +79,10 @@ const SightingForm: React.FC<SightingFormProps> = ({
       <Text style={textStyles.label}>Additional Notes</Text>
       <View style={containerStyles.descInputContainer}>
         <TextInput
-          value={isCreate ? '' : formData.info} // if isCreate is false, use formData
-          placeholder={isCreate ? 'what is the cat up to?' : ''}
+          value={formData.info || ''} // controlled component value, default to '' if undefined
+          placeholder="what is the cat up to?"
           placeholderTextColor="#888"
-          onChangeText={(text) => handleChange('info', text)}
+          onChangeText={(text) => handleChange('info', text)} // Update state on text change
           style={textStyles.input}
           multiline
         />
@@ -119,7 +120,7 @@ const SightingForm: React.FC<SightingFormProps> = ({
         </View>
       ) : (
         <>
-          {photos.length > 1 && imageHandler ? (
+          {photos.length > 0 && imageHandler ? (
             <>
               <Text style={textStyles.label}>Extra Photos</Text>
               <Text style={textStyles.subHeading}>The photo you click will turn into the cat's profile picture</Text>
