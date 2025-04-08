@@ -1,64 +1,69 @@
-import React from 'react';
-import { Alert } from 'react-native';
-import DatabaseService from '../services/DatabaseService';
+import BaseImageHandler from "./BaseImageHandler";
+import DatabaseService from "../services/DatabaseService";
+import { Alert } from "react-native";
 
 interface CatalogImageHandlerProps {
-  setVisible: (visible: boolean) => void;
-  setPhotos: React.Dispatch<React.SetStateAction<string[]>>;
-  setNewPics: React.Dispatch<React.SetStateAction<{ url: string; name: string }[]>>;
-  setNewPhotos: React.Dispatch<React.SetStateAction<boolean>>;
-  setProfile: React.Dispatch<React.SetStateAction<string>>;
-  name: string; // Assuming the cat's name is passed to the handler
+  type: string;
   id: string;
-  profilePicName?: string;
-  profilePicUrl?: string;
+  photos?: string[];
+  profile?: string;
+  setPhotos: React.Dispatch<React.SetStateAction<string[]>>;
+  setProfile: React.Dispatch<React.SetStateAction<string>>;
+  setPicsChanged: React.Dispatch<React.SetStateAction<boolean>>;
+  setVisible:  React.Dispatch<React.SetStateAction<boolean>>;
 }
 
-class CatalogImageHandler {
-  private setVisible: (visible: boolean) => void;
-  private setPhotos: React.Dispatch<React.SetStateAction<string[]>>;
-  private setNewPics: React.Dispatch<React.SetStateAction<{ url: string; name: string }[]>>;
-  private setNewPhotos: React.Dispatch<React.SetStateAction<boolean>>;
-  private setProfile: React.Dispatch<React.SetStateAction<string>>;
-  private name: string;
-  private id: string;
-  private profilePicName?: string;
-  private profilePicUrl?: string;
+class CatalogImageHandler extends BaseImageHandler {
+  private type;
+  private id;
+  private photos?;
+  private profile?;
+  private setPhotos;
+  private setProfile;
+  private setPicsChanged;
+  private setVisible;
+
   private database = DatabaseService.getInstance();
 
   constructor({
-    setVisible,
-    setPhotos,
-    setNewPics,
-    setNewPhotos,
-    setProfile,
-    name,
-    id,
-    profilePicUrl
+    type,
+    id, 
+    photos, 
+    profile, 
+    setPhotos, 
+    setProfile, 
+    setPicsChanged, 
+    setVisible
   }: CatalogImageHandlerProps) {
-    this.setVisible = setVisible;
-    this.setPhotos = setPhotos;
-    this.setNewPics = setNewPics;
-    this.setNewPhotos = setNewPhotos;
-    this.setProfile = setProfile;
-    this.name = name;
+    super();
+    this.type = type;
     this.id = id;
-    this.profilePicUrl = profilePicUrl;
+    this.photos = photos;
+    this.profile = profile;
+    this.setProfile = setProfile;
+    this.setPhotos = setPhotos;
+    this.setPicsChanged = setPicsChanged;    
+    this.setVisible = setVisible;
   }
 
-  public swapProfilePicture = async (picUrl:string) => {
+  protected onPhotoSelected(uri: string): void {
+    this.setPhotos((prev) => [...prev, uri]);
+    this.setPicsChanged(true);
+  }
+
+  public swapProfilePicture = async (picUrl: string) => {
     const picName = this.getFileNameFromUrl(picUrl);
     try {
       this.setVisible(true);
       if (!picName) {
-        alert('Error Could not find profile picture or selected picture.');
+        alert('Error: Invalid picture filename.');
         return;
       }
-      await this.database.swapProfilePicture(this.id, picUrl, picName, this.profilePicUrl);
+      await this.database.swapProfilePicture(this.type, this.id, picUrl, picName, this.profile);
       this.database.fetchCatImages(this.id, this.setProfile, this.setPhotos);
     } catch (error) {
-      console.error('Error swapping profile picture:', error);
-      alert('Error Failed to swap profile picture.');
+      console.error('Swap error:', error);
+      alert('Failed to swap profile picture.');
     } finally {
       this.setVisible(false);
     }
@@ -72,7 +77,15 @@ class CatalogImageHandler {
       [
         {
           text: 'Delete Forever',
-          onPress: async () => await this.database.deleteCatalogPicture(this.id, picName, this.setProfile, this.setPhotos),
+          onPress: async () => {
+            if (this.type == 'catalog'){
+              await this.database.deleteCatalogPicture(this.id, picName)
+            } else if (this.type == 'sightings') {
+              await this.database.deleteSightingPicture(this.id, picName)
+            }
+            this.database.fetchCatImages(this.id, this.setProfile, this.setPhotos);
+          },
+            
         },
         {
           text: 'Cancel',
@@ -83,26 +96,17 @@ class CatalogImageHandler {
     );
   };
 
-  public addPhoto = (newPhotoUri: string) => {
-    console.log('adding photos!')
-    this.setPhotos((prevPics) => [
-      ...prevPics,
-      newPhotoUri,
-    ]);
-    this.setNewPics((prevPics) => [
-      ...prevPics,
-      { url: newPhotoUri, name: `photo_${prevPics.length + 1}` },
-    ]);
-    this.setNewPhotos(true);
-  };
-
   private getFileNameFromUrl(url: string): string {
-    const parsedUrl = new URL(url);
-    const path = parsedUrl.pathname; // Get the path part of the URL
-    const fileName = path.substring(path.lastIndexOf('/') + 1); // Get the part after the last '/'
-    const parts = fileName.split('%');
-    const picName = parts[parts.length - 1].substring(2);// Handles weird filepath shenanigans to get desired filepath
-    return picName;
+    try {
+      const parsedUrl = new URL(url);
+      const path = parsedUrl.pathname;
+      const fileName = path.substring(path.lastIndexOf('/') + 1);
+      const parts = fileName.split('%');
+      return parts[parts.length - 1].substring(2);
+    } catch {
+      return '';
+    }
   }
 }
+
 export { CatalogImageHandler };

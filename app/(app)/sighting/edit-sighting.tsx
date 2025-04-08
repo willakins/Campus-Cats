@@ -4,21 +4,25 @@ import { SafeAreaView, Text, FlatList } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 
-import { Button, CatalogImageHandler, SnackbarMessage, SightingForm } from '@/components';
 import { getSelectedSighting, setSelectedSighting } from '@/stores/sightingStores';
+import { CatalogImageHandler } from '@/image_handlers/CatalogImageHandler';
 import { buttonStyles, textStyles, containerStyles } from '@/styles';
+import { Button, SnackbarMessage, SightingForm } from '@/components';
 import DatabaseService from '@/services/DatabaseService';
 import { useAuth } from '@/providers';
 import { Sighting } from '@/types';
-
 
 const SightingEditScreen = () => {
   const router = useRouter();
    const { user } = useAuth();
   const database = DatabaseService.getInstance();
   const sighting = getSelectedSighting();
-  const [visible, setVisible] = useState<boolean>(false);
+  
+  const [photos, setPhotos] = useState<string[]>([]);
+  const [profile, setProfile] = useState<string>('');
   const [isPicsChanged, setPicsChanged] = useState<boolean>(false);
+  const [visible, setVisible] = useState<boolean>(false);
+  const imageHandler = new CatalogImageHandler({ type:'sightings', id:sighting.id, photos, profile, setPhotos, setProfile, setPicsChanged, setVisible});
   
   const [value, setValue] = useState("");
   const [open, setOpen] = useState(false);
@@ -27,9 +31,7 @@ const SightingEditScreen = () => {
     { label: 'Afternoon', value: 'afternoon' },
     { label: 'Night', value: 'night' },
   ]);
-
-  const [photos, setPhotos] = useState<string[]>([]);
-  const [profile, setProfile] = useState<string>('');
+  
   const [formData, setFormData] = useState({
     name: sighting.name,
     info: sighting.info,
@@ -54,11 +56,7 @@ const SightingEditScreen = () => {
     });
 
     setSelectedSighting(newSighting);
-  };
-  
-  const [newPics, setNewPics] = useState<{ url: string; name: string }[]>([]);
-  const [newPhotosAdded, setNewPhotos] = useState<boolean>(false);
-  const imageHandler = new CatalogImageHandler({ setVisible, setPhotos, setNewPics, setNewPhotos, setProfile, name, id, profilePicUrl});  
+  };  
     
   useEffect(() => {
     database.fetchSightingImages(sighting.id, setProfile, setPhotos);

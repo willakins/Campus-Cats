@@ -105,7 +105,7 @@ const SightingForm: React.FC<SightingFormProps> = ({
           </View>
         ))}
       </View>: <>
-      {photos.length > 1 ? <><Text style={textStyles.label}>Extra Photos</Text>
+      {photos.length > 1 && imageHandler ? <><Text style={textStyles.label}>Extra Photos</Text>
       <Text style={textStyles.subHeading}> The photo you click will turn into the cat's profile picture</Text>
       <View style={containerStyles.extraPicsContainer}>
         {photos ? (photos.map((pic, index) => (

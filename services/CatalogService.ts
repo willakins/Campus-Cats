@@ -85,37 +85,37 @@ class CatalogService {
     * Effect: Updates firestore and storage when editing a catalog entry
     */
     public async handleCatalogSave(
-      thisEntry: CatalogEntryObject,
       newPics: { url: string; name: string; }[], 
       newPhotosAdded: boolean, 
       setVisible: Dispatch<SetStateAction<boolean>>, 
       router: Router) {
         try {
-          const error_message = this.validateInput(thisEntry, '', 'save');
+          const entry = getEntry();
+          const error_message = this.validateInput(entry, '', 'save');
           if (error_message == "") {
             setVisible(true);
             // Reference to the Firestore document using its ID
-            const catDocRef = doc(db, 'catalog', thisEntry.id);
+            const catDocRef = doc(db, 'catalog', entry.id);
       
             // Update the 'name' field in Firestore
             await updateDoc(catDocRef, { 
-              id: thisEntry.id,
-              name: thisEntry.name,
-              descShort: thisEntry.descShort,
-              descLong: thisEntry.descLong,
-              colorPattern: thisEntry.colorPattern,
-              behavior: thisEntry.behavior,
-              yearsRecorded: thisEntry.yearsRecorded,
-              AoR: thisEntry.AoR,
-              currentStatus: thisEntry.currentStatus,
-              furLength: thisEntry.furLength,
-              furPattern: thisEntry.furPattern,
-              tnr: thisEntry.tnr,
-              sex: thisEntry.sex,
-              credits: thisEntry.credits,
+              id: entry.id,
+              name: entry.name,
+              descShort: entry.descShort,
+              descLong: entry.descLong,
+              colorPattern: entry.colorPattern,
+              behavior: entry.behavior,
+              yearsRecorded: entry.yearsRecorded,
+              AoR: entry.AoR,
+              currentStatus: entry.currentStatus,
+              furLength: entry.furLength,
+              furPattern: entry.furPattern,
+              tnr: entry.tnr,
+              sex: entry.sex,
+              credits: entry.credits,
             });
             if (newPhotosAdded) {
-              const folderPath = `catalog/${thisEntry.id}/`; // Path in Firebase Storage
+              const folderPath = `catalog/${entry.id}/`; // Path in Firebase Storage
               const folderRef = ref(storage, folderPath);
       
               // Step 3: Upload only new photos
@@ -125,16 +125,12 @@ class CatalogService {
                 const existingFilesSnapshot = await listAll(folderRef);
                 const existingFiles = existingFilesSnapshot.items.map((item) => item.name);
       
-                const unique_name = this.generateUniqueFileName(existingFiles, thisEntry.name)
+                const unique_name = this.generateUniqueFileName(existingFiles, entry.name)
                 const photoRef = ref(storage, `${folderPath}${unique_name}`);
                 await uploadBytes(photoRef, blob);
               }
             }
-            router.push({
-              pathname: '/catalog/view-entry', 
-              params: { id:thisEntry.id, name:thisEntry.name, descShort:thisEntry.descShort, descLong:thisEntry.descLong, colorPattern:thisEntry.colorPattern, 
-                behavior:thisEntry.behavior, yearsRecorded:thisEntry.yearsRecorded, AoR:thisEntry.AoR, currentStatus:thisEntry.currentStatus, 
-                furLength:thisEntry.furLength, furPattern:thisEntry.furPattern, tnr:thisEntry.tnr, sex:thisEntry.sex, credits:thisEntry.credits}, })
+            router.push('/catalog/view-entry')
           } else {
             Alert.alert(error_message);
           }
@@ -150,29 +146,29 @@ class CatalogService {
      * 
      */
     public async handleCatalogCreate(
-      thisEntry: CatalogEntryObject,
+      entry: CatalogEntryObject,
       profilePic: string, 
       user: User,
       setVisible: Dispatch<SetStateAction<boolean>>, 
       router: Router) {
         try {
-          const error_message = this.validateInput(thisEntry, profilePic, 'create');
+          const error_message = this.validateInput(entry, profilePic, 'create');
           if (error_message == "") {
             setVisible(true);
             const docRef = await addDoc(collection(db, 'catalog'), {
-              name: thisEntry.name,
-              descShort: thisEntry.descShort,
-              descLong: thisEntry.descLong,
-              colorPattern: thisEntry.colorPattern,
-              behavior: thisEntry.behavior,
-              yearsRecorded: thisEntry.yearsRecorded,
-              AoR: thisEntry.AoR,
-              currentStatus: thisEntry.currentStatus,
-              furLength: thisEntry.furLength,
-              furPattern: thisEntry.furPattern,
-              tnr: thisEntry.tnr,
-              sex: thisEntry.sex,
-              credits: thisEntry.credits,
+              name: entry.name,
+              descShort: entry.descShort,
+              descLong: entry.descLong,
+              colorPattern: entry.colorPattern,
+              behavior: entry.behavior,
+              yearsRecorded: entry.yearsRecorded,
+              AoR: entry.AoR,
+              currentStatus: entry.currentStatus,
+              furLength: entry.furLength,
+              furPattern: entry.furPattern,
+              tnr: entry.tnr,
+              sex: entry.sex,
+              credits: entry.credits,
               createdAt: new Date(),
               createdBy: user,
             });
@@ -240,14 +236,10 @@ class CatalogService {
     */
     public async deleteCatalogPicture(
         id:string, 
-        picName: string, 
-        setProfile: Dispatch<SetStateAction<string>>,
-        setImageUrls: Dispatch<SetStateAction<string[]>>) {
+        picName: string) {
         try {
             const imageRef = ref(storage, `catalog/${id}/${picName}`);
             await deleteObject(imageRef);
-            this.fetchCatImages(id, setProfile, setImageUrls);
-    
             alert('Success Image deleted successfully!');
         } catch (error) {
             alert('Error Failed to delete the image.');
@@ -324,7 +316,7 @@ class CatalogService {
     /**
      * Private 2
      */
-    private validateInput(thisEntry:CatalogEntryObject, profilePic:string, type:string) {
+    private validateInput(entry:CatalogEntryObject, profilePic:string, type:string) {
       const requiredFields = [
         { key: 'name', label: 'Name' },
         { key: 'descShort', label: 'Short Description' },
@@ -340,7 +332,7 @@ class CatalogService {
       ];
     
       for (const field of requiredFields) {
-        const value = (thisEntry as any)[field.key];
+        const value = (entry as any)[field.key];
         if (!value || !value.trim()) {
           return `${field.label} field must not be empty`;
         }
