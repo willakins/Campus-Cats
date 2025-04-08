@@ -38,7 +38,7 @@ const edit_ann = () => {
       </Button>
       <SnackbarMessage text="Saving Announcement..." visible={visible} setVisible={setVisible} />
       <Text style={textStyles.announcementTitle}>Edit Announcement</Text>
-      <ScrollView contentContainerStyle={containerStyles.scrollView}>
+      <ScrollView contentContainerStyle={[containerStyles.scrollView, {paddingBottom:'50%'}]}>
         <AnnouncementForm
         formData={formData}
         setFormData={setFormData}
