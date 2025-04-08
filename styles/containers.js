@@ -324,6 +324,13 @@ const containerStyles = StyleSheet.create({
     borderRadius: 12,
     marginBottom: 16,
   },
+  stationImage: {
+    width: 70,
+    height: 70,
+    borderRadius: 12,
+    marginRight: 16,
+    backgroundColor: '#e6e6e6',
+  },
   sectionBox: {
     marginTop: 16,
     padding: 16,
@@ -430,6 +437,21 @@ const containerStyles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: '#eee',
     paddingTop: 10,
+  },
+  stationHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  statusContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 8,
+    justifyContent: 'space-between',
+  },
+  listContainer: {
+    paddingHorizontal: 16,
+    paddingBottom: 24,
   },
 });
 export { containerStyles };

@@ -310,8 +310,8 @@ class DatabaseService {
   /**
    * Effect: Adds a new station to firebase
    */
-  public async createStation(profile:string, setVisible: Dispatch<SetStateAction<boolean>>, router:Router) {
-    await DatabaseService.stationsService.createStation(profile, setVisible, router);
+  public async createStation(photos:string[], setVisible: Dispatch<SetStateAction<boolean>>, router:Router) {
+    await DatabaseService.stationsService.createStation(photos, setVisible, router);
   }
 
   /**
