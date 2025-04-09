@@ -75,7 +75,7 @@ class CatalogService {
               id: doc.id,
               cat: doc.data().cat,
               credits: doc.data().credits,
-              createdAt: doc.data().createdAt().toDate(),
+              createdAt: doc.data().createdAt.toDate(),
               createdBy: doc.data().createdBy,
             }));
             setCatalogEntries(entries);
@@ -317,22 +317,21 @@ class CatalogService {
      * Private 2
      */
     private validateInput(entry:CatalogEntry, photos:string[]) {
-      const requiredFields = [
+      const requiredCatFields = [
         { key: 'name', label: 'Name' },
         { key: 'descShort', label: 'Short Description' },
         { key: 'descLong', label: 'Long Description' },
         { key: 'colorPattern', label: 'Color pattern' },
         { key: 'yearsRecorded', label: 'Years recorded' },
         { key: 'AoR', label: 'Area of residence' },
-        { key: 'currentStatus', label: 'Current status' },
-        { key: 'furLength', label: 'Fur length' },
         { key: 'furPattern', label: 'Fur pattern' },
-        { key: 'tnr', label: 'TNR status' },
-        { key: 'sex', label: 'Sex' },
       ];
+      if (!entry.cat) {
+        return 'Cat creation error with catalog. Please contact an admin.'
+      }
     
-      for (const field of requiredFields) {
-        const value = (entry as any)[field.key];
+      for (const field of requiredCatFields) {
+        const value = (entry.cat as any)[field.key];
         if (!value || !value.trim()) {
           return `${field.label} field must not be empty`;
         }

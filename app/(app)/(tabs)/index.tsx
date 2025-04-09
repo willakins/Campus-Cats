@@ -28,7 +28,7 @@ const HomeScreen = () => {
     const days = parseInt(filter);
     const cutoffDate = new Date();
     cutoffDate.setDate(cutoffDate.getDate() - days);
-    return new Date(pin.date) >= cutoffDate;
+    return pin.date >= cutoffDate;
   };
 
   return (

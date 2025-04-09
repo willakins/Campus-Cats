@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { Dispatch, useState } from 'react';
 import { FlatList, SafeAreaView, Text } from 'react-native';
 
 import { useRouter } from 'expo-router';
@@ -6,7 +6,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Button, CatalogForm, SnackbarMessage } from '@/components';
 import DatabaseService from '@/services/DatabaseService';
 import { globalStyles, buttonStyles, textStyles, containerStyles } from '@/styles';
-import { Cat, CatalogEntry, Sex, TNRStatus, CatStatus } from '@/types/CatalogEntry';
+import { Cat, CatalogEntry, Sex, TNRStatus, CatStatus, Fur, PickerConfig } from '@/types';
 import { useAuth } from '@/providers/AuthProvider';
 import { setSelectedCatalogEntry } from '@/stores/CatalogEntryStores';
 
@@ -15,9 +15,10 @@ const create_entry = () =>{
   const { user } = useAuth();
   const database = DatabaseService.getInstance();
   const [visible, setVisible] = useState<boolean>(false);
+  const [photos, setPhotos] = useState<string[]>([]);
 
   // ---------- Status Picker ----------
-  const [statusValue, setStatusValue] = useState<string>('');
+  const [statusValue, setStatusValue] = useState<CatStatus>('Unknown');
   const [statusOpen, setStatusOpen] = useState<boolean>(false);
   const [statusItems, setStatusItems] = useState([
     { label: 'Adtoped', value: 'Adtoped' },
@@ -27,7 +28,7 @@ const create_entry = () =>{
     { label: 'Unknown', value: 'Unknown' },
   ]);
 
-  const statusPicker = {
+  const statusPicker:PickerConfig<CatStatus> = {
     value: statusValue,
     setValue: setStatusValue,
     open: statusOpen,
@@ -37,7 +38,7 @@ const create_entry = () =>{
   };
 
   // ---------- TNR Picker ----------
-  const [tnrValue, setTnrValue] = useState<string>('');
+  const [tnrValue, setTnrValue] = useState<TNRStatus>('Unknown');
   const [tnrOpen, setTnrOpen] = useState<boolean>(false);
   const [tnrItems, setTnrItems] = useState([
     { label: 'Yes', value: 'Yes' },
@@ -45,7 +46,7 @@ const create_entry = () =>{
     { label: 'Unknown', value: 'Unknown' },
   ]);
 
-  const tnrPicker = {
+  const tnrPicker:PickerConfig<TNRStatus> = {
     value: tnrValue,
     setValue: setTnrValue,
     open: tnrOpen,
@@ -55,7 +56,7 @@ const create_entry = () =>{
   };
 
   // ---------- Sex Picker ----------
-  const [sexValue, setSexValue] = useState<string>('');
+  const [sexValue, setSexValue] = useState<Sex>('Unknown');
   const [sexOpen, setSexOpen] = useState<boolean>(false);
   const [sexItems, setSexItems] = useState([
     { label: 'Male', value: 'Male' },
@@ -63,7 +64,7 @@ const create_entry = () =>{
     { label: 'Unknown', value: 'Unknown' },
   ]);
 
-  const sexPicker = {
+  const sexPicker:PickerConfig<Sex> = {
     value: sexValue,
     setValue: setSexValue,
     open: sexOpen,
@@ -73,7 +74,7 @@ const create_entry = () =>{
   };
 
   // ---------- Fur Picker ----------
-  const [furValue, setFurValue] = useState<string>('');
+  const [furValue, setFurValue] = useState<Fur>('Unknown');
   const [furOpen, setFurOpen] = useState<boolean>(false);
   const [furItems, setFurItems] = useState([
     { label: 'Short', value: 'Short' },
@@ -82,7 +83,7 @@ const create_entry = () =>{
     { label: 'Unknown', value: 'Unknown' },
   ]);
 
-  const furPicker = {
+  const furPicker:PickerConfig<Fur> = {
     value: furValue,
     setValue: setFurValue,
     open: furOpen,
@@ -98,7 +99,6 @@ const create_entry = () =>{
     furPicker,
   };  
 
-  const [photos, setPhotos] = useState<string[]>([]);
   const [formData, setFormData] = useState<{
     name: string;
     descShort: string;
@@ -108,7 +108,7 @@ const create_entry = () =>{
     yearsRecorded: string;
     AoR: string;
     currentStatus: CatStatus;
-    furLength: string;
+    furLength: Fur;
     furPattern: string;
     tnr: TNRStatus;
     sex: Sex;
@@ -122,7 +122,7 @@ const create_entry = () =>{
     yearsRecorded: "",
     AoR: "",
     currentStatus: "Unknown",
-    furLength: "",
+    furLength: "Unknown",
     furPattern: "",
     tnr: "Unknown",
     sex: "Unknown",
@@ -138,11 +138,11 @@ const create_entry = () =>{
       behavior: formData.behavior,
       yearsRecorded: formData.yearsRecorded,
       AoR: formData.AoR,
-      currentStatus: formData.currentStatus,
-      furLength: formData.furLength,
+      currentStatus: pickers.statusPicker.value,
+      furLength: pickers.furPicker.value,
       furPattern: formData.furPattern,
-      tnr: formData.tnr,
-      sex: formData.sex,
+      tnr: pickers.tnrPicker.value,
+      sex: pickers.sexPicker.value,
     }
     return newCat;
   }

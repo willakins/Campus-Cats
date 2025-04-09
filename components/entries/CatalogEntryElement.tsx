@@ -1,12 +1,12 @@
 import React, { useEffect, useState } from 'react';
-import { Text, Image, ScrollView, View } from 'react-native';
+import { Text, Image, View } from 'react-native';
 
 import MapView, { Marker } from 'react-native-maps';
 
 import DatabaseService from '../../services/DatabaseService';
 import { globalStyles, buttonStyles, textStyles, containerStyles } from '@/styles';
 import { Button } from '../ui/Buttons';
-import { Sighting } from '@/types';
+import { CatalogEntry, Sighting } from '@/types';
 import { getSelectedCatalogEntry } from '@/stores/CatalogEntryStores';
 
 const CatalogEntryElement: React.FC = () => {
@@ -23,12 +23,13 @@ const CatalogEntryElement: React.FC = () => {
   }, []);
 
   return (
-    <ScrollView contentContainerStyle={containerStyles.scrollView}>
-      <Text style={textStyles.catalogTitle}>{entry.cat.name}</Text>
-      <Text style={textStyles.subHeading}> {entry.cat.descShort} </Text>
-      {profile ? (<Image source={{ uri: profile }} style={containerStyles.imageMain} resizeMode='contain'/>) : 
-        <Text style={textStyles.catalogTitle}>Loading image...</Text>}
-      <Text style={textStyles.catalogLongDescription}>{entry.cat.descLong}</Text>
+    <View style={containerStyles.card}>
+      <Text style={textStyles.titleCentered}>{entry.cat.name}</Text>
+      <Text style={[textStyles.detail, {alignSelf:'center'}]}> {entry.cat.descShort} </Text>
+      {profile ? (<Image source={{ uri: profile }} style={containerStyles.imageMain} resizeMode="cover"/>) : 
+                <Text style={textStyles.titleCentered}>Loading image...</Text>}
+      <Text style={textStyles.label}>Description</Text>
+      <Text style={textStyles.detail}>{entry.cat.descLong}</Text>
       <Text style={textStyles.label}> Sightings </Text>
       <MapView
         style={containerStyles.mapContainer}
@@ -48,13 +49,13 @@ const CatalogEntryElement: React.FC = () => {
         />
         ))}
       </MapView>
-      <Button style={buttonStyles.bigButton}onPress={() => setShowDetails(!showDetails)}>
+      <Button style={[buttonStyles.bigButton, {height:45}]}onPress={() => setShowDetails(!showDetails)}>
         <Text style={textStyles.bigButtonText}> {showDetails ? "Show less details": "Show more details"}</Text>
       </Button>
       {showDetails ? <><Text style={textStyles.label}>Detailed Color Pattern</Text>
       <Text style={textStyles.detail}>{entry.cat.colorPattern}</Text>
-      <Text style={textStyles.label}>Behavior</Text>
-      <Text style={textStyles.detail}>{entry.cat.behavior}</Text>
+      {entry.cat.behavior.length > 0 ? <><Text style={textStyles.label}>Behavior</Text>
+      <Text style={textStyles.detail}>{entry.cat.behavior}</Text></>:null}
 
       <Text style={textStyles.label}>Years Recorded</Text>
       <Text style={textStyles.detail}>{entry.cat.yearsRecorded}</Text>
@@ -81,7 +82,10 @@ const CatalogEntryElement: React.FC = () => {
                   ))}
               </>
               )} 
-    </ScrollView>
+      <View style={containerStyles.footer}>
+        <Text style={textStyles.footerText}>{CatalogEntry.getDateString(entry)}</Text>
+      </View>
+    </View>
   )
 }
 export { CatalogEntryElement };

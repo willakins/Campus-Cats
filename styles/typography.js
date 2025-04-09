@@ -2,13 +2,7 @@
 import { StyleSheet } from 'react-native';
 
 const textStyles = StyleSheet.create({
-  title: {
-    fontSize: 32,
-    fontWeight: 'bold',
-    color: '#333',
-    textAlign: 'center',
-    marginTop: '5%',
-  },
+  
   catalogTitle: {
     fontSize: 30,
     fontWeight: 'bold',
@@ -194,7 +188,21 @@ const textStyles = StyleSheet.create({
     color: '#333',
     textAlign: 'center',
   },
+  loading: {
+    fontSize: 22,
+    fontWeight: 'bold',
+    color: '#333',
+    textAlign: 'center',
+    alignSelf:'center',
+  },
   /** Use this stuff */
+  title: {
+    fontSize: 32,
+    fontWeight: 'bold',
+    color: '#333',
+    textAlign: 'center',
+    marginTop: '5%',
+  },
   label: {
     fontSize: 18,
     fontWeight: '600',
