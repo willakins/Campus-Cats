@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { KeyboardAvoidingView, Platform, SafeAreaView, ScrollView, Text } from 'react-native';
+import { SafeAreaView, ScrollView, Text } from 'react-native';
 
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -43,11 +43,11 @@ const create_station = () =>{
       <Text style={textStyles.title}>Create A Station</Text>
       <ScrollView contentContainerStyle={containerStyles.scrollView}>
         <StationForm
-        formData={formData}
-        setFormData={setFormData}
-        photos={photos}
-        setPhotos={setPhotos}
-        isCreate={true}/>
+          formData={formData}
+          setFormData={setFormData}
+          photos={photos}
+          setPhotos={setPhotos}
+          isCreate={true}/>
       </ScrollView>
       <Button style={buttonStyles.button2} onPress={() => {
         createObj();

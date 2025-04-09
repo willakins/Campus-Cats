@@ -21,10 +21,10 @@ class StationsService {
                 id: doc.id,
                 name: doc.data().name,
                 location: doc.data().location,
-                lastStocked: doc.data().lastStocked,
+                lastStocked: doc.data().lastStocked.toDate(),
                 stockingFreq: doc.data().stockingFreq,
                 knownCats: doc.data().knownCats,
-                isStocked: Station.calculateStocked(doc.data().lastStocked, doc.data().stockingFreq),
+                isStocked: Station.calculateStocked(doc.data().lastStocked.toDate(), doc.data().stockingFreq),
                 createdBy: doc.data().createdBy,
             }));
             setStationEntries(stations);
@@ -38,14 +38,38 @@ class StationsService {
     */
     public async fetchStationImages(
         id: string,
-        name:string,
-        setProfile: Dispatch<SetStateAction<string>>) {
+        setProfile: Dispatch<SetStateAction<string>>,
+        setPhotos: Dispatch<SetStateAction<string[]>>) {
         try {
-            const picRef = ref(storage, `stations/${id}/profile.jpg`);
-            const url = await getDownloadURL(picRef);
-            setProfile(url);
-        } catch (error) {
-        }
+            const folderRef = ref(storage, `stations/${id}`);
+            const result = await listAll(folderRef);
+            
+            // Fetch all download URLs
+            const urls = await Promise.all(result.items.map((item) => getDownloadURL(item)));
+            
+            // Separate the profile image and other images
+            const profileImage = urls.find((url, index) => {
+              // Check if the file name contains 'profile'
+              return result.items[index].name.toLowerCase().includes('profile');
+            });
+        
+            // If a profile image is found, set it
+            if (profileImage) {
+              setProfile(profileImage);
+            }
+        
+            // Filter out the profile image and set the rest as photos
+            const otherImages = urls.filter((url, index) => {
+              // Check if the file name does NOT contain 'profile'
+              return !result.items[index].name.toLowerCase().includes('profile');
+            });
+        
+            // Set the photos
+            setPhotos(otherImages);
+            
+          } catch (error) {
+            console.error('Error fetching image URLs:', error);
+          }
     }
 
     /**
@@ -55,7 +79,7 @@ class StationsService {
         try {
             setVisible(true);
             const station = getSelectedStation();
-            const error_message = this.validateInput(station, 'create');
+            const error_message = this.validateInput(station);
             if (error_message == "") {
                 const stationCollectionRef = collection(db, 'stations');
                 const docRef = await addDoc(stationCollectionRef, {
@@ -77,11 +101,11 @@ class StationsService {
             } else {
                 alert(error_message);
             }
-          } catch (error) {
+        } catch (error) {
             console.error('Error adding document: ', error);
-          } finally {
+        } finally {
             setVisible(false);
-          }
+        }
     }
 
     /**
@@ -89,14 +113,15 @@ class StationsService {
      */
     public async saveStation(
         profile: string,
-        profileChanged: boolean,
+        photos: string[],
+        isPicsChanged:boolean,
         setVisible: Dispatch<SetStateAction<boolean>>, 
         router: Router
     ) {
         try {
             setVisible(true);
             const station = getSelectedStation();
-            const error_message = this.validateInput(station, 'save');
+            const error_message = this.validateInput(station);
             if (error_message == "") {
                 // Reference to the Firestore document using its ID
                 const stationDocRef = doc(db, 'stations', station.id);
@@ -108,7 +133,7 @@ class StationsService {
                     knownCats: station.knownCats,
                     createdBy: station.createdBy,
                 });
-                if (profileChanged) {
+                if (isPicsChanged) {
                     //Delete old profile 
                     const oldProfilePath = `stations/${stationDocRef.id}/profile.jpg`;
                     const oldStorageRef = ref(storage, oldProfilePath);
@@ -213,52 +238,41 @@ class StationsService {
     /**
      * Private 2
      */
-    private validateInput(station:Station, type:string) {
-        var requiredFields;
-        if (type == 'create') {
-            requiredFields = [
-                { key: 'name', label: 'Name' },
-                { key: 'profile', label: 'Profile Photo' },
-                { key: 'lastStocked', label: 'Last Stocked' },
-                { key: 'stockingFreq', label: 'Stocking Frequency' }
-            ];
-        } else {
-            requiredFields = [
-                { key: 'name', label: 'Name' },
-                { key: 'lastStocked', label: 'Last Stocked' },
-                { key: 'stockingFreq', label: 'Stocking Frequency' }
-            ];
+    private validateInput(station: Station): string {
+        // Validate required string fields
+        if (!station.name || typeof station.name !== 'string' || station.name.trim().length === 0) {
+          return 'Name field must not be empty';
         }
-
-        
-        // Check for missing or empty required fields
-        for (const field of requiredFields) {
-            const value = (station as any)[field.key];
-            if (!value || !value.trim()) {
-                return `${field.label} field must not be empty`;
-            }
+      
+        // Validate that lastStocked is a valid Date object
+        if (!(station.lastStocked instanceof Date) || isNaN(station.lastStocked.getTime())) {
+          return 'Last Stocked date is invalid';
         }
-    
-        // Validate longitude and latitude are valid numbers
-        if (isNaN(station.location.longitude) || station.location.longitude === 0 || 
-            isNaN(station.location.latitude) || station.location.latitude === 0) {
-            return 'Please Select a location on the map';
+      
+        // Validate location coordinates
+        const { latitude, longitude } = station.location;
+        if (
+          typeof latitude !== 'number' ||
+          typeof longitude !== 'number' ||
+          isNaN(latitude) ||
+          isNaN(longitude) ||
+          latitude === 0 ||
+          longitude === 0
+        ) {
+          return 'Please select a location on the map';
         }
-    
-        // Validate that lastStocked is a valid date
-        const lastStockedDate = new Date(station.lastStocked);
-        if (isNaN(lastStockedDate.getTime())) {
-            return 'Last Stocked date is invalid';
-        }
-    
+      
         // Validate stockingFreq is a positive number
-        if (isNaN(station.stockingFreq) || station.stockingFreq <= 0) {
-        return 'Stocking Frequency must be a positive number';
+        alert(station.stockingFreq)
+        alert(typeof station.stockingFreq)
+        if (typeof station.stockingFreq !== 'number' || station.stockingFreq <= 0) {
+          return 'Stocking Frequency must be a positive number';
         }
-    
-        // If all fields are valid, return an empty string
+      
+        // If everything is valid
         return '';
     }
+      
     // Helper method to delete an image from Firebase Storage
         private async deleteImageFromStorage(imageUrl: string): Promise<void> {
           try {
