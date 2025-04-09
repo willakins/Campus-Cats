@@ -54,22 +54,23 @@ class Station {
   });
 
   public static calculateStocked(lastStocked: Date, stockingFreq: number): boolean {
-    const nextRestockDate = lastStocked;
-    nextRestockDate.setDate(lastStocked.getDate() + stockingFreq);
+    const nextRestockDate = new Date(lastStocked); // clone
+    nextRestockDate.setDate(nextRestockDate.getDate() + stockingFreq);
     const today = new Date();
-    return !(today >= nextRestockDate);
+    return today < nextRestockDate;
   }
-
+  
   public static calculateDaysLeft(lastStocked: Date, stockingFreq: number): number {
     if (isNaN(lastStocked.getTime())) return 0;
-
-    const nextRestockDate = lastStocked;
-    nextRestockDate.setDate(lastStocked.getDate() + stockingFreq);
+  
+    const nextRestockDate = new Date(lastStocked); // clone
+    nextRestockDate.setDate(nextRestockDate.getDate() + stockingFreq);
     const today = new Date();
+  
     const timeDiff = nextRestockDate.getTime() - today.getTime();
-
     const daysRemaining = Math.ceil(timeDiff / (1000 * 3600 * 24));
     return isNaN(daysRemaining) ? -2 : daysRemaining;
   }
+  
 }
 export { Station, StationProps };

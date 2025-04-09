@@ -6,11 +6,9 @@ import MapView, { Marker } from 'react-native-maps';
 import { Station } from '@/types';
 import DatabaseService from '../../services/DatabaseService';
 import { globalStyles, buttonStyles, textStyles, containerStyles } from '@/styles';
-import { useRouter } from 'expo-router';
 import { getSelectedStation } from '@/stores/stationStores';
 
 export const StationEntry: React.FC = () => {
-  const router = useRouter();
   const database = DatabaseService.getInstance();
 
   const station = getSelectedStation();
@@ -24,10 +22,11 @@ export const StationEntry: React.FC = () => {
 
   return (
     <View style={containerStyles.card}>
-        <Text style={textStyles.catalogTitle}>{station.name}</Text>
+        <Text style={textStyles.titleCentered}>{station.name}</Text>
         <Text style={textStyles.detail}>Created by: {station.createdBy.id}</Text>
-        {profile ? (<Image source={{ uri: profile }} style={containerStyles.headlineImage} resizeMode='contain'/>) : 
-          <Text style={textStyles.catalogTitle}>Loading image...</Text>}
+        {profile ? (<Image source={{ uri: profile }} style={containerStyles.imageMain} resizeMode="cover"/>) : 
+          <Text style={textStyles.titleCentered}>Loading image...</Text>}
+        <Text style={textStyles.label}>Location</Text>
         <MapView
           style={containerStyles.mapContainer}
           initialRegion={{
@@ -42,9 +41,9 @@ export const StationEntry: React.FC = () => {
             coordinate={station.location}
           />
         </MapView>
-        {station.knownCats.length > 0 ? <><Text style={textStyles.headline2}>
+        {station.knownCats.length > 0 ? <><Text style={textStyles.label}>
           Cats That Frequent This Station
-        </Text><Text style={textStyles.normalText}>
+        </Text><Text style={textStyles.detail}>
           {station.knownCats}
         </Text></>: null}
         {station.isStocked ?<Text style={textStyles.stationText2}> This station will need to be restocked in {
@@ -52,7 +51,7 @@ export const StationEntry: React.FC = () => {
         <Text style={textStyles.stationText1}> This station needs to be restocked!</Text>}
         {photos.length > 0 && (
         <>
-            <Text style={textStyles.sectionTitle}>Extra Photos</Text>
+            <Text style={textStyles.label}>Extra Photos</Text>
             {photos.map((url, index) => (
             <Image key={index} source={{ uri: url }} style={containerStyles.imageMain} />
             ))}

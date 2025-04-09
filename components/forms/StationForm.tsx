@@ -54,10 +54,10 @@ const StationForm: React.FC<StationFormProps> = ({
             <Text style={textStyles.label}>How Often Does This Station Need to be restocked? (in days)</Text>
             <View style={containerStyles.inputContainer2}>
                 <TextInput
-                    value={formData.stockingFreq || ''}
+                    value={formData.stockingFreq === 0 ? '' : String(formData.stockingFreq)}
                     placeholder={"7"}
                     placeholderTextColor="#888"
-                    onChangeText={(text) => handleChange('stockingFreq', text)}
+                    onChangeText={(text) => handleChange('stockingFreq', Number(text))}
                     style={textStyles.input}/>
             </View>
             <Text style={textStyles.label}>Cats Known to Frequent This Station (optional)</Text>

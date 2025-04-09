@@ -1,5 +1,8 @@
 //Container styles
-import { Platform, StyleSheet } from 'react-native';
+import { Platform, StyleSheet, Dimensions } from 'react-native';
+
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
+const IMAGE_WIDTH = SCREEN_WIDTH - 32; // leaving 16px padding on both sides
 
 const containerStyles = StyleSheet.create({
     container: {
@@ -320,16 +323,11 @@ const containerStyles = StyleSheet.create({
   },
   imageMain: {
     width: '100%',
-    height: 220,
-    borderRadius: 12,
+    height: 200,
+    borderRadius: 22, // soft corners
     marginBottom: 16,
-  },
-  stationImage: {
-    width: 70,
-    height: 70,
-    borderRadius: 12,
-    marginRight: 16,
-    backgroundColor: '#e6e6e6',
+    alignSelf: 'center',
+    overflow: 'hidden', // ensures the rounded corners are clipped
   },
   sectionBox: {
     marginTop: 16,
@@ -438,16 +436,41 @@ const containerStyles = StyleSheet.create({
     borderTopColor: '#eee',
     paddingTop: 10,
   },
-  stationHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 12,
+  listCard: {
+    flexDirection: 'row', // Row layout for image and text
+    padding: 16, // Padding inside the card for spacing
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    marginHorizontal: 12,
+    marginBottom: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 6,
+    elevation: 3,
+    alignItems: 'center', // Center content vertically
+    justifyContent: 'flex-start', // Align the items starting from the left
+  },
+  cardImage: {
+    width: 150, // Set image width
+    height: 150, // Set image height
+    borderRadius: 12, // Rounded corners for the image
+    marginRight: 16, // Space between image and details
   },
   statusContainer: {
-    flexDirection: 'row',
+    flexDirection: 'row', // Align the status text and checkbox horizontally
     alignItems: 'center',
     marginTop: 8,
-    justifyContent: 'space-between',
+    justifyContent: 'space-between', // Ensure they are spaced evenly
+  },
+  
+  listDetails: {
+    flexDirection: 'column',
+    paddingLeft: '25%',
+    width: 150,
+    hieght: 150, // Stack details vertically
+    flex: 1, // Take up the remaining space in the row
+    justifyContent: 'space-between', // Space out the details vertically
   },
   listContainer: {
     paddingHorizontal: 16,

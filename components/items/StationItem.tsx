@@ -1,65 +1,58 @@
 import React, { useState } from 'react';
 import { Image, Text, View } from 'react-native';
-
 import { useFocusEffect, useRouter } from 'expo-router';
 import { Button } from '../ui/Buttons';
 import { Station } from '@/types';
 import DatabaseService from '../../services/DatabaseService';
 import { Checkbox } from "react-native-paper";
-import { globalStyles, buttonStyles, textStyles, containerStyles } from '@/styles';
 import { setSelectedStation } from '@/stores/stationStores';
+import { containerStyles, textStyles } from '@/styles';
 
-export const StationItem: React.FC<Station> = ({ id, name, location, lastStocked, stockingFreq, 
-  knownCats, isStocked, createdBy}) => {
+export const StationItem: React.FC<Station> = ({
+  id, name, location, lastStocked, stockingFreq,
+  knownCats, isStocked, createdBy
+}) => {
   const router = useRouter();
   const database = DatabaseService.getInstance();
-
-  const [profileURL, setProfile] = useState<string>('');
+  const [profile, setProfile] = useState<string>('');
+  const [photos, setPhotos] = useState<string[]>([]);
 
   const createObj = () => {
     const newStation = new Station({
-      id, 
-      name, 
-      location, 
-      lastStocked, 
-      stockingFreq, 
-      knownCats, 
-      isStocked, 
-      createdBy});
+      id, name, location, lastStocked, stockingFreq,
+      knownCats, isStocked, createdBy
+    });
     setSelectedStation(newStation);
-  }
+  };
 
   useFocusEffect(() => {
-    database.fetchStationImages(id, name, setProfile);
+    database.fetchStationImages(id, setProfile, setPhotos);
   });
 
   return (
-    <Button style={containerStyles.card} onPress={() => {
+    <Button style={containerStyles.listCard} onPress={() => {
       createObj();
-      router.push('/stations/view-station')
+      router.push('/stations/view-station');
     }}>
-      <View>
-    <View style={containerStyles.stationHeader}>
-      {profileURL ? (
-        <Image source={{ uri: profileURL }} style={containerStyles.stationImage} />
+      {profile ? (
+        <Image source={{ uri: profile }} style={containerStyles.cardImage} />
       ) : (
-        <Text style={textStyles.stationTitle}>Loading...</Text>
+        <View style={containerStyles.cardImage}><Text>Loading...</Text></View>
       )}
-      <Text style={textStyles.stationTitle}>{name}</Text>
-    </View>
-    
-    <View style={containerStyles.statusContainer}>
-      <Text style={[textStyles.statusText2, { color: isStocked ? "green" : "red" }]}>
-        {isStocked ? "Has Food" : "Needs Food"}
-      </Text>
-      <Checkbox
-        status={isStocked ? "checked" : "unchecked"}
-        color={isStocked ? "green" : "green"}
-      />
-    </View>
 
-    <Text style={textStyles.knownCats}>Known Cats: {knownCats}</Text>
-  </View>
+      <View style={containerStyles.listDetails}>
+        <Text style={textStyles.stationTitle}>{name}</Text>
+        <View style={containerStyles.statusContainer}>
+          <Text style={[textStyles.statusText2, { color: isStocked ? "green" : "red" }]}>
+            {isStocked ? "Has Food" : "Needs Food"}
+          </Text>
+          <Checkbox
+            status={isStocked ? "checked" : "unchecked"}
+            color="green"
+          />
+        </View>
+        <Text style={textStyles.knownCats}>Known Cats: {knownCats}</Text>
+      </View>
     </Button>
   );
 };

@@ -179,6 +179,7 @@ class SightingsService {
 
     private async confirmDeleteSighting(id:string, setVisible:Dispatch<SetStateAction<boolean>>, router:Router) {
       try {
+        setVisible(true);
         const photoPath = `cat-sightings/${id}`;
         const folderRef = ref(storage, photoPath);
         const result = await listAll(folderRef);
@@ -189,6 +190,8 @@ class SightingsService {
         
         } catch (error) {
         alert('Failed to delete sighting.');
+        } finally {
+          setVisible(false);
         }
     }
 

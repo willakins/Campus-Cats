@@ -64,6 +64,8 @@ class CatalogImageHandler extends BaseImageHandler {
         this.database.fetchCatImages(this.id, this.setProfile, this.setPhotos);
       } else if (this.type == 'sightings') {
         this.database.fetchSightingImages(this.id, this.setProfile, this.setPhotos);
+      } else if (this.type == 'stations') {
+        this.database.fetchStationImages(this.id, this.setProfile, this.setPhotos);
       }
     } catch (error) {
       console.error('Swap error:', error);
@@ -88,6 +90,9 @@ class CatalogImageHandler extends BaseImageHandler {
             } else if (this.type == 'sightings') {
               await this.database.deleteSightingPicture(this.id, picName);
               this.database.fetchSightingImages(this.id, this.setProfile, this.setPhotos);
+            } else if (this.type == 'stations') {
+              await this.database.deleteStationPicture(this.id, picName);
+              this.database.fetchStationImages(this.id, this.setProfile, this.setPhotos);
             }
             
           },

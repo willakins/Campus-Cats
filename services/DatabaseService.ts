@@ -236,6 +236,8 @@ class DatabaseService {
         await DatabaseService.catalogService.swapProfilePicture(id, picUrl, picName, profilePicUrl);
       } else if (type == 'sightings') {
         await DatabaseService.sightingsService.swapProfilePicture(id, picUrl, picName, profilePicUrl);
+      } else if (type == 'stations') {
+        await DatabaseService.stationsService.swapProfilePicture(id, picUrl, picName, profilePicUrl);
       }
     
   }
@@ -256,6 +258,15 @@ class DatabaseService {
     id:string, 
     picName: string, ) {
       await DatabaseService.sightingsService.deleteSightingPicture(id, picName);
+  }
+
+  /**
+    * Effect: deletes a picture from a catalog entry
+    */
+  public async deleteStationPicture(
+    id:string, 
+    picName: string, ) {
+      await DatabaseService.stationsService.deleteSightingPicture(id, picName);
   }
 
   /**
@@ -317,8 +328,8 @@ class DatabaseService {
   /**
    * Effect: Stocks a station
    */
-  public async stockStation(router:Router) {
-    await DatabaseService.stationsService.stockStation(router);
+  public async stockStation(setVisible: Dispatch<SetStateAction<boolean>>, router:Router) {
+    await DatabaseService.stationsService.stockStation(setVisible, router);
   }
 
   /**
@@ -333,11 +344,10 @@ class DatabaseService {
    * TODO
    */
   public async deleteStation(
-    profile:string,
     setVisible: Dispatch<SetStateAction<boolean>>, 
     router: Router
   ) {
-    await DatabaseService.stationsService.deleteStation(profile, setVisible, router);
+    await DatabaseService.stationsService.deleteStation(setVisible, router);
   }
 
   /**
