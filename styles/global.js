@@ -2,10 +2,9 @@
 import { Platform, StyleSheet } from 'react-native';
 
 const globalStyles = StyleSheet.create({
-  tabs: {
+  screen: {
     flex: 1,
-    justifyContent: 'flex-end',
-    backgroundColor: '#333',
+    justifyContent: 'center',
   },
   lockIcon: {
     position: 'absolute',
@@ -16,14 +15,6 @@ const globalStyles = StyleSheet.create({
     padding: 5,
     borderRadius: 5,
     zIndex: 10,
-  },
-  homeScreen: {
-    flex: 1,
-    justifyContent: 'center',
-  },
-  screen: {
-    flex: 1,
-    justifyContent: 'center',
   },
   safeView: { // Controls the SafeAreaView over the entire app
     flex: 1,
