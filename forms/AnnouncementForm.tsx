@@ -50,7 +50,7 @@ const AnnouncementForm: React.FC<AnnouncementFormProps> = ({
                 style={textStyles.descInput} 
                 multiline={false}/>
           </View>
-          <Text style={[textStyles.label, {textAlign:'center'}]}>Add Photos (optional)</Text>
+          <Text style={[textStyles.sectionTitle, {textAlign:'center'}]}>Add Photos (optional)</Text>
           <CameraButton onPhotoSelected={(newPhotoUri) => {
             setPhotos((prevPics) => 
               [...prevPics,newPhotoUri,])

@@ -16,7 +16,7 @@ const FormCamera: React.FC<FormCameraProps> = ({ photos, setPhotos, setPicsChang
 
     return (
         <>
-            <Text style={[textStyles.titleCentered, {marginTop:10}]}>Add pictures</Text>
+            <Text style={textStyles.sectionTitle}>Add pictures</Text>
             <CameraButton onPhotoSelected={(newUri) => {
                 if (setPicsChanged) { setPicsChanged(true); }
                 setPhotos(prev => [...prev, newUri])
@@ -41,7 +41,7 @@ const FormCamera: React.FC<FormCameraProps> = ({ photos, setPhotos, setPicsChang
             {photos.length > 0 && imageHandler ? (
                 <>
                 <Text style={textStyles.label}>Extra Photos</Text>
-                <Text style={[textStyles.detail, {textAlign:'center'}]}>The photo you click will turn into the profile picture</Text>
+                <Text style={textStyles.detail}>The photo you click will turn into the profile picture</Text>
                 <View style={containerStyles.extraPicsContainer}>
                     {photos.map((pic, index) => (
                     <View key={index} style={containerStyles.imageWrapper}>

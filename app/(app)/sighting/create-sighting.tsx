@@ -4,12 +4,13 @@ import { SafeAreaView, Text, FlatList } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 
-import { Button, SightingForm, SnackbarMessage } from '@/components';
+import { Button, SnackbarMessage } from '@/components';
 import { buttonStyles, textStyles, containerStyles } from '@/styles';
 import { setSelectedSighting } from '@/stores/sightingStores';
 import DatabaseService from '@/services/DatabaseService';
 import { useAuth } from '@/providers';
 import { Sighting } from '@/types';
+import { SightingForm } from '@/forms';
 
 
 const SightingCreateScreen = () => {
@@ -61,7 +62,7 @@ const SightingCreateScreen = () => {
 
       <SnackbarMessage text="Creating Report..." visible={visible} setVisible={setVisible} />
 
-      <Text style={textStyles.title}>Create A Report</Text>
+      <Text style={textStyles.pageTitle}>Create A Report</Text>
       <FlatList
         data={[1]}
         keyExtractor={() => '1'}

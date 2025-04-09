@@ -30,29 +30,34 @@ export const StationItem: React.FC<Station> = ({
   });
 
   return (
-    <Button style={containerStyles.stationCard} onPress={() => {
+    <Button style={[containerStyles.card, {paddingTop:10}]} onPress={() => {
       createObj();
       router.push('/stations/view-station');
     }}>
-      {profile ? (
-        <Image source={{ uri: profile }} style={containerStyles.cardImage} />
-      ) : (
-        <View style={containerStyles.cardImage}><Text>Loading...</Text></View>
-      )}
-
-      <View style={containerStyles.stationDetailsContainer}>
-        <Text style={textStyles.stationTitle}>{name}</Text>
-        <View style={containerStyles.rowContainer}>
-          <Text style={[textStyles.statusText2, { color: isStocked ? "green" : "red" }]}>
-            {isStocked ? "Has Food" : "Needs Food"}
-          </Text>
-          <Checkbox
-            status={isStocked ? "checked" : "unchecked"}
-            color="green"
-          />
+      
+      
+        <View style={containerStyles.listDetailsContainer}>
+          <Text style={textStyles.listTitle}>{name}</Text>
+          <View style={containerStyles.rowContainer}>
+            {profile ? (
+              <Image source={{ uri: profile }} style={containerStyles.cardImage} />
+            ) : (
+              <View style={containerStyles.cardImage}><Text>Loading...</Text></View>
+            )}
+            <View style={containerStyles.columnContainer}>
+              <View style={containerStyles.rowContainer}>
+                <Text style={[textStyles.detail, { color: isStocked ? "green" : "red", marginVertical:0 }]}>
+                  {isStocked ? "Has Food" : "Needs Food"}
+                </Text>
+                <Checkbox
+                  status={isStocked ? "checked" : "unchecked"}
+                  color="green"
+                />
+              </View>
+              <Text style={[textStyles.detail, {marginVertical:0, flexWrap:'wrap'}]}>Known Cats: {knownCats}</Text>
+            </View>
+          </View>
         </View>
-        <Text style={textStyles.normalText}>Known Cats: {knownCats}</Text>
-      </View>
     </Button>
   );
 };
