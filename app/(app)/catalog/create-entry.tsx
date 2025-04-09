@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { SafeAreaView, ScrollView, Text } from 'react-native';
+import { FlatList, SafeAreaView, Text } from 'react-native';
 
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -162,7 +162,11 @@ const create_entry = () =>{
       </Button>
       <SnackbarMessage text="Creating Report..." visible={visible} setVisible={setVisible} />
       <Text style={textStyles.title}>Create Entry</Text>
-      <ScrollView contentContainerStyle={containerStyles.scrollView}>
+      <FlatList
+              data={[1]}
+              keyExtractor={() => '1'}
+              contentContainerStyle={containerStyles.scrollView}
+              renderItem={() => (
         <CatalogForm
           formData={formData}
           setFormData={setFormData}
@@ -171,7 +175,7 @@ const create_entry = () =>{
           setPhotos={setPhotos}
           isCreate={true}
         />
-      </ScrollView>
+              )}/>
       <Button style={buttonStyles.bigButton} onPress={() => {
         createObj();
         database.handleCatalogCreate(photos, setVisible, router);

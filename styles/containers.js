@@ -12,9 +12,12 @@ const containerStyles = StyleSheet.create({
     paddingTop: '10%',
   },
   imageWrapper: {
+    flexDirection: "column",
     position: 'relative',
     margin: 5,
     alignItems: 'center',
+    justifyContent: 'space-between',
+    gap:5
   },
   scrollView: {
     paddingTop: 20, 
@@ -90,7 +93,7 @@ const containerStyles = StyleSheet.create({
   inputContainer: {
     padding:10,
     width: '100%',
-    height: '5%',
+    height: 40,
     borderColor: '#ccc',
     borderWidth: 1,
     borderRadius: 5,
@@ -105,7 +108,7 @@ const containerStyles = StyleSheet.create({
   descInputContainer: {
     padding:10,
     width: '100%',
-    height: '10%',
+    height: 80,
     borderColor: '#ccc',
     borderWidth: 1,
     borderRadius: 5,

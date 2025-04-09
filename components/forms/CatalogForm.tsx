@@ -40,13 +40,12 @@ const CatalogForm: React.FC<CatalogFormProps> = ({
 
     return (
         <View style={containerStyles.card}>
-            {!isCreate && profile ? (<Image source={{ uri: profile }} style={containerStyles.imageMain}/>) : 
-            <Text style={textStyles.titleCentered}>Loading image...</Text>}
+            {!isCreate && profile ? (<Image source={{ uri: profile }} style={containerStyles.imageMain}/>) : null}
             <Text style={textStyles.label}>Cat's Name</Text>
             <View style={containerStyles.inputContainer}>
                 <TextInput 
                     value={formData.name || ''}
-                    placeholder="name"
+                    placeholder="Name"
                     placeholderTextColor="#888"
                     onChangeText={(text) => handleChange('name', text)} 
                     style={textStyles.input}
@@ -63,23 +62,24 @@ const CatalogForm: React.FC<CatalogFormProps> = ({
                     multiline={false}/>
             </View>
             <Text style={textStyles.label}>Long Description</Text>
-            <View style={containerStyles.descInputContainer}>
+            <View style={[containerStyles.descInputContainer, {height:160}]}>
                 <TextInput
                     value={formData.descLong || ''}
                     placeholder="Describe all the details about this cat"
                     placeholderTextColor="#888"
                     onChangeText={(text) => handleChange('descLong', text)} 
-                    style={textStyles.descInput} 
+                    style={textStyles.input} 
                     multiline={true}/>
             </View>
             <Text style={textStyles.label}>Detailed Color Pattern</Text>
-            <View style={containerStyles.descInputContainer}>
+            <View style={containerStyles.inputContainer}>
                 <TextInput
                     value={formData.colorPattern || ''}
+                    placeholder="Color and any unique features"
                     placeholderTextColor="#888"
                     onChangeText={(text) => handleChange('colorPattern', text)} 
-                    style={textStyles.descInput} 
-                    multiline={true}/>
+                    style={textStyles.input} 
+                    multiline={false}/>
             </View>
             <Text style={textStyles.label}>Behavior</Text>
             <View style={containerStyles.descInputContainer}>
@@ -88,7 +88,7 @@ const CatalogForm: React.FC<CatalogFormProps> = ({
                     placeholder="How does this cat act?"
                     placeholderTextColor="#888"
                     onChangeText={(text) => handleChange('behavior', text)} 
-                    style={textStyles.descInput} 
+                    style={textStyles.input} 
                     multiline={true}/>
             </View>
             <Text style={textStyles.label}>Years Recorded</Text>
@@ -122,6 +122,11 @@ const CatalogForm: React.FC<CatalogFormProps> = ({
                 placeholder={isCreate ? 'Select a current status' : pickers.statusPicker.value}
                 multiple={false}
                 style={containerStyles.inputContainer}
+                scrollViewProps={{
+                    nestedScrollEnabled: true,
+                  }}
+                zIndex={3000}
+                zIndexInverse={1000}
             />
             <Text style={textStyles.label}>Fur Length</Text>
             <DropdownPicker
@@ -134,6 +139,11 @@ const CatalogForm: React.FC<CatalogFormProps> = ({
                 placeholder={isCreate ? 'Select a fur length' : pickers.furPicker.value}
                 multiple={false}
                 style={containerStyles.inputContainer}
+                scrollViewProps={{
+                    nestedScrollEnabled: true,
+                  }}
+                zIndex={2000}
+                zIndexInverse={4000}
             />
             <Text style={textStyles.label}>Fur Pattern</Text>
             <View style={containerStyles.inputContainer}>
@@ -156,6 +166,11 @@ const CatalogForm: React.FC<CatalogFormProps> = ({
                 placeholder={isCreate ? 'Select Tnr status' : pickers.tnrPicker.value}
                 multiple={false}
                 style={containerStyles.inputContainer}
+                scrollViewProps={{
+                    nestedScrollEnabled: true,
+                  }}
+                zIndex={1000}
+                zIndexInverse={3000}
             />
             <Text style={textStyles.label}>Sex</Text>
             <DropdownPicker
@@ -168,15 +183,20 @@ const CatalogForm: React.FC<CatalogFormProps> = ({
                 placeholder={isCreate ? 'Select sex of cat' : pickers.sexPicker.value}
                 multiple={false}
                 style={containerStyles.inputContainer}
+                scrollViewProps={{
+                    nestedScrollEnabled: true,
+                  }}
+                zIndex={500}
+                zIndexInverse={4000}
             />
             <Text style={textStyles.label}>Credits</Text>
             <View style={containerStyles.descInputContainer}>
                 <TextInput
                     value={formData.credits || ''}
-                    placeholder="credits"
+                    placeholder={isCreate ? "where are the images from?" : "where are the images from? Who wrote this first?"}
                     placeholderTextColor="#888"
                     onChangeText={(text) => handleChange('credits', text)} 
-                    style={textStyles.descInput} 
+                    style={textStyles.input} 
                     multiline={true}/>
             </View>
             <FormCamera

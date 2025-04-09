@@ -16,7 +16,7 @@ const FormCamera: React.FC<FormCameraProps> = ({ photos, setPhotos, setPicsChang
 
     return (
         <>
-            <Text style={textStyles.titleCentered}>Add pictures</Text>
+            <Text style={[textStyles.titleCentered, {marginTop:10}]}>Add pictures</Text>
             <CameraButton onPhotoSelected={(newUri) => {
                 if (setPicsChanged) { setPicsChanged(true); }
                 setPhotos(prev => [...prev, newUri])
@@ -48,7 +48,7 @@ const FormCamera: React.FC<FormCameraProps> = ({ photos, setPhotos, setPicsChang
                         <ImageButton key={index} onPress={() => imageHandler.swapProfilePicture(pic)}>
                         <Image source={{ uri: pic }} style={containerStyles.extraPic} />
                         </ImageButton>
-                        <Button style={buttonStyles.deleteButton} onPress={() => imageHandler.confirmDeletion(pic)}>
+                        <Button style={buttonStyles.imageDeleteButton} onPress={() => imageHandler.confirmDeletion(pic)}>
                         <Text style={textStyles.deleteButtonText}>Delete</Text>
                         </Button>
                     </View>
