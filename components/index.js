@@ -14,7 +14,7 @@ export { MapPicker } from './MapPicker'
 
 export { SightingMapView } from './SightingMapView';
 export { SightingEntry } from './entries/SightingEntry';
-export { CatalogEntry } from './entries/CatalogEntry';
+export { CatalogEntryElement } from './entries/CatalogEntryElement';
 export { AnnouncementEntry } from './entries/AnnouncementEntry';
 export { StationEntry } from './entries/StationEntry';
 

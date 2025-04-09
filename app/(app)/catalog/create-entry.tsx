@@ -20,9 +20,11 @@ const create_entry = () =>{
   const [statusValue, setStatusValue] = useState<string>('');
   const [statusOpen, setStatusOpen] = useState<boolean>(false);
   const [statusItems, setStatusItems] = useState([
-    { label: 'Healthy', value: 'Healthy' },
-    { label: 'Injured', value: 'Injured' },
-    { label: 'Missing', value: 'Missing' },
+    { label: 'Adtoped', value: 'Adtoped' },
+    { label: 'Deceased', value: 'Deceased' },
+    { label: 'Feral', value: 'Feral' },
+    { label: 'Frat Cat', value: 'Frat Cat' },
+    { label: 'Unknown', value: 'Unknown' },
   ]);
 
   const statusPicker = {
@@ -160,7 +162,7 @@ const create_entry = () =>{
       <Button style={buttonStyles.smallButtonTopLeft} onPress={() => router.back()}>
         <Ionicons name="arrow-back-outline" size={25} color="#fff" />
       </Button>
-      <SnackbarMessage text="Creating Report..." visible={visible} setVisible={setVisible} />
+      <SnackbarMessage text="Creating Entry..." visible={visible} setVisible={setVisible} />
       <Text style={textStyles.title}>Create Entry</Text>
       <FlatList
               data={[1]}
