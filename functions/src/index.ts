@@ -57,7 +57,6 @@ export const createWhitelistUser = functions.https.onCall(
       logger.debug("userRecord.uid", userRecord.uid);
       await admin.firestore().collection('users').doc(userRecord.uid).set({
         email,
-        password,
         role: 0,
       });
 
