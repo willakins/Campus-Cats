@@ -26,7 +26,7 @@ const edit_entry = () => {
   const imageHandler = new CatalogImageHandler({ type:'catalog', id:entry.id, photos, profile, setPhotos, setProfile, setPicsChanged, setVisible});
   
   // ---------- Status Picker ----------
-  const [statusValue, setStatusValue] = useState<CatStatus>('Unknown');
+  const [statusValue, setStatusValue] = useState<CatStatus>(entry.cat.currentStatus);
   const [statusOpen, setStatusOpen] = useState<boolean>(false);
   const [statusItems, setStatusItems] = useState([
     { label: 'Adtoped', value: 'Adtoped' },
@@ -46,7 +46,7 @@ const edit_entry = () => {
   };
 
   // ---------- TNR Picker ----------
-  const [tnrValue, setTnrValue] = useState<TNRStatus>('Unknown');
+  const [tnrValue, setTnrValue] = useState<TNRStatus>(entry.cat.tnr);
   const [tnrOpen, setTnrOpen] = useState<boolean>(false);
   const [tnrItems, setTnrItems] = useState([
     { label: 'Yes', value: 'Yes' },
@@ -64,7 +64,7 @@ const edit_entry = () => {
   };
 
   // ---------- Sex Picker ----------
-  const [sexValue, setSexValue] = useState<Sex>('Unknown');
+  const [sexValue, setSexValue] = useState<Sex>(entry.cat.sex);
   const [sexOpen, setSexOpen] = useState<boolean>(false);
   const [sexItems, setSexItems] = useState([
     { label: 'Male', value: 'Male' },
@@ -82,7 +82,7 @@ const edit_entry = () => {
   };
 
   // ---------- Fur Picker ----------
-  const [furValue, setFurValue] = useState<Fur>('Unknown');
+  const [furValue, setFurValue] = useState<Fur>(entry.cat.furLength);
   const [furOpen, setFurOpen] = useState<boolean>(false);
   const [furItems, setFurItems] = useState([
     { label: 'Short', value: 'Short' },

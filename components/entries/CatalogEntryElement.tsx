@@ -83,6 +83,7 @@ const CatalogEntryElement: React.FC = () => {
               </>
               )} 
       <View style={containerStyles.footer}>
+        <Text style={textStyles.footerText}>Author: {entry.createdBy.id}</Text>
         <Text style={textStyles.footerText}>{CatalogEntry.getDateString(entry)}</Text>
       </View>
     </View>
