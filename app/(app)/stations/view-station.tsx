@@ -1,48 +1,36 @@
-import { SafeAreaView, Text } from 'react-native';
+import { SafeAreaView, ScrollView, Text } from 'react-native';
 
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
-import { Button, StationEntry } from '@/components';
+import { Button, SnackbarMessage, StationEntry } from '@/components';
 import { useAuth } from '@/providers';
 import { globalStyles, buttonStyles, textStyles, containerStyles } from '@/styles';
+import DatabaseService from '@/services/DatabaseService';
+import { useState } from 'react';
 
 const view_entry = () =>{
-  const { signOut, user } = useAuth();
-  const isAdmin = user.role === 1 || user.role === 2;
+  const { user } = useAuth();
   const router = useRouter();
-  const { paramId, paramName, paramLong, paramLat, paramStocked, paramCats, paramLastStocked, paramStockingFreq} = useLocalSearchParams();
-  const id = paramId as string;
-  const name = paramName as string;
-  const longitude = +(paramLong as string);
-  const latitude = +(paramLat as string);
-  const lastStocked = paramLastStocked as string;
-  const stockingFreq = paramStockingFreq as string;
-  const knownCats = paramCats as string;
-  const isStocked = paramStocked === "true";
+  const database = DatabaseService.getInstance();
+  const [visible, setVisible] = useState<boolean>(false);
+  const isAdmin = user.role === 1 || user.role === 2;
 
   return (
-    <SafeAreaView style={containerStyles.container}>
-      <Button style={buttonStyles.logoutButton} onPress={() => router.navigate('/stations')}>
+    <SafeAreaView style={containerStyles.wrapper}>
+      <Button style={buttonStyles.smallButtonTopLeft} onPress={() => router.navigate('/stations')}>
         <Ionicons name="arrow-back-outline" size={25} color="#fff" />
       </Button>
-      {isAdmin ? <Button style={buttonStyles.editButton} onPress={() => router.push({
-        pathname: '/stations/edit-station',
-        params: { paramId:id, paramName:name, paramLong:paramLong, paramLat:paramLat, paramLastStocked:paramLastStocked, paramCats:knownCats, paramStockingFreq:paramStockingFreq },
-      })}>
-        <Text style ={textStyles.editText}> Edit Station</Text>
+      <SnackbarMessage text="Refilling..." visible={visible} setVisible={setVisible} />
+      <ScrollView contentContainerStyle={containerStyles.scrollView}>
+        <StationEntry/>
+      </ScrollView>
+      <Button style={buttonStyles.bigButton} onPress={() => database.stockStation(setVisible, router)}>
+        <Text style={textStyles.bigButtonText}>Refill Station</Text>
+      </Button>
+      {isAdmin ? <Button style={buttonStyles.bigButton} onPress={() => router.push('/stations/edit-station')}>
+        <Text style ={textStyles.bigButtonText}> Edit Station</Text>
       </Button> : null}
-      <StationEntry
-          key={id}
-          id={id}
-          name={name}
-          longitude={longitude}
-          latitude={latitude}
-          lastStocked={lastStocked}
-          stockingFreq={stockingFreq}
-          knownCats={knownCats}
-          isStocked={isStocked}
-        />
     </SafeAreaView>
   );
 }

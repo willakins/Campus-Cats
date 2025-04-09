@@ -27,10 +27,12 @@ export const LatLngSchema = z.object({
 });
 
 // File exports
-export { CatalogEntryObject } from './CatalogEntryObject';
-export { AnnouncementEntryObject } from './AnnouncementEntryObject';
-export { CatSightingObject } from './CatSightingObject';
-export { StationEntryObject } from './StationEntryObject';
+export { CatalogEntry, Cat, TNRStatus, Sex, CatStatus, Fur } from './CatalogEntry';
+export { Announcement } from './Announcement';
+export { Sighting } from './Sighting';
+export { PickerConfig } from './PickerConfig';
+export { Station } from './Station';
+export { WhitelistApp } from './WhitelistApp';
 export { ContactInfo } from './ContactInfo';
 export { User } from './User';
 export { firestoreDocRefSchema } from './firestore';
