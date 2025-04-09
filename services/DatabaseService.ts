@@ -324,9 +324,9 @@ class DatabaseService {
   /**
    * TODO
    */
-  public async saveStation(profile:string, profileChanged: boolean, setVisible: Dispatch<SetStateAction<boolean>>, 
+  public async saveStation(profile:string, photos:string[], isPicsChanged: boolean, setVisible: Dispatch<SetStateAction<boolean>>, 
     router: Router) {
-    await DatabaseService.stationsService.saveStation(profile, profileChanged, setVisible, router);
+    await DatabaseService.stationsService.saveStation(profile, photos, isPicsChanged, setVisible, router);
   }
 
   /**
@@ -421,14 +421,16 @@ class DatabaseService {
   }
 
   /**
-   * Effect: Pulls images from firestore storage, sets profile picture
+   * Effect: Loads station images from firestore storage
    */
   public async fetchStationImages(
     id: string,
-    name:string,
-    setProfile: Dispatch<SetStateAction<string>>) {
-      await DatabaseService.stationsService.fetchStationImages(id, name, setProfile);
+    setProfile: Dispatch<SetStateAction<string>>,
+    setPhotos: Dispatch<SetStateAction<string[]>>
+  ) {
+    await DatabaseService.stationsService.fetchStationImages(id, setProfile, setPhotos);
   }
+
 
   /**
    * Effect: Submits a whitelist application to the firestore

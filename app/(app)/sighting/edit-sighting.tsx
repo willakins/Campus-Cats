@@ -14,7 +14,7 @@ import { Sighting } from '@/types';
 
 const SightingEditScreen = () => {
   const router = useRouter();
-   const { user } = useAuth();
+  const { user } = useAuth();
   const database = DatabaseService.getInstance();
   const sighting = getSelectedSighting();
   
