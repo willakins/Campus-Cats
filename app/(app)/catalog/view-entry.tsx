@@ -3,7 +3,7 @@ import { SafeAreaView, ScrollView, Text } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
-import { Button, CatalogEntry, IconButton } from '@/components';
+import { Button, CatalogEntryElement } from '@/components';
 import { useAuth } from '@/providers';
 import { globalStyles, buttonStyles, textStyles, containerStyles } from '@/styles';
 
@@ -19,7 +19,7 @@ const view_entry = () =>{
       </Button>
       
       <ScrollView contentContainerStyle={[containerStyles.scrollView, {paddingTop:'10%'}]}>
-      <CatalogEntry/>
+        <CatalogEntryElement/>
       </ScrollView>
       {isAdmin ? <Button style={buttonStyles.bigButton} onPress={() => router.push('/catalog/edit-entry')}>
         <Text style ={textStyles.editText}> Edit Entry</Text>
