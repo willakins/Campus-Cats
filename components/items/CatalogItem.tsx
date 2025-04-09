@@ -4,32 +4,46 @@ import { Image, Text, View } from 'react-native';
 
 import { useRouter } from 'expo-router';
 import { Button } from '../ui/Buttons';
-import { CatalogEntryObject } from '@/types';
-import DatabaseService from '../services/DatabaseService';
+import { CatalogEntry } from '@/types';
+import DatabaseService from '../../services/DatabaseService';
 import { globalStyles, buttonStyles, textStyles, containerStyles } from '@/styles';
+import { setSelectedCatalogEntry } from '@/stores/CatalogEntryStores';
 
-export const CatalogItem: React.FC<CatalogEntryObject> = 
-({ id, name, descShort, descLong, colorPattern, behavior, yearsRecorded, AoR, currentStatus, furLength, furPattern, tnr, sex, credits }) => {
+export const CatalogItem: React.FC<CatalogEntry> = 
+({ id, cat, credits, createdAt, createdBy }) => {
   const router = useRouter();
-  const [profileURL, setProfile] = useState<string>('');
+  const [profile, setProfile] = useState<string>('');
   const database = DatabaseService.getInstance();
 
   useEffect(() => {
-    database.fetchCatImages(name, setProfile);
+    database.fetchCatImages(id, setProfile);
   }, []);
 
+  const createObj = () => {
+    const newEntry = new CatalogEntry({
+      id:id,
+      cat:cat,
+      credits:credits,
+      createdAt:createdAt,
+      createdBy:createdBy,
+    });
+    setSelectedCatalogEntry(newEntry);
+  }
+
   return (
-    <Button style={containerStyles.entryContainer} onPress={() =>
-      router.push({
-      pathname: '/catalog/view-entry',
-      params: { id:id, name:name, descShort:descShort, descLong:descLong, colorPattern:colorPattern, behavior:behavior, yearsRecorded:yearsRecorded, AoR:AoR, 
-        currentStatus:currentStatus, furLength:furLength, furPattern:furPattern, tnr:tnr, sex:sex, credits:credits},
-      })}>
-      <View style={containerStyles.entryElements}>
-        <Text style={textStyles.catalogTitle}>{name}</Text>
-        {profileURL ? (<Image source={{ uri: profileURL }} style={containerStyles.listImage} />) : 
-          <Text style={textStyles.title}>Loading image...</Text>}
-        <Text style={textStyles.catalogDescription}>{colorPattern}</Text>
+    <Button style={containerStyles.card} onPress={() => {
+      createObj();
+      router.push('/catalog/view-entry')
+    }}>
+      
+      <View style={containerStyles.listDetailsContainer}>
+        <Text style={textStyles.titleCentered}>{cat.name}</Text>
+        {profile ? (
+          <Image source={{ uri: profile }} style={[containerStyles.imageMain, {marginBottom:5}]} resizeMode="cover" />
+        ) : (
+          <View style={textStyles.loading}><Text>Loading...</Text></View>
+        )}
+        <Text style={[textStyles.detail, {alignSelf:'center', marginVertical:0}]}>{cat.descShort}</Text>
       </View>
     </Button>
   );

@@ -1,5 +1,10 @@
 {
   "projects": {
-    "default": "campuscats-d7a5e"
-  }
+    "default": "campuscats-d7a5e",
+    "CampusCats": "campuscats-d7a5e",
+    "campuscats": "campuscats-d7a5e",
+    "campus_cats": "campuscats-d7a5e"
+  },
+  "targets": {},
+  "etags": {}
 }
