@@ -29,7 +29,7 @@ const edit_entry = () => {
   const [statusValue, setStatusValue] = useState<CatStatus>(entry.cat.currentStatus);
   const [statusOpen, setStatusOpen] = useState<boolean>(false);
   const [statusItems, setStatusItems] = useState([
-    { label: 'Adtoped', value: 'Adtoped' },
+    { label: 'Adopted', value: 'Adopted' },
     { label: 'Deceased', value: 'Deceased' },
     { label: 'Feral', value: 'Feral' },
     { label: 'Frat Cat', value: 'Frat Cat' },
