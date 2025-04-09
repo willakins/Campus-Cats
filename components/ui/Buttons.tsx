@@ -52,7 +52,7 @@ export const IconButton: React.FC<IconProps> = ({
   ...props
 }) => {
   return (
-    <TouchableOpacity style={[buttonStyles.iconButton, style]} onPress={onPress} {...props}>
+    <TouchableOpacity style={[buttonStyles.button, style]} onPress={onPress} {...props}>
       <Ionicons name={iconName} size={iconSize} color={iconColor} />
     </TouchableOpacity>
   );
@@ -96,7 +96,7 @@ export const CameraButton: React.FC<CameraButtonProps> = ({ onPhotoSelected, sty
   const photoHandler = new PhotoHandler(onPhotoSelected);
   
   return (
-    <View style={containerStyles.cameraView}>
+    <View style={containerStyles.cameraContainer}>
       <Button style={buttonStyles.cameraButton} onPress={() => photoHandler.promptForImageSource()}>
         <Ionicons name="camera-outline" size={29} color="#fff" />
       </Button>

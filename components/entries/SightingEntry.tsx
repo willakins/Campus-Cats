@@ -25,7 +25,7 @@ const SightingEntry: React.FC = () => {
             <Text style={textStyles.titleCentered}>Loading image...</Text>)}
         <Text style={textStyles.label}>Location</Text>
         <MapView
-        style={containerStyles.map}
+        style={containerStyles.mapContainer}
         initialRegion={{
             latitude: 33.7756,
             longitude: -84.3963,
@@ -45,26 +45,22 @@ const SightingEntry: React.FC = () => {
         {sighting.info.length > 0 ? <><Text style={textStyles.label}>Additional Notes</Text>
         <Text style={textStyles.detail}>{sighting.info}</Text></>:null}
 
-        <View style={containerStyles.sectionBox}>
-            <View style={containerStyles.sectionRow}>
-                <View style={containerStyles.rowItem}>
+        <View style={containerStyles.sectionCard}>
+            <View style={containerStyles.rowStack}>
+                <View style={containerStyles.rowContainer}>
                     <Text style={[textStyles.statusText,{ color: sighting.fed ? "green" : "red" }]}>{sighting.fed ? "Was fed" : "Not fed"}</Text>
-                    <View style={containerStyles.checkWrap}>
-                        <Checkbox
+                    <Checkbox
                         status={sighting.fed ? "checked" : "unchecked"}
                         color="green"
                         />
-                    </View>
                 </View>
-                <View style={containerStyles.rowItem}>
+                <View style={containerStyles.rowContainer}>
                     <Text style={[textStyles.statusText, { color: sighting.health ? "green" : "red" }]}>
                         {sighting.health ? "Was healthy" : "Not healthy"}</Text>
-                    <View style={containerStyles.checkWrap}>
                         <Checkbox
                         status={sighting.health ? "checked" : "unchecked"}
                         color="green"
                         />
-                    </View>
                 </View>
             </View>
         </View>

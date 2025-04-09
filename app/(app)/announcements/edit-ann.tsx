@@ -33,7 +33,7 @@ const edit_ann = () => {
 
   return (
     <SafeAreaView style={containerStyles.wrapper}>
-      <Button style={buttonStyles.logoutButton} onPress={() => router.back()}>
+      <Button style={buttonStyles.smallButtonTopLeft} onPress={() => router.back()}>
         <Ionicons name="arrow-back-outline" size={25} color="#fff" />
       </Button>
       <SnackbarMessage text="Saving Announcement..." visible={visible} setVisible={setVisible} />
@@ -47,13 +47,13 @@ const edit_ann = () => {
         setPicsChanged={setPicsChanged}
         />
       </ScrollView>
-      <Button style={buttonStyles.button2} onPress={() => {
+      <Button style={buttonStyles.bigButton} onPress={() => {
         createObj()
         database.handleAnnouncementSave(photos, isPicsChanged, setVisible, router)
       }}>
         <Text style ={textStyles.bigButtonText}> Save Announcement</Text>
       </Button>
-      <Button style={buttonStyles.button3}onPress={() => database.deleteAnnouncement(ann.id, router, setVisible)}> 
+      <Button style={buttonStyles.bigDeleteButton}onPress={() => database.deleteAnnouncement(ann.id, router, setVisible)}> 
         <Text style={textStyles.bigButtonText}>Delete Announcement</Text>
       </Button>
     </SafeAreaView>

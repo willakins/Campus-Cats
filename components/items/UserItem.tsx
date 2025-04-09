@@ -20,22 +20,22 @@ export const UserItem: React.FC<{ user: User; setUsers: React.Dispatch<React.Set
   };
 
   return (
-    <View style={containerStyles.userContainer}>
+    <View style={containerStyles.card}>
       <Text style={textStyles.catalogTitle}>{user.email}</Text>
       <Text style={textStyles.catalogDescription}>Role: {user.role}</Text>
-      <View style={containerStyles.entryRowElements}>
+      <View style={containerStyles.rowContainer}>
         {isHigher ? (
-          <Button style={buttonStyles.deleteButton} onPress={() => handleUserUpdate(() => database.handleDeleteUser(user))}>
+          <Button style={buttonStyles.blockButton} onPress={() => handleUserUpdate(() => database.handleDeleteUser(user))}>
             <Text style={textStyles.deleteButtonText}>Block User</Text>
           </Button>
         ) : null}
         {isHigher ? (
-          <Button style={buttonStyles.deleteButton2} onPress={() => handleUserUpdate(() => database.handlePromoteUser(user))}>
+          <Button style={buttonStyles.promoteButton} onPress={() => handleUserUpdate(() => database.handlePromoteUser(user))}>
             <Text style={textStyles.deleteButtonText}>Promote User</Text>
           </Button>
         ) : null}
         {isHigher ? (
-          <Button style={buttonStyles.deleteButton3} onPress={() => handleUserUpdate(() => database.handleDemoteUser(user))}>
+          <Button style={buttonStyles.demoteButton} onPress={() => handleUserUpdate(() => database.handleDemoteUser(user))}>
             <Text style={textStyles.deleteButtonText}>Demote User</Text>
           </Button>
         ) : null}

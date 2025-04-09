@@ -53,7 +53,7 @@ const edit_entry = () => {
     <KeyboardAvoidingView
       behavior={Platform.OS === 'ios' ? 'padding' : undefined} // iOS specific behavior
     >
-      <Button style={buttonStyles.logoutButton} onPress={() => router.push({
+      <Button style={buttonStyles.smallButtonTopLeft} onPress={() => router.push({
         pathname: '/catalog/view-entry', 
         params: { id:formData.id, name:formData.name, descShort:formData.descShort, descLong:formData.descLong, colorPattern:formData.colorPattern, 
           behavior:formData.behavior, yearsRecorded:formData.yearsRecorded, AoR:formData.AoR, currentStatus:formData.currentStatus, 

@@ -15,11 +15,11 @@ export const WhitelistItem: React.FC<{ app: WhitelistApp; setApps: React.Dispatc
       <Text style={textStyles.catalogTitle}>{app.name}</Text>
       <Text style={textStyles.catalogDescription}>Code Word: {app.codeWord}</Text>
       <Text style={textStyles.catalogDescription}>Graduation Year: {app.graduationYear}</Text>
-      <View style={containerStyles.entryRowElements}>
+      <View style={containerStyles.card}>
         <Button style={buttonStyles.deleteButton} onPress={() => database.whitelistDecide(app, 'deny', setApps, setVisible)}>
         <Text style={textStyles.deleteButtonText}>Deny</Text>
         </Button>
-        <Button style={buttonStyles.deleteButton2} onPress={() => database.whitelistDecide(app, 'accept', setApps, setVisible)}>
+        <Button style={buttonStyles.blockButton} onPress={() => database.whitelistDecide(app, 'accept', setApps, setVisible)}>
         <Text style={textStyles.deleteButtonText}>Accept</Text>
         </Button>
       </View>
