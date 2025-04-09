@@ -11,15 +11,15 @@ export const WhitelistItem: React.FC<{ app: WhitelistApp; setApps: React.Dispatc
   const database = DatabaseService.getInstance();
 
   return (
-    <View style={containerStyles.userContainer}>
-      <Text style={textStyles.catalogTitle}>{app.name}</Text>
-      <Text style={textStyles.catalogDescription}>Code Word: {app.codeWord}</Text>
-      <Text style={textStyles.catalogDescription}>Graduation Year: {app.graduationYear}</Text>
-      <View style={containerStyles.card}>
-        <Button style={buttonStyles.deleteButton} onPress={() => database.whitelistDecide(app, 'deny', setApps, setVisible)}>
+    <View style={containerStyles.card}>
+      <Text style={[textStyles.title, {marginTop:0}]}>{app.name}</Text>
+      <Text style={textStyles.detail}>Code Word: {app.codeWord}</Text>
+      <Text style={textStyles.detail}>Graduation Year: {app.graduationYear}</Text>
+      <View style={containerStyles.buttonGroup2}>
+        <Button style={[buttonStyles.rowButton, {backgroundColor:'red'}]} onPress={() => database.whitelistDecide(app, 'deny', setApps, setVisible)}>
         <Text style={textStyles.deleteButtonText}>Deny</Text>
         </Button>
-        <Button style={buttonStyles.blockButton} onPress={() => database.whitelistDecide(app, 'accept', setApps, setVisible)}>
+        <Button style={[buttonStyles.rowButton, {backgroundColor:'green'}]} onPress={() => database.whitelistDecide(app, 'accept', setApps, setVisible)}>
         <Text style={textStyles.deleteButtonText}>Accept</Text>
         </Button>
       </View>

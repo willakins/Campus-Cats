@@ -56,7 +56,7 @@ const containerStyles = StyleSheet.create({
     shadowRadius: 4,
     margin:10,
   },
-  listCard: {
+  stationCard: {
     alignSelf:'center',
     width:'95%',
     flexDirection: 'row',
@@ -81,13 +81,6 @@ const containerStyles = StyleSheet.create({
   verticalCard: {
     flexDirection: "column",
     alignSelf: "center",
-  },
-  switchRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    width: '100%',
-    paddingVertical: 8,
   },
   /** Input Containers */
   inputContainer: {
@@ -133,6 +126,14 @@ const containerStyles = StyleSheet.create({
   },
   /** Text Containers */
   listDetailsContainer: {
+    flexDirection: 'column',
+    paddingLeft: '2%',
+    width: '100%',
+    height: '20%',
+    flex: 1,
+    justifyContent: 'flex-start',
+  },
+  stationDetailsContainer: {
     flexDirection: 'column',
     paddingLeft: '25%',
     width: 150,
@@ -203,10 +204,22 @@ const containerStyles = StyleSheet.create({
     justifyContent: 'center',
   },
   buttonGroup: {
+    width: '100%',
+    height: 'auto',
     flexDirection: 'row',
     justifyContent: 'center',
-    paddingVertical: 10,
-    backgroundColor: '#f0f0f0'
+    alignItems: 'center',
+    backgroundColor: '#f0f0f0',
+    flexWrap: 'nowrap'
+  },
+  buttonGroup2: {
+    width: '100%',
+    height: 'auto',
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    flexWrap: 'nowrap',
+    justifyContent: 'space-evenly',
   },
   mapContainer: {
     height: 200,
@@ -231,268 +244,3 @@ const containerStyles = StyleSheet.create({
   },
 });
 export { containerStyles };
-
-/**
-
-container: {
-        flex: 1,
-        backgroundColor: '#F4F4F9',
-        padding: 20,
-        paddingHorizontal: 15,
-    },
-    
-    
-    loaderContainer: {
-        flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
-        backgroundColor: '#F4F4F9',
-    },
-   
-    homeContainer: {
-        flex: 1,
-    },
-    selectedPreview: {
-        margin: 'auto', // Center the image
-        objectFit: 'scale-down', // Don't clip the image
-        width: 240,
-        height: 180,
-    },
-    entryContainer: {
-        flexDirection: 'column', // Stack items vertically
-        justifyContent: 'center', // Center content vertically
-        alignItems: 'center', // Center content horizontally
-        padding: 15,
-        borderRadius:10,
-        backgroundColor: '#fff',
-        shadowColor: '#000',
-        shadowOpacity: 0.1,
-        shadowRadius: 10,
-        elevation: 5,
-        width:'100%'
-    },
-    userContainer: {
-        flexDirection: 'column', // Stack items vertically
-        justifyContent: 'center', // Center content vertically
-        alignItems: 'center', // Center content horizontally
-        padding: 15,
-        borderRadius:10,
-        backgroundColor: '#fff',
-        shadowColor: '#000',
-        shadowOpacity: 0.1,
-        shadowRadius: 10,
-        elevation: 5,
-        width:'95%',
-        margin:10
-    },
-    row: {
-        marginBottom: 20,
-        marginTop:20,
-    },
-    contactContainer: {
-        padding: 20,
-        backgroundColor: '#fff',
-        borderRadius: 10,
-        borderWidth: 1,
-        borderColor: '#ddd',
-        position: 'relative',
-        marginTop:50
-    },
-    
-    entryElements2: {
-      flexDirection: "column", // Ensures each item is stacked vertically
-      alignItems: "center",
-      padding: '10%',
-  },
-    entryRowElements: {
-        flexDirection: "row", // Ensures each item is stacked vertically
-        alignItems: "center",
-    },
-    
-    
-    headlineImage: {
-        width: '100%',  // Set a fixed width for the profile picture
-        height: 250, // Set a fixed height for the profile picture
-        borderRadius: 60,  // Makes the image circular
-        marginTop: 10,
-        paddingHorizontal: 20,
-    },
-    extraImage: {
-        width: '100%',  // Set a fixed width for the profile picture
-        height: 250, // Set a fixed height for the profile picture
-        borderRadius: 200,  // Makes the image circular
-        marginTop: 10,
-        paddingHorizontal: 20,
-    },
-    listImage: {
-        width: 250, // Set a fixed width for the image
-        height: 150, // Set a fixed height for the image
-        borderRadius: 40, // Make the image circular
-        marginBottom: 10, // Space between image and text
-    },
-  listImage2: {
-    width: 200, // Set a fixed width for the image
-    height: 150, // Set a fixed height for the image
-    borderRadius: 40, // Make the image circular
-    marginBottom: 10, // Space between image and text
-  },
-  catImage: {
-    width: '100%',
-    height: 200,
-    borderRadius: 10,
-    justifyContent: 'center',
-    textAlign: 'center',
-    flex: 1,
-    marginBottom: 15,
-  },
-  
-  inputContainer: {
-    width: '100%',
-    backgroundColor: '#f9f9f9',
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    elevation: 3,  // Adds shadow on Android
-    shadowColor: '#000',  // Adds shadow on iOS
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    borderRadius:10,
-  },
-  
-  
-  profileContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 20
-  },
-  item: {
-    backgroundColor: '#f9c2ff',
-    padding: 20,
-    marginVertical: 8,
-    marginHorizontal: 16,
-  },
-  
-  
-  stationsEntry: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "white", // Ensure background is set
-    padding: 10,
-  },
-  checkboxContainer: {
-    borderWidth: 2, // Thickness of the box
-    borderColor: "black", // Box color
-    padding: 5, // Space between the checkbox and the box edges
-    borderRadius: 5, // Rounded corners
-  },
-  stockContainer: {
-    flex: 1,
-    alignItems:"center",
-    paddingTop: 20,
-    paddingHorizontal: 15,
-  },
-  stationsEntry: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "white", // Ensure background is set
-    padding: 10,
-  },
-  checkboxContainer: {
-    borderWidth: 2, // Thickness of the box
-    borderColor: "black", // Box color
-    padding: 5, // Space between the checkbox and the box edges
-    borderRadius: 5, // Rounded corners
-  },
-  stockContainer: {
-    flex: 1,
-    alignItems:"center",
-    paddingTop: 20,
-    paddingHorizontal: 15,
-  },
-  announcementDetails: {
-    fontSize: 15,
-    color: '#000',
-    textAlign: 'left',
-    marginTop: 0,
-  },
-  catalogInputContainer: {
-    width: '100%',
-    backgroundColor: '#f9f9f9',
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    elevation: 3,  // Adds shadow on Android
-    shadowColor: '#000',  // Adds shadow on iOS
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    borderRadius:10,
-  },
-  catalogEntryContainer: {
-    flexDirection: 'column', // Stack items vertically
-    justifyContent: 'center', // Center content vertically
-    alignItems: 'center', // Center content horizontally
-    padding: 15,
-    borderRadius:10,
-    //backgroundColor: '#fff',
-    shadowColor: '#000',
-    shadowOpacity: 0.1,
-    shadowRadius: 10,
-    elevation: 5,
-    width:'100%'
-  },
-  
-  
-  block: {
-    marginTop: 10,
-  },
-  
-  
-  
-  formSection: {
-    backgroundColor: '#fff',
-    padding: 16,
-    borderRadius: 16,
-    marginBottom: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.1,
-    shadowRadius: 6,
-    elevation: 3,
-  },
-
-  
-
-  
-
-  sliderContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    backgroundColor: '#f0f0f0',
-    borderRadius: 12,
-    marginTop: 10,
-  },
-
-  
-  safeContainer: {
-    flex: 1,
-    paddingTop: Platform.OS === 'android' ? 25 : 0,
-    backgroundColor: '#f9f9f9',
-  },
-  contentContainer: {
-    flexGrow: 1,
-    paddingBottom: 32,
-    paddingHorizontal: 16,
-    gap: 16,
-    alignItems: 'center',
-  },
-  
-  
-
-
-
-
- */

@@ -4,24 +4,16 @@ import DropdownPicker from 'react-native-dropdown-picker';
 import { FormCamera } from '@/components';
 import { containerStyles, textStyles } from '@/styles';
 import { CatalogImageHandler } from '@/image_handlers/CatalogImageHandler';
-
-export interface PickerConfig {
-    value: string;
-    setValue: Dispatch<SetStateAction<string>>;
-    open: boolean;
-    setOpen: Dispatch<SetStateAction<boolean>>;
-    items: { label: string; value: string }[];
-    setItems: Dispatch<SetStateAction<{ label: string; value: string }[]>>;
-}
+import { CatStatus, Fur, Sex, TNRStatus, PickerConfig } from '@/types';
 
 interface CatalogFormProps {
   formData: any;
   setFormData: React.Dispatch<React.SetStateAction<any>>;
   pickers: {
-    statusPicker: PickerConfig;
-    tnrPicker: PickerConfig;
-    sexPicker: PickerConfig;
-    furPicker: PickerConfig;
+    statusPicker: PickerConfig<CatStatus>;
+    tnrPicker: PickerConfig<TNRStatus>;
+    sexPicker: PickerConfig<Sex>;
+    furPicker: PickerConfig<Fur>;
   };
   photos: string[];
   profile?: string;

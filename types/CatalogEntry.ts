@@ -2,7 +2,8 @@ import { User } from "./User";
 
 type TNRStatus = 'Yes' | 'No' | 'Unknown';
 type Sex = 'Male' | 'Female' | 'Unknown';
-type CatStatus = 'Feral' | 'Adopted' | 'Deceased' | 'Feral' | 'Frat Cat' | 'Unknown'
+type CatStatus = 'Feral' | 'Adopted' | 'Deceased' | 'Feral' | 'Frat Cat' | 'Unknown';
+type Fur = 'Short' | 'Medium' | 'Long' | 'Unknown';
 
 interface Cat {
   name: string;
@@ -13,7 +14,7 @@ interface Cat {
   yearsRecorded: string;
   AoR: string;
   currentStatus: CatStatus;
-  furLength: string;
+  furLength: Fur;
   furPattern: string;
   tnr: TNRStatus;
   sex: Sex;
@@ -62,5 +63,18 @@ class CatalogEntry {
     createdAt: new Date(),
     createdBy: User.dummy,
   });
+
+  static getDateString(entry: CatalogEntry) {
+    const dateString = CatalogEntry.getNiceDateString(entry.createdAt);
+    return `Posted on ${dateString}`;
+  }
+
+  private static getNiceDateString(date: Date) {
+    const monthNames = [
+      "January", "February", "March", "April", "May", "June", 
+      "July", "August", "September", "October", "November", "December"
+    ];
+    return `${monthNames[date.getMonth()]} ${date.getDate()}, ${date.getFullYear()}`;
+  }
 }
-export { CatalogEntry, CatalogEntryProps, Cat, TNRStatus, Sex, CatStatus };
+export { CatalogEntry, CatalogEntryProps, Cat, TNRStatus, Sex, CatStatus, Fur };

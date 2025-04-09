@@ -39,7 +39,6 @@ const Stations = () => {
 
     return (
       <SafeAreaView style={containerStyles.wrapper}>
-        <Text style={textStyles.title}>Feeding Stations</Text>
         <View style={containerStyles.buttonGroup}>
           {['Stocked', 'Unstocked', 'All'].map((label) => (
             <Button
@@ -52,6 +51,7 @@ const Stations = () => {
             </Button>
           ))}
         </View>
+        <Text style={textStyles.title}>Feeding Stations</Text>
         <ScrollView contentContainerStyle={containerStyles.scrollView}>
           {filteredStations.map((station) => (
             <StationItem

@@ -63,11 +63,11 @@ export const LoginForm: React.FC<LoginProps> = ({
       <View style={containerStyles.inputContainer}>
         <ControlledInput control={control} name="password" secureTextEntry />
       </View>
-      <Button style={buttonStyles.bigButton}onPress={handleSubmit(submitHandler)}>
+      <Button style={[buttonStyles.bigButton, {height:'16%'}]}onPress={handleSubmit(submitHandler)}>
         <Text style={textStyles.bigButtonText}>{type === 'login' ? 'Sign In' : 'Create Account'}</Text>
       </Button>
       {onSwitchType !== undefined ?
-        <Button style={buttonStyles.bigButton}onPress={onSwitchType}>
+        <Button style={[buttonStyles.bigButton, {height:'16%'}]}onPress={onSwitchType}>
           <Text style={textStyles.bigButtonText}>{type === 'login' ? 'Apply For Whitelist' : 'Go Back'}</Text>
         </Button>
         : null}
