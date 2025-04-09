@@ -41,7 +41,7 @@ const FormCamera: React.FC<FormCameraProps> = ({ photos, setPhotos, setPicsChang
             {photos.length > 0 && imageHandler ? (
                 <>
                 <Text style={textStyles.label}>Extra Photos</Text>
-                <Text style={textStyles.subHeading}>The photo you click will turn into the cat's profile picture</Text>
+                <Text style={textStyles.subHeading}>The photo you click will turn into the profile picture</Text>
                 <View style={containerStyles.extraPicsContainer}>
                     {photos.map((pic, index) => (
                     <View key={index} style={containerStyles.imageWrapper}>

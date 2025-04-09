@@ -52,10 +52,10 @@ const SightingForm: React.FC<SightingFormProps> = ({
       <Text style={textStyles.label}>Cat's Name</Text>
       <View style={containerStyles.inputContainer}>
         <TextInput
-          value={formData.name || ''} // controlled component value, default to '' if undefined
+          value={formData.name || ''}
           placeholder="name"
           placeholderTextColor="#888"
-          onChangeText={(text) => handleChange('name', text)} // Update state on text change
+          onChangeText={(text) => handleChange('name', text)}
           style={textStyles.input}
         />
       </View>

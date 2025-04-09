@@ -1,5 +1,6 @@
 import { db, storage } from "@/config/firebase";
-import { CatalogEntryObject, CatSightingObject, User } from "@/types";
+import { getSelectedCatalogEntry } from "@/stores/CatalogEntryStores";
+import { CatalogEntry } from "@/types";
 import { Router } from "expo-router";
 import { addDoc, collection, deleteDoc, doc, getDocs, query, updateDoc, where } from "firebase/firestore";
 import { deleteObject, getDownloadURL, getStorage, listAll, ref, uploadBytes, uploadBytesResumable } from "firebase/storage";
@@ -57,8 +58,7 @@ class CatalogService {
         });
     
         // Set the photos
-        alert(otherImages)
-        if (setPhotos) {setPhotos(otherImages)};
+        if (setPhotos) {setPhotos(otherImages);}
         
       } catch (error) {
         console.error('Error fetching image URLs:', error);
@@ -68,24 +68,15 @@ class CatalogService {
     /**
      * Effect: Pulls catalog documents from firestore
      */
-    public async fetchCatalogData(setCatalogEntries:Dispatch<SetStateAction<CatalogEntryObject[]>> ) {
+    public async fetchCatalogData(setCatalogEntries:Dispatch<SetStateAction<CatalogEntry[]>> ) {
         try {
             const querySnapshot = await getDocs(collection(db, 'catalog'));
-            const entries: CatalogEntryObject[] = querySnapshot.docs.map((doc) => ({
+            const entries: CatalogEntry[] = querySnapshot.docs.map((doc) => ({
               id: doc.id,
-              name: doc.data().name,
-              descShort: doc.data().descShort,
-              descLong: doc.data().descLong,
-              colorPattern: doc.data().colorPattern,
-              behavior: doc.data().behavior,
-              yearsRecorded: doc.data().yearsRecorded,
-              AoR: doc.data().AoR,
-              currentStatus: doc.data().currentStatus,
-              furLength: doc.data().furLength,
-              furPattern: doc.data().furPattern,
-              tnr: doc.data().tnr,
-              sex: doc.data().sex,
+              cat: doc.data().cat,
               credits: doc.data().credits,
+              createdAt: doc.data().createdAt().toDate(),
+              createdBy: doc.data().createdBy,
             }));
             setCatalogEntries(entries);
         } catch (error) {
@@ -97,13 +88,14 @@ class CatalogService {
     * Effect: Updates firestore and storage when editing a catalog entry
     */
     public async handleCatalogSave(
-      newPics: { url: string; name: string; }[], 
-      newPhotosAdded: boolean, 
+      photos:string[],
+      profile:string,
+      isPicsChanged:boolean,
       setVisible: Dispatch<SetStateAction<boolean>>, 
       router: Router) {
         try {
-          const entry = getEntry();
-          const error_message = this.validateInput(entry, '', 'save');
+          const entry = getSelectedCatalogEntry();
+          const error_message = this.validateInput(entry, [profile]);
           if (error_message == "") {
             setVisible(true);
             // Reference to the Firestore document using its ID
@@ -111,35 +103,27 @@ class CatalogService {
       
             // Update the 'name' field in Firestore
             await updateDoc(catDocRef, { 
-              id: entry.id,
-              name: entry.name,
-              descShort: entry.descShort,
-              descLong: entry.descLong,
-              colorPattern: entry.colorPattern,
-              behavior: entry.behavior,
-              yearsRecorded: entry.yearsRecorded,
-              AoR: entry.AoR,
-              currentStatus: entry.currentStatus,
-              furLength: entry.furLength,
-              furPattern: entry.furPattern,
-              tnr: entry.tnr,
-              sex: entry.sex,
+              cat: entry.cat,
               credits: entry.credits,
+              createdAt: new Date(),
+              createdBy: entry.createdBy,
             });
-            if (newPhotosAdded) {
-              const folderPath = `catalog/${entry.id}/`; // Path in Firebase Storage
-              const folderRef = ref(storage, folderPath);
-      
-              // Step 3: Upload only new photos
-              for (const pic of newPics) {
-                const response = await fetch(pic.url);
-                const blob = await response.blob();
-                const existingFilesSnapshot = await listAll(folderRef);
-                const existingFiles = existingFilesSnapshot.items.map((item) => item.name);
-      
-                const unique_name = this.generateUniqueFileName(existingFiles, entry.name)
-                const photoRef = ref(storage, `${folderPath}${unique_name}`);
-                await uploadBytes(photoRef, blob);
+            if (isPicsChanged) {
+              // Fetch existing images from Firebase Storage
+              const existingImages = await this.fetchExistingImagesFromStorage(`catalog/${entry.id}`);
+              photos = [...photos, profile];
+              // 3. Compare new photos with existing ones
+              const newImages = photos.filter(photo => !existingImages.includes(photo)); // Only new images
+              const imagesToDelete = existingImages.filter((image: string) => !photos.includes(image)); // Images to remove
+
+              // 4. Delete images that are no longer in the new list (optional)
+              for (const image of imagesToDelete) {
+                  await this.deleteImageFromStorage(image); // Delete old images from Firebase Storage
+              }
+
+              // 5. Upload new images
+              if (newImages.length > 0) {
+                  await this.uploadImagesToStorage(newImages, `catalog/${entry.id}`);
               }
             }
             router.push('/catalog/view-entry')
@@ -158,39 +142,25 @@ class CatalogService {
      * 
      */
     public async handleCatalogCreate(
-      entry: CatalogEntryObject,
-      profilePic: string, 
-      user: User,
+      photos: string[], 
       setVisible: Dispatch<SetStateAction<boolean>>, 
       router: Router) {
         try {
-          const error_message = this.validateInput(entry, profilePic, 'create');
+          const entry = getSelectedCatalogEntry();
+          const error_message = this.validateInput(entry, photos);
           if (error_message == "") {
             setVisible(true);
             const docRef = await addDoc(collection(db, 'catalog'), {
-              name: entry.name,
-              descShort: entry.descShort,
-              descLong: entry.descLong,
-              colorPattern: entry.colorPattern,
-              behavior: entry.behavior,
-              yearsRecorded: entry.yearsRecorded,
-              AoR: entry.AoR,
-              currentStatus: entry.currentStatus,
-              furLength: entry.furLength,
-              furPattern: entry.furPattern,
-              tnr: entry.tnr,
-              sex: entry.sex,
+              cat: entry.cat,
               credits: entry.credits,
               createdAt: new Date(),
-              createdBy: user,
+              createdBy: entry.createdBy,
             });
-            if (profilePic) {
-              const response = await fetch(profilePic);
-              const blob = await response.blob();
-              const imageRef = ref(getStorage(), `catalog/${docRef.id}/profile.jpg`);
-              await uploadBytes(imageRef, blob);
-            
-            }
+            const profilePhoto = photos[0];
+            await this.uploadImageToStorage(profilePhoto, `catalog/${docRef.id}/profile.jpg`);
+  
+            const otherPhotos = photos.slice(1);
+             await this.uploadImagesToStorage(otherPhotos, `catalog/${docRef.id}`);
             Alert.alert('Success', 'Cat entry created successfully!');
             router.back();
           } else {
@@ -325,10 +295,28 @@ class CatalogService {
         return newFileName;
     }
 
+    // Helper method to fetch existing images URLs from Firebase Storage folder
+  private async fetchExistingImagesFromStorage(folderPath: string): Promise<string[]> {
+    try {
+        const folderRef = ref(storage, folderPath);
+        const listResult = await listAll(folderRef);  // List all files in the folder
+        const existingImageUrls = await Promise.all(
+            listResult.items.map(async (itemRef) => {
+                const downloadURL = await getDownloadURL(itemRef); // Get the download URL for each file
+                return downloadURL;
+            })
+        );
+        return existingImageUrls;
+    } catch (error) {
+        console.error('Error fetching existing images: ', error);
+        return [];
+    }
+  }
+
     /**
      * Private 2
      */
-    private validateInput(entry:CatalogEntryObject, profilePic:string, type:string) {
+    private validateInput(entry:CatalogEntry, photos:string[]) {
       const requiredFields = [
         { key: 'name', label: 'Name' },
         { key: 'descShort', label: 'Short Description' },
@@ -350,11 +338,49 @@ class CatalogService {
         }
       }
 
-      if (type == 'create' && (!profilePic || !profilePic.trim())) {
+      if (photos.length == 0) {
         return 'Please upload a profile photo of the cat.'
       }
     
       return "";
     }
+    // Helper function to upload a single image (used for profile picture)
+  private async uploadImageToStorage(
+    photoUri: string, 
+    filePath: string
+  ) {
+    const storageRef = ref(storage, filePath);
+    const response = await fetch(photoUri);
+    const blob = await response.blob();
+    await uploadBytes(storageRef, blob);
+  }
+    
+
+  // Helper method to upload images to Firebase Storage
+  private async uploadImagesToStorage(images: string[], folderPath: string): Promise<void> {
+    try {
+      for (const imageUri of images) {
+        const uniqueFilename = this.generateUniqueFileName([], '');
+        const imageRef = ref(storage, `${folderPath}/${uniqueFilename}`);  // Create a unique ref based on timestamp
+        const response = await fetch(imageUri);
+        const blob = await response.blob();
+        await uploadBytesResumable(imageRef, blob); // Upload image to Firebase Storage
+        console.log(`Image ${imageUri} uploaded to ${imageRef.fullPath}`);
+      }
+    } catch (error) {
+      console.error('Error uploading images to storage: ', error);
+    }
+  }
+
+  // Helper method to delete an image from Firebase Storage
+  private async deleteImageFromStorage(imageUrl: string): Promise<void> {
+    try {
+      const imageRef = ref(storage, imageUrl); // Reference to the image in Firebase Storage
+      await deleteObject(imageRef); // Delete the image from Firebase Storage
+      console.log(`Image ${imageUrl} deleted from storage.`);
+    } catch (error) {
+      console.error('Error deleting image from storage: ', error);
+    }
+  }
 }
 export default CatalogService;

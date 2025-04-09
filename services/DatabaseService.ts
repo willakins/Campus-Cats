@@ -1,7 +1,7 @@
 import { getDownloadURL, ref } from 'firebase/storage';
 import { getDocs, getDoc, updateDoc, doc, collection, query, where, DocumentData, getFirestore } from 'firebase/firestore';
 import { auth, db, storage } from '@/config/firebase';
-import { Announcement, CatalogEntryObject, ContactInfo, Sighting, Station, User, WhitelistApp } from '@/types';
+import { Announcement, CatalogEntry, ContactInfo, Sighting, Station, User, WhitelistApp } from '@/types';
 import { Dispatch, SetStateAction } from 'react';
 import { Alert } from 'react-native';
 import CatalogService from './CatalogService';
@@ -185,7 +185,7 @@ class DatabaseService {
   /**
    * Effect: Pulls catalog documents from firestore
    */
-  public async fetchCatalogData(setCatalogEntries:Dispatch<SetStateAction<CatalogEntryObject[]>> ) {
+  public async fetchCatalogData(setCatalogEntries:Dispatch<SetStateAction<CatalogEntry[]>> ) {
     await DatabaseService.catalogService.fetchCatalogData(setCatalogEntries);
   }
 
@@ -194,23 +194,22 @@ class DatabaseService {
    * Effect: Updates firestore and storage when editing a catalog entry
    */
   public async handleCatalogSave(
-    newPics: { url: string; name: string; }[], 
-    newPhotosAdded: boolean, 
+    photos: string[],
+    profile: string,
+    isPicsChanged: boolean,
     setVisible: Dispatch<SetStateAction<boolean>>, 
     router: Router) {
-    await DatabaseService.catalogService.handleCatalogSave(newPics, newPhotosAdded, setVisible, router);
+    await DatabaseService.catalogService.handleCatalogSave(photos, profile, isPicsChanged, setVisible, router);
   }
 
   /**
    * Effect: Creates a new catalog entry and stores it in firebase
    */
   public async handleCatalogCreate(
-    thisEntry:CatalogEntryObject,
-    profilePic: string, 
-    user: User,
+    photos: string[],
     setVisible: Dispatch<SetStateAction<boolean>>, 
     router: Router) {
-    await DatabaseService.catalogService.handleCatalogCreate(thisEntry, profilePic, user, setVisible, router);
+    await DatabaseService.catalogService.handleCatalogCreate(photos, setVisible, router);
   }
 
   /**

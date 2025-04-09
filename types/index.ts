@@ -27,7 +27,7 @@ export const LatLngSchema = z.object({
 });
 
 // File exports
-export { CatalogEntryObject } from './CatalogEntryObject';
+export { CatalogEntry } from './CatalogEntry';
 export { Announcement } from './Announcement';
 export { Sighting } from './Sighting';
 export { Station } from './Station';
