@@ -27,7 +27,7 @@ const ManageUsers = () => {
         <Ionicons name="arrow-back-outline" size={25} color="#fff" />
       </Button>
 
-      <Text style={textStyles.title}>Manage Users</Text>
+      <Text style={textStyles.pageTitle}>Manage Users</Text>
 
       <ScrollView contentContainerStyle={containerStyles.scrollView}>
         {users.map((user) => (

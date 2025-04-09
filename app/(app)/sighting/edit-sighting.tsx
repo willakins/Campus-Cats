@@ -7,10 +7,11 @@ import { useRouter } from 'expo-router';
 import { getSelectedSighting, setSelectedSighting } from '@/stores/sightingStores';
 import { CatalogImageHandler } from '@/image_handlers/CatalogImageHandler';
 import { buttonStyles, textStyles, containerStyles } from '@/styles';
-import { Button, SnackbarMessage, SightingForm } from '@/components';
+import { Button, SnackbarMessage } from '@/components';
 import DatabaseService from '@/services/DatabaseService';
 import { useAuth } from '@/providers';
 import { Sighting } from '@/types';
+import { SightingForm } from '@/forms';
 
 const SightingEditScreen = () => {
   const router = useRouter();
@@ -68,7 +69,7 @@ const SightingEditScreen = () => {
         <Ionicons name="arrow-back-outline" size={25} color="#fff" />
       </Button>
       <SnackbarMessage text="Saving Report..." visible={visible} setVisible={setVisible} />
-      <Text style={textStyles.title}>Edit Report</Text>
+      <Text style={textStyles.pageTitle}>Edit Report</Text>
       
       <FlatList
         data={[1]}  // A dummy array to make FlatList scrollable

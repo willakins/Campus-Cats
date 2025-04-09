@@ -17,7 +17,7 @@ export const AnnouncementEntry: React.FC = () => {
 
   return (
     <View style={containerStyles.card}>
-      <Text style={textStyles.label}>{ann.title}</Text>
+      <Text style={textStyles.cardTitle}>{ann.title}</Text>
       <Text style={textStyles.detail}>{ann.info}</Text>
 
       {photos.length > 0 && <Text style={textStyles.label}>Photos</Text>}

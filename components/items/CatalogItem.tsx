@@ -37,11 +37,11 @@ export const CatalogItem: React.FC<CatalogEntry> =
     }}>
       
       <View style={containerStyles.listDetailsContainer}>
-        <Text style={textStyles.titleCentered}>{cat.name}</Text>
+        <Text style={textStyles.listTitle}>{cat.name}</Text>
         {profile ? (
           <Image source={{ uri: profile }} style={[containerStyles.imageMain, {marginBottom:5}]} resizeMode="cover" />
         ) : (
-          <View style={textStyles.loading}><Text>Loading...</Text></View>
+          <View><Text style={[textStyles.listTitle, {textAlign: 'center'}]}>Loading...</Text></View>
         )}
         <Text style={[textStyles.detail, {alignSelf:'center', marginVertical:0}]}>{cat.descShort}</Text>
       </View>
