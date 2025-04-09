@@ -43,7 +43,7 @@ const Settings = () => {
           <Text style={textStyles.titleCentered}>Club Contact Information</Text>
           {isAdmin && (
             <Button onPress={handleEdit} style={buttonStyles.smallButtonTopRight}>
-              <Text style={textStyles.editText}>{isEditable ? 'Save' : 'Edit'}</Text>
+              <Text style={textStyles.smallButtonText}>{isEditable ? 'Save' : 'Edit'}</Text>
             </Button>
           )}
 
@@ -87,7 +87,7 @@ const Settings = () => {
                   {isAdmin && isEditable && (
                     <Button onPress={() => database.deleteContact(index, contactInfo, setContactInfo, setHasChanged)} 
                       style={buttonStyles.deleteButton}>
-                      <Text style={textStyles.deleteButtonText}>Delete Above Contact</Text>
+                      <Text style={textStyles.smallButtonText}>Delete Above Contact</Text>
                     </Button>
                   )}
                 </View>

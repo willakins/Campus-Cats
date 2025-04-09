@@ -14,7 +14,7 @@ export const TextInput: React.FC<TextInputProps> = ({
 
   return (
     <View>
-      {label && <Text style={textStyles.sliderText}>{label}</Text>}
+      {label && <Text style={[textStyles.detail, {marginLeft:12}]}>{label}</Text>}
       <RNTextInput
         style={style_}
         {...props}

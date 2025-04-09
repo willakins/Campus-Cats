@@ -13,13 +13,13 @@ export const Switch: React.FC<SwitchProps> = ({
   onValueChange,
   ...props
 }) => {
-  const style_ = [textStyles.sliderText, labelStyle];
+  const style_ = [textStyles.detail, labelStyle];
 
   return (
     <>
-      <View style={containerStyles.sliderContainer}>
+      <View style={containerStyles.card}>
         <RNSwitch value={value} onValueChange={onValueChange} {...props} />
-        {label ? <Text style={style_}>{label}</Text> : null}
+        {label ? <Text style={[style_, {marginLeft: 12}]}>{label}</Text> : null}
       </View>
     </>
   );
