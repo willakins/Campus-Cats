@@ -9,7 +9,7 @@ import { Button } from '../ui/Buttons';
 import { Sighting } from '@/types';
 import { getSelectedCatalogEntry } from '@/stores/CatalogEntryStores';
 
-export const CatalogEntryElement: React.FC= () => {
+const CatalogEntryElement: React.FC = () => {
   const [profile, setProfile] = useState<string>('');
   const [photos, setPhotos] = useState<string[]>([]);
   const [sightings, setSightings] = useState<Sighting[]>([]);
@@ -82,9 +82,6 @@ export const CatalogEntryElement: React.FC= () => {
               </>
               )} 
     </ScrollView>
-  );
-};
-
-function getSelectedEntry() {
-  throw new Error('Function not implemented.');
+  )
 }
+export { CatalogEntryElement };
