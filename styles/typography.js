@@ -2,14 +2,14 @@
 import { StyleSheet } from 'react-native';
 
 const textStyles = StyleSheet.create({
-  
+  /** Titles */
   catalogTitle: {
     fontSize: 30,
     fontWeight: 'bold',
     color: '#333',
     textAlign: 'center',
     marginTop: 10,
-    marginBottom: 5, // Space between title and description
+    marginBottom: 5,
   },
   announcementTitle: {
     fontSize: 32,
@@ -24,60 +24,37 @@ const textStyles = StyleSheet.create({
     flexShrink: 1, // Allow text to shrink if necessary
     color: '#333',
   },
-  headline: {
-    fontSize: 20,
-    color: 'black',
-    fontWeight: 'bold',
-    textAlign: 'left',
+  /** Headers */
+  label: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#1A1A1A',
+    marginTop: '5%',
   },
-  headline2: {
-    fontSize: 20,
-    color: 'black',
-    fontWeight: 'bold',
-    textAlign: 'center',
-  },
-  subHeading: {
-    fontSize: 15,
-    color: '#000',
-    textAlign: 'center',
-    marginBottom: 0
-  },
-  stationText1: {
-      fontSize: 15,
-      color: 'red',
-      textAlign: 'center',
-      padding: 30,
-  },
-  stationText2: {
-      fontSize: 20,
-      color: 'green',
-      textAlign: 'center',
-      padding:30,
-  },
-  contactInput: {
+  sliderText: {
     fontSize: 16,
-    borderBottomWidth: 1,
-    borderColor: '#ddd',
-    padding: 5,
+    color: '#333',
+    marginLeft: 12,
+    flex: 1,
   },
-  subHeading2: {
-    fontSize: 15,
-    color: '#000',
-    textAlign: 'left',
-    marginBottom: 0
+  /** Main Text */
+  detail: {
+    fontSize: 16,
+    color: '#555',
+    marginVertical: 4,
   },
-  logoutText: {
-    color: '#fff',
-    marginLeft: 5,
+  /** Input */
+  /** Button Text */
+  smallButtonText: {
+    color: 'white',
+    fontSize: 12,
+    fontWeight: 'bold',
+    textAlign: 'center',
   },
-  errorText: {
-    color: 'red',
-    fontSize: 10,
+  buttonText: {
+    fontSize: 18,
   },
-  editText: {
-    color: '#fff',
-    marginLeft: 0,
-  },
+  /** Misc */
   dateText: {
     fontSize: 15,
     color: '#000',
@@ -87,26 +64,9 @@ const textStyles = StyleSheet.create({
   activeText: {
     color: '#fff'
   },
-  buttonText: {
-    fontSize: 18,
-  },
-  smallButtonText: {
-    color: '#fff',
-    fontSize: 12,
-    fontWeight: 'bold',
-    textAlign: 'center',
-  },
-  deleteButtonText: {
-    color: 'white',
-    fontSize: 12,
-    fontWeight: 'bold',
-  },
-  sliderText: {
-    fontSize: 16,
-    color: '#333',
-    marginLeft: 12,
-    flex: 1,
-  },
+
+  
+  
   /** Input text */
   input: {
     fontSize:15,
@@ -203,12 +163,7 @@ const textStyles = StyleSheet.create({
     textAlign: 'center',
     marginTop: '5%',
   },
-  label: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#1A1A1A',
-    marginTop: '5%',
-  },
+  
   sectionTitle: {
     fontSize: 18,
     fontWeight: 'bold',
@@ -216,11 +171,7 @@ const textStyles = StyleSheet.create({
     marginTop: 20,
     marginBottom: 10,
   },
-  detail: {
-    fontSize: 16,
-    color: '#555',
-    marginVertical: 4,
-  },
+  
   statusText: {
     fontSize: 16,
     color: '#333',
