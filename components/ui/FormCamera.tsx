@@ -1,6 +1,6 @@
 import React, { Dispatch } from 'react';
 import { View, Text, Image } from 'react-native';
-import { CameraButton, Button, ImageButton } from '@/components';
+import { CameraButton, Button, ImageButton } from './Buttons';
 import { buttonStyles, containerStyles, textStyles } from '@/styles';
 import { CatalogImageHandler } from '@/image_handlers/CatalogImageHandler';
 

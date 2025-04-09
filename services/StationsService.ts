@@ -79,7 +79,7 @@ class StationsService {
         try {
             setVisible(true);
             const station = getSelectedStation();
-            const error_message = this.validateInput(station);
+            const error_message = this.validateInput(station, photos);
             if (error_message == "") {
                 const stationCollectionRef = collection(db, 'stations');
                 const docRef = await addDoc(stationCollectionRef, {
@@ -121,7 +121,7 @@ class StationsService {
         try {
             setVisible(true);
             const station = getSelectedStation();
-            const error_message = this.validateInput(station);
+            const error_message = this.validateInput(station, [profile]);
             if (error_message == "") {
                 // Reference to the Firestore document using its ID
                 const stationDocRef = doc(db, 'stations', station.id);
@@ -134,19 +134,23 @@ class StationsService {
                     createdBy: station.createdBy,
                 });
                 if (isPicsChanged) {
-                    //Delete old profile 
-                    const oldProfilePath = `stations/${stationDocRef.id}/profile.jpg`;
-                    const oldStorageRef = ref(storage, oldProfilePath);
-                    await deleteObject(oldStorageRef);
-
-                    //Upload new profile
-                    const profilePath = `stations/${stationDocRef.id}/profile.jpg`;
-                    const storageRef = ref(storage, profilePath);
-                    console.log('Profile URL:', profile);
-                    const response = await fetch(profile);
-                    const blob = await response.blob();
-                    await uploadBytes(storageRef, blob);
-                }
+                  // Fetch existing images from Firebase Storage
+                  const existingImages = await this.fetchExistingImagesFromStorage(`stations/${station.id}`);
+                  photos = [...photos, profile];
+                  // 3. Compare new photos with existing ones
+                  const newImages = photos.filter(photo => !existingImages.includes(photo)); // Only new images
+                  const imagesToDelete = existingImages.filter((image: string) => !photos.includes(image)); // Images to remove
+  
+                  // 4. Delete images that are no longer in the new list (optional)
+                  for (const image of imagesToDelete) {
+                      await this.deleteImageFromStorage(image); // Delete old images from Firebase Storage
+                  }
+  
+                  // 5. Upload new images
+                  if (newImages.length > 0) {
+                      await this.uploadImagesToStorage(newImages, `stations/${station.id}`);
+                  }
+              }
             } else {
                 alert(error_message);
             }
@@ -155,7 +159,7 @@ class StationsService {
             alert('Error Failed to update station.');
         } finally {
             setVisible(false);
-            router.navigate({pathname: '/stations'})
+            router.navigate('/stations')
         }
     }
 
@@ -163,7 +167,6 @@ class StationsService {
      * Deletes the station from the database
      */
     public async deleteStation(
-        profile:string,
         setVisible: Dispatch<SetStateAction<boolean>>, 
         router: Router
     ) {
@@ -173,7 +176,7 @@ class StationsService {
             [
                 {
                 text: 'Delete Forever',
-                onPress: async () => await this.confirmDeleteStationEntry(profile, setVisible, router),
+                onPress: async () => await this.confirmDeleteStationEntry(setVisible, router),
                 },
                 {
                 text: 'Cancel',
@@ -187,45 +190,99 @@ class StationsService {
     /**
     * Effect: Stocks a station
     */
-    public async stockStation(router:Router) {
-        try{
-            const station = getSelectedStation();
+    public async stockStation(setVisible: Dispatch<SetStateAction<boolean>>, router:Router) {
+      try{
+        setVisible(true);
+        const station = getSelectedStation();
 
-            station.lastStocked = new Date();
-            const stationDocRef = doc(db, 'stations', station.id);
-            await updateDoc(stationDocRef, { 
-                name: station.name,
-                location: station.location,
-                lastStocked: station.lastStocked,
-                stockingFreq: station.stockingFreq,
-                knownCats: station.knownCats,
-                createdBy: station.createdBy,
-            });
-        } catch(error) {} finally {
-            setTimeout(() => {
-                router.navigate('/stations');
-              }, 500);
-        }
+        station.lastStocked = new Date();
+        const stationDocRef = doc(db, 'stations', station.id);
+        await updateDoc(stationDocRef, { 
+            name: station.name,
+            location: station.location,
+            lastStocked: station.lastStocked,
+            stockingFreq: station.stockingFreq,
+            knownCats: station.knownCats,
+            createdBy: station.createdBy,
+        });
+      } catch(error) {} finally {
+        setVisible(false);
+        setTimeout(() => {
+            router.back();
+          }, 500);
+      }
+    }
+
+    /**
+    * Effect: deletes a picture from a catalog entry
+    */
+    public async deleteSightingPicture(
+      id:string, 
+      picName: string) {
+      try {
+          const imageRef = ref(storage, `stations/${id}/${picName}`);
+          await deleteObject(imageRef);
+          alert('Success Image deleted successfully!');
+      } catch (error) {
+          alert('Error Failed to delete the image.');
+          console.error('Error deleting image: ', error);
+      }
+    };
+
+    /**
+    * Effect: Swaps the profile picture for a catalog entry
+    */
+    public async swapProfilePicture(
+      id:string, 
+      picUrl:string, 
+      picName:string, 
+      profilePicUrl?:string) {
+      const folderRef = ref(storage, `stations/${id}`);
+      const listResult = await listAll(folderRef);
+      
+      // Find the profile picture regardless of extension
+      const profileFile = listResult.items.find((item) => {
+        const name = item.name.toLowerCase();
+        return name.startsWith("profile.") || name === "profile";
+      });
+      
+      const selectedPicRef = ref(storage, `stations/${id}/${picName}`);
+  
+      // Fetch image blobs
+      const oldProfileBlob = await (await fetch(profilePicUrl!)).blob();
+      const selectedPicBlob = await (await fetch(picUrl)).blob();
+  
+      // Swap images:
+      // 1. Delete both files
+      if (profileFile) {
+        await deleteObject(profileFile);
+      }
+      await deleteObject(selectedPicRef);
+  
+      // 2. Re-upload old profile picture as selectedPic.name
+      const newExtraPicRef = ref(storage, `stations/${id}/${picName}`);
+      await uploadBytesResumable(newExtraPicRef, oldProfileBlob);
+  
+      // 3. Re-upload selected picture as profile picture
+      const newProfilePicRef = ref(storage, `stations/${id}/profile.jpg`);
+      await uploadBytesResumable(newProfilePicRef, selectedPicBlob);
     }
 
     /**
     * Private 1
     */
     private async confirmDeleteStationEntry(
-        profile:string,
         setVisible: Dispatch<SetStateAction<boolean>>, 
         router: Router) {
         try {
-            setVisible(true);
-            const station = getSelectedStation();
-            await deleteDoc(doc(db, 'stations', station.id)); //Delete firestore document
-
-            if (profile) {
-                const imageRef = ref(storage, profile);
-                await deleteObject(imageRef);
-            }
-    
-            alert('Station deleted successfully!');
+          setVisible(true);
+          const station = getSelectedStation();
+          const photoPath = `stations/${station.id}`;
+          const folderRef = ref(storage, photoPath);
+          const result = await listAll(folderRef);
+          await Promise.all(result.items.map((item) => deleteObject(item)));
+          await deleteDoc(doc(db, 'stations', station.id));
+          alert('Station deleted successfully!');
         
         } catch (error) {
             alert(error);
@@ -238,15 +295,14 @@ class StationsService {
     /**
      * Private 2
      */
-    private validateInput(station: Station): string {
+    private validateInput(station: Station, photos:string[]): string {
         // Validate required string fields
         if (!station.name || typeof station.name !== 'string' || station.name.trim().length === 0) {
           return 'Name field must not be empty';
-        }
-      
-        // Validate that lastStocked is a valid Date object
-        if (!(station.lastStocked instanceof Date) || isNaN(station.lastStocked.getTime())) {
+        } else if (!(station.lastStocked instanceof Date) || isNaN(station.lastStocked.getTime())) {
           return 'Last Stocked date is invalid';
+        } else if (photos.length == 0) {
+          return 'Please select a photo.'
         }
       
         // Validate location coordinates
@@ -263,8 +319,6 @@ class StationsService {
         }
       
         // Validate stockingFreq is a positive number
-        alert(station.stockingFreq)
-        alert(typeof station.stockingFreq)
         if (typeof station.stockingFreq !== 'number' || station.stockingFreq <= 0) {
           return 'Stocking Frequency must be a positive number';
         }
