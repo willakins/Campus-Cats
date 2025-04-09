@@ -38,7 +38,7 @@ const StationForm: React.FC<StationFormProps> = ({
                 }}
                 onPress={(e) => handleChange('location', e.nativeEvent.coordinate)}
             >
-                {location ? <Marker coordinate={formData.location} /> : null}
+                {formData.location ? <Marker coordinate={formData.location} /> : null}
             </MapView>
             <Text style={textStyles.label}>Station Name</Text>
             <View style={containerStyles.inputContainer2}>
@@ -61,13 +61,13 @@ const StationForm: React.FC<StationFormProps> = ({
                     style={textStyles.input}/>
             </View>
             <Text style={textStyles.label}>Cats Known to Frequent This Station (optional)</Text>
-            <View style={containerStyles.inputContainer2}>
+            <View style={containerStyles.descInputContainer}>
                 <TextInput
                     value={formData.knownCats || ''}
                     placeholder={"Common cats seen here"}
                     placeholderTextColor="#888"
                     onChangeText={(text) => handleChange('knownCats', text)} 
-                    style={[textStyles.input, {height:'30%'}]}
+                    style={textStyles.input}
                     multiline={true} />
             </View>
             <FormCamera
