@@ -48,7 +48,7 @@ class SightingsService {
   public async fetchSightingImages(
     id: string, 
     setProfile: Dispatch<SetStateAction<string>>, 
-    setPhotos: Dispatch<SetStateAction<string[]>>
+    setPhotos?: Dispatch<SetStateAction<string[]>>
   ) {
     try {
       const folderRef = ref(storage, `cat-sightings/${id}`);
@@ -75,7 +75,7 @@ class SightingsService {
       });
   
       // Set the photos
-      setPhotos(otherImages);
+      if (setPhotos) {setPhotos(otherImages);}
       
     } catch (error) {
       console.error('Error fetching image URLs:', error);

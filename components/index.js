@@ -26,3 +26,4 @@ export { UserItem } from './items/UserItem';
 export { SightingForm } from './forms/SightingForm'
 export { AnnouncementForm } from './forms/AnnouncementForm'
 export { StationForm } from './forms/StationForm'
+export { CatalogForm } from './forms/CatalogForm'

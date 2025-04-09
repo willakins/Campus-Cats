@@ -22,9 +22,9 @@ const SightingCreateScreen = () => {
   const [value, setValue] = useState("");
   const [open, setOpen] = useState(false);
   const [items, setItems] = useState([
-    { label: 'Morning', value: 'morning' },
-    { label: 'Afternoon', value: 'afternoon' },
-    { label: 'Night', value: 'night' },
+    { label: 'Morning', value: 'Morning' },
+    { label: 'Afternoon', value: 'Afternoon' },
+    { label: 'Night', value: 'Night' },
   ]);
 
   const [photos, setPhotos] = useState<string[]>([]);
