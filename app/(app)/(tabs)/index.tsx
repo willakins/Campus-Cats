@@ -32,7 +32,7 @@ const HomeScreen = () => {
   };
 
   return (
-    <View style={globalStyles.homeScreen}>
+    <View style={globalStyles.screen}>
       <View style={containerStyles.buttonGroup}>
         {['7', '30', '90', '365', 'all'].map(range => (
           <Button
