@@ -40,7 +40,7 @@ const Settings = () => {
       )}
       <ScrollView contentContainerStyle={containerStyles.scrollView}>
         <View style={[containerStyles.card, {marginTop:'10%'}]}>
-          <Text style={textStyles.titleCentered}>Club Contact Information</Text>
+          <Text style={[textStyles.listTitle, {textAlign: 'center'}]}>Club Contact Information</Text>
           {isAdmin && (
             <Button onPress={handleEdit} style={buttonStyles.smallButtonTopRight}>
               <Text style={textStyles.smallButtonText}>{isEditable ? 'Save' : 'Edit'}</Text>
@@ -63,7 +63,7 @@ const Settings = () => {
                   />
                   </View>
                 ) : (
-                  <Text style={textStyles.normalText}>{contact.name}</Text>
+                  <Text style={textStyles.detail}>{contact.name}</Text>
                 )}
               </View>
               <View style={containerStyles.rowContainer}> 
@@ -80,7 +80,7 @@ const Settings = () => {
                   </View>
                   
                 ) : (
-                  <Text style={textStyles.normalText}>{contact.email}</Text>
+                  <Text style={textStyles.detail}>{contact.email}</Text>
                 )}
                 </View>
                 <View style={containerStyles.rowContainer}> 

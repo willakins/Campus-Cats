@@ -3,12 +3,13 @@ import { FlatList, SafeAreaView, Text } from 'react-native';
 
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { Button, CatalogForm, SnackbarMessage } from '@/components';
+import { Button, SnackbarMessage } from '@/components';
 import DatabaseService from '@/services/DatabaseService';
 import { globalStyles, buttonStyles, textStyles, containerStyles } from '@/styles';
 import { Cat, CatalogEntry, Sex, TNRStatus, CatStatus, Fur, PickerConfig } from '@/types';
 import { useAuth } from '@/providers/AuthProvider';
 import { setSelectedCatalogEntry } from '@/stores/CatalogEntryStores';
+import { CatalogForm } from '@/forms';
 
 const create_entry = () =>{
   const router = useRouter();
@@ -21,7 +22,7 @@ const create_entry = () =>{
   const [statusValue, setStatusValue] = useState<CatStatus>('Unknown');
   const [statusOpen, setStatusOpen] = useState<boolean>(false);
   const [statusItems, setStatusItems] = useState([
-    { label: 'Adtoped', value: 'Adtoped' },
+    { label: 'Adopted', value: 'Adopted' },
     { label: 'Deceased', value: 'Deceased' },
     { label: 'Feral', value: 'Feral' },
     { label: 'Frat Cat', value: 'Frat Cat' },
@@ -163,7 +164,7 @@ const create_entry = () =>{
         <Ionicons name="arrow-back-outline" size={25} color="#fff" />
       </Button>
       <SnackbarMessage text="Creating Entry..." visible={visible} setVisible={setVisible} />
-      <Text style={textStyles.title}>Create Entry</Text>
+      <Text style={textStyles.pageTitle}>Create Entry</Text>
       <FlatList
               data={[1]}
               keyExtractor={() => '1'}

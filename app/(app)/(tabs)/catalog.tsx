@@ -23,7 +23,7 @@ const Catalog = () => {
 
   return (
     <SafeAreaView style={containerStyles.wrapper}>
-      <Text style={textStyles.title}>Catalog</Text>
+      <Text style={textStyles.pageTitle}>Catalog</Text>
       <ScrollView contentContainerStyle={containerStyles.scrollView}>
         {catalogEntries.map((entry) => (
           <CatalogItem

@@ -4,7 +4,7 @@ import { FlatList, SafeAreaView, Text } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 
-import { Button, SnackbarMessage, CatalogForm} from '@/components';
+import { Button, SnackbarMessage } from '@/components';
 import DatabaseService from '@/services/DatabaseService';
 import { globalStyles, buttonStyles, textStyles, containerStyles } from '@/styles';
 import { Cat, CatalogEntry, CatStatus, Fur, Sex, TNRStatus } from '@/types/CatalogEntry';
@@ -12,6 +12,7 @@ import { CatalogImageHandler } from '@/image_handlers/CatalogImageHandler';
 import { useAuth } from '@/providers';
 import { getSelectedCatalogEntry, setSelectedCatalogEntry } from '@/stores/CatalogEntryStores';
 import { PickerConfig } from '@/types';
+import { CatalogForm } from '@/forms';
 
 const edit_entry = () => {
   const router = useRouter();
@@ -29,7 +30,7 @@ const edit_entry = () => {
   const [statusValue, setStatusValue] = useState<CatStatus>(entry.cat.currentStatus);
   const [statusOpen, setStatusOpen] = useState<boolean>(false);
   const [statusItems, setStatusItems] = useState([
-    { label: 'Adtoped', value: 'Adtoped' },
+    { label: 'Adopted', value: 'Adopted' },
     { label: 'Deceased', value: 'Deceased' },
     { label: 'Feral', value: 'Feral' },
     { label: 'Frat Cat', value: 'Frat Cat' },
@@ -176,7 +177,7 @@ const edit_entry = () => {
         <Ionicons name="arrow-back-outline" size={25} color="#fff" />
       </Button>
       <SnackbarMessage text="Saving Entry..." visible={visible} setVisible={setVisible} />
-      <Text style={textStyles.title}>Edit Entry</Text>
+      <Text style={textStyles.pageTitle}>Edit Entry</Text>
       <FlatList
         data={[1]}
         keyExtractor={() => '1'}

@@ -21,7 +21,7 @@ export const UserItem: React.FC<{ user: User; setUsers: React.Dispatch<React.Set
 
   return (
     <View style={containerStyles.card}>
-      <Text style={textStyles.titleCentered}>{user.email}</Text>
+      <Text style={[textStyles.listTitle, {textAlign: 'center'}]}>{user.email}</Text>
       <Text style={[textStyles.detail, {alignSelf: 'center'}]}>Role: {user.role}</Text>
       <View style={containerStyles.buttonGroup2}>
         {currentUser.role > user.role? (

@@ -28,6 +28,7 @@ const containerStyles = StyleSheet.create({
   },
   /** Cards */
   card: {
+    flexDirection: "column",
     alignSelf:'center',
     width:'95%',
     padding: '5%',
@@ -54,9 +55,7 @@ const containerStyles = StyleSheet.create({
     margin:10,
   },
   stationCard: {
-    alignSelf:'center',
     width:'95%',
-    flexDirection: 'row',
     padding: 16,
     backgroundColor: '#fff',
     borderRadius: 12,
@@ -68,7 +67,7 @@ const containerStyles = StyleSheet.create({
     shadowRadius: 6,
     elevation: 3,
     alignItems: 'center',
-    justifyContent: 'flex-start',
+    justifyContent: 'center',
   },
   sectionCard: {
     padding: 10,
@@ -130,16 +129,13 @@ const containerStyles = StyleSheet.create({
     flex: 1,
     justifyContent: 'flex-start',
   },
-  stationDetailsContainer: {
-    flexDirection: 'column',
-    paddingLeft: '25%',
-    width: 150,
-    hieght: 150,
-    flex: 1,
-    justifyContent: 'space-between',
-  },
   rowContainer: {
     flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  columnContainer: {
+    flexDirection: 'column',
     justifyContent: 'space-between',
     alignItems: 'center',
   },

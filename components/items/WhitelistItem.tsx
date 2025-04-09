@@ -12,7 +12,7 @@ export const WhitelistItem: React.FC<{ app: WhitelistApp; setApps: React.Dispatc
 
   return (
     <View style={containerStyles.card}>
-      <Text style={[textStyles.title, {marginTop:0}]}>{app.name}</Text>
+      <Text style={[textStyles.listTitle, {marginTop:0}]}>{app.name}</Text>
       <Text style={textStyles.detail}>Code Word: {app.codeWord}</Text>
       <Text style={textStyles.detail}>Graduation Year: {app.graduationYear}</Text>
       <View style={containerStyles.buttonGroup2}>
