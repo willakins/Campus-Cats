@@ -33,7 +33,7 @@ const create_entry = () =>{
   
   return (
     <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={containerStyles.container}>
-      <Button style={buttonStyles.logoutButton} onPress={() => router.back()}>
+      <Button style={buttonStyles.smallButtonTopLeft} onPress={() => router.back()}>
         <Ionicons name="arrow-back-outline" size={25} color="#fff" />
       </Button>
       <Button style={buttonStyles.editButton} onPress={() => database.handleCatalogCreate(thisEntry, profile, user, setVisible, router)}>

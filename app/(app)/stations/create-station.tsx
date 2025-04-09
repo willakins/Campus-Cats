@@ -36,7 +36,7 @@ const create_station = () =>{
 
   return (
     <SafeAreaView  style={containerStyles.wrapper}>
-      <Button style={buttonStyles.logoutButton} onPress={() => router.back()}>
+      <Button style={buttonStyles.smallButtonTopLeft} onPress={() => router.back()}>
         <Ionicons name="arrow-back-outline" size={25} color="#fff" />
       </Button>
       <SnackbarMessage text="Creating Station..." visible={visible} setVisible={setVisible} />
@@ -49,7 +49,7 @@ const create_station = () =>{
           setPhotos={setPhotos}
           isCreate={true}/>
       </ScrollView>
-      <Button style={buttonStyles.button2} onPress={() => {
+      <Button style={buttonStyles.bigButton} onPress={() => {
         createObj();
         database.createStation(photos, setVisible, router);
       }}>

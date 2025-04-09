@@ -41,7 +41,7 @@ const Announcements = () => {
           />
         ))}
       </ScrollView>
-      {isAdmin ? <Button style={buttonStyles.button2} onPress={() => router.push('/announcements/create-ann')}>
+      {isAdmin ? <Button style={buttonStyles.bigButton} onPress={() => router.push('/announcements/create-ann')}>
         <Text style ={textStyles.bigButtonText}> Create Announcement</Text>
       </Button> : null}
     </SafeAreaView>

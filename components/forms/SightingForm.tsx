@@ -37,7 +37,7 @@ const SightingForm: React.FC<SightingFormProps> = ({
 
       <Text style={textStyles.label}>Location</Text>
       <MapView
-        style={containerStyles.map}
+        style={containerStyles.mapContainer}
         initialRegion={{
           latitude: 33.7756,
           longitude: -84.3963,
@@ -50,7 +50,7 @@ const SightingForm: React.FC<SightingFormProps> = ({
       </MapView>
 
       <Text style={textStyles.label}>Cat's Name</Text>
-      <View style={containerStyles.inputContainer2}>
+      <View style={containerStyles.inputContainer}>
         <TextInput
           value={formData.name || ''} // controlled component value, default to '' if undefined
           placeholder="name"
@@ -73,7 +73,7 @@ const SightingForm: React.FC<SightingFormProps> = ({
         setItems={setItems}
         placeholder={isCreate ? 'Select a time of day' : value}
         multiple={false}
-        style={containerStyles.inputContainer2}
+        style={containerStyles.inputContainer}
       />
 
       <Text style={textStyles.label}>Additional Notes</Text>
@@ -88,15 +88,21 @@ const SightingForm: React.FC<SightingFormProps> = ({
         />
       </View>
 
-      <View style={containerStyles.switchRow}>
-        <Switch value={formData.fed} onValueChange={(val) => handleChange('fed', val)} />
-        <Text style={textStyles.label}>Has been fed</Text>
-      </View>
+      <View style={containerStyles.sectionCard}>
+        <View style={containerStyles.rowStack}>
+          <View style={containerStyles.rowContainer}>
+            <Switch value={formData.fed} onValueChange={(val) => handleChange('fed', val)} />
+            <Text style={textStyles.label}>Has been fed</Text>
+          </View>
 
-      <View style={containerStyles.switchRow}>
-        <Switch value={formData.health} onValueChange={(val) => handleChange('health', val)} />
-        <Text style={textStyles.label}>Is in good health</Text>
+          <View style={containerStyles.rowContainer}>
+            <Switch value={formData.health} onValueChange={(val) => handleChange('health', val)} />
+            <Text style={textStyles.label}>Is in good health</Text>
+          </View>
+        </View>
       </View>
+      
+      
       <FormCamera
         photos={photos}
         setPhotos={setPhotos}

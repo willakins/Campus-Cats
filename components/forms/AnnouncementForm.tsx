@@ -22,7 +22,7 @@ const AnnouncementForm: React.FC<AnnouncementFormProps> = ({
     return (
         <View style={[containerStyles.card, {paddingBottom:'10%'}]}>
           <Text style={textStyles.label}>Title</Text>
-          <View style={containerStyles.inputContainer2}>
+          <View style={containerStyles.inputContainer}>
             <TextInput 
                 value={formData.title || ''}
                 placeholder="title"
@@ -41,7 +41,7 @@ const AnnouncementForm: React.FC<AnnouncementFormProps> = ({
                 multiline={true}/>
           </View>
           <Text style={textStyles.label}>Alias (optional)</Text>
-          <View style={containerStyles.inputContainer2}>
+          <View style={containerStyles.inputContainer}>
             <TextInput
                 value={formData.authorAlias || ''}
                 placeholder="Choose an author alias to replace id"

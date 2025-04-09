@@ -20,13 +20,12 @@ const ManageWhitelist = () => {
   }, []);
 
   return (
-    <SafeAreaView style={containerStyles.container}>
-      <Button style={buttonStyles.logoutButton} onPress={() => router.back()}>
+    <SafeAreaView style={containerStyles.wrapper}>
+      <Button style={buttonStyles.smallButtonTopLeft} onPress={() => router.back()}>
         <Ionicons name="arrow-back-outline" size={25} color="#fff" />
       </Button>
 
       <Text style={textStyles.title}>View Whitelist Applications</Text>
-
       <ScrollView contentContainerStyle={containerStyles.scrollView}>
         {applicants.map((app) => (
           <WhitelistItem 

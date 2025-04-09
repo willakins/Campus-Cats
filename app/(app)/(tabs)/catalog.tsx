@@ -22,9 +22,9 @@ const Catalog = () => {
   });
 
   return (
-    <SafeAreaView style={containerStyles.container}>
+    <SafeAreaView style={containerStyles.wrapper}>
       <Text style={textStyles.title}>Catalog</Text>
-      {adminStatus ? <Button style={buttonStyles.editButton} onPress={() => router.push('/catalog/create-entry')}>
+      {adminStatus ? <Button style={buttonStyles.smallButtonTopLeft} onPress={() => router.push('/catalog/create-entry')}>
         <Text style ={textStyles.editText}> Create Entry</Text>
       </Button> : null}
       <ScrollView contentContainerStyle={containerStyles.scrollView}>

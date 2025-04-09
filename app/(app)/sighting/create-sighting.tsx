@@ -55,7 +55,7 @@ const SightingCreateScreen = () => {
 
   return (
     <SafeAreaView style={containerStyles.wrapper}>
-      <Button style={buttonStyles.logoutButton} onPress={() => router.push('/(app)/(tabs)')}>
+      <Button style={buttonStyles.smallButtonTopLeft} onPress={() => router.push('/(app)/(tabs)')}>
         <Ionicons name="arrow-back-outline" size={25} color="#fff" />
       </Button>
 
@@ -83,7 +83,7 @@ const SightingCreateScreen = () => {
         )}
       />
 
-      <Button style={buttonStyles.button2} onPress={() => {
+      <Button style={buttonStyles.bigButton} onPress={() => {
         createObj();
         database.createSighting(photos, setVisible, router);
       }}>

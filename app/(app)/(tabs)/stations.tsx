@@ -18,7 +18,7 @@ const Stations = () => {
     return (
       <SafeAreaView style={containerStyles.wrapper}>
         <Text style={textStyles.catalogTitle}> You should not be here!</Text>
-        <Button style={buttonStyles.logoutButton} onPress={() => router.push('/(app)/(tabs)')}>
+        <Button style={buttonStyles.smallButtonTopLeft} onPress={() => router.push('/(app)/(tabs)')}>
           <Ionicons name="arrow-back-outline" size={25} color="#fff" />
         </Button>
       </SafeAreaView>
@@ -52,7 +52,7 @@ const Stations = () => {
             </Button>
           ))}
         </View>
-        <ScrollView contentContainerStyle={containerStyles.listContainer}>
+        <ScrollView contentContainerStyle={containerStyles.scrollView}>
           {filteredStations.map((station) => (
             <StationItem
               key={station.id}
@@ -67,7 +67,7 @@ const Stations = () => {
             />
           ))}
         </ScrollView>
-        <Button style={buttonStyles.button2} onPress={() => router.push('/stations/create-station')}>
+        <Button style={buttonStyles.bigButton} onPress={() => router.push('/stations/create-station')}>
           <Text style={textStyles.bigButtonText}> Create Station</Text>
         </Button>
       </SafeAreaView>

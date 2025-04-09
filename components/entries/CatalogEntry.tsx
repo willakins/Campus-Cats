@@ -7,12 +7,13 @@ import { CatalogEntryObject } from '@/types/CatalogEntryObject';
 import DatabaseService from '../../services/DatabaseService';
 import { globalStyles, buttonStyles, textStyles, containerStyles } from '@/styles';
 import { Button } from '../ui/Buttons';
+import { Sighting } from '@/types';
 
 export const CatalogEntry: React.FC<CatalogEntryObject> = 
   ({ id, name, descShort, descLong, colorPattern, behavior, yearsRecorded, AoR, currentStatus, furLength, furPattern, tnr, sex, credits }) => {
   const [profileURL, setProfile] = useState<string>('');
   const [imageUrls, setImageUrls] = useState<string[]>([]);
-  const [sightings, setSightings] = useState<CatSightingObject[]>([]);
+  const [sightings, setSightings] = useState<Sighting[]>([]);
   const [showDetails, setShowDetails] = useState<boolean>(false);
   const database = DatabaseService.getInstance();  
 
@@ -25,7 +26,7 @@ export const CatalogEntry: React.FC<CatalogEntryObject> =
     <ScrollView contentContainerStyle={containerStyles.scrollView}>
       <Text style={textStyles.catalogTitle}>{name}</Text>
       <Text style={textStyles.subHeading}> {descShort} </Text>
-      {profileURL ? (<Image source={{ uri: profileURL }} style={containerStyles.headlineImage} resizeMode='contain'/>) : 
+      {profileURL ? (<Image source={{ uri: profileURL }} style={containerStyles.imageMain} resizeMode='contain'/>) : 
         <Text style={textStyles.catalogTitle}>Loading image...</Text>}
       <Text style={textStyles.catalogLongDescription}>{descLong}</Text>
       <Text style={textStyles.headline}> Sightings </Text>
@@ -38,19 +39,16 @@ export const CatalogEntry: React.FC<CatalogEntryObject> =
           longitudeDelta: 0.01,
         }}
       >
-        {sightings.map((sighting:CatSightingObject) => (
+        {sightings.map((sighting:Sighting) => (
           <Marker
           key={sighting.id}
-          coordinate={{
-            latitude: sighting.latitude,
-            longitude: sighting.longitude,
-          }}
+          coordinate={sighting.location}
           title={sighting.name}
           description={sighting.info}
         />
         ))}
       </MapView>
-      <Button style={buttonStyles.button2}onPress={() => setShowDetails(!showDetails)}>
+      <Button style={buttonStyles.bigButton}onPress={() => setShowDetails(!showDetails)}>
         <Text style={textStyles.bigButtonText}> {showDetails ? "Show less details": "Show more details"}</Text>
       </Button>
       {showDetails ? <><Text style={textStyles.headline}>Detailed Color Pattern</Text>

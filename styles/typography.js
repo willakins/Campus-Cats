@@ -60,10 +60,6 @@ const textStyles = StyleSheet.create({
       textAlign: 'center',
       padding:30,
   },
-  normalText: {
-    fontSize: 16,
-    color: '#333',
-  },
   contactInput: {
     fontSize: 16,
     borderBottomWidth: 1,
@@ -117,6 +113,7 @@ const textStyles = StyleSheet.create({
     marginLeft: 12,
     flex: 1,
   },
+  /** Input text */
   input: {
     fontSize:15,
     fontWeight: '600',
@@ -130,11 +127,7 @@ const textStyles = StyleSheet.create({
     fontWeight: 'light',
     color: '#000',
   },
-  forgotPassword: {
-    marginTop: 10,
-    color: '#007BFF',
-    textAlign: 'center',
-  },
+  /** idk */
   description: {
     fontSize: 14,
     color: '#777',
@@ -198,20 +191,15 @@ const textStyles = StyleSheet.create({
   titleCentered: {
     fontSize: 22,
     fontWeight: 'bold',
-    paddingTop: 30,
     color: '#333',
     textAlign: 'center',
   },
+  /** Use this stuff */
   label: {
     fontSize: 18,
     fontWeight: '600',
     color: '#1A1A1A',
     marginTop: '5%',
-  },
-  label2: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#1A1A1A',
   },
   sectionTitle: {
     fontSize: 18,
@@ -233,10 +221,9 @@ const textStyles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '500',
   },
-  knownCats: {
-    fontSize: 13,
-    color: '#666',
-    marginTop: 8,
+  normalText: {
+    fontSize: 16,
+    color: '#555',
   },
   switchLabel: {
     fontSize: 16,

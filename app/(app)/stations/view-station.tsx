@@ -18,17 +18,17 @@ const view_entry = () =>{
 
   return (
     <SafeAreaView style={containerStyles.wrapper}>
-      <Button style={buttonStyles.logoutButton} onPress={() => router.navigate('/stations')}>
+      <Button style={buttonStyles.smallButtonTopLeft} onPress={() => router.navigate('/stations')}>
         <Ionicons name="arrow-back-outline" size={25} color="#fff" />
       </Button>
       <SnackbarMessage text="Refilling..." visible={visible} setVisible={setVisible} />
       <ScrollView contentContainerStyle={containerStyles.scrollView}>
         <StationEntry/>
       </ScrollView>
-      <Button style={buttonStyles.button2} onPress={() => database.stockStation(setVisible, router)}>
+      <Button style={buttonStyles.bigButton} onPress={() => database.stockStation(setVisible, router)}>
         <Text style={textStyles.bigButtonText}>Refill Station</Text>
       </Button>
-      {isAdmin ? <Button style={buttonStyles.button2} onPress={() => router.push('/stations/edit-station')}>
+      {isAdmin ? <Button style={buttonStyles.bigButton} onPress={() => router.push('/stations/edit-station')}>
         <Text style ={textStyles.bigButtonText}> Edit Station</Text>
       </Button> : null}
     </SafeAreaView>

@@ -35,7 +35,7 @@ const create_ann = () =>{
 
   return (
     <SafeAreaView style={containerStyles.wrapper}>
-      <Button style={buttonStyles.logoutButton} onPress={() => router.navigate('/announcements')}>
+      <Button style={buttonStyles.smallButtonTopLeft} onPress={() => router.navigate('/announcements')}>
         <Ionicons name="arrow-back-outline" size={25} color="#fff" />
       </Button>
       <SnackbarMessage text="Creating Announcement..." visible={visible} setVisible={setVisible} />
@@ -48,7 +48,7 @@ const create_ann = () =>{
         setPhotos={setPhotos}
         />
       </ScrollView>
-      <Button style={buttonStyles.button2} onPress={() => {
+      <Button style={buttonStyles.bigButton} onPress={() => {
         createObj();
         database.handleAnnouncementCreate(photos, setVisible, router)
         }}>

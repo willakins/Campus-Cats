@@ -16,8 +16,8 @@ const view_entry = () =>{
           furLength: string, furPattern: string, tnr: string, sex: string, credits:string};
 
   return (
-    <SafeAreaView style={containerStyles.container}>
-      <Button style={buttonStyles.logoutButton} onPress={() => router.navigate('/catalog')}>
+    <SafeAreaView style={containerStyles.wrapper}>
+      <Button style={buttonStyles.smallButtonTopLeft} onPress={() => router.navigate('/catalog')}>
         <Ionicons name="arrow-back-outline" size={25} color="#fff" />
       </Button>
       {isAdmin ? <Button style={buttonStyles.editButton} onPress={() => router.push({

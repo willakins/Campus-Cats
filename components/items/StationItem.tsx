@@ -40,9 +40,9 @@ export const StationItem: React.FC<Station> = ({
         <View style={containerStyles.cardImage}><Text>Loading...</Text></View>
       )}
 
-      <View style={containerStyles.listDetails}>
+      <View style={containerStyles.listDetailsContainer}>
         <Text style={textStyles.stationTitle}>{name}</Text>
-        <View style={containerStyles.statusContainer}>
+        <View style={containerStyles.rowContainer}>
           <Text style={[textStyles.statusText2, { color: isStocked ? "green" : "red" }]}>
             {isStocked ? "Has Food" : "Needs Food"}
           </Text>
@@ -51,7 +51,7 @@ export const StationItem: React.FC<Station> = ({
             color="green"
           />
         </View>
-        <Text style={textStyles.knownCats}>Known Cats: {knownCats}</Text>
+        <Text style={textStyles.normalText}>Known Cats: {knownCats}</Text>
       </View>
     </Button>
   );
