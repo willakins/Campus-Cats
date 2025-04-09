@@ -27,7 +27,7 @@ export const AnnouncementEntry: React.FC = () => {
 
       <View style={containerStyles.footer}>
         <Text style={textStyles.footerText}>Author: {ann.authorAlias ? ann.authorAlias:ann.createdBy.id}</Text>
-        <Text style={textStyles.footerText}>Announced At: {Announcement.getDateString(ann)}</Text>
+        <Text style={textStyles.footerText}>{Announcement.getDateString(ann)}</Text>
       </View>
     </View>
   );

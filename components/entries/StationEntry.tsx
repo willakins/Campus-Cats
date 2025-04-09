@@ -23,7 +23,6 @@ export const StationEntry: React.FC = () => {
   return (
     <View style={containerStyles.card}>
         <Text style={textStyles.titleCentered}>{station.name}</Text>
-        <Text style={textStyles.detail}>Created by: {station.createdBy.id}</Text>
         {profile ? (<Image source={{ uri: profile }} style={containerStyles.imageMain} resizeMode="cover"/>) : 
           <Text style={textStyles.titleCentered}>Loading image...</Text>}
         <Text style={textStyles.label}>Location</Text>
@@ -57,6 +56,9 @@ export const StationEntry: React.FC = () => {
             ))}
         </>
         )}
+        <View style={containerStyles.footer}>
+            <Text style={textStyles.footerText}>Author: {station.createdBy.id}</Text>
+        </View>
     </View>
     
   );

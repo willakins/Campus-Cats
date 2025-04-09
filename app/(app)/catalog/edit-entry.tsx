@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { SafeAreaView, ScrollView, Text } from 'react-native';
+import { FlatList, SafeAreaView, Text } from 'react-native';
 
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
@@ -7,10 +7,11 @@ import { useRouter } from 'expo-router';
 import { Button, SnackbarMessage, CatalogForm} from '@/components';
 import DatabaseService from '@/services/DatabaseService';
 import { globalStyles, buttonStyles, textStyles, containerStyles } from '@/styles';
-import { Cat, CatalogEntry, CatStatus, Sex, TNRStatus } from '@/types/CatalogEntry';
+import { Cat, CatalogEntry, CatStatus, Fur, Sex, TNRStatus } from '@/types/CatalogEntry';
 import { CatalogImageHandler } from '@/image_handlers/CatalogImageHandler';
 import { useAuth } from '@/providers';
 import { getSelectedCatalogEntry, setSelectedCatalogEntry } from '@/stores/CatalogEntryStores';
+import { PickerConfig } from '@/types';
 
 const edit_entry = () => {
   const router = useRouter();
@@ -25,15 +26,17 @@ const edit_entry = () => {
   const imageHandler = new CatalogImageHandler({ type:'catalog', id:entry.id, photos, profile, setPhotos, setProfile, setPicsChanged, setVisible});
   
   // ---------- Status Picker ----------
-  const [statusValue, setStatusValue] = useState<string>('');
+  const [statusValue, setStatusValue] = useState<CatStatus>('Unknown');
   const [statusOpen, setStatusOpen] = useState<boolean>(false);
   const [statusItems, setStatusItems] = useState([
-    { label: 'Healthy', value: 'Healthy' },
-    { label: 'Injured', value: 'Injured' },
-    { label: 'Missing', value: 'Missing' },
+    { label: 'Adtoped', value: 'Adtoped' },
+    { label: 'Deceased', value: 'Deceased' },
+    { label: 'Feral', value: 'Feral' },
+    { label: 'Frat Cat', value: 'Frat Cat' },
+    { label: 'Unknown', value: 'Unknown' },
   ]);
 
-  const statusPicker = {
+  const statusPicker:PickerConfig<CatStatus> = {
     value: statusValue,
     setValue: setStatusValue,
     open: statusOpen,
@@ -43,7 +46,7 @@ const edit_entry = () => {
   };
 
   // ---------- TNR Picker ----------
-  const [tnrValue, setTnrValue] = useState<string>('');
+  const [tnrValue, setTnrValue] = useState<TNRStatus>('Unknown');
   const [tnrOpen, setTnrOpen] = useState<boolean>(false);
   const [tnrItems, setTnrItems] = useState([
     { label: 'Yes', value: 'Yes' },
@@ -51,7 +54,7 @@ const edit_entry = () => {
     { label: 'Unknown', value: 'Unknown' },
   ]);
 
-  const tnrPicker = {
+  const tnrPicker:PickerConfig<TNRStatus> = {
     value: tnrValue,
     setValue: setTnrValue,
     open: tnrOpen,
@@ -61,7 +64,7 @@ const edit_entry = () => {
   };
 
   // ---------- Sex Picker ----------
-  const [sexValue, setSexValue] = useState<string>('');
+  const [sexValue, setSexValue] = useState<Sex>('Unknown');
   const [sexOpen, setSexOpen] = useState<boolean>(false);
   const [sexItems, setSexItems] = useState([
     { label: 'Male', value: 'Male' },
@@ -69,7 +72,7 @@ const edit_entry = () => {
     { label: 'Unknown', value: 'Unknown' },
   ]);
 
-  const sexPicker = {
+  const sexPicker:PickerConfig<Sex> = {
     value: sexValue,
     setValue: setSexValue,
     open: sexOpen,
@@ -79,7 +82,7 @@ const edit_entry = () => {
   };
 
   // ---------- Fur Picker ----------
-  const [furValue, setFurValue] = useState<string>('');
+  const [furValue, setFurValue] = useState<Fur>('Unknown');
   const [furOpen, setFurOpen] = useState<boolean>(false);
   const [furItems, setFurItems] = useState([
     { label: 'Short', value: 'Short' },
@@ -88,7 +91,7 @@ const edit_entry = () => {
     { label: 'Unknown', value: 'Unknown' },
   ]);
 
-  const furPicker = {
+  const furPicker:PickerConfig<Fur> = {
     value: furValue,
     setValue: setFurValue,
     open: furOpen,
@@ -102,7 +105,7 @@ const edit_entry = () => {
     tnrPicker,
     sexPicker,
     furPicker,
-  };
+  }; 
 
   const [formData, setFormData] = useState<{
     name: string;
@@ -113,25 +116,25 @@ const edit_entry = () => {
     yearsRecorded: string;
     AoR: string;
     currentStatus: CatStatus;
-    furLength: string;
+    furLength: Fur;
     furPattern: string;
     tnr: TNRStatus;
     sex: Sex;
     credits: string;
   }>({
-    name: "",
-    descShort: "",
-    descLong: "",
-    colorPattern: "",
-    behavior: "",
-    yearsRecorded: "",
-    AoR: "",
-    currentStatus: "Unknown",
-    furLength: "",
-    furPattern: "",
-    tnr: "Unknown",
-    sex: "Unknown",
-    credits: "",
+    name: entry.cat.name,
+    descShort: entry.cat.descShort,
+    descLong: entry.cat.descLong,
+    colorPattern: entry.cat.colorPattern,
+    behavior: entry.cat.behavior,
+    yearsRecorded: entry.cat.yearsRecorded,
+    AoR: entry.cat.AoR,
+    currentStatus: entry.cat.currentStatus,
+    furLength: entry.cat.furLength,
+    furPattern: entry.cat.furPattern,
+    tnr: entry.cat.tnr,
+    sex: entry.cat.sex,
+    credits: entry.credits,
   });
 
   const createCat = () => {
@@ -143,18 +146,18 @@ const edit_entry = () => {
       behavior: formData.behavior,
       yearsRecorded: formData.yearsRecorded,
       AoR: formData.AoR,
-      currentStatus: formData.currentStatus,
-      furLength: formData.furLength,
+      currentStatus: pickers.statusPicker.value,
+      furLength: pickers.furPicker.value,
       furPattern: formData.furPattern,
-      tnr: formData.tnr,
-      sex: formData.sex,
+      tnr: pickers.tnrPicker.value,
+      sex: pickers.sexPicker.value,
     }
     return newCat;
   }
   
   const createObj = () => {
     const newEntry = new CatalogEntry({
-      id:"-1",
+      id:entry.id,
       cat:createCat(),
       credits:formData.credits,
       createdAt: new Date(),
@@ -164,7 +167,7 @@ const edit_entry = () => {
   };
   
   useEffect(() => {
-    database.fetchSightingImages(entry.id, setProfile, setPhotos);
+    database.fetchCatImages(entry.id, setProfile, setPhotos);
   }, []);
 
   return (
@@ -174,19 +177,23 @@ const edit_entry = () => {
       </Button>
       <SnackbarMessage text="Saving Entry..." visible={visible} setVisible={setVisible} />
       <Text style={textStyles.title}>Edit Entry</Text>
-      <ScrollView contentContainerStyle={containerStyles.scrollView}>
-        <CatalogForm
-        formData={formData}
-        setFormData={setFormData}
-        pickers={pickers}
-        photos={photos}
-        profile={profile}
-        setPhotos={setPhotos}
-        setPicsChanged={setPicsChanged}
-        imageHandler={imageHandler}
-        isCreate={false}
-        />
-      </ScrollView>
+      <FlatList
+        data={[1]}
+        keyExtractor={() => '1'}
+        contentContainerStyle={containerStyles.scrollView}
+        renderItem={() => (
+          <CatalogForm
+            formData={formData}
+            setFormData={setFormData}
+            pickers={pickers}
+            photos={photos}
+            profile={profile}
+            setPhotos={setPhotos}
+            setPicsChanged={setPicsChanged}
+            imageHandler={imageHandler}
+            isCreate={false}
+          />
+      )}/>
       <Button style={buttonStyles.bigButton} 
       onPress={() => {
         createObj();

@@ -1,13 +1,11 @@
 import { MapViewProps, Marker } from 'react-native-maps';
 import { MapView } from '@/components/ui/MapView';
-
-// TODO: implement CatSighting type
-type CatSighting = any;
+import { Sighting } from '@/types';
 
 type SightingMapViewProps = MapViewProps & {
-  list: CatSighting[];
-  filter: (item: CatSighting) => boolean;
-  onPerMarkerPress?: (item: CatSighting) => void;
+  list: Sighting[];
+  filter: (item: Sighting) => boolean;
+  onPerMarkerPress?: (item: Sighting) => void;
 };
 
 const SightingMapView: React.FC<SightingMapViewProps> = ({
@@ -19,7 +17,7 @@ const SightingMapView: React.FC<SightingMapViewProps> = ({
 }) => {
   return (
     <MapView {...props}>
-      {list.filter(filter).map((item: CatSighting) => (
+      {list.filter(filter).map((item: Sighting) => (
         <Marker
           key={item.id}
           coordinate={{

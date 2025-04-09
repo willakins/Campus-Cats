@@ -20,7 +20,6 @@ const SightingEntry: React.FC = () => {
 
   return (
     <View style={containerStyles.card}>
-        <Text style={textStyles.detail}>Created by: {sighting.createdBy.id}</Text>
         {profile.length > 0 ? (<Image source={{ uri: profile }} style={containerStyles.imageMain} />) : (
             <Text style={textStyles.titleCentered}>Loading image...</Text>)}
         <Text style={textStyles.label}>Location</Text>
@@ -72,6 +71,9 @@ const SightingEntry: React.FC = () => {
             ))}
         </>
         )}
+        <View style={containerStyles.footer}>
+            <Text style={textStyles.footerText}>Author: {sighting.createdBy.id}</Text>
+        </View>
     </View>
   );
 };

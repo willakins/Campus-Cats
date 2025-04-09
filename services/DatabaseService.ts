@@ -403,9 +403,9 @@ class DatabaseService {
   * Effect: deletes a user from the firestore
   */
   public async handleDeleteUser(
-    user:User,
+    user:User, router:Router
   ) {
-    await DatabaseService.settingsService.handleDeleteUser(user);
+    await DatabaseService.settingsService.handleDeleteUser(user, router);
   }
 
   /**
@@ -425,8 +425,8 @@ class DatabaseService {
   /**
    * Effect: Pulls list of users from firestore
    */
-  public async fetchUsers(setUsers:Dispatch<SetStateAction<User[]>>) {
-    await DatabaseService.settingsService.fetchUsers(setUsers);
+  public async fetchUsers(setUsers:Dispatch<SetStateAction<User[]>>, id:string) {
+    await DatabaseService.settingsService.fetchUsers(setUsers, id);
   }
 
   /**

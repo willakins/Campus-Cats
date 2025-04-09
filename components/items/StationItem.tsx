@@ -30,7 +30,7 @@ export const StationItem: React.FC<Station> = ({
   });
 
   return (
-    <Button style={containerStyles.listCard} onPress={() => {
+    <Button style={containerStyles.stationCard} onPress={() => {
       createObj();
       router.push('/stations/view-station');
     }}>
@@ -40,7 +40,7 @@ export const StationItem: React.FC<Station> = ({
         <View style={containerStyles.cardImage}><Text>Loading...</Text></View>
       )}
 
-      <View style={containerStyles.listDetailsContainer}>
+      <View style={containerStyles.stationDetailsContainer}>
         <Text style={textStyles.stationTitle}>{name}</Text>
         <View style={containerStyles.rowContainer}>
           <Text style={[textStyles.statusText2, { color: isStocked ? "green" : "red" }]}>

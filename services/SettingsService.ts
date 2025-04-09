@@ -118,7 +118,7 @@ class SettingsService {
    * Effect: deletes a user from the firestore
    */
   public async handleDeleteUser(
-    user:User,
+    user:User, router:Router
   ) {
     Alert.alert(
       "Delete User",
@@ -132,6 +132,7 @@ class SettingsService {
             try {
               await deleteDoc(doc(db, "users", user.id));
               Alert.alert("User Deleted", `${user.email} has been removed.`);
+              router.navigate('/settings/manage_users')
             } catch (error) {
               console.error("Error deleting user:", error);
               Alert.alert("Error", "Could not delete user.");
@@ -147,7 +148,7 @@ class SettingsService {
    */
   public async handlePromoteUser(thisUser:User) {
     try {
-      thisUser.role += 1;
+      thisUser.role = Math.min(thisUser.role + 1, 2);
       const userRef = doc(db, "users", thisUser.id);
       await updateDoc(userRef, {
         role: thisUser.role
@@ -161,26 +162,30 @@ class SettingsService {
   /**
    * Effect: Pulls list of users from firestore
    */
-  public async fetchUsers(setUsers:Dispatch<SetStateAction<User[]>>) {
+  public async fetchUsers(setUsers: Dispatch<SetStateAction<User[]>>, currentUserId: string) {
     try {
       const querySnapshot = await getDocs(collection(db, 'users'));
-      const userList = querySnapshot.docs.map(doc => ({
-        id: doc.id,
-        email: doc.data().email,
-        role: doc.data().role,
-      }));
+      const userList = querySnapshot.docs
+        .map(doc => ({
+          id: doc.id,
+          email: doc.data().email,
+          role: doc.data().role,
+        }))
+        .filter(user => user.id !== currentUserId);
+  
       setUsers(userList);
     } catch (error) {
       console.error('Error fetching users:', error);
     }
-  };
+  }
+  
 
   /**
    * Effect: demotes a user's role if capable
    */
   public async handleDemoteUser(thisUser:User) {
     try {
-      thisUser.role -= 1;
+      thisUser.role = Math.max(thisUser.role - 1, 0);
       const userRef = doc(db, "users", thisUser.id);
       await updateDoc(userRef, {
         role: thisUser.role

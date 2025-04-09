@@ -3,11 +3,10 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { globalStyles, buttonStyles, textStyles, containerStyles } from '@/styles';
-import { Button } from '@/components';
+import { Button, SnackbarMessage } from '@/components';
 import DatabaseService from '@/services/DatabaseService';
 import { WhitelistApp } from '@/types';
 import { WhitelistItem } from '@/components/items/WhitelistItem';
-import { Snackbar } from 'react-native-paper';
 
 const ManageWhitelist = () => {
   const router = useRouter();
@@ -24,7 +23,7 @@ const ManageWhitelist = () => {
       <Button style={buttonStyles.smallButtonTopLeft} onPress={() => router.back()}>
         <Ionicons name="arrow-back-outline" size={25} color="#fff" />
       </Button>
-
+      <SnackbarMessage text="Saving Whitelist..." visible={visible} setVisible={setVisible} />
       <Text style={textStyles.title}>View Whitelist Applications</Text>
       <ScrollView contentContainerStyle={containerStyles.scrollView}>
         {applicants.map((app) => (
@@ -35,9 +34,6 @@ const ManageWhitelist = () => {
             setVisible={setVisible}/>
         ))}
       </ScrollView>
-      <Snackbar visible={visible} onDismiss={() => setVisible(false)}>
-        Saving...
-      </Snackbar>
     </SafeAreaView>
   );
 };
