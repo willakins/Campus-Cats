@@ -122,6 +122,16 @@ const buttonStyles = StyleSheet.create({
     display: 'flex',
     justifyContent: 'center',
   },
+  imageDeleteButton: {
+    width:30,
+    height:20,
+    backgroundColor: 'red',
+    alignSelf: 'center',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 5,
+    borderRadius: 5,
+  },
   cameraButton: {
     width: 70,
     height: 70,
