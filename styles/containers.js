@@ -5,33 +5,247 @@ const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const IMAGE_WIDTH = SCREEN_WIDTH - 32; // leaving 16px padding on both sides
 
 const containerStyles = StyleSheet.create({
-    container: {
+  /** Screen Wrappers  */
+  wrapper: {
+    flex: 1,
+    backgroundColor: '#FAFAFA',
+    paddingTop: '10%',
+  },
+  imageWrapper: {
+    position: 'relative',
+    margin: 5,
+    alignItems: 'center',
+  },
+  scrollView: {
+    paddingTop: 20, 
+    paddingBottom: '40%' 
+  },
+  scrollViewCenter: {
+    paddingTop: 20, 
+    paddingBottom: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  /** Cards */
+  card: {
+    alignSelf:'center',
+    width:'95%',
+    padding: '5%',
+    backgroundColor: '#fff',
+    borderRadius: '4%',
+    marginHorizontal: '3%',
+    marginBottom: '5%',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  shadedCard: {
+    width: '80%',
+    backgroundColor: '#f9f9f9',
+    padding: 20,
+    borderRadius: 10,
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    margin:10,
+  },
+  listCard: {
+    alignSelf:'center',
+    width:'95%',
+    flexDirection: 'row',
+    padding: 16,
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    marginHorizontal: 12,
+    marginBottom: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 6,
+    elevation: 3,
+    alignItems: 'center',
+    justifyContent: 'flex-start',
+  },
+  sectionCard: {
+    padding: 10,
+    backgroundColor: '#F0F4F8',
+    borderRadius: 12,
+  },
+  verticalCard: {
+    flexDirection: "column",
+    alignSelf: "center",
+  },
+  switchRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    width: '100%',
+    paddingVertical: 8,
+  },
+  /** Input Containers */
+  inputContainer: {
+    padding:10,
+    width: '100%',
+    height: '5%',
+    borderColor: '#ccc',
+    borderWidth: 1,
+    borderRadius: 5,
+    marginBottom: 15,
+    paddingHorizontal: 10,
+    backgroundColor: '#fff',
+    color: '#000',
+    justifyContent: 'center',
+    textAlign: 'left',
+    flex: 1,
+  },
+  descInputContainer: {
+    padding:10,
+    width: '100%',
+    height: '10%',
+    borderColor: '#ccc',
+    borderWidth: 1,
+    borderRadius: 5,
+    marginBottom: 15,
+    paddingHorizontal: 10,
+    backgroundColor: '#fff',
+    color: '#000',
+    textAlign: 'left',
+  },
+  dateInputContainer: {
+    height: 60,
+    width: '100%',
+    padding:10,
+    flexDirection: 'row', 
+    borderColor: '#ccc',
+    borderWidth: 1,
+    borderRadius: 5,
+    marginBottom: 15,
+    paddingHorizontal: 10,
+    backgroundColor: '#fff',
+    color: '#000',
+  },
+  /** Text Containers */
+  listDetailsContainer: {
+    flexDirection: 'column',
+    paddingLeft: '25%',
+    width: 150,
+    hieght: 150,
+    flex: 1,
+    justifyContent: 'space-between',
+  },
+  rowContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  footer: {
+    marginTop: 20,
+    borderTopWidth: 1,
+    borderTopColor: '#eee',
+    paddingTop: 10,
+  },
+  rowStack: {
+    flexDirection: 'column',
+    padding:5,
+  },
+  /** Image Containers */
+  imageLarge: {
+    width: '80%',
+    height: '80%',
+    borderRadius: 22,
+    marginBottom: 16,
+    alignSelf: 'center',
+    overflow: 'hidden',
+  },
+  imageMain: {
+    width: '100%',
+    height: 200,
+    borderRadius: 22,
+    marginBottom: 16,
+    alignSelf: 'center',
+    overflow: 'hidden',
+  },
+  cardImage: {
+    width: 150,
+    height: 150,
+    borderRadius: 12,
+    marginRight: 16,
+  },
+  extraPic: {
+    width: 100,
+    height: 100,
+    borderRadius: 12,
+    resizeMode: 'cover',
+  },
+  extraPicsContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+  },
+  /** Misc. elements Containers */
+  cameraContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 10,
+  },
+  datePickerContainer: {
+    backgroundColor: '#fff',
+    flex: 1,
+    justifyContent: 'center',
+  },
+  buttonGroup: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    paddingVertical: 10,
+    backgroundColor: '#f0f0f0'
+  },
+  mapContainer: {
+    height: 200,
+    width: '100%',
+    borderRadius: 12,
+    marginBottom: 12,
+    overflow: 'hidden',
+  },
+  snackbarContainer: {
+    position: 'absolute',
+    top: '15%',
+    left: '3%',
+    right: '3%',
+    zIndex: 1000,
+  },
+  snackbar: {
+    width: '100%',
+    height: '20%',
+    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+    color: 'white',
+    borderRadius: 5,
+  },
+});
+export { containerStyles };
+
+/**
+
+container: {
         flex: 1,
         backgroundColor: '#F4F4F9',
         padding: 20,
         paddingHorizontal: 15,
     },
-    scrollView: {
-        paddingTop: 20, 
-        paddingBottom: 40 
-    },
-    scrollView2: {
-        padding:10,
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
+    
+    
     loaderContainer: {
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
         backgroundColor: '#F4F4F9',
     },
-    buttonGroup: {
-        flexDirection: 'row',
-        justifyContent: 'center',
-        paddingVertical: 10,
-        backgroundColor: '#f0f0f0'
-    },
+   
     homeContainer: {
         flex: 1,
     },
@@ -81,10 +295,7 @@ const containerStyles = StyleSheet.create({
         position: 'relative',
         marginTop:50
     },
-    entryElements: {
-        flexDirection: "column", // Ensures each item is stacked vertically
-        alignItems: "center",
-    },
+    
     entryElements2: {
       flexDirection: "column", // Ensures each item is stacked vertically
       alignItems: "center",
@@ -94,18 +305,8 @@ const containerStyles = StyleSheet.create({
         flexDirection: "row", // Ensures each item is stacked vertically
         alignItems: "center",
     },
-    extraPicsContainer: {
-        flexDirection: 'row',
-        flexWrap: 'wrap',
-        justifyContent: 'center',
-    },
-    logo: {
-        height: '40%',
-        width: '80%',
-        marginBottom: 20,
-        borderRadius:50,
-        aspectRatio: 1
-    },
+    
+    
     headlineImage: {
         width: '100%',  // Set a fixed width for the profile picture
         height: 250, // Set a fixed height for the profile picture
@@ -141,10 +342,7 @@ const containerStyles = StyleSheet.create({
     flex: 1,
     marginBottom: 15,
   },
-  splashImage: {
-    width: 200,
-    height: 200,
-  },
+  
   inputContainer: {
     width: '100%',
     backgroundColor: '#f9f9f9',
@@ -157,46 +355,8 @@ const containerStyles = StyleSheet.create({
     shadowRadius: 4,
     borderRadius:10,
   },
-  inputContainer2: {
-    padding:10,
-    width: '100%',
-    height: '5%',
-    borderColor: '#ccc',
-    borderWidth: 1,
-    borderRadius: 5,
-    marginBottom: 15,
-    paddingHorizontal: 10,
-    backgroundColor: '#fff',
-    color: '#000',
-    justifyContent: 'center',
-    textAlign: 'left',
-    flex: 1,
-  },
-  descInputContainer: {
-    padding:10,
-    width: '100%',
-    height: '10%',
-    borderColor: '#ccc',
-    borderWidth: 1,
-    borderRadius: 5,
-    marginBottom: 15,
-    paddingHorizontal: 10,
-    backgroundColor: '#fff',
-    color: '#000',
-    textAlign: 'left',
-  },
-  loginContainer: {
-    width: '80%',
-    backgroundColor: '#f9f9f9',
-    padding: 20,
-    borderRadius: 10,
-    elevation: 3,  // Adds shadow on Android
-    shadowColor: '#000',  // Adds shadow on iOS
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    margin:10,
-  },
+  
+  
   profileContainer: {
     flex: 1,
     justifyContent: 'center',
@@ -209,24 +369,8 @@ const containerStyles = StyleSheet.create({
     marginVertical: 8,
     marginHorizontal: 16,
   },
-  picker: {
-    backgroundColor: '#fff',
-    flex: 1,
-    justifyContent: 'center',
-  },
-  dateInput: {
-    height: 70,
-    width: '100%',
-    padding:15,
-    flexDirection: 'row', 
-    borderColor: '#ccc',
-    borderWidth: 1,
-    borderRadius: 5,
-    marginBottom: 15,
-    paddingHorizontal: 10,
-    backgroundColor: '#fff',
-    color: '#000',
-  },
+  
+  
   stationsEntry: {
     flexDirection: "row",
     alignItems: "center",
@@ -294,59 +438,14 @@ const containerStyles = StyleSheet.create({
     elevation: 5,
     width:'100%'
   },
-  wrapper: {
-    flex: 1,
-    backgroundColor: '#FAFAFA',
-    paddingTop: '10%',
-  },
-  card: {
-    padding: '5%',
-    backgroundColor: '#fff',
-    borderRadius: '4%',
-    marginHorizontal: '3%',
-    marginBottom: '5%',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 3,
-  },
+  
+  
   block: {
     marginTop: 10,
   },
-  map: {
-    width: '100%',
-    height: 200,
-    borderRadius: 12,
-    marginVertical: 10,
-    overflow: 'hidden',
-  },
-  imageMain: {
-    width: '100%',
-    height: 200,
-    borderRadius: 22, // soft corners
-    marginBottom: 16,
-    alignSelf: 'center',
-    overflow: 'hidden', // ensures the rounded corners are clipped
-  },
-  sectionBox: {
-    marginTop: 16,
-    padding: 16,
-    backgroundColor: '#F0F4F8',
-    borderRadius: 12,
-  },
-  sectionRow: {
-    flexDirection: 'column',
-    gap: 12,
-  },
-  rowItem: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  checkWrap: {
-    marginLeft: 8,
-  },
+  
+  
+  
   formSection: {
     backgroundColor: '#fff',
     padding: 16,
@@ -359,26 +458,9 @@ const containerStyles = StyleSheet.create({
     elevation: 3,
   },
 
-  cameraView: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 10,
-  },
+  
 
-  imageWrapper: {
-    position: 'relative',
-    margin: 5,
-    alignItems: 'center',
-  },
-
-  extraPic: {
-    width: 100,
-    height: 100,
-    borderRadius: 12,
-    resizeMode: 'cover',
-  },
+  
 
   sliderContainer: {
     flexDirection: 'row',
@@ -391,12 +473,7 @@ const containerStyles = StyleSheet.create({
     marginTop: 10,
   },
 
-  mapContainer: {
-    height: 200,
-    width: '100%',
-    borderRadius: 12,
-    marginBottom: 12,
-  },
+  
   safeContainer: {
     flex: 1,
     paddingTop: Platform.OS === 'android' ? 25 : 0,
@@ -409,72 +486,10 @@ const containerStyles = StyleSheet.create({
     gap: 16,
     alignItems: 'center',
   },
-  switchRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    width: '100%',
-    paddingVertical: 8,
-  },
-  snackbarContainer: {
-    position: 'absolute',
-    top: '15%',
-    left: '3%',
-    right: '3%',
-    zIndex: 1000,  // Ensure the snackbar is above other content
-  },
-  snackbar: {
-    width: '100%',
-    height: '20%',
-    backgroundColor: 'rgba(0, 0, 0, 0.8)',
-    color: 'white',
-    borderRadius: 5,
-  },
-  footer: {
-    marginTop: 20,
-    borderTopWidth: 1,
-    borderTopColor: '#eee',
-    paddingTop: 10,
-  },
-  listCard: {
-    flexDirection: 'row', // Row layout for image and text
-    padding: 16, // Padding inside the card for spacing
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    marginHorizontal: 12,
-    marginBottom: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 6,
-    elevation: 3,
-    alignItems: 'center', // Center content vertically
-    justifyContent: 'flex-start', // Align the items starting from the left
-  },
-  cardImage: {
-    width: 150, // Set image width
-    height: 150, // Set image height
-    borderRadius: 12, // Rounded corners for the image
-    marginRight: 16, // Space between image and details
-  },
-  statusContainer: {
-    flexDirection: 'row', // Align the status text and checkbox horizontally
-    alignItems: 'center',
-    marginTop: 8,
-    justifyContent: 'space-between', // Ensure they are spaced evenly
-  },
   
-  listDetails: {
-    flexDirection: 'column',
-    paddingLeft: '25%',
-    width: 150,
-    hieght: 150, // Stack details vertically
-    flex: 1, // Take up the remaining space in the row
-    justifyContent: 'space-between', // Space out the details vertically
-  },
-  listContainer: {
-    paddingHorizontal: 16,
-    paddingBottom: 24,
-  },
-});
-export { containerStyles };
+  
+
+
+
+
+ */

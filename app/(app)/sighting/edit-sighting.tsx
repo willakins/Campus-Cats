@@ -64,7 +64,7 @@ const SightingEditScreen = () => {
 
   return (
     <SafeAreaView style={containerStyles.wrapper}>
-      <Button style={buttonStyles.logoutButton} onPress={() => router.back()}>
+      <Button style={buttonStyles.smallButtonTopLeft} onPress={() => router.back()}>
         <Ionicons name="arrow-back-outline" size={25} color="#fff" />
       </Button>
       <SnackbarMessage text="Saving Report..." visible={visible} setVisible={setVisible} />
@@ -91,13 +91,13 @@ const SightingEditScreen = () => {
             imageHandler={imageHandler}
             isCreate={false}
           />)}/>
-      <Button style={buttonStyles.button2} onPress={() => {
+      <Button style={buttonStyles.bigButton} onPress={() => {
           createObj();
           database.saveSighting(photos, profile, isPicsChanged, setVisible, router);
         }}>
         <Text style={textStyles.bigButtonText}>Save Report</Text>
       </Button>
-      <Button style={buttonStyles.button3} onPress={() => database.deleteSighting(sighting.id, setVisible, router)}>
+      <Button style={buttonStyles.bigDeleteButton} onPress={() => database.deleteSighting(sighting.id, setVisible, router)}>
         <Text style={textStyles.bigButtonText}>Delete Report</Text>
       </Button>
     </SafeAreaView>

@@ -33,7 +33,7 @@ export const DateTimeInput: React.FC<DateTimeInputProps> = ({
   };
 
   return (
-    <View style={containerStyles.dateInput}>
+    <View style={containerStyles.dateInputContainer}>
       <Text style={textStyles.dateText}>{date.toDateString()}</Text>
       {showPicker && <DateTimePicker
           testID="dateTimePicker"
@@ -41,7 +41,7 @@ export const DateTimeInput: React.FC<DateTimeInputProps> = ({
           mode="date"
           display="default"
           onChange={onChange}
-          style={containerStyles.picker}
+          style={containerStyles.datePickerContainer}
         />}
     </View>
   );

@@ -41,7 +41,7 @@ const StationForm: React.FC<StationFormProps> = ({
                 {formData.location ? <Marker coordinate={formData.location} /> : null}
             </MapView>
             <Text style={textStyles.label}>Station Name</Text>
-            <View style={containerStyles.inputContainer2}>
+            <View style={containerStyles.inputContainer}>
                 <TextInput 
                     value={formData.name || ''}
                     placeholder="What should this station be called?"
@@ -52,7 +52,7 @@ const StationForm: React.FC<StationFormProps> = ({
             <Text style={textStyles.subHeading2}>Last Time Stocked</Text>
             <DateTimeInput date={formData.lastStocked} setDate={(text) => handleChange('lastStocked', text)}/>
             <Text style={textStyles.label}>How Often Does This Station Need to be restocked? (in days)</Text>
-            <View style={containerStyles.inputContainer2}>
+            <View style={containerStyles.inputContainer}>
                 <TextInput
                     value={formData.stockingFreq === 0 ? '' : String(formData.stockingFreq)}
                     placeholder={"7"}

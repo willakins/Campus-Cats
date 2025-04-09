@@ -15,14 +15,14 @@ const SightingScreen = () => {
 
   return (
     <SafeAreaView style={containerStyles.wrapper}>
-      <Button style={buttonStyles.logoutButton} onPress={() => router.push('/(app)/(tabs)')}>
+      <Button style={buttonStyles.smallButtonTopLeft} onPress={() => router.push('/(app)/(tabs)')}>
         <Ionicons name="arrow-back-outline" size={25} color="#fff" />
       </Button>
       <ScrollView contentContainerStyle={[containerStyles.scrollView, {paddingTop:'10%'}]}>
         <SightingEntry/>
       </ScrollView>
       {isAuthorized && (
-        <Button style={buttonStyles.button2} onPress={() => router.push('./edit-sighting')}>
+        <Button style={buttonStyles.bigButton} onPress={() => router.push('./edit-sighting')}>
           <Text style={textStyles.bigButtonText}>Edit</Text>
         </Button>
       )}

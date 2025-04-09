@@ -45,7 +45,7 @@ const edit_station = () => {
 
   return (
     <SafeAreaView style={containerStyles.wrapper}>
-      <Button style={buttonStyles.logoutButton} onPress={router.back}>
+      <Button style={buttonStyles.smallButtonTopLeft} onPress={router.back}>
         <Ionicons name="arrow-back-outline" size={25} color="#fff" />
       </Button>
       <SnackbarMessage text="Saving Station..." visible={visible} setVisible={setVisible} />
@@ -62,14 +62,14 @@ const edit_station = () => {
           isCreate={false}
         />
       </ScrollView>
-      <Button style={buttonStyles.button2} 
+      <Button style={buttonStyles.bigButton} 
         onPress={() => {
           createObj();
           database.saveStation(profile, photos, isPicsChanged, setVisible, router)
         }}>
         <Text style ={textStyles.bigButtonText}> Save Station</Text>
       </Button>
-      <Button style={buttonStyles.button3}onPress={() => database.deleteStation(setVisible, router)}>
+      <Button style={buttonStyles.bigDeleteButton}onPress={() => database.deleteStation(setVisible, router)}>
         <Text style={textStyles.bigButtonText}>Delete Station</Text> 
       </Button>
     </SafeAreaView>

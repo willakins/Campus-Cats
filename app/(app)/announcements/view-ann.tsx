@@ -14,13 +14,13 @@ const view_entry = () =>{
   
   return (
     <SafeAreaView style={containerStyles.wrapper}>
-      <Button style={buttonStyles.logoutButton} onPress={() => router.navigate('/announcements')}>
+      <Button style={buttonStyles.smallButtonTopLeft} onPress={() => router.navigate('/announcements')}>
         <Ionicons name="arrow-back-outline" size={25} color="#fff" />
       </Button>
       <ScrollView contentContainerStyle={[containerStyles.scrollView, {paddingTop:'10%'}]}>
       <AnnouncementEntry/>
       </ScrollView>
-      {isAdmin ? <Button style={buttonStyles.button2} onPress={() => router.push('/announcements/edit-ann')}>
+      {isAdmin ? <Button style={buttonStyles.bigButton} onPress={() => router.push('/announcements/edit-ann')}>
         <Text style ={textStyles.bigButtonText}> Edit Announcement</Text>
       </Button> : null}
     </SafeAreaView>
