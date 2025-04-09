@@ -10,7 +10,7 @@ import { globalStyles, buttonStyles, textStyles, containerStyles } from '@/style
 import { useAuth } from '@/providers/AuthProvider';
 import { Announcement } from '@/types';
 import { setSelectedAnnouncement } from '@/stores/announcementStores';
-import { AnnouncementForm } from '@/components/forms/AnnouncementForm';
+import { AnnouncementForm } from '@/forms/AnnouncementForm';
 
 
 const create_ann = () =>{

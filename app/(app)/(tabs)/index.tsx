@@ -37,7 +37,7 @@ const HomeScreen = () => {
         {['7', '30', '90', '365', 'all'].map(range => (
           <Button
             key={range}
-            style={[buttonStyles.filterButton, filter === range && buttonStyles.activeButton]}
+            style={[buttonStyles.rowButton2, filter === range && buttonStyles.activeButton]}
             onPress={() => setFilter(range)}
             textStyle={[textStyles.buttonText, filter === range && textStyles.activeText]}
           >

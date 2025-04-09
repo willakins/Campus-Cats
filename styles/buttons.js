@@ -2,7 +2,7 @@
 import { StyleSheet } from 'react-native';
 
 const buttonStyles = StyleSheet.create({
-  /** Main Buttons */
+  /** General purpose Buttons */
   button: {
     width:'100%',
     backgroundColor: '#333',
@@ -33,6 +33,22 @@ const buttonStyles = StyleSheet.create({
     marginHorizontal: 5,
     marginVertical: 8,
     borderRadius: 8,
+    fontSize: 16,
+    textAlign: 'center',
+  },
+  rowButton2: {
+    width:'auto',
+    minWidth: '16%',
+    maxWidth: '30%',
+    height: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    marginHorizontal: 5,
+    marginVertical: 8,
+    borderRadius: 20,
+    backgroundColor: '#e0e0e0',
     fontSize: 16,
     textAlign: 'center',
   },
@@ -70,40 +86,7 @@ const buttonStyles = StyleSheet.create({
     shadowRadius: 5,
     elevation: 3,
   },
-  /** Special Case Buttons */
-  dateButton: {
-    backgroundColor: '#0b6623',
-    padding: 5,
-    borderRadius: 5,
-    marginTop: 5,
-  },
-  blockButton: {
-    width:'30%',
-    backgroundColor: 'red',
-    alignItems: 'center',
-    display: 'flex',
-    justifyContent: 'center',
-    padding: 5,
-    borderRadius: 5,
-  },
-  promoteButton: {
-    width:'30%',
-    backgroundColor: 'green',
-    alignItems: 'center',
-    display: 'flex',
-    justifyContent: 'center',
-    padding: 5,
-    borderRadius: 5,
-  },
-  demoteButton: {
-    width:'30%',
-    backgroundColor: 'blue',
-    alignItems: 'center',
-    display: 'flex',
-    justifyContent: 'center',
-    padding: 5,
-    borderRadius: 5,
-  },
+  /** Corner buttons  */
   smallButtonTopRight: {
     width: 40,
     height: 25,
@@ -130,6 +113,7 @@ const buttonStyles = StyleSheet.create({
     borderRadius: 5,
     zIndex: 10,
   },
+  /** Special Case Buttons */
   imageButton: {
     backgroundColor: '#333',
     borderRadius: 10,
@@ -177,22 +161,6 @@ const buttonStyles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.3,
     shadowRadius: 3.5,
-  },
-  filterButton: {
-    width:'auto',
-    minWidth: '16%',
-    maxWidth: '30%',
-    height: 40,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    marginHorizontal: 5,
-    marginVertical: 8,
-    borderRadius: 20,
-    backgroundColor: '#e0e0e0',
-    fontSize: 16,
-    textAlign: 'center',
   },
   activeButton: {
     backgroundColor: '#007bff'

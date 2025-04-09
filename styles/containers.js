@@ -1,9 +1,6 @@
 //Container styles
 import { Platform, StyleSheet, Dimensions } from 'react-native';
 
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
-const IMAGE_WIDTH = SCREEN_WIDTH - 32; // leaving 16px padding on both sides
-
 const containerStyles = StyleSheet.create({
   /** Screen Wrappers  */
   wrapper: {

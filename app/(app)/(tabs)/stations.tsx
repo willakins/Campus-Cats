@@ -43,7 +43,7 @@ const Stations = () => {
           {['Stocked', 'Unstocked', 'All'].map((label) => (
             <Button
               key={label}
-              style={[buttonStyles.filterButton, filter === label && buttonStyles.activeButton]}
+              style={[buttonStyles.rowButton2, filter === label && buttonStyles.activeButton]}
               onPress={() => setFilter(label as typeof filter)}
               textStyle={[textStyles.buttonText, filter === label && textStyles.activeText]}
             >
