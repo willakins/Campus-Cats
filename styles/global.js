@@ -24,7 +24,6 @@ const globalStyles = StyleSheet.create({
   screen: {
     flex: 1,
     justifyContent: 'center',
-    alignItems: 'center',
   },
   safeView: { // Controls the SafeAreaView over the entire app
     flex: 1,

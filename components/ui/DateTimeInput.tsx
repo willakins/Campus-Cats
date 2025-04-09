@@ -15,27 +15,34 @@ export const DateTimeInput: React.FC<DateTimeInputProps> = ({
   date,
   setDate,
 }) => {
-  const [showPicker, setShowPicker] = useState<boolean>(false);
+  const [showPicker, setShowPicker] = useState<boolean>(true);
 
   const onChange = (event: DateTimePickerEvent, selectedDate: Date| undefined) => {
     if (selectedDate) {
       setDate(selectedDate);
     }
     setShowPicker(false);
+    if (selectedDate) {
+      setDate(selectedDate);
+      setShowPicker(false);
+      const timeout = setTimeout(() => {
+        setShowPicker(true);
+      }, 10);
+      
+    }
   };
 
   return (
-    <TouchableOpacity onPress={() => setShowPicker(true)}>
-      <View style={containerStyles.dateInput}>
-        <Text style={textStyles.sliderText}>
-          {date ? date.toDateString() : 'Select Sighting Date'}
-        </Text>
-        {showPicker ? <DateTimePicker
+    <View style={containerStyles.dateInputContainer}>
+      <Text style={textStyles.dateText}>{date.toDateString()}</Text>
+      {showPicker && <DateTimePicker
+          testID="dateTimePicker"
           value={date || new Date()}
           mode="date"
           display="default"
-          onChange={onChange}/> : null}
-      </View>
-    </TouchableOpacity>
+          onChange={onChange}
+          style={containerStyles.datePickerContainer}
+        />}
+    </View>
   );
 };

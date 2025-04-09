@@ -1,48 +1,57 @@
 import React, { useState } from 'react';
 import { Image, Text, View } from 'react-native';
-
 import { useFocusEffect, useRouter } from 'expo-router';
 import { Button } from '../ui/Buttons';
-import { StationEntryObject } from '@/types';
-import DatabaseService from '../services/DatabaseService';
+import { Station } from '@/types';
+import DatabaseService from '../../services/DatabaseService';
 import { Checkbox } from "react-native-paper";
-import { globalStyles, buttonStyles, textStyles, containerStyles } from '@/styles';
+import { setSelectedStation } from '@/stores/stationStores';
+import { containerStyles, textStyles } from '@/styles';
 
-export const StationItem: React.FC<StationEntryObject> = ({ id, name, longitude, latitude, lastStocked, stockingFreq, 
-  knownCats, isStocked}) => {
+export const StationItem: React.FC<Station> = ({
+  id, name, location, lastStocked, stockingFreq,
+  knownCats, isStocked, createdBy
+}) => {
   const router = useRouter();
-  const [profileURL, setProfile] = useState<string>('');
   const database = DatabaseService.getInstance();
+  const [profile, setProfile] = useState<string>('');
+  const [photos, setPhotos] = useState<string[]>([]);
+
+  const createObj = () => {
+    const newStation = new Station({
+      id, name, location, lastStocked, stockingFreq,
+      knownCats, isStocked, createdBy
+    });
+    setSelectedStation(newStation);
+  };
 
   useFocusEffect(() => {
-    database.fetchStationImages(id, name, setProfile);
+    database.fetchStationImages(id, setProfile, setPhotos);
   });
 
   return (
-    <Button style={containerStyles.entryContainer} onPress={() =>
-      router.push({
-      pathname: '/stations/view-station',
-      params: { paramId:id, paramName:name, paramLong:longitude, paramLat:latitude, paramStocked:JSON.stringify(isStocked), 
-        paramCats:knownCats, paramLastStocked:lastStocked, paramStockingFreq:stockingFreq},
-      })}>
-      <View style={containerStyles.entryElements}>
-        <Text style={textStyles.catalogTitle}>{name}</Text>
-        <View style={containerStyles.stationsEntry}>
-          {profileURL ? (<Image source={{ uri: profileURL }} style={containerStyles.listImage2} />) : 
-          <Text style={textStyles.title}>Loading image...</Text>}
-          <View style={containerStyles.stockContainer}>
-            <Text style={[textStyles.normalText, { color: isStocked ? "green" : "red"}]}>
-              {isStocked ? "Has Food" : "Needs Food"}
-            </Text>
-            <View style={containerStyles.checkboxContainer}>
-              <Checkbox
-                status={isStocked ? "checked" : "unchecked"}
-                color={isStocked ? "green" : "green"} // Red when needs restocking, green when stocked
-              />
-            </View>
-          </View>
-        </View> 
-        <Text style={textStyles.catalogDescription}>Known Cats: {knownCats}</Text>
+    <Button style={containerStyles.stationCard} onPress={() => {
+      createObj();
+      router.push('/stations/view-station');
+    }}>
+      {profile ? (
+        <Image source={{ uri: profile }} style={containerStyles.cardImage} />
+      ) : (
+        <View style={containerStyles.cardImage}><Text>Loading...</Text></View>
+      )}
+
+      <View style={containerStyles.stationDetailsContainer}>
+        <Text style={textStyles.stationTitle}>{name}</Text>
+        <View style={containerStyles.rowContainer}>
+          <Text style={[textStyles.statusText2, { color: isStocked ? "green" : "red" }]}>
+            {isStocked ? "Has Food" : "Needs Food"}
+          </Text>
+          <Checkbox
+            status={isStocked ? "checked" : "unchecked"}
+            color="green"
+          />
+        </View>
+        <Text style={textStyles.normalText}>Known Cats: {knownCats}</Text>
       </View>
     </Button>
   );

@@ -6,14 +6,14 @@ import { globalStyles, buttonStyles, textStyles, containerStyles } from '@/style
 import { AnnouncementItem, Button, LoadingIndicator } from '@/components';
 import { useAuth } from '@/providers';
 import { router, useFocusEffect } from 'expo-router';
-import DatabaseService from '@/components/services/DatabaseService';
-import { AnnouncementEntryObject } from '@/types';
+import DatabaseService from '@/services/DatabaseService';
+import { Announcement } from '@/types';
 
 const Announcements = () => {
   const { user, loading } = useAuth();
   const isAdmin = user.role === 1 || user.role === 2;
   const database = DatabaseService.getInstance();
-  const [anns, setAnns] = useState<AnnouncementEntryObject[]>([]);
+  const [anns, setAnns] = useState<Announcement[]>([]);
 
   if (loading) {
     return <LoadingIndicator />;
@@ -26,11 +26,8 @@ const Announcements = () => {
   );
 
   return (
-    <SafeAreaView style={containerStyles.container}>
+    <SafeAreaView style={containerStyles.wrapper}>
       <Text style={textStyles.title}>Announcements</Text>
-      {isAdmin ? <Button style={buttonStyles.editButton} onPress={() => router.push('/announcements/create-ann')}>
-        <Text style ={textStyles.editText}> Create Announcement</Text>
-      </Button> : null}
       <ScrollView contentContainerStyle={containerStyles.scrollView}>
         {anns.map((ann) => (
           <AnnouncementItem
@@ -40,9 +37,13 @@ const Announcements = () => {
             info={ann.info}
             createdAt={ann.createdAt}
             createdBy={ann.createdBy}
+            authorAlias={ann.authorAlias}
           />
         ))}
       </ScrollView>
+      {isAdmin ? <Button style={buttonStyles.bigButton} onPress={() => router.push('/announcements/create-ann')}>
+        <Text style ={textStyles.bigButtonText}> Create Announcement</Text>
+      </Button> : null}
     </SafeAreaView>
   );
 };

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { View } from 'react-native';
+import { View, Text } from 'react-native';
 
 import { FirebaseError } from 'firebase/app';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -8,7 +8,7 @@ import { z } from 'zod';
 
 import { Button, BorderlessButton } from '@/components';
 import { ControlledInput } from './controls';
-import { textStyles, containerStyles } from '@/styles';
+import { textStyles, containerStyles, globalStyles, buttonStyles } from '@/styles';
 import { Errorbar } from '@/components';
 import { handleFirebaseAuthError } from '@/utils';
 
@@ -54,23 +54,22 @@ export const LoginForm: React.FC<LoginProps> = ({
   };
 
   return (
-    <View style={containerStyles.loginContainer}>
-      <ControlledInput control={control} name="email" label="Email" />
-      <ControlledInput control={control} name="password" label="Password" secureTextEntry />
-      <Button onPress={handleSubmit(submitHandler)}>
-        {type === 'login' ? 'Sign In' : 'Create Account'}
+    <View style={containerStyles.shadedCard}>
+      <Text style={textStyles.label}>Email</Text>
+      <View style={containerStyles.inputContainer}>
+        <ControlledInput style={textStyles.input}control={control} name="email"/>
+      </View>
+      <Text style={textStyles.label}>Password</Text>
+      <View style={containerStyles.inputContainer}>
+        <ControlledInput control={control} name="password" secureTextEntry />
+      </View>
+      <Button style={[buttonStyles.bigButton, {height:'16%'}]}onPress={handleSubmit(submitHandler)}>
+        <Text style={textStyles.bigButtonText}>{type === 'login' ? 'Sign In' : 'Create Account'}</Text>
       </Button>
       {onSwitchType !== undefined ?
-        <Button onPress={onSwitchType}>
-          {type === 'login' ? 'Create Account' : 'Go Back'}
+        <Button style={[buttonStyles.bigButton, {height:'16%'}]}onPress={onSwitchType}>
+          <Text style={textStyles.bigButtonText}>{type === 'login' ? 'Apply For Whitelist' : 'Go Back'}</Text>
         </Button>
-        : null}
-      {forgotPassword ?
-        <BorderlessButton
-          onPress={() => alert("Contact an Administrator")}
-          textStyle={textStyles.forgotPassword}>
-          Forgot password?
-        </BorderlessButton>
         : null}
       <Errorbar error={error} onDismiss={() => setError('')} />
     </View>

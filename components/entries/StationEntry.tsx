@@ -1,76 +1,65 @@
 import React, { useEffect, useState } from 'react';
-import { Text, Image, ScrollView, View } from 'react-native';
+import { Text, Image, View } from 'react-native';
 
 import MapView, { Marker } from 'react-native-maps';
 
-import { StationEntryObject } from '@/types';
-import { Button } from '@/components/ui/Buttons';
-import DatabaseService from '../services/DatabaseService';
+import { Station } from '@/types';
+import DatabaseService from '../../services/DatabaseService';
 import { globalStyles, buttonStyles, textStyles, containerStyles } from '@/styles';
-import { useRouter } from 'expo-router';
-import { Snackbar } from 'react-native-paper';
+import { getSelectedStation } from '@/stores/stationStores';
 
-export const StationEntry: React.FC<StationEntryObject> = ({ id, name, longitude, latitude, lastStocked, stockingFreq,
-  knownCats, isStocked }) => {
-  const [profileURL, setProfile] = useState<string>('');
+export const StationEntry: React.FC = () => {
   const database = DatabaseService.getInstance();
-  const thisStation = new StationEntryObject(id, name, longitude, latitude, lastStocked, stockingFreq, knownCats);
-  const router = useRouter();
-  const [visible, setVisible] = useState<boolean>(false);
 
-  const calculateDaysUntilRestock = () => {
-    const lastStockedDate = new Date(lastStocked);
-    if (isNaN(lastStockedDate.getTime())) return 0; // Handle invalid date
-
-    const nextRestockDate = new Date(lastStockedDate);
-    const newDate = lastStockedDate.getDate() + parseInt(stockingFreq);
-    nextRestockDate.setDate(newDate);
-    const today = new Date();
-    const timeDiff = nextRestockDate.getTime() - today.getTime();
-    
-    const daysRemaining = Math.ceil(timeDiff / (1000 * 3600 * 24)); // Convert milliseconds to days
-    if (isNaN(daysRemaining)) return -2;
-
-    return daysRemaining;
-  }
-  var daysLeft = calculateDaysUntilRestock();  
+  const station = getSelectedStation();
+  const [photos, setPhotos] = useState<string[]>([]);
+  const [profile, setProfile] = useState<string>('');
+  
 
   useEffect(() => {
-    database.fetchStationImages(id, name, setProfile);
+    database.fetchStationImages(station.id, setProfile, setPhotos);
   }, []);
 
   return (
-    <ScrollView contentContainerStyle={containerStyles.scrollView2}>
-      <Text style={textStyles.catalogTitle}>{name}</Text>
-      {profileURL ? (<Image source={{ uri: profileURL }} style={containerStyles.headlineImage} resizeMode='contain'/>) : 
-        <Text style={textStyles.catalogTitle}>Loading image...</Text>}
-      <MapView
-        style={containerStyles.mapContainer}
-        initialRegion={{
-          latitude: 33.7756, // Default location (e.g., Georgia Tech)
-          longitude: -84.3963,
-          latitudeDelta: 0.01,
-          longitudeDelta: 0.01,
-        }}
-      >
-        <Marker
-          key={id}
-          coordinate={{
-            latitude: latitude,
-            longitude: longitude,
+    <View style={containerStyles.card}>
+        <Text style={textStyles.titleCentered}>{station.name}</Text>
+        {profile ? (<Image source={{ uri: profile }} style={containerStyles.imageMain} resizeMode="cover"/>) : 
+          <Text style={textStyles.titleCentered}>Loading image...</Text>}
+        <Text style={textStyles.label}>Location</Text>
+        <MapView
+          style={containerStyles.mapContainer}
+          initialRegion={{
+            latitude: 33.7756, // Default location (e.g., Georgia Tech)
+            longitude: -84.3963,
+            latitudeDelta: 0.01,
+            longitudeDelta: 0.01,
           }}
-        />
-      </MapView>
-      {knownCats.length > 0 ? <><Text style={textStyles.headline2}>
-        Cats That Frequent This Station
-      </Text><Text style={textStyles.normalText}>
-          {knownCats}
+        >
+          <Marker
+            key={station.id}
+            coordinate={station.location}
+          />
+        </MapView>
+        {station.knownCats.length > 0 ? <><Text style={textStyles.label}>
+          Cats That Frequent This Station
+        </Text><Text style={textStyles.detail}>
+          {station.knownCats}
         </Text></>: null}
-        {isStocked ?<Text style={textStyles.stationText2}> This station will need to be restocked in {daysLeft} days.</Text>: <Text style={textStyles.stationText1}> This station needs to be restocked!</Text>}
-        <Button style={buttonStyles.refillButton} onPress={() => database.stockStation(thisStation, router, setVisible)}>I Just Refilled This Station!</Button>
-        <Snackbar visible={visible} onDismiss={() => setVisible(false)}>
-                Saving...
-          </Snackbar>
-    </ScrollView>
+        {station.isStocked ?<Text style={textStyles.stationText2}> This station will need to be restocked in {
+          Station.calculateDaysLeft(station.lastStocked, station.stockingFreq)} days.</Text>: 
+        <Text style={textStyles.stationText1}> This station needs to be restocked!</Text>}
+        {photos.length > 0 && (
+        <>
+            <Text style={textStyles.label}>Extra Photos</Text>
+            {photos.map((url, index) => (
+            <Image key={index} source={{ uri: url }} style={containerStyles.imageMain} />
+            ))}
+        </>
+        )}
+        <View style={containerStyles.footer}>
+            <Text style={textStyles.footerText}>Author: {station.createdBy.id}</Text>
+        </View>
+    </View>
+    
   );
 };

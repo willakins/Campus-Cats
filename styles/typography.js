@@ -2,13 +2,7 @@
 import { StyleSheet } from 'react-native';
 
 const textStyles = StyleSheet.create({
-  title: {
-    fontSize: 32,
-    fontWeight: 'bold',
-    color: '#333',
-    textAlign: 'center',
-    marginTop: 40,
-  },
+  
   catalogTitle: {
     fontSize: 30,
     fontWeight: 'bold',
@@ -18,12 +12,17 @@ const textStyles = StyleSheet.create({
     marginBottom: 5, // Space between title and description
   },
   announcementTitle: {
-    fontSize: 30,
+    fontSize: 32,
     fontWeight: 'bold',
     color: '#333',
     textAlign: 'center',
-    marginTop: 10,
-    marginBottom: 5, // Space between title and description
+    paddingTop: '15%',
+  },
+  stationTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    flexShrink: 1, // Allow text to shrink if necessary
+    color: '#333',
   },
   headline: {
     fontSize: 20,
@@ -43,21 +42,17 @@ const textStyles = StyleSheet.create({
     textAlign: 'center',
     marginBottom: 0
   },
-    stationText1: {
-        fontSize: 15,
-        color: 'red',
-        textAlign: 'center',
-        padding: 30,
-    },
-    stationText2: {
-        fontSize: 20,
-        color: 'green',
-        textAlign: 'center',
-        padding:30,
-    },
-  normalText: {
-    fontSize: 16,
-    color: '#333',
+  stationText1: {
+      fontSize: 15,
+      color: 'red',
+      textAlign: 'center',
+      padding: 30,
+  },
+  stationText2: {
+      fontSize: 20,
+      color: 'green',
+      textAlign: 'center',
+      padding:30,
   },
   contactInput: {
     fontSize: 16,
@@ -107,44 +102,26 @@ const textStyles = StyleSheet.create({
     fontWeight: 'bold',
   },
   sliderText: {
-    color: 'black',
-    fontSize: 12,
-    fontWeight: 'bold',
-    textAlign: 'left',
-    padding: 10,
+    fontSize: 16,
+    color: '#333',
+    marginLeft: 12,
+    flex: 1,
   },
+  /** Input text */
   input: {
-    height: 40,
+    fontSize:15,
+    fontWeight: '600',
+    color: '#1A1A1A',
     width: '100%',
-    borderColor: '#ccc',
-    borderWidth: 1,
-    borderRadius: 5,
-    marginBottom: 15,
-    paddingHorizontal: 10,
-    backgroundColor: '#fff',
-    color: '#000',
   },
   descInput: {
-    height: '5%',
+    fontsize:15,
+    color: '#555',
     width: '100%',
-    borderColor: '#ccc',
-    borderWidth: 1,
-    borderRadius: 5,
-    marginBottom: 15,
-    paddingHorizontal: 10,
-    backgroundColor: '#fff',
+    fontWeight: 'light',
     color: '#000',
-    elevation: 3,  // Adds shadow on Android
-    shadowColor: '#000',  // Adds shadow on iOS
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
   },
-  forgotPassword: {
-    marginTop: 10,
-    color: '#007BFF',
-    textAlign: 'center',
-  },
+  /** idk */
   description: {
     fontSize: 14,
     color: '#777',
@@ -197,6 +174,81 @@ const textStyles = StyleSheet.create({
     color: '#777',
     textAlign: 'left',
     marginHorizontal: 10, // Add some horizontal padding for better readability
+  },
+  bigButtonText: {
+    color: '#fff',
+    fontSize: 18,
+    fontWeight: '600',
+    textAlign: 'center',
+    letterSpacing: 0.5,
+  },
+  titleCentered: {
+    fontSize: 22,
+    fontWeight: 'bold',
+    color: '#333',
+    textAlign: 'center',
+  },
+  loading: {
+    fontSize: 22,
+    fontWeight: 'bold',
+    color: '#333',
+    textAlign: 'center',
+    alignSelf:'center',
+  },
+  /** Use this stuff */
+  title: {
+    fontSize: 32,
+    fontWeight: 'bold',
+    color: '#333',
+    textAlign: 'center',
+    marginTop: '5%',
+  },
+  label: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#1A1A1A',
+    marginTop: '5%',
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#333',
+    marginTop: 20,
+    marginBottom: 10,
+  },
+  detail: {
+    fontSize: 16,
+    color: '#555',
+    marginVertical: 4,
+  },
+  statusText: {
+    fontSize: 16,
+    color: '#333',
+  },
+  statusText2: {
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  normalText: {
+    fontSize: 16,
+    color: '#555',
+  },
+  switchLabel: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: '#333',
+    marginRight: 10,
+  },
+  picker: {
+    height: 30,
+    width: '100%',
+    borderWidth: 1,
+    borderColor: '#ccc',
+    borderRadius: 5,
+  },
+  footerText: {
+    fontSize: 13,
+    color: '#888',
   },
 });
 export { textStyles };
