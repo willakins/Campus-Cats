@@ -27,7 +27,7 @@ const textStyles = StyleSheet.create({
   stationTitle: {
     fontSize: 18,
     fontWeight: '600',
-    flexShrink: 1,
+    flexShrink: 1, // Allow text to shrink if necessary
     color: '#333',
   },
   headline: {

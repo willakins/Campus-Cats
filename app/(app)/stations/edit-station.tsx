@@ -22,8 +22,9 @@ const edit_station = () => {
   const [profile, setProfile] = useState<string>('');
   const [photos, setPhotos] = useState<string[]>([]);
   const [isPicsChanged, setPicsChanged] = useState<boolean>(false);
-  const [formData, setFormData] = useState({name: "", location:{latitude:0, longitude: 0}, lastStocked:new Date(), stockingFreq: 7, knownCats: ""});
-  const imageHandler = new CatalogImageHandler({ type:'station', id:station.id, photos, profile, setPhotos, setProfile, setPicsChanged, setVisible});
+  const [formData, setFormData] = useState({name: station.name, location:station.location, lastStocked:station.lastStocked, 
+    stockingFreq: station.stockingFreq, knownCats: station.knownCats});
+  const imageHandler = new CatalogImageHandler({ type:'stations', id:station.id, photos, profile, setPhotos, setProfile, setPicsChanged, setVisible});
   
   useEffect(() => {
     database.fetchStationImages(station.id, setProfile, setPhotos);
@@ -47,7 +48,7 @@ const edit_station = () => {
       <Button style={buttonStyles.logoutButton} onPress={router.back}>
         <Ionicons name="arrow-back-outline" size={25} color="#fff" />
       </Button>
-      <SnackbarMessage text="Saving Report..." visible={visible} setVisible={setVisible} />
+      <SnackbarMessage text="Saving Station..." visible={visible} setVisible={setVisible} />
       <Text style={textStyles.title}>Edit Station</Text>
       <ScrollView contentContainerStyle={containerStyles.scrollView}>
         <StationForm
@@ -61,14 +62,14 @@ const edit_station = () => {
           isCreate={false}
         />
       </ScrollView>
-      <Button style={buttonStyles.editButton} 
+      <Button style={buttonStyles.button2} 
         onPress={() => {
           createObj();
           database.saveStation(profile, photos, isPicsChanged, setVisible, router)
         }}>
-        <Text style ={textStyles.editText}> Save Station</Text>
+        <Text style ={textStyles.bigButtonText}> Save Station</Text>
       </Button>
-      <Button style={buttonStyles.button3}onPress={() => database.deleteStation(station.id, setVisible, router)}>
+      <Button style={buttonStyles.button3}onPress={() => database.deleteStation(setVisible, router)}>
         <Text style={textStyles.bigButtonText}>Delete Station</Text> 
       </Button>
     </SafeAreaView>
