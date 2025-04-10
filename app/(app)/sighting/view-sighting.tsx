@@ -18,7 +18,7 @@ const SightingScreen = () => {
       <Button style={buttonStyles.smallButtonTopLeft} onPress={() => router.push('/(app)/(tabs)')}>
         <Ionicons name="arrow-back-outline" size={25} color="#fff" />
       </Button>
-      <ScrollView contentContainerStyle={[containerStyles.scrollView, {paddingTop:'10%'}]}>
+      <ScrollView contentContainerStyle={containerStyles.scrollViewPadded}>
         <SightingEntry/>
       </ScrollView>
       {isAuthorized && (
