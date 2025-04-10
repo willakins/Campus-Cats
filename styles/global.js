@@ -21,7 +21,7 @@ const globalStyles = StyleSheet.create({
   },
   safeView: {
     flex: 1,
-    backgroundColor: "#ccc",
+    backgroundColor: "#E5E5E5",
     marginBottom: Platform.select({
       ios: -vh * 5, // avoid iOS extra space on bottom
       default: 0
