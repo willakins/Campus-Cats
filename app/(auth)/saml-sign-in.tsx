@@ -5,9 +5,11 @@ import * as WebBrowser from 'expo-web-browser';
 import { getAuth, SAMLAuthProvider, signInWithCredential } from 'firebase/auth';
 import { useRouter } from 'expo-router';
 
+import { Button } from '@/components';
 import { firebaseConfig } from '@/config/firebase';
 import { fetchUser, mutateUser } from '@/models';
-import { containerStyles } from '@/styles';
+import { buttonStyles, containerStyles } from '@/styles';
+import { Ionicons } from '@expo/vector-icons';
 
 const SAMLRedirect = () => {
   const router = useRouter();
@@ -31,7 +33,7 @@ const SAMLRedirect = () => {
         const userData = await fetchUser(userCred.user.uid); 
         mutateUser(userData);
 
-        router.replace('/(app)/(tabs)');
+        router.navigate('/(app)/(tabs)');
       } catch (error) {
         Alert.alert('SSO sign-in failed.');
         console.error('SSO error:', error);
@@ -70,6 +72,9 @@ const SAMLRedirect = () => {
 
   return (
     <SafeAreaView style={containerStyles.wrapper}>
+      <Button style={buttonStyles.smallButtonTopLeft} onPress={() => router.push('/catalog/view-entry')}>
+        <Ionicons name="arrow-back-outline" size={25} color="#fff" />
+      </Button>
       <ScrollView
         contentContainerStyle={containerStyles.scrollViewCenterPadded}
         keyboardShouldPersistTaps="handled"
