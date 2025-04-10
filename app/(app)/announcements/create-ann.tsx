@@ -1,16 +1,15 @@
 import { useState } from 'react';
-import { Image, SafeAreaView, ScrollView, Text, View } from 'react-native';
+import { SafeAreaView, ScrollView, Text } from 'react-native';
 
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { Snackbar } from 'react-native-paper';
-import { Button, CameraButton, SnackbarMessage, TextInput } from '@/components';
+import { Button, SnackbarMessage } from '@/components';
 import DatabaseService from '@/services/DatabaseService';
 import { globalStyles, buttonStyles, textStyles, containerStyles } from '@/styles';
 import { useAuth } from '@/providers/AuthProvider';
 import { Announcement } from '@/types';
 import { setSelectedAnnouncement } from '@/stores/announcementStores';
-import { AnnouncementForm } from '@/components/forms/AnnouncementForm';
+import { AnnouncementForm } from '@/forms/AnnouncementForm';
 
 
 const create_ann = () =>{
@@ -39,7 +38,7 @@ const create_ann = () =>{
         <Ionicons name="arrow-back-outline" size={25} color="#fff" />
       </Button>
       <SnackbarMessage text="Creating Announcement..." visible={visible} setVisible={setVisible} />
-      <Text style={textStyles.announcementTitle}>Create Announcement</Text>
+      <Text style={textStyles.lowerPageTitle}>Create Announcement</Text>
       <ScrollView contentContainerStyle={containerStyles.scrollView}>
         <AnnouncementForm
         formData={formData}

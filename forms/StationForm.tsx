@@ -49,7 +49,7 @@ const StationForm: React.FC<StationFormProps> = ({
                     onChangeText={(text) => handleChange('name', text)} 
                     style={textStyles.input} />
             </View>
-            <Text style={textStyles.subHeading2}>Last Time Stocked</Text>
+            <Text style={textStyles.label}>Last Time Stocked</Text>
             <DateTimeInput date={formData.lastStocked} setDate={(text) => handleChange('lastStocked', text)}/>
             <Text style={textStyles.label}>How Often Does This Station Need to be restocked? (in days)</Text>
             <View style={containerStyles.inputContainer}>

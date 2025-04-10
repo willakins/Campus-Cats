@@ -21,7 +21,7 @@ export const AnnouncementItem: React.FC<Announcement> = ({ id, title, info, crea
         router.push('/announcements/view-ann');
     }}>
       <View style={containerStyles.verticalCard}>
-        <Text style={[textStyles.label, {marginTop:0}]}>{title}</Text>
+        <Text style={textStyles.listTitle}>{title}</Text>
         <Text style={textStyles.detail}>{info}</Text>
       </View>
     </Button>

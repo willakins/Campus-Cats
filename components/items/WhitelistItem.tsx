@@ -12,15 +12,15 @@ export const WhitelistItem: React.FC<{ app: WhitelistApp; setApps: React.Dispatc
 
   return (
     <View style={containerStyles.card}>
-      <Text style={[textStyles.title, {marginTop:0}]}>{app.name}</Text>
+      <Text style={[textStyles.listTitle, {marginTop:0}]}>{app.name}</Text>
       <Text style={textStyles.detail}>Code Word: {app.codeWord}</Text>
       <Text style={textStyles.detail}>Graduation Year: {app.graduationYear}</Text>
       <View style={containerStyles.buttonGroup2}>
         <Button style={[buttonStyles.rowButton, {backgroundColor:'red'}]} onPress={() => database.whitelistDecide(app, 'deny', setApps, setVisible)}>
-        <Text style={textStyles.deleteButtonText}>Deny</Text>
+        <Text style={textStyles.smallButtonText}>Deny</Text>
         </Button>
         <Button style={[buttonStyles.rowButton, {backgroundColor:'green'}]} onPress={() => database.whitelistDecide(app, 'accept', setApps, setVisible)}>
-        <Text style={textStyles.deleteButtonText}>Accept</Text>
+        <Text style={textStyles.smallButtonText}>Accept</Text>
         </Button>
       </View>
     </View>

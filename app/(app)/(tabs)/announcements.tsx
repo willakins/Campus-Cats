@@ -27,7 +27,7 @@ const Announcements = () => {
 
   return (
     <SafeAreaView style={containerStyles.wrapper}>
-      <Text style={textStyles.title}>Announcements</Text>
+      <Text style={textStyles.pageTitle}>Announcements</Text>
       <ScrollView contentContainerStyle={containerStyles.scrollView}>
         {anns.map((ann) => (
           <AnnouncementItem
