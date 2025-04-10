@@ -88,7 +88,10 @@ const containerStyles = StyleSheet.create({
   },
   /** Input Containers */
   inputContainer: {
-    padding: vw * 2.5,
+    padding: Platform.select({
+      ios: vw * 2.5,
+      default: 0
+    }),
     width: width * .85,
     height: vh * 5,
     borderColor: '#ccc',
