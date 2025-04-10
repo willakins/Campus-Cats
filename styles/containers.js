@@ -34,6 +34,12 @@ const containerStyles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  scrollViewCenterPadded: {
+    paddingTop: vh * 2,
+    paddingBottom: vh * 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   /** Cards */
   card: {
     flexDirection: "column",
@@ -184,8 +190,8 @@ const containerStyles = StyleSheet.create({
   },
   /** Image Containers */
   imageLarge: {
-    width: vw * 80,
-    height: vh * 40,
+    width: vw * 70,
+    height: vh * 35,
     borderRadius: vw * 5.5,
     marginBottom: vh * 2,
     alignSelf: 'center',
