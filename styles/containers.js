@@ -103,7 +103,10 @@ const containerStyles = StyleSheet.create({
     flex: 1,
   },
   smallInputContainer: {
-    padding: vw * 2.5,
+    padding: Platform.select({
+      padding: vw * 2.5,
+      default: 0,
+    }),
     width: width * .7,
     height: vh * 5,
     borderColor: '#ccc',
