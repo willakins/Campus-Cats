@@ -47,7 +47,7 @@ const AuthProvider = ({ children }: { children: ReactNode }) => {
       try {
         if (authUser?.uid) {
           // Get user doc on start
-          const data = await fetchUser(authUser?.uid);
+          const data = await fetchUser(authUser?.uid, authUser?.email);
           setUser(data);
         }
         setCurrentUser(authUser);
