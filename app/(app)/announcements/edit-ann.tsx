@@ -4,12 +4,13 @@ import { SafeAreaView, ScrollView, Text} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 
-import { Button, SnackbarMessage, AnnouncementForm } from '@/components';
+import { Button, SnackbarMessage } from '@/components';
 import DatabaseService from '@/services/DatabaseService';
 import { globalStyles, buttonStyles, textStyles, containerStyles } from '@/styles';
 import { useAuth } from '@/providers/AuthProvider';
 import { Announcement } from '@/types';
 import { getSelectedAnnouncement, setSelectedAnnouncement } from '@/stores/announcementStores';
+import { AnnouncementForm } from '@/forms';
 
 const edit_ann = () => {
   const router = useRouter();
@@ -37,7 +38,7 @@ const edit_ann = () => {
         <Ionicons name="arrow-back-outline" size={25} color="#fff" />
       </Button>
       <SnackbarMessage text="Saving Announcement..." visible={visible} setVisible={setVisible} />
-      <Text style={textStyles.announcementTitle}>Edit Announcement</Text>
+      <Text style={textStyles.pageTitle}>Edit Announcement</Text>
       <ScrollView contentContainerStyle={[containerStyles.scrollView, {paddingBottom:'50%'}]}>
         <AnnouncementForm
         formData={formData}

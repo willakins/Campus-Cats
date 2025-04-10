@@ -22,9 +22,9 @@ export const StationEntry: React.FC = () => {
 
   return (
     <View style={containerStyles.card}>
-        <Text style={textStyles.titleCentered}>{station.name}</Text>
+        <Text style={[textStyles.cardTitle, {textAlign: 'center'}]}>{station.name}</Text>
         {profile ? (<Image source={{ uri: profile }} style={containerStyles.imageMain} resizeMode="cover"/>) : 
-          <Text style={textStyles.titleCentered}>Loading image...</Text>}
+          <Text style={[textStyles.cardTitle, {textAlign: 'center'}]}>Loading image...</Text>}
         <Text style={textStyles.label}>Location</Text>
         <MapView
           style={containerStyles.mapContainer}
@@ -45,9 +45,9 @@ export const StationEntry: React.FC = () => {
         </Text><Text style={textStyles.detail}>
           {station.knownCats}
         </Text></>: null}
-        {station.isStocked ?<Text style={textStyles.stationText2}> This station will need to be restocked in {
+        {station.isStocked ?<Text style={[textStyles.label, {textAlign:'center', color:'green'}]}> This station will need to be restocked in {
           Station.calculateDaysLeft(station.lastStocked, station.stockingFreq)} days.</Text>: 
-        <Text style={textStyles.stationText1}> This station needs to be restocked!</Text>}
+        <Text style={[textStyles.label, {textAlign:'center', color:'red'}]}> This station needs to be restocked!</Text>}
         {photos.length > 0 && (
         <>
             <Text style={textStyles.label}>Extra Photos</Text>

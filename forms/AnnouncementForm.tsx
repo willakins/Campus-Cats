@@ -50,7 +50,7 @@ const AnnouncementForm: React.FC<AnnouncementFormProps> = ({
                 style={textStyles.descInput} 
                 multiline={false}/>
           </View>
-          <Text style={textStyles.headline2}>Add Photos (optional)</Text>
+          <Text style={[textStyles.sectionTitle, {textAlign:'center'}]}>Add Photos (optional)</Text>
           <CameraButton onPhotoSelected={(newPhotoUri) => {
             setPhotos((prevPics) => 
               [...prevPics,newPhotoUri,])
@@ -60,10 +60,10 @@ const AnnouncementForm: React.FC<AnnouncementFormProps> = ({
           {photos ? (photos.map((pic, index) => (
           <View key={index} style={containerStyles.imageWrapper}>
             <Image source={{ uri: pic }} style={containerStyles.extraPic} />
-            <Button style={buttonStyles.deleteButton} onPress={() => {
+            <Button style={buttonStyles.imageDeleteButton} onPress={() => {
               setPhotos((prevPhotos) => prevPhotos.filter((uri) => uri !== pic))
               if (setPicsChanged) {setPicsChanged(true);}}}>
-              <Text style={textStyles.deleteButtonText}>Delete</Text>
+              <Text style={textStyles.smallButtonText}>Delete</Text>
             </Button>
           </View>
           ))):<Text>Loading images...</Text>}

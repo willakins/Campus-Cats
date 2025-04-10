@@ -35,16 +35,13 @@ export const CatalogItem: React.FC<CatalogEntry> =
       createObj();
       router.push('/catalog/view-entry')
     }}>
-      
-      <View style={containerStyles.listDetailsContainer}>
-        <Text style={textStyles.titleCentered}>{cat.name}</Text>
+      <Text style={textStyles.listTitle}>{cat.name}</Text>
         {profile ? (
-          <Image source={{ uri: profile }} style={[containerStyles.imageMain, {marginBottom:5}]} resizeMode="cover" />
+          <Image source={{ uri: profile }} style={containerStyles.listImage} resizeMode="cover" />
         ) : (
-          <View style={textStyles.loading}><Text>Loading...</Text></View>
+          <View><Text style={textStyles.listTitle}>Loading...</Text></View>
         )}
-        <Text style={[textStyles.detail, {alignSelf:'center', marginVertical:0}]}>{cat.descShort}</Text>
-      </View>
+        <Text style={[textStyles.detail, {alignSelf:'center'}]}>{cat.descShort}</Text>
     </Button>
   );
 };

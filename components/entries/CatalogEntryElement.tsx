@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Text, Image, View } from 'react-native';
+import { Text, Image, View, Platform } from 'react-native';
 
 import MapView, { Marker } from 'react-native-maps';
 
@@ -24,10 +24,10 @@ const CatalogEntryElement: React.FC = () => {
 
   return (
     <View style={containerStyles.card}>
-      <Text style={textStyles.titleCentered}>{entry.cat.name}</Text>
-      <Text style={[textStyles.detail, {alignSelf:'center'}]}> {entry.cat.descShort} </Text>
+      <Text style={[textStyles.cardTitle, {textAlign: 'center'}]}>{entry.cat.name}</Text>
       {profile ? (<Image source={{ uri: profile }} style={containerStyles.imageMain} resizeMode="cover"/>) : 
-                <Text style={textStyles.titleCentered}>Loading image...</Text>}
+                <Text style={[textStyles.cardTitle, {textAlign: 'center'}]}>Loading image...</Text>}
+      <Text style={[textStyles.detail, {alignSelf:'center'}]}> {entry.cat.descShort} </Text>
       <Text style={textStyles.label}>Description</Text>
       <Text style={textStyles.detail}>{entry.cat.descLong}</Text>
       <Text style={textStyles.label}> Sightings </Text>
@@ -49,7 +49,7 @@ const CatalogEntryElement: React.FC = () => {
         />
         ))}
       </MapView>
-      <Button style={[buttonStyles.bigButton, {height:45}]}onPress={() => setShowDetails(!showDetails)}>
+      <Button style={[buttonStyles.bigButton, Platform.OS === 'ios' ? {height:45} : {}]}onPress={() => setShowDetails(!showDetails)}>
         <Text style={textStyles.bigButtonText}> {showDetails ? "Show less details": "Show more details"}</Text>
       </Button>
       {showDetails ? <><Text style={textStyles.label}>Detailed Color Pattern</Text>
@@ -76,7 +76,7 @@ const CatalogEntryElement: React.FC = () => {
       <Text style={textStyles.detail}>{entry.credits}</Text></>: null}</>: null}
       {photos.length > 0 && (
               <>
-                  <Text style={textStyles.sectionTitle}>Extra Photos</Text>
+                  <Text style={textStyles.label}>Extra Photos</Text>
                   {photos.map((url, index) => (
                   <Image key={index} source={{ uri: url }} style={containerStyles.imageMain} />
                   ))}

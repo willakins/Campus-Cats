@@ -15,7 +15,7 @@ const LoginScreen = () => {
 
   return (
     <SafeAreaView style={globalStyles.screen}>
-      <ScrollView contentContainerStyle={[containerStyles.scrollViewCenter, {paddingTop:'50%', paddingBottom: '40%' }]}
+      <ScrollView contentContainerStyle={containerStyles.scrollViewCenter}
   keyboardShouldPersistTaps="handled">
         <Image source={require('@/assets/images/campus_cats_logo.png')} style={containerStyles.imageLarge}/>
         <LoginForm

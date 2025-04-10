@@ -21,7 +21,7 @@ const SightingEntry: React.FC = () => {
   return (
     <View style={containerStyles.card}>
         {profile.length > 0 ? (<Image source={{ uri: profile }} style={containerStyles.imageMain} />) : (
-            <Text style={textStyles.titleCentered}>Loading image...</Text>)}
+            <Text style={[textStyles.cardTitle, {textAlign: 'center'}]}>Loading image...</Text>)}
         <Text style={textStyles.label}>Location</Text>
         <MapView
         style={containerStyles.mapContainer}
@@ -47,14 +47,14 @@ const SightingEntry: React.FC = () => {
         <View style={containerStyles.sectionCard}>
             <View style={containerStyles.rowStack}>
                 <View style={containerStyles.rowContainer}>
-                    <Text style={[textStyles.statusText,{ color: sighting.fed ? "green" : "red" }]}>{sighting.fed ? "Was fed" : "Not fed"}</Text>
+                    <Text style={[textStyles.detail,{ color: sighting.fed ? "green" : "red" }]}>{sighting.fed ? "Was fed" : "Not fed"}</Text>
                     <Checkbox
                         status={sighting.fed ? "checked" : "unchecked"}
                         color="green"
                         />
                 </View>
                 <View style={containerStyles.rowContainer}>
-                    <Text style={[textStyles.statusText, { color: sighting.health ? "green" : "red" }]}>
+                    <Text style={[textStyles.detail, { color: sighting.health ? "green" : "red" }]}>
                         {sighting.health ? "Was healthy" : "Not healthy"}</Text>
                         <Checkbox
                         status={sighting.health ? "checked" : "unchecked"}
@@ -65,7 +65,7 @@ const SightingEntry: React.FC = () => {
         </View>
         {photos.length > 0 && (
         <>
-            <Text style={textStyles.sectionTitle}>Extra Photos</Text>
+            <Text style={textStyles.label}>Extra Photos</Text>
             {photos.map((url, index) => (
             <Image key={index} source={{ uri: url }} style={containerStyles.imageMain} />
             ))}

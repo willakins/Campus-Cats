@@ -2,7 +2,7 @@ import React, { Dispatch } from 'react';
 import { View, Text, Switch, TextInput, Image } from 'react-native';
 import MapView, { Marker } from 'react-native-maps';
 import DropdownPicker from 'react-native-dropdown-picker';
-import { CameraButton, DateTimeInput, Button, ImageButton, FormCamera } from '@/components';
+import { DateTimeInput, FormCamera } from '@/components';
 import { buttonStyles, containerStyles, textStyles } from '@/styles';
 import { CatalogImageHandler } from '@/image_handlers/CatalogImageHandler';
 
