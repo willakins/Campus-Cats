@@ -1,5 +1,8 @@
-//Common styles
-import { Platform, StyleSheet } from 'react-native';
+import { Platform, StyleSheet, Dimensions } from 'react-native';
+
+const { width, height } = Dimensions.get('window');
+const vw = width / 100;
+const vh = height / 100;
 
 const globalStyles = StyleSheet.create({
   screen: {
@@ -8,19 +11,19 @@ const globalStyles = StyleSheet.create({
   },
   lockIcon: {
     position: 'absolute',
-    top: 10,
-    right: 20,
+    top: vh * 1.2,
+    right: vw * 5,
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 5,
-    borderRadius: 5,
+    padding: vw * 1.2,
+    borderRadius: vw * 1.2,
     zIndex: 10,
   },
-  safeView: { // Controls the SafeAreaView over the entire app
+  safeView: {
     flex: 1,
-    backgroundColor: "#ccc", // Set the notch area color
+    backgroundColor: "#ccc",
     marginBottom: Platform.select({
-      ios: -40, // avoid iOS extra space on bottom
+      ios: -vh * 5, // avoid iOS extra space on bottom
       default: 0
     }),
   },

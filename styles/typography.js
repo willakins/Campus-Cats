@@ -1,92 +1,95 @@
 //Text styles
-import { StyleSheet } from 'react-native';
+import { StyleSheet, Dimensions } from 'react-native';
+
+const { width, height } = Dimensions.get('window');
 
 const textStyles = StyleSheet.create({
-  /** Titles */
   pageTitle: {
-    fontSize: 32,
+    fontSize: width * 0.08,
     fontWeight: 'bold',
     color: '#333',
     textAlign: 'center',
     alignSelf: 'center',
-    marginTop:15,
+    marginTop: height * 0.02,
+  },
+  lowerPageTitle: {
+    fontSize: width * 0.08,
+    fontWeight: 'bold',
+    color: '#333',
+    textAlign: 'center',
+    alignSelf: 'center',
+    marginTop: height * 0.06,
   },
   cardTitle: {
-    fontSize: 32,
+    fontSize: width * 0.08,
     fontWeight: 'bold',
     color: '#333',
     textAlign: 'center',
   },
   listTitle: {
-    fontSize: 24,
+    fontSize: width * 0.06,
     fontWeight: 'bold',
     color: '#333',
     textAlign: 'center',
   },
   sectionTitle: {
-    fontSize: 22,
+    fontSize: width * 0.055,
     fontWeight: 'bold',
     textAlign: 'center',
     color: '#333',
-    marginTop:15,
+    marginTop: height * 0.02,
   },
-  /** Headers */
   label: {
-    fontSize: 18,
+    fontSize: width * 0.045,
     fontWeight: '600',
     color: '#1A1A1A',
-    marginTop: '5%',
+    marginTop: height * 0.01,
   },
-  /** Main Text */
   detail: {
-    fontSize: 16,
+    fontSize: width * 0.04,
     color: '#555',
-    marginVertical: 4,
+    marginVertical: height * 0.005,
   },
   footerText: {
-    fontSize: 13,
+    fontSize: width * 0.035,
     color: '#888',
   },
-  /** Button Text */
   smallButtonText: {
     color: 'white',
-    fontSize: 12,
+    fontSize: width * 0.03,
     fontWeight: 'bold',
     textAlign: 'center',
   },
   buttonText: {
-    fontSize: 18,
+    fontSize: width * 0.045,
   },
   bigButtonText: {
     color: '#fff',
-    fontSize: 18,
+    fontSize: width * 0.045,
     fontWeight: '600',
     textAlign: 'center',
     letterSpacing: 0.5,
   },
-  /** Misc. */
   dateText: {
-    fontSize: 15,
+    fontSize: width * 0.038,
     color: '#000',
     textAlign: 'center',
-    marginTop: 10
+    marginTop: height * 0.015,
   },
   activeText: {
-    color: '#fff'
+    color: '#fff',
   },
-  /** Input text */
   input: {
-    fontSize:15,
+    fontSize: width * 0.04,
     fontWeight: '600',
     color: '#1A1A1A',
     width: '100%',
   },
   descInput: {
-    fontsize:15,
-    color: '#555',
-    width: '100%',
-    fontWeight: 'light',
+    fontSize: width * 0.04,
     color: '#000',
+    width: '100%',
+    fontWeight: '300',
   },
 });
 export { textStyles };

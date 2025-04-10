@@ -74,7 +74,7 @@ const SightingEditScreen = () => {
       <FlatList
         data={[1]}  // A dummy array to make FlatList scrollable
         keyExtractor={() => '1'}
-        contentContainerStyle={[containerStyles.scrollView, {paddingBottom:'50%'}]}
+        contentContainerStyle={containerStyles.scrollView}
         renderItem={() => (
           <SightingForm
             formData={formData}
