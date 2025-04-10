@@ -20,4 +20,4 @@ class User {
         role: 0
     });
 }
-export { User };
+export { User, UserProps };
