@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { SafeAreaView, ScrollView, Alert } from 'react-native';
+import { Text, SafeAreaView, ScrollView, Alert } from 'react-native';
 import * as Linking from 'expo-linking';
 import * as WebBrowser from 'expo-web-browser';
 import { getAuth, SAMLAuthProvider, signInWithCredential } from 'firebase/auth';
@@ -8,7 +8,7 @@ import { useRouter } from 'expo-router';
 import { Button, SnackbarMessage } from '@/components';
 import { firebaseConfig } from '@/config/firebase';
 import { fetchUser, mutateUser } from '@/models';
-import { buttonStyles, containerStyles } from '@/styles';
+import { buttonStyles, containerStyles, textStyles } from '@/styles';
 import { Ionicons } from '@expo/vector-icons';
 
 const SAMLRedirect = () => {
@@ -72,6 +72,9 @@ const SAMLRedirect = () => {
         contentContainerStyle={containerStyles.scrollViewCenterPadded}
         keyboardShouldPersistTaps="handled"
       >
+        <Button style={[buttonStyles.mediumButton, {marginTop:'100%', alignSelf:'center'}]} onPress={_openAuthSessionAsync}>
+            <Text style={textStyles.bigButtonText}>Retry Sign In</Text>
+        </Button>
       </ScrollView>
     </SafeAreaView>
   );
