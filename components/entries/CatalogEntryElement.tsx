@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Text, Image, View } from 'react-native';
+import { Text, Image, View, Platform } from 'react-native';
 
 import MapView, { Marker } from 'react-native-maps';
 
@@ -49,7 +49,7 @@ const CatalogEntryElement: React.FC = () => {
         />
         ))}
       </MapView>
-      <Button style={[buttonStyles.bigButton, {height:45}]}onPress={() => setShowDetails(!showDetails)}>
+      <Button style={[buttonStyles.bigButton, Platform.OS === 'ios' ? {height:45} : {}]}onPress={() => setShowDetails(!showDetails)}>
         <Text style={textStyles.bigButtonText}> {showDetails ? "Show less details": "Show more details"}</Text>
       </Button>
       {showDetails ? <><Text style={textStyles.label}>Detailed Color Pattern</Text>
