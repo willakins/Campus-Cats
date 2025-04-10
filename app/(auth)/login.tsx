@@ -1,71 +1,95 @@
 import React, { useEffect, useState } from 'react';
-import { Text, Image, View, SafeAreaView, ScrollView } from 'react-native';
-
-import * as Linking from "expo-linking";
-import { useRouter } from 'expo-router';
-import * as WebBrowser from "expo-web-browser";
+import { Text, Image, View, SafeAreaView, ScrollView, Alert } from 'react-native';
+import * as Linking from 'expo-linking';
+import * as WebBrowser from 'expo-web-browser';
 import { getAuth, SAMLAuthProvider, signInWithCredential } from 'firebase/auth';
-import { firebaseConfig } from '@/config/firebase';
+import { useRouter } from 'expo-router';
 
+import { firebaseConfig } from '@/config/firebase';
 import { Button } from '@/components';
 import { buttonStyles, containerStyles, globalStyles, textStyles } from '@/styles';
+import { useAuth } from '@/providers';
+import { fetchUser, mutateUser } from '@/models';
 
 const LoginScreen = () => {
   const router = useRouter();
-
   const auth = getAuth();
+  const redirectUrl = Linking.createURL('/saml-sign-in');
   const backendUrl = 'https://campuscats-d7a5e.firebaseapp.com/firebase-wrapper-app.html';
-  const redirectUrl = Linking.createURL("/saml-sign-in");
 
+  const { loading, currentUser } = useAuth();
   const [redirectData, setRedirectData] = useState<Linking.ParsedURL | null>(null);
 
-  // When redirectData is updated, check to see if it exists, if so try to sign in using it
   useEffect(() => {
-    if (redirectData?.queryParams?.credential) {
-      const authCredential = SAMLAuthProvider.credentialFromJSON(
-        JSON.parse(redirectData.queryParams.credential as string)
-      );
-      signInWithCredential(auth, authCredential).catch(alert);
-      router.replace('/(app)/(tabs)');
-    }
+    const handleSSOSignIn = async () => {
+      if (redirectData?.queryParams?.credential) {
+        try {
+          const authCredential = SAMLAuthProvider.credentialFromJSON(
+            JSON.parse(redirectData.queryParams.credential as string)
+          );
+          const userCred = await signInWithCredential(auth, authCredential);
+          
+          // Fetch user data and set (necessary for tracking user.role)
+          const userData = await fetchUser(userCred.user.uid); 
+          mutateUser(userData);
+
+          router.replace('/(app)/(tabs)');
+        } catch (error) {
+          Alert.alert('SSO sign-in failed.');
+          console.error('SSO error:', error);
+        }
+      }
+    };
+
+    handleSSOSignIn();
   }, [redirectData]);
 
   const _openAuthSessionAsync = async () => {
     try {
-      let result = await WebBrowser.openAuthSessionAsync(
-        backendUrl +
-          `?linkingUri=${redirectUrl}&apiKey=${
-            firebaseConfig["apiKey"]
-          }&authDomain=${firebaseConfig["authDomain"]}`,
+      const result = await WebBrowser.openAuthSessionAsync(
+        `${backendUrl}?linkingUri=${redirectUrl}&apiKey=${firebaseConfig.apiKey}&authDomain=${firebaseConfig.authDomain}`,
         redirectUrl,
-        { dismissButtonStyle: "cancel", enableDefaultShareMenuItem: false }
+        {
+          dismissButtonStyle: 'cancel',
+          enableDefaultShareMenuItem: false,
+        }
       ) as WebBrowser.WebBrowserRedirectResult;
-      console.log(result.type);
+
       if (result?.url) {
-        // You can check why no url would have been returned with result.type
         setRedirectData(Linking.parse(result.url));
+      } else {
+        console.warn('SSO session dismissed or failed with type:', result?.type);
       }
     } catch (error) {
-      alert(error);
-      console.log(error);
+      Alert.alert('SSO session error.');
+      console.error(error);
     }
   };
 
   return (
     <SafeAreaView style={containerStyles.wrapper}>
-      <ScrollView contentContainerStyle={containerStyles.scrollViewCenter}
-      keyboardShouldPersistTaps="handled">
-        <Image source={require('@/assets/images/campus_cats_logo.png')} style={containerStyles.imageLarge}/>
+      <ScrollView
+        contentContainerStyle={containerStyles.scrollViewCenter}
+        keyboardShouldPersistTaps="handled"
+      >
+        <Image
+          source={require('@/assets/images/campus_cats_logo.png')}
+          style={containerStyles.imageLarge}
+        />
         <View style={containerStyles.shadedCard}>
-          <Button style={buttonStyles.mediumButton}onPress={_openAuthSessionAsync}>
+          <Button style={buttonStyles.mediumButton} onPress={_openAuthSessionAsync}>
             <Text style={textStyles.bigButtonText}>Sign in using SSO</Text>
           </Button>
-          <Button style={buttonStyles.mediumButton}onPress={() => router.navigate('/whitelist')}>
-              <Text style={textStyles.bigButtonText}>Apply For Whitelist</Text>
+          <Button
+            style={buttonStyles.mediumButton}
+            onPress={() => router.navigate('/whitelist')}
+          >
+            <Text style={textStyles.bigButtonText}>Apply For Whitelist</Text>
           </Button>
         </View>
       </ScrollView>
     </SafeAreaView>
   );
 };
+
 export default LoginScreen;
