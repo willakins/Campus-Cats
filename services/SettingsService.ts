@@ -1,7 +1,7 @@
 import { app, auth, db } from "@/config/firebase";
 import { ContactInfo, User, WhitelistApp } from "@/types";
 import { Router } from "expo-router";
-import { addDoc, collection, deleteDoc, doc, getDocs, updateDoc } from "firebase/firestore";
+import { addDoc, collection, deleteDoc, doc, getDocs, query, updateDoc, where } from "firebase/firestore";
 import { Dispatch, SetStateAction } from "react";
 import { Alert } from "react-native";
 import { getFunctions, httpsCallable } from 'firebase/functions';
@@ -199,28 +199,43 @@ class SettingsService {
   /**
    * Effect: Sends a whitelist application to the database
    */
-  public async submitWhitelist(app:WhitelistApp, setVisible:Dispatch<SetStateAction<boolean>>, router:Router) {
+  public async submitWhitelist(app: WhitelistApp, setVisible: Dispatch<SetStateAction<boolean>>, router: Router) {
     try {
       setVisible(true);
       const error_message = this.validateInput(app);
-      if (error_message == "") {
+
+      if (error_message === "") {
+        // Check if the user's email already exists in the whitelist collection
+        const q = query(collection(db, 'whitelist'), where('email', '==', app.email));
+        const querySnapshot = await getDocs(q);
+
+        // If an application already exists with the same email, alert the user
+        if (!querySnapshot.empty) {
+          alert('You have already submitted an application. You cannot submit multiple applications.');
+          return;
+        }
+
+        // If no existing application, proceed to add the new one
         const docRef = await addDoc(collection(db, 'whitelist'), {
-            name: app.name,
-            graduationYear: app.graduationYear,
-            email: app.email,
-            codeWord: app.codeWord
-          });
-          alert('Submited! An officer will review your application. If accepted, you will receive an email, check your spam.')
-          router.push('/login')
+          name: app.name,
+          graduationYear: app.graduationYear,
+          email: app.email,
+          codeWord: app.codeWord
+        });
+
+        alert('Submitted! An officer will review your application. If accepted, you will receive an email, check your spam.');
+        router.push('/login');
       } else {
         alert(error_message);
       }
     } catch (error) {
-      alert(error)
+      alert('An error occurred while submitting your application. Please try again later.');
+      console.error(error);
     } finally {
       setVisible(false);
     }
   }
+
 
   /**
    * Effect: retrieves the whitelist application list from database
