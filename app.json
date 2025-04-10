@@ -2,7 +2,7 @@
   "expo": {
     "name": "Campus Cats",
     "slug": "campus-cats",
-    "version": "0.5.0",
+    "version": "0.3.3",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "campuscats",
@@ -71,15 +71,9 @@
         "origin": false
       },
       "eas": {
-        "projectId": "80da548d-e526-49ad-a08a-d2817eb4c8fb"
+        "projectId": "c43ca67f-7ca6-4f49-bece-6bfaece30b2e"
       }
     },
-    "owner": "gtcampuscats",
-    "runtimeVersion": {
-      "policy": "appVersion"
-    },
-    "updates": {
-      "url": "https://u.expo.dev/80da548d-e526-49ad-a08a-d2817eb4c8fb"
-    }
+    "owner": "dragoslup"
   }
 }
