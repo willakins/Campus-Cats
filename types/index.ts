@@ -34,5 +34,5 @@ export { PickerConfig } from './PickerConfig';
 export { Station } from './Station';
 export { WhitelistApp } from './WhitelistApp';
 export { ContactInfo } from './ContactInfo';
-export { User } from './User';
+export { User, UserProps } from './User';
 export { firestoreDocRefSchema } from './firestore';
