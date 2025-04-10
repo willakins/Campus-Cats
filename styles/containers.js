@@ -104,8 +104,8 @@ const containerStyles = StyleSheet.create({
   },
   smallInputContainer: {
     padding: Platform.select({
-      padding: vw * 2.5,
-      default: 0,
+      ios: vw * 2.5,
+      default: 0
     }),
     width: width * .7,
     height: vh * 5,
