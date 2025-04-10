@@ -16,7 +16,7 @@ const FormCamera: React.FC<FormCameraProps> = ({ photos, setPhotos, setPicsChang
 
     return (
         <>
-            <Text style={[textStyles.titleCentered, {marginTop:10}]}>Add pictures</Text>
+            <Text style={textStyles.sectionTitle}>Add pictures</Text>
             <CameraButton onPhotoSelected={(newUri) => {
                 if (setPicsChanged) { setPicsChanged(true); }
                 setPhotos(prev => [...prev, newUri])
@@ -28,10 +28,10 @@ const FormCamera: React.FC<FormCameraProps> = ({ photos, setPhotos, setPicsChang
                     <View key={idx} style={containerStyles.imageWrapper}>
                     <Image source={{ uri }} style={containerStyles.extraPic} />
                     <Button
-                        style={buttonStyles.deleteButton}
+                        style={buttonStyles.imageDeleteButton}
                         onPress={() => setPhotos(prev => prev.filter((u) => u !== uri))}
                     >
-                        <Text style={textStyles.deleteButtonText}>Delete</Text>
+                        <Text style={textStyles.smallButtonText}>Delete</Text>
                     </Button>
                     </View>
                 ))}
@@ -41,7 +41,7 @@ const FormCamera: React.FC<FormCameraProps> = ({ photos, setPhotos, setPicsChang
             {photos.length > 0 && imageHandler ? (
                 <>
                 <Text style={textStyles.label}>Extra Photos</Text>
-                <Text style={textStyles.subHeading}>The photo you click will turn into the profile picture</Text>
+                <Text style={textStyles.detail}>The photo you click will turn into the profile picture</Text>
                 <View style={containerStyles.extraPicsContainer}>
                     {photos.map((pic, index) => (
                     <View key={index} style={containerStyles.imageWrapper}>
@@ -49,7 +49,7 @@ const FormCamera: React.FC<FormCameraProps> = ({ photos, setPhotos, setPicsChang
                         <Image source={{ uri: pic }} style={containerStyles.extraPic} />
                         </ImageButton>
                         <Button style={buttonStyles.imageDeleteButton} onPress={() => imageHandler.confirmDeletion(pic)}>
-                        <Text style={textStyles.deleteButtonText}>Delete</Text>
+                        <Text style={textStyles.smallButtonText}>Delete</Text>
                         </Button>
                     </View>
                     ))}

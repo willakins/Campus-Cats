@@ -17,7 +17,7 @@ const Stations = () => {
   if (!isAdmin) { // Double safety so important info isn't leaked
     return (
       <SafeAreaView style={containerStyles.wrapper}>
-        <Text style={textStyles.catalogTitle}> You should not be here!</Text>
+        <Text style={textStyles.pageTitle}> You should not be here!</Text>
         <Button style={buttonStyles.smallButtonTopLeft} onPress={() => router.push('/(app)/(tabs)')}>
           <Ionicons name="arrow-back-outline" size={25} color="#fff" />
         </Button>
@@ -43,7 +43,7 @@ const Stations = () => {
           {['Stocked', 'Unstocked', 'All'].map((label) => (
             <Button
               key={label}
-              style={[buttonStyles.filterButton, filter === label && buttonStyles.activeButton]}
+              style={[buttonStyles.rowButton2, filter === label && buttonStyles.activeButton]}
               onPress={() => setFilter(label as typeof filter)}
               textStyle={[textStyles.buttonText, filter === label && textStyles.activeText]}
             >
@@ -51,7 +51,7 @@ const Stations = () => {
             </Button>
           ))}
         </View>
-        <Text style={textStyles.title}>Feeding Stations</Text>
+        <Text style={textStyles.pageTitle}>Feeding Stations</Text>
         <ScrollView contentContainerStyle={containerStyles.scrollView}>
           {filteredStations.map((station) => (
             <StationItem

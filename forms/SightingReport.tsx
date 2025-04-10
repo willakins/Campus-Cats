@@ -111,22 +111,16 @@ export const SightingReportForm: React.FC<ReportFormProps> = ({
 
   return (
     <>
-      <Button style={buttonStyles.editButton} onPress={handleSubmit(submitHandler, onInvalid)}>
-        <Text style= {textStyles.editText}>
-          {type === 'create' ? 'Submit Sighting' : null}
-          {type === 'edit' ? 'Save' : null}
-        </Text>
-      </Button>
       <ScrollView contentContainerStyle={containerStyles.scrollView}>
-        <View style={containerStyles.container}>
+        <View style={containerStyles.card}>
           <Text style={textStyles.catalogTitle}>
             {type === 'create' ? 'Report A Sighting' : null}
             {type === 'edit' ? 'Edit A Sighting' : null}
           </Text>
           {/* TODO: Abstract into a component. Make sure to handle firebase errors where image URL does not exist */}
           {type === 'edit' ? (imageURL
-            ? (<Image source={{ uri: imageURL }} style={containerStyles.catImage} resizeMode='contain'/>)
-            : (<Text style={containerStyles.catImage}>Loading image...</Text>)
+            ? (<Image source={{ uri: imageURL }} style={containerStyles.imageMain} resizeMode='contain'/>)
+            : (<Text style={textStyles.title}>Loading image...</Text>)
           ): null}
           <View style={containerStyles.inputContainer}>
             <ControlledMapPicker control={control} name="location" />
@@ -155,6 +149,12 @@ export const SightingReportForm: React.FC<ReportFormProps> = ({
           Delete
         </Button> : null}
       </ScrollView>
+      <Button style={buttonStyles.bigButton} onPress={handleSubmit(submitHandler, onInvalid)}>
+        <Text style= {textStyles.bigButtonText}>
+          {type === 'create' ? 'Submit Sighting' : null}
+          {type === 'edit' ? 'Save' : null}
+        </Text>
+      </Button>
       <Errorbar error={error} onDismiss={() => setError('')} />
     </>
   );

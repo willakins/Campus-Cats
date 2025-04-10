@@ -30,8 +30,8 @@ const Whitelist = () => {
         <Ionicons name="arrow-back-outline" size={25} color="#fff" />
         </Button>
         <SnackbarMessage text="Saving Application..." visible={visible} setVisible={setVisible} />
-        <Text style={[textStyles.title, {marginTop:'15%'}]}>Apply for non-GT account</Text>
-        <ScrollView contentContainerStyle={containerStyles.scrollView}>
+        <Text style={textStyles.lowerPageTitle}>Apply for non-GT account</Text>
+        <ScrollView contentContainerStyle={containerStyles.scrollViewCenter}>
             <View style={containerStyles.card}>
                 <Text style={textStyles.label}>Enter your full name</Text>
                 <View style={containerStyles.inputContainer}>

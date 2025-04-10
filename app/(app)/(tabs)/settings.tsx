@@ -40,16 +40,16 @@ const Settings = () => {
       )}
       <ScrollView contentContainerStyle={containerStyles.scrollView}>
         <View style={[containerStyles.card, {marginTop:'10%'}]}>
-          <Text style={textStyles.titleCentered}>Club Contact Information</Text>
+          <Text style={[textStyles.listTitle, {textAlign: 'center'}]}>Club Contact Information</Text>
           {isAdmin && (
             <Button onPress={handleEdit} style={buttonStyles.smallButtonTopRight}>
-              <Text style={textStyles.editText}>{isEditable ? 'Save' : 'Edit'}</Text>
+              <Text style={textStyles.smallButtonText}>{isEditable ? 'Save' : 'Edit'}</Text>
             </Button>
           )}
 
           {/* Loop to render subheading, normal text, or editable text */}
           {contactInfo.map((contact, index) => (
-            <View key={index} style={containerStyles.rowStack}>
+            <View key={index} style={containerStyles.closeRowStack}>
               <View style={containerStyles.rowContainer}> 
                 {isAdmin && isEditable ? (
                   <View style={containerStyles.inputContainer}> 
@@ -63,40 +63,43 @@ const Settings = () => {
                   />
                   </View>
                 ) : (
-                  <Text style={textStyles.normalText}>{contact.name}</Text>
+                  <Text style={textStyles.detail}>{contact.name}</Text>
                 )}
               </View>
               <View style={containerStyles.rowContainer}> 
                 {isAdmin && isEditable ? (
-                  <View style={containerStyles.inputContainer}> 
-                    <TextInput
-                    style={textStyles.input}
-                    value={contact.email}
-                    onChangeText={(newText) =>
-                      database.handleTextChange(index, 'email', newText, contactInfo, setContactInfo, setHasChanged)
-                    }
-                    placeholder="Enter Email"
-                  />
-                  </View>
-                  
-                ) : (
-                  <Text style={textStyles.normalText}>{contact.email}</Text>
-                )}
+                <View style={containerStyles.inputContainer}> 
+                  <TextInput
+                  style={textStyles.input}
+                  value={contact.email}
+                  onChangeText={(newText) =>
+                    database.handleTextChange(index, 'email', newText, contactInfo, setContactInfo, setHasChanged)
+                  }
+                  placeholder="Enter Email"
+                />
                 </View>
+                
+              ) : (
+                <Text style={textStyles.detail}>{contact.email}</Text>
+              )}
+              </View>
                 <View style={containerStyles.rowContainer}> 
                   {isAdmin && isEditable && (
                     <Button onPress={() => database.deleteContact(index, contactInfo, setContactInfo, setHasChanged)} 
-                      style={buttonStyles.deleteButton}>
-                      <Text style={textStyles.deleteButtonText}>Delete Above Contact</Text>
+                      style={[buttonStyles.button, {backgroundColor:'red'}]}>
+                      <Text style={textStyles.smallButtonText}>Delete Above Contact</Text>
                     </Button>
                   )}
                 </View>
             </View>
           ))}
+          <View style={containerStyles.rowStack}>
           {isAdmin && isEditable ? <Button style={buttonStyles.button} 
                     onPress={() => database.addContact(contactInfo, setContactInfo, setHasChanged)}>
               <Text style={textStyles.smallButtonText}>Add Contact</Text>
             </Button>: null}
+          </View>
+          
         </View>
       </ScrollView>
       {isAdmin ? <Button style={buttonStyles.bigButton} onPress={() => router.push('/settings/manage_users')}>

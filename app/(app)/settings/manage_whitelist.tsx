@@ -24,7 +24,7 @@ const ManageWhitelist = () => {
         <Ionicons name="arrow-back-outline" size={25} color="#fff" />
       </Button>
       <SnackbarMessage text="Saving Whitelist..." visible={visible} setVisible={setVisible} />
-      <Text style={textStyles.title}>View Whitelist Applications</Text>
+      <Text style={textStyles.pageTitle}>View Whitelist Applications</Text>
       <ScrollView contentContainerStyle={containerStyles.scrollView}>
         {applicants.map((app) => (
           <WhitelistItem 

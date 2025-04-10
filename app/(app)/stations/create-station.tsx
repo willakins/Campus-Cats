@@ -5,11 +5,12 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
 import { globalStyles, buttonStyles, textStyles, containerStyles } from '@/styles';
-import { Button, SnackbarMessage, StationForm } from '@/components';
+import { Button, SnackbarMessage } from '@/components';
 import DatabaseService from '@/services/DatabaseService';
 import { useAuth } from '@/providers';
 import { Station } from '@/types';
 import { setSelectedStation } from '@/stores/stationStores';
+import { StationForm } from '@/forms';
 
 const create_station = () =>{
   const router = useRouter();
@@ -40,7 +41,7 @@ const create_station = () =>{
         <Ionicons name="arrow-back-outline" size={25} color="#fff" />
       </Button>
       <SnackbarMessage text="Creating Station..." visible={visible} setVisible={setVisible} />
-      <Text style={textStyles.title}>Create A Station</Text>
+      <Text style={textStyles.pageTitle}>Create A Station</Text>
       <ScrollView contentContainerStyle={containerStyles.scrollView}>
         <StationForm
           formData={formData}
