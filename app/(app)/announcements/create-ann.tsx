@@ -38,7 +38,7 @@ const create_ann = () =>{
         <Ionicons name="arrow-back-outline" size={25} color="#fff" />
       </Button>
       <SnackbarMessage text="Creating Announcement..." visible={visible} setVisible={setVisible} />
-      <Text style={[textStyles.pageTitle, {marginTop:50}]}>Create Announcement</Text>
+      <Text style={textStyles.lowerPageTitle}>Create Announcement</Text>
       <ScrollView contentContainerStyle={containerStyles.scrollView}>
         <AnnouncementForm
         formData={formData}

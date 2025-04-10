@@ -60,7 +60,7 @@ const AnnouncementForm: React.FC<AnnouncementFormProps> = ({
           {photos ? (photos.map((pic, index) => (
           <View key={index} style={containerStyles.imageWrapper}>
             <Image source={{ uri: pic }} style={containerStyles.extraPic} />
-            <Button style={buttonStyles.deleteButton} onPress={() => {
+            <Button style={buttonStyles.imageDeleteButton} onPress={() => {
               setPhotos((prevPhotos) => prevPhotos.filter((uri) => uri !== pic))
               if (setPicsChanged) {setPicsChanged(true);}}}>
               <Text style={textStyles.smallButtonText}>Delete</Text>

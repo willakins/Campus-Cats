@@ -28,7 +28,7 @@ const FormCamera: React.FC<FormCameraProps> = ({ photos, setPhotos, setPicsChang
                     <View key={idx} style={containerStyles.imageWrapper}>
                     <Image source={{ uri }} style={containerStyles.extraPic} />
                     <Button
-                        style={buttonStyles.deleteButton}
+                        style={buttonStyles.imageDeleteButton}
                         onPress={() => setPhotos(prev => prev.filter((u) => u !== uri))}
                     >
                         <Text style={textStyles.smallButtonText}>Delete</Text>

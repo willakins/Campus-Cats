@@ -56,18 +56,18 @@ export const LoginForm: React.FC<LoginProps> = ({
   return (
     <View style={containerStyles.shadedCard}>
       <Text style={textStyles.label}>Email</Text>
-      <View style={containerStyles.inputContainer}>
+      <View style={containerStyles.smallInputContainer}>
         <ControlledInput style={textStyles.input}control={control} name="email"/>
       </View>
       <Text style={textStyles.label}>Password</Text>
-      <View style={containerStyles.inputContainer}>
+      <View style={containerStyles.smallInputContainer}>
         <ControlledInput control={control} name="password" secureTextEntry />
       </View>
-      <Button style={[buttonStyles.bigButton, {height:'16%'}]}onPress={handleSubmit(submitHandler)}>
+      <Button style={buttonStyles.mediumButton}onPress={handleSubmit(submitHandler)}>
         <Text style={textStyles.bigButtonText}>{type === 'login' ? 'Sign In' : 'Create Account'}</Text>
       </Button>
       {onSwitchType !== undefined ?
-        <Button style={[buttonStyles.bigButton, {height:'16%'}]}onPress={onSwitchType}>
+        <Button style={buttonStyles.mediumButton}onPress={onSwitchType}>
           <Text style={textStyles.bigButtonText}>{type === 'login' ? 'Apply For Whitelist' : 'Go Back'}</Text>
         </Button>
         : null}
