@@ -16,7 +16,9 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.gatech.CampusCats",
-      "capabilities": ["push-notifications"],
+      "capabilities": [
+        "push-notifications"
+      ],
       "config": {
         "googleMapsApiKey": "AIzaSyD2koOi8GGUrbCZVju5Dq8Ca_1hxHb1mb8"
       },
@@ -68,10 +70,15 @@
         "origin": false
       },
       "eas": {
-        "_comment": "7f8a8e08-7f38-436a-b8af-44cd2d22c8e4",
         "projectId": "80da548d-e526-49ad-a08a-d2817eb4c8fb"
       }
     },
-    "owner": "gtcampuscats"
+    "owner": "gtcampuscats",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/80da548d-e526-49ad-a08a-d2817eb4c8fb"
+    }
   }
 }
