@@ -16,11 +16,16 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.gatech.CampusCats",
+      "capabilities": ["push-notifications"],
       "config": {
         "googleMapsApiKey": "AIzaSyD2koOi8GGUrbCZVju5Dq8Ca_1hxHb1mb8"
       },
       "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "Campus Cats uses your location to help volunteers find nearby feeding stations and cat sightings.",
         "ITSAppUsesNonExemptEncryption": false
+      },
+      "entitlements": {
+        "aps-environment": "development"
       }
     },
     "android": {
