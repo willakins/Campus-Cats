@@ -2,7 +2,7 @@
   "expo": {
     "name": "Campus Cats",
     "slug": "campus-cats",
-    "version": "5.0.0",
+    "version": "0.5.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "campuscats",
@@ -28,7 +28,8 @@
       },
       "entitlements": {
         "aps-environment": "development"
-      }
+      },
+      "buildNumber": "1"
     },
     "android": {
       "adaptiveIcon": {
