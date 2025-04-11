@@ -2,7 +2,7 @@
   "expo": {
     "name": "Campus Cats",
     "slug": "campus-cats",
-    "version": "0.3.1",
+    "version": "5.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "campuscats",
