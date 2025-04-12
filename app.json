@@ -17,6 +17,7 @@
       "supportsTablet": true,
       "bundleIdentifier": "com.gatech.CampusCats",
       "capabilities": [
+        "push-notifications",
         "push-notifications"
       ],
       "config": {
@@ -42,6 +43,8 @@
         }
       },
       "permissions": [
+        "android.permission.CAMERA",
+        "android.permission.RECORD_AUDIO",
         "android.permission.CAMERA",
         "android.permission.RECORD_AUDIO"
       ],
@@ -71,15 +74,15 @@
         "origin": false
       },
       "eas": {
-        "projectId": "80da548d-e526-49ad-a08a-d2817eb4c8fb"
+        "projectId": "aaf86c6c-d197-45aa-b25e-e60aef5e4b18"
       }
     },
-    "owner": "gtcampuscats",
+    "owner": "arcwand",
     "runtimeVersion": {
       "policy": "appVersion"
     },
     "updates": {
-      "url": "https://u.expo.dev/80da548d-e526-49ad-a08a-d2817eb4c8fb"
+      "url": "https://u.expo.dev/aaf86c6c-d197-45aa-b25e-e60aef5e4b18"
     }
   }
 }
