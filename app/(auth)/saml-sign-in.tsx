@@ -44,10 +44,7 @@ const SAMLRedirect = () => {
           const authCredential = SAMLAuthProvider.credentialFromJSON(
             JSON.parse(redirectData.queryParams.credential as string)
           );
-          const userCred = await signInWithCredential(auth, authCredential);
-          // Fetch user data and set (necessary for tracking user.role)
-          const userData = await fetchUser(userCred.user.uid); 
-          mutateUser(userData);
+          await signInWithCredential(auth, authCredential);
           router.navigate('/(app)/(tabs)');
         } catch (error) {
           Alert.alert('SSO sign-in failed.');
