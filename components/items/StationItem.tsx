@@ -36,11 +36,8 @@ export const StationItem: React.FC<Station> = ({
     }}>
       <Text style={textStyles.listTitle}>{name}</Text>
       <View style={containerStyles.rowContainer}>
-        {profile ? (
-          <Image source={{ uri: profile }} style={containerStyles.cardImage} />
-        ) : (
-          <View style={containerStyles.cardImage}><Text>Loading...</Text></View>
-        )}
+        {profile ? <Image source={{ uri: profile }} style={containerStyles.cardImage}/>:
+        <View style={containerStyles.cardImage}><Text style={textStyles.listTitle}>Loading...</Text></View>}
         <View style={containerStyles.columnContainer}>
           <View style={containerStyles.rowContainer}>
             <Text style={[textStyles.detail, { color: isStocked ? "green" : "red", marginVertical:0 }]}>
