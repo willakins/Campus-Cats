@@ -26,7 +26,7 @@ const CatalogEntryElement: React.FC = () => {
     <View style={containerStyles.card}>
       <Text style={[textStyles.cardTitle, {textAlign: 'center'}]}>{entry.cat.name}</Text>
       {profile ? (<Image source={{ uri: profile }} style={containerStyles.imageMain} resizeMode="cover"/>) : 
-                <Text style={[textStyles.cardTitle, {textAlign: 'center'}]}>Loading image...</Text>}
+                <View style={containerStyles.imageMain}></View>}
       <Text style={[textStyles.detail, {alignSelf:'center'}]}> {entry.cat.descShort} </Text>
       <Text style={textStyles.label}>Description</Text>
       <Text style={textStyles.detail}>{entry.cat.descLong}</Text>

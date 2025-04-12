@@ -39,7 +39,7 @@ export const StationItem: React.FC<Station> = ({
         {profile ? (
           <Image source={{ uri: profile }} style={containerStyles.cardImage} />
         ) : (
-          <View style={containerStyles.cardImage}><Text>Loading...</Text></View>
+          <View style={containerStyles.cardImage}></View>
         )}
         <View style={containerStyles.columnContainer}>
           <View style={containerStyles.rowContainer}>
