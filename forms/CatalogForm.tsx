@@ -33,7 +33,8 @@ const CatalogForm: React.FC<CatalogFormProps> = ({
     return (
         <View style={containerStyles.card}>
             {!isCreate ? 
-            <>{profile ? (<Image source={{ uri: profile }} style={containerStyles.imageMain}/>):<View style={containerStyles.imageMain}></View>}</>
+            <>{profile ? (<Image source={{ uri: profile }} style={containerStyles.imageMain}/>):
+                <View style={containerStyles.imageMain}><Text style={textStyles.listTitle}>Loading...</Text></View>}</>
             : null}
             <Text style={textStyles.label}>Cat's Name</Text>
             <View style={containerStyles.inputContainer}>
