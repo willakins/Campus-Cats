@@ -39,7 +39,7 @@ export const CatalogItem: React.FC<CatalogEntry> =
         {profile ? (
           <Image source={{ uri: profile }} style={containerStyles.listImage} resizeMode="cover" />
         ) : (
-          <View><Text style={textStyles.listTitle}>Loading...</Text></View>
+          <View style={containerStyles.listImage}></View>
         )}
         <Text style={[textStyles.detail, {alignSelf:'center'}]}>{cat.descShort}</Text>
     </Button>

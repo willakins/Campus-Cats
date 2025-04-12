@@ -33,7 +33,9 @@ const SightingForm: React.FC<SightingFormProps> = ({
 
   return (
     <View style={containerStyles.card}>
-      {!isCreate && profile ?  (<Image source={{ uri: profile }} style={containerStyles.imageMain} />): null}
+      {!isCreate ?
+       <>{profile ? (<Image source={{ uri: profile }} style={containerStyles.imageMain} />):<View style={containerStyles.imageMain}></View>}</>
+       : null}
 
       <Text style={textStyles.label}>Location</Text>
       <MapView

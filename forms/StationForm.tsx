@@ -26,7 +26,9 @@ const StationForm: React.FC<StationFormProps> = ({
 
     return (
         <View style={containerStyles.card}>
-            {!isCreate && profile ?  (<Image source={{ uri: profile }} style={containerStyles.imageMain} />): null}
+            {!isCreate ?
+             <>{profile ?  (<Image source={{ uri: profile }} style={containerStyles.imageMain} />):<View style={containerStyles.imageMain}></View>}</>
+             : null}
             <Text style={textStyles.label}>Station Location</Text>
             <MapView
                 style={containerStyles.mapContainer}
