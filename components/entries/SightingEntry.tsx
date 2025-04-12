@@ -63,14 +63,14 @@ const SightingEntry: React.FC = () => {
                 </View>
             </View>
         </View>
-        {photos.length > 0 ? (
+        {photos.length > 0 && (
         <>
             <Text style={textStyles.label}>Extra Photos</Text>
             {photos.map((url, index) => (
             <Image key={index} source={{ uri: url }} style={containerStyles.imageMain} />
             ))}
         </>
-        ):<View style={containerStyles.imageMain}><Text style={textStyles.listTitle}>Loading...</Text></View>}
+        )}
         <View style={containerStyles.footer}>
             <Text style={textStyles.footerText}>Author: {sighting.createdBy.id}</Text>
         </View>
