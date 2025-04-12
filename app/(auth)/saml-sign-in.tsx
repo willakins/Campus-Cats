@@ -44,7 +44,12 @@ const SAMLRedirect = () => {
           const authCredential = SAMLAuthProvider.credentialFromJSON(
             JSON.parse(redirectData.queryParams.credential as string)
           );
-          await signInWithCredential(auth, authCredential);
+          const userCred = await signInWithCredential(auth, authCredential);
+          if (userCred && userCred.user && userCred.user.email) {
+            await fetchUser(userCred.user.uid, userCred.user.email); 
+          } else {
+            console.error('User cred error')
+          } 
           router.navigate('/(app)/(tabs)');
         } catch (error) {
           Alert.alert('SSO sign-in failed.');
