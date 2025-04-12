@@ -1,22 +1,16 @@
 import { createContext, ReactNode, useContext, useEffect, useState } from 'react';
-import {
-  createUserWithEmailAndPassword,
-  signInWithEmailAndPassword,
-  signOut as signOutAuthUser,
-  onAuthStateChanged,
-  User as AuthUser
-} from 'firebase/auth';
+
+import { createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut as signOutAuthUser, onAuthStateChanged, User as AuthUser } from 'firebase/auth';
 
 import { auth } from '@/config/firebase';
-import { fetchUser, mutateUser } from '@/models';
+import { User, fetchUser, mutateUser } from '@/models';
 import { Router } from 'expo-router';
-import { User } from '@/types';
 
 type AuthContextType = {
   login: (email: string, password: string) => Promise<void>;
   createAccount: (email: string, password: string) => Promise<void>;
-  signOut: (router: Router) => Promise<void>;
-  currentUser: AuthUser | null;
+  signOut: (router:Router) => Promise<void>;
+  currentUser: AuthUser | null,
   user: User;
   loading: boolean;
 };
@@ -35,39 +29,30 @@ const AuthProvider = ({ children }: { children: ReactNode }) => {
   const createAccount = async (email: string, password: string) => {
     const userCredential = await createUserWithEmailAndPassword(auth, email, password);
     const authUser = userCredential.user;
-    await mutateUser({
+    // Create a default user
+    mutateUser({
       id: authUser.uid,
-      email,
-      role: 0, // default role
+      email: email,
+      role: 0,
     });
   };
 
-  const signOut = async (router: Router) => {
+  const signOut = async (router:Router) => {
     await signOutAuthUser(auth);
     router.push('/login');
   };
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (authUser) => {
-      setLoading(true);
       try {
-        if (authUser?.uid) {
-          const email = authUser.email ?? '';
-          const userData = await fetchUser(authUser.uid, email);
-          
-          // fallback in case user doc doesn't exist
-          if (!userData || !userData.role) {
-            console.warn('No user role found. Check if the user document exists in Firestore.');
-          }
-
-          setUser(userData);
-        } else {
-          setUser({} as User);
+        if (authUser?.uid && authUser?.email) {
+          // Get user doc on start
+          const data = await fetchUser(authUser?.uid, authUser?.email);
+          setUser(data);
         }
         setCurrentUser(authUser);
-      } catch (error) {
-        console.error('Error during auth state change:', error);
-        setUser({} as User);
+      } catch (error: unknown) {
+        console.log(error);
       }
       setLoading(false);
     });
@@ -76,13 +61,9 @@ const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   const value = {
-    login,
-    createAccount,
-    signOut,
-    currentUser,
-    user,
-    loading,
-  };
+    login, createAccount, signOut,
+    currentUser, user, loading,
+  }
 
   return (
     <AuthContext.Provider value={value}>
@@ -91,6 +72,9 @@ const AuthProvider = ({ children }: { children: ReactNode }) => {
   );
 };
 
-const useAuth = () => useContext(AuthContext);
+// This hook can be used to access the user info.
+const useAuth = () => {
+  return useContext(AuthContext);
+};
 
 export { AuthProvider, useAuth };

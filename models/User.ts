@@ -13,8 +13,16 @@ type User = z.infer<typeof User>;
 
 const path = 'users';
 
-const fetchUser = async (id: string) => {
-  const userDoc = await getDoc(doc(db, path, id));
+const fetchUser = async (id: string, email:string) => {
+  let userDoc = await getDoc(doc(db, path, id));
+  if (!userDoc.exists() && email) {
+    await mutateUser({
+      id,
+      email,
+      role: 0,
+    });
+    userDoc = await getDoc(doc(db, path, id));
+  }
   return User.parse({ id: userDoc.id, ...userDoc.data() });
 };
 
