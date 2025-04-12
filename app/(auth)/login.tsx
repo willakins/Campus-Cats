@@ -11,6 +11,7 @@ const LoginScreen = () => {
   const router = useRouter();
   const { login } = useAuth();
   const [visible, setVisible] = useState<boolean>(false);
+  const [imageLoaded, setImageLoaded] = useState<boolean>(false);
 
   const [formData, setFormData] = useState<{email: string; password: string;}>({email:"", password:""});
   const handleChange = (field: string, val: any) => {
@@ -39,7 +40,9 @@ const LoginScreen = () => {
         <Image
           source={require('@/assets/images/campus_cats_logo.png')}
           style={containerStyles.imageLarge}
-        />
+          onLoad={() =>setImageLoaded(true)}
+        /> 
+        {!imageLoaded ? <View style={containerStyles.imageLarge}><Text style={textStyles.listTitle}>Loading...</Text></View>: null}
         <View style={containerStyles.shadedCard}>
           <Text style={textStyles.label}>Email</Text>
           <View style={containerStyles.smallInputContainer}>

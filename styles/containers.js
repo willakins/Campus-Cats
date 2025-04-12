@@ -196,6 +196,7 @@ const containerStyles = StyleSheet.create({
     marginBottom: vh * 2,
     alignSelf: 'center',
     overflow: 'hidden',
+    justifyContent: 'center',
   },
   imageMain: {
     width: width * .85,
@@ -204,6 +205,8 @@ const containerStyles = StyleSheet.create({
     marginBottom: vh * 2,
     alignSelf: 'center',
     overflow: 'hidden',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   listImage: {
     width: width * .8,
@@ -218,6 +221,7 @@ const containerStyles = StyleSheet.create({
     height: vw * 40,
     borderRadius: vw * 3,
     marginRight: vw * 3,
+    justifyContent:'center',
   },
   extraPic: {
     width: vw * 25,
