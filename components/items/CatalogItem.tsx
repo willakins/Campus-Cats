@@ -36,11 +36,8 @@ export const CatalogItem: React.FC<CatalogEntry> =
       router.push('/catalog/view-entry')
     }}>
       <Text style={textStyles.listTitle}>{cat.name}</Text>
-        {profile ? (
-          <Image source={{ uri: profile }} style={containerStyles.listImage} resizeMode="cover" />
-        ) : (
-          <View><Text style={textStyles.listTitle}>Loading...</Text></View>
-        )}
+          {profile ? <Image source={{ uri: profile }} style={containerStyles.listImage} resizeMode="cover"/>:
+            <View style={containerStyles.listImage}><Text style={textStyles.listTitle}>Loading...</Text></View>}
         <Text style={[textStyles.detail, {alignSelf:'center'}]}>{cat.descShort}</Text>
     </Button>
   );

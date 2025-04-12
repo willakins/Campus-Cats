@@ -20,8 +20,8 @@ const SightingEntry: React.FC = () => {
 
   return (
     <View style={containerStyles.card}>
-        {profile.length > 0 ? (<Image source={{ uri: profile }} style={containerStyles.imageMain} />) : (
-            <Text style={[textStyles.cardTitle, {textAlign: 'center'}]}>Loading image...</Text>)}
+        {profile ? <Image source={{ uri: profile }} style={containerStyles.imageMain}/>:
+        <View style={containerStyles.imageMain}><Text style={textStyles.listTitle}>Loading...</Text></View>}
         <Text style={textStyles.label}>Location</Text>
         <MapView
         style={containerStyles.mapContainer}
