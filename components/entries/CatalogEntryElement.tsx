@@ -25,8 +25,8 @@ const CatalogEntryElement: React.FC = () => {
   return (
     <View style={containerStyles.card}>
       <Text style={[textStyles.cardTitle, {textAlign: 'center'}]}>{entry.cat.name}</Text>
-      {profile ? (<Image source={{ uri: profile }} style={containerStyles.imageMain} resizeMode="cover"/>) : 
-                <View style={containerStyles.imageMain}></View>}
+      {profile ? <Image source={{ uri: profile }} style={containerStyles.imageMain} resizeMode="cover"/>:
+      <View style={containerStyles.imageMain}><Text style={textStyles.listTitle}>Loading...</Text></View>}
       <Text style={[textStyles.detail, {alignSelf:'center'}]}> {entry.cat.descShort} </Text>
       <Text style={textStyles.label}>Description</Text>
       <Text style={textStyles.detail}>{entry.cat.descLong}</Text>
@@ -49,7 +49,7 @@ const CatalogEntryElement: React.FC = () => {
         />
         ))}
       </MapView>
-      <Button style={[buttonStyles.bigButton, Platform.OS === 'ios' ? {height:45} : {}]}onPress={() => setShowDetails(!showDetails)}>
+      <Button style={buttonStyles.bigButton}onPress={() => setShowDetails(!showDetails)}>
         <Text style={textStyles.bigButtonText}> {showDetails ? "Show less details": "Show more details"}</Text>
       </Button>
       {showDetails ? <><Text style={textStyles.label}>Detailed Color Pattern</Text>

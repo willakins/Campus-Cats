@@ -23,8 +23,8 @@ export const StationEntry: React.FC = () => {
   return (
     <View style={containerStyles.card}>
         <Text style={[textStyles.cardTitle, {textAlign: 'center'}]}>{station.name}</Text>
-        {profile ? (<Image source={{ uri: profile }} style={containerStyles.imageMain} resizeMode="cover"/>) : 
-          <View style={containerStyles.imageMain}></View>}
+        {profile ? <Image source={{ uri: profile }} style={containerStyles.imageMain} resizeMode="cover"/>:
+        <View style={containerStyles.imageMain}><Text style={textStyles.listTitle}>Loading...</Text></View>}
         <Text style={textStyles.label}>Location</Text>
         <MapView
           style={containerStyles.mapContainer}
