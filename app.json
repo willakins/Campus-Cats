@@ -2,7 +2,7 @@
   "expo": {
     "name": "Campus Cats",
     "slug": "campus-cats",
-    "version": "0.5.1",
+    "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "campuscats",
@@ -45,7 +45,7 @@
         "android.permission.RECORD_AUDIO"
       ],
       "package": "com.gatech.CampusCats",
-      "versionCode": "7 (0.5.1)"
+      "versionCode": "8"
     },
     "web": {
       "bundler": "metro",
