@@ -42,7 +42,7 @@
         "android.permission.RECORD_AUDIO"
       ],
       "package": "com.gatech.CampusCats",
-      "versionCode": "7 (0.5.1)"
+      "versionCode": "8"
     },
     "web": {
       "bundler": "metro",
