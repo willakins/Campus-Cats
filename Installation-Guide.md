@@ -82,7 +82,7 @@ Or scan the QR code with Expo Go on a physical device
 |-------|----------|
 | `expo command not found` | Run `npm install -g expo-cli` to install Expo CLI globally. |
 | QR Code not scanning | Ensure your computer and phone are on the same Wi-Fi network. |
-| Firebase errors | Check that you’ve added your Firebase config in the correct file (e.g., `firebaseConfig.js`). Replace it with your own Firebase project's config if needed. |
+| Firebase errors | Check that you haven't exceeded the allowed number of firebase accesses for your billing plan. |
 | Dependency version mismatch errors | Run `npm install` again. If issues persist, delete `node_modules` and `package-lock.json`, then run `npm install` again. |
 | Permissions errors (camera, etc.) | Ensure you’ve granted camera and media access permissions in your device settings. Expo will also prompt for these on first use. |
 
