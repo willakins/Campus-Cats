@@ -1,22 +1,29 @@
 import React, { useCallback, useEffect, useState, useRef } from 'react';
+
 import { Redirect } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 
 import { LoadingIndicator } from '@/components';
 import { auth } from '@/config/firebase';
 import { useAuth } from '@/providers';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { globalStyles } from '@/styles';
 
 // Instruct SplashScreen not to hide yet, we want to do this manually
-SplashScreen.preventAutoHideAsync().catch(() => {});
+SplashScreen.preventAutoHideAsync().catch(() => {
+  /* reloading the app might trigger some race conditions, ignore them */
+});
 
+// Set the animation options. This is optional.
 SplashScreen.setOptions({
   duration: 1000,
   fade: true,
 });
 
 const App = () => {
-  const { loading, user } = useAuth();
-
+  const { loading, user } = useAuth(); // Make sure useAuth returns user too
+  
+  // Use useEffect to handle splash screen hiding
   useEffect(() => {
     if (!loading) {
       // This tells the splash screen to hide immediately! If we call this after
