@@ -21,6 +21,7 @@ npm install -g expo-cli
 
 ### 3. Git
 Required to clone the repository.
+Install Git
 
 ### 4. Expo Go App (for mobile testing)
 Allows you to run the app on your iOS or Android device.
