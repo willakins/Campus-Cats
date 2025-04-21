@@ -44,42 +44,42 @@ The full list is available in the package.json file.
 
 ## Download Instructions
 Clone the repository:
-
 ````bash
-git clone https://github.com/your-username/campus-cats.git
-cd campus-cats
+git clone https://github.com/willakins/JIC-4331-ScrapCats.git
+cd JIC-4331-ScrapCats
 ````
-Install dependencies:
 
-bash
-Copy
-Edit
+Install dependencies:
+````bash
 npm install
-🛠️ Build Instructions
+````
+
+## Build Instructions
 No manual build process is needed thanks to Expo. Expo handles compiling and bundling automatically when you run the app.
 
-🚀 Installation of Actual Application
+Installation of Actual Application
 After installing the dependencies, follow these steps:
 
 Start the Expo development server:
-
-bash
-Copy
-Edit
-expo start
+````bash
+npx expo start --clear --tunnel
+````
 A QR code will appear in your terminal or browser.
-
 Open the Expo Go app on your physical device and scan the QR code to run the app instantly.
 
-▶️ Run Instructions
+## Run Instructions
 From the root project directory, start the app with:
-
-bash
-Copy
-Edit
-expo start
-Press a to open in Android Emulator (if configured)
-
-Press i to open in iOS Simulator (if configured)
-
+````bash
+npx expo start --clear --tunnel
+````
+ - Press a to open in Android Emulator (if configured)
+ - Press i to open in iOS Simulator (if configured)
 Or scan the QR code with Expo Go on a physical device
+
+## Troubleshooting
+Issue | Solution
+expo command not found | Run npm install -g expo-cli to install Expo CLI globally.
+QR Code not scanning | Ensure your computer and phone are on the same Wi-Fi network.
+Firebase errors | Check that you’ve added your Firebase config in the correct file (e.g., firebaseConfig.js). Replace it with your own Firebase project's config if needed.
+Dependency version mismatch errors | Run npm install again. If issues persist, delete node_modules and package-lock.json, then run npm install again.
+Permissions errors (camera, etc.) | Ensure you’ve granted camera and media access permissions in your device settings. Expo will also prompt for these on first use.
