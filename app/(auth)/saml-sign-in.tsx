@@ -10,6 +10,8 @@ import { firebaseConfig } from '@/config/firebase';
 import { fetchUser, mutateUser } from '@/models';
 import { buttonStyles, containerStyles, textStyles } from '@/styles';
 import { Ionicons } from '@expo/vector-icons';
+import { registerForPushNotificationsAsync, savePushTokenToFirestore } from '@/utils/notifications';
+
 
 const SAMLRedirect = () => {
   const router = useRouter();
@@ -45,8 +47,13 @@ const SAMLRedirect = () => {
             JSON.parse(redirectData.queryParams.credential as string)
           );
           const userCred = await signInWithCredential(auth, authCredential);
-          if (userCred && userCred.user && userCred.user.email) {
-            await fetchUser(userCred.user.uid, userCred.user.email); 
+          if (userCred?.user?.uid && userCred?.user?.email) {
+            await fetchUser(userCred.user.uid, userCred.user.email);
+          
+            const token = await registerForPushNotificationsAsync();
+            if (token) {
+              await savePushTokenToFirestore(userCred.user.uid, token);
+            }
           } else {
             console.error('User cred error')
           } 

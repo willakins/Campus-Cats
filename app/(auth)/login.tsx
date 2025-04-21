@@ -3,9 +3,12 @@ import { Text, Image, View, SafeAreaView, ScrollView, TextInput } from 'react-na
 import { useRouter } from 'expo-router';
 
 import { firebaseConfig } from '@/config/firebase';
+import { auth as firebaseAuth } from '@/config/firebase'; // Get Firebase auth reference
+
 import { Button, SnackbarMessage } from '@/components';
 import { buttonStyles, containerStyles, globalStyles, textStyles } from '@/styles';
 import { useAuth } from '@/providers';
+import { registerForPushNotificationsAsync, savePushTokenToFirestore } from '@/utils/notifications';
 
 const LoginScreen = () => {
   const router = useRouter();
@@ -22,9 +25,17 @@ const LoginScreen = () => {
     try {
       setVisible(true);
       await login(formData.email, formData.password);
+  
+      const token = await registerForPushNotificationsAsync();
+      const currentUser = firebaseAuth.currentUser;
+  
+      if (token && currentUser?.uid) {
+        await savePushTokenToFirestore(currentUser.uid, token);
+      }
+  
       router.replace('/(app)/(tabs)');
     } catch {
-      alert('Failed login. Consider using SSO.')
+      alert('Failed login. Consider using SSO.');
     } finally {
       setVisible(false);
     }
