@@ -28,7 +28,11 @@ Allows you to run the app on your iOS or Android device.
 [Download for iOS and Android](https://expo.dev/go)
 
 ## Dependent Libraries
-These third-party libraries must be installed when you install the app's dependencies. You do not need to install them manually — they're handled by running npm install in a terminal inside of the project directory.
+These third-party libraries must be installed when you install the app's dependencies. You do not need to install them manually — they're handled by running 
+```bash
+npm install
+```
+in a terminal inside of the project directory.
 
 Some key dependencies include:
 
