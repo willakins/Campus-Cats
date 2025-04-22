@@ -68,7 +68,7 @@ class AnnouncementsService {
               });
               //console.log("IM PRETTY SURE IT WORKED FELLAS");
             } catch (error) {
-              console.error("WORK PLEASE", error);
+              //console.error("WORK PLEASE", error);
               console.error("Failed to send push notification:", error);
             }
             
