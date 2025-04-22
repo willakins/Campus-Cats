@@ -73,9 +73,15 @@ export const createWhitelistUser = functions.https.onCall(
 
 export const sendAnnouncement = functions.https.onCall(
   async (request) => {
+    if (!request.auth) {
+      throw new functions.https.HttpsError(
+          "unknown", 
+          "You need to be authenticated to perform this action"
+        );
+    }
     const uid = request.auth?.uid
     if (uid === undefined) {
-      throw new functions.https.HttpsError("unauthenticated", "You need to be authenticated to perform this action")
+      throw new functions.https.HttpsError("invalid-argument", "You need to be authenticated to perform this action")
     }
 
     const userDoc = await admin.firestore().collection('users').doc(uid).get();
