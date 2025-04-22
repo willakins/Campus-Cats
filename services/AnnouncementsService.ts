@@ -4,6 +4,7 @@ import { getSelectedAnnouncement } from "@/stores/announcementStores";
 import { Announcement} from "@/types";
 import { Router } from "expo-router";
 import { addDoc, collection, deleteDoc, doc, getDoc, getDocs, orderBy, query, serverTimestamp, updateDoc } from "firebase/firestore";
+import { getFunctions, httpsCallable } from "firebase/functions";
 import { deleteObject, getDownloadURL, listAll, ref, uploadBytes, uploadBytesResumable } from "firebase/storage";
 import { Dispatch, SetStateAction } from "react";
 import { Alert } from "react-native";
@@ -47,6 +48,18 @@ class AnnouncementsService {
         router: Router) {
         try {
             const ann = getSelectedAnnouncement();
+            const functions = getFunctions();
+            const sendAnnouncement = httpsCallable(functions, 'sendAnnouncement');
+            try {
+              await sendAnnouncement({
+                title: ann.title,
+                message: ann.info,
+              });
+            } catch (error) {
+              console.error("What is even going on honestly", error);
+              console.error("Failed to send push notification:", error);
+            }
+            
             const error_message = this.validate_input(ann)
             if (error_message == "") {
                 setVisible(true);
