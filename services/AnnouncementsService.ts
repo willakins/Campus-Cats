@@ -1,5 +1,6 @@
-import { db, storage } from "@/config/firebase";
+import { auth, db, storage } from "@/config/firebase";
 import { useAuth } from "@/providers/AuthProvider";
+
 import { getSelectedAnnouncement } from "@/stores/announcementStores";
 import { Announcement} from "@/types";
 import { Router } from "expo-router";
@@ -50,13 +51,24 @@ class AnnouncementsService {
             const ann = getSelectedAnnouncement();
             const functions = getFunctions();
             const sendAnnouncement = httpsCallable(functions, 'sendAnnouncement');
+
+                // Get the current user's ID token
+            const currentUser  = auth.currentUser;
+
+            if (!currentUser) {
+                throw new Error("User not authenticated SLIME");
+            }
+            const token = await currentUser.getIdToken();
+            
+            
             try {
               await sendAnnouncement({
                 title: ann.title,
                 message: ann.info,
               });
+              //console.log("IM PRETTY SURE IT WORKED FELLAS");
             } catch (error) {
-              console.error("What is even going on honestly", error);
+              console.error("WORK PLEASE", error);
               console.error("Failed to send push notification:", error);
             }
             
