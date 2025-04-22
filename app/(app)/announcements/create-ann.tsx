@@ -51,7 +51,6 @@ const create_ann = () =>{
       <Button style={buttonStyles.bigButton} onPress={async () => {
         createObj();
         database.handleAnnouncementCreate(photos, setVisible, router)
-
             const functions = getFunctions();
             const sendAnnouncement = httpsCallable(functions, 'sendAnnouncement');
             try {
@@ -60,6 +59,7 @@ const create_ann = () =>{
                 message: formData.info,
               });
             } catch (error) {
+              console.error("What is even going on honestly", error);
               console.error("Failed to send push notification:", error);
             }
         }}>
