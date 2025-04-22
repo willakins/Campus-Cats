@@ -51,12 +51,11 @@ class AnnouncementsService {
             const ann = getSelectedAnnouncement();
             const functions = getFunctions();
             const sendAnnouncement = httpsCallable(functions, 'sendAnnouncement');
-
-                // Get the current user's ID token
+            // Get the current user's ID token
             const currentUser  = auth.currentUser;
 
             if (!currentUser) {
-                throw new Error("User not authenticated SLIME");
+                throw new Error("User not authenticated");
             }
             const token = await currentUser.getIdToken();
             
@@ -66,9 +65,7 @@ class AnnouncementsService {
                 title: ann.title,
                 message: ann.info,
               });
-              //console.log("IM PRETTY SURE IT WORKED FELLAS");
             } catch (error) {
-              //console.error("WORK PLEASE", error);
               console.error("Failed to send push notification:", error);
             }
             
