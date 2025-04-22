@@ -10,7 +10,6 @@ import { useAuth } from '@/providers/AuthProvider';
 import { Announcement } from '@/types';
 import { setSelectedAnnouncement } from '@/stores/announcementStores';
 import { AnnouncementForm } from '@/forms/AnnouncementForm';
-import { getFunctions, httpsCallable } from 'firebase/functions';
 
 
 const create_ann = () =>{
@@ -51,17 +50,6 @@ const create_ann = () =>{
       <Button style={buttonStyles.bigButton} onPress={async () => {
         createObj();
         database.handleAnnouncementCreate(photos, setVisible, router)
-            const functions = getFunctions();
-            const sendAnnouncement = httpsCallable(functions, 'sendAnnouncement');
-            try {
-              await sendAnnouncement({
-                title: formData.title,
-                message: formData.info,
-              });
-            } catch (error) {
-              console.error("What is even going on honestly", error);
-              console.error("Failed to send push notification:", error);
-            }
         }}>
         <Text style={textStyles.bigButtonText}> Create Announcement</Text>
       </Button>
