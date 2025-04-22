@@ -70,3 +70,5 @@ const AppSplashScreen: React.FC<{}> = () => {
     />
   );
 };
+
+//comment
