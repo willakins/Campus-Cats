@@ -49,29 +49,28 @@ class AnnouncementsService {
         router: Router) {
         try {
             const ann = getSelectedAnnouncement();
-            const functions = getFunctions();
-            const sendAnnouncement = httpsCallable(functions, 'sendAnnouncement');
-            // Get the current user's ID token
-            const currentUser  = auth.currentUser;
-
-            if (!currentUser) {
-                throw new Error("User not authenticated");
-            }
-            const token = await currentUser.getIdToken();
-            
-            
-            try {
-              await sendAnnouncement({
-                title: ann.title,
-                message: ann.info,
-              });
-            } catch (error) {
-              console.error("Failed to send push notification:", error);
-            }
-            
             const error_message = this.validate_input(ann)
             if (error_message == "") {
                 setVisible(true);
+                const functions = getFunctions();
+                const sendAnnouncement = httpsCallable(functions, 'sendAnnouncement');
+                // Get the current user's ID token
+                const currentUser  = auth.currentUser;
+
+                if (!currentUser) {
+                    throw new Error("User not authenticated");
+                }
+                const token = await currentUser.getIdToken();
+                
+                
+                try {
+                await sendAnnouncement({
+                    title: ann.title,
+                    message: ann.info,
+                });
+                } catch (error) {
+                console.error("Failed to send push notification:", error);
+                }
                 // Save announcement document in Firestore
                 const docRef = await addDoc(collection(db, 'announcements'), {
                     title:ann.title,
