@@ -81,8 +81,11 @@ npx expo start --clear --tunnel
  - Press a to open in Android Emulator (if configured)
  - Press i to open in iOS Simulator (if configured)
 Or scan the QR code with Expo Go on a physical device
-- If you're experiencing trouble, maybe try:
+
+- If you're experiencing trouble, maybe try:  
+```bash
 EXPO_TUNNEL_SUBDOMAIN=gatechCampusCats npx expo start --tunnel
+```
 
 ## Troubleshooting
 
