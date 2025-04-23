@@ -1,13 +1,13 @@
-import React, { useCallback, useEffect } from 'react';
-import { Image, SafeAreaView } from 'react-native';
+import React, { useCallback, useEffect, useState, useRef } from 'react';
 
-import { useRouter } from 'expo-router';
+import { Redirect } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 
 import { LoadingIndicator } from '@/components';
 import { auth } from '@/config/firebase';
 import { useAuth } from '@/providers';
-import { globalStyles, buttonStyles, textStyles, containerStyles } from '@/styles';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { globalStyles } from '@/styles';
 
 // Instruct SplashScreen not to hide yet, we want to do this manually
 SplashScreen.preventAutoHideAsync().catch(() => {
@@ -21,9 +21,10 @@ SplashScreen.setOptions({
 });
 
 const App = () => {
-  const { loading } = useAuth();
-
-  const onLayoutRootView = useCallback(() => {
+  const { loading, user } = useAuth(); // Make sure useAuth returns user too
+  
+  // Use useEffect to handle splash screen hiding
+  useEffect(() => {
     if (!loading) {
       // This tells the splash screen to hide immediately! If we call this after
       // `setIsLoading`, then we may see a blank screen while the app is
@@ -34,39 +35,18 @@ const App = () => {
     }
   }, [loading]);
 
+  // Early return for loading state
+  // NOTE: If we try to redirect immediately, the useEffect never has time to
+  // hide the splashscreen.
   if (loading) {
     return <LoadingIndicator />;
   }
 
-  return (
-    <SafeAreaView onLayout={onLayoutRootView} style={globalStyles.screen}>
-      <AppSplashScreen />
-    </SafeAreaView>
-  );
+  if (auth.currentUser) {
+    return <Redirect href="/(app)/(tabs)" />;
+  } else {
+    return <Redirect href="/login" />;
+  }
 };
 
 export default App;
-
-const AppSplashScreen: React.FC<{}> = () => {
-  const router = useRouter();
-
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      if (auth.currentUser) {
-        router.push('/(app)/(tabs)');
-      } else {
-        router.push('/login');
-      }
-    }, 1000);
-
-    return () => clearTimeout(timer);
-  }, []);
-
-  return(
-    <Image
-      style={containerStyles.splashImage}
-      resizeMode='contain'
-      source={require('@/assets/images/app-icon.png')}
-    />
-  );
-};

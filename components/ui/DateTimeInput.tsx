@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Text, TouchableOpacity, View } from 'react-native';
 
 import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
 
@@ -9,35 +9,40 @@ import { SetState } from '@/utils';
 type DateTimeInputProps = {
   date: Date;
   setDate: SetState<Date>;
-  error?: string;
 };
 
 export const DateTimeInput: React.FC<DateTimeInputProps> = ({
   date,
   setDate,
-  error,
 }) => {
-  const [showPicker, setShowPicker] = useState<boolean>(false);
+  const [showPicker, setShowPicker] = useState<boolean>(true);
 
   const onChange = (event: DateTimePickerEvent, selectedDate: Date| undefined) => {
     if (selectedDate) {
       setDate(selectedDate);
     }
     setShowPicker(false);
+    if (selectedDate) {
+      setDate(selectedDate);
+      setShowPicker(false);
+      const timeout = setTimeout(() => {
+        setShowPicker(true);
+      }, 10);
+      
+    }
   };
 
   return (
-    <View style={containerStyles.dateInput}>
-      <Text style={textStyles.sliderText}>
-        {date ? date.toDateString() : 'Select Sighting Date'}
-      </Text>
-      <TouchableOpacity  onPress={() => setShowPicker(true)}>
-        {showPicker ? <DateTimePicker
+    <View style={containerStyles.dateInputContainer}>
+      <Text style={textStyles.dateText}>{date.toDateString()}</Text>
+      {showPicker && <DateTimePicker
+          testID="dateTimePicker"
           value={date || new Date()}
           mode="date"
           display="default"
-          onChange={onChange}/> : null}
-      </TouchableOpacity>
-      {error && <Text style={textStyles.errorText}>{error}</Text>}
+          onChange={onChange}
+          style={containerStyles.datePickerContainer}
+        />}
     </View>
+  );
 };

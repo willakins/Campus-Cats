@@ -6,7 +6,7 @@ import { globalStyles, buttonStyles, textStyles, containerStyles } from '@/style
 import { useAuth } from '@/providers';
 import { Button } from '@/components';
 import { useEffect, useState } from 'react';
-import DatabaseService from '@/components/services/DatabaseService';
+import DatabaseService from '@/services/DatabaseService';
 import { ContactInfo } from '@/types';
 
 const Settings = () => {
@@ -31,39 +31,45 @@ const Settings = () => {
   };
 
   return (
-    <SafeAreaView style={containerStyles.container}>
-      <Button style={buttonStyles.logoutButton} onPress={() => signOut(router)}>
+    <SafeAreaView style={containerStyles.wrapper}>
+      <Button style={buttonStyles.smallButtonTopLeft} onPress={() => signOut(router)}>
         <Ionicons name="log-out-outline" size={25} color="#fff" />
       </Button>
       {isAdmin && (
         <Ionicons name="lock-closed" size={24} color="black" style={globalStyles.lockIcon} />
       )}
       <ScrollView contentContainerStyle={containerStyles.scrollView}>
-        <View style={containerStyles.contactContainer}>
-          <Text style={textStyles.headline2}>Club Contact Information</Text>
+        <View style={[containerStyles.card, {marginTop:'10%'}]}>
+          <Text style={[textStyles.listTitle, {textAlign: 'center'}]}>Club Contact Information</Text>
           {isAdmin && (
-            <Button onPress={handleEdit} style={buttonStyles.editButton}>
-              <Text style={textStyles.editText}>{isEditable ? 'Save' : 'Edit'}</Text>
+            <Button onPress={handleEdit} style={buttonStyles.smallButtonTopRight}>
+              <Text style={textStyles.smallButtonText}>{isEditable ? 'Save' : 'Edit'}</Text>
             </Button>
           )}
 
           {/* Loop to render subheading, normal text, or editable text */}
           {contactInfo.map((contact, index) => (
-            <View key={index} style={containerStyles.row}>
-              {isAdmin && isEditable ? (
-                <TextInput
-                  style={textStyles.input}
-                  value={contact.name}
-                  onChangeText={(newText) =>
-                    database.handleTextChange(index, 'name', newText, contactInfo, setContactInfo, setHasChanged)
-                  }
-                  placeholder="Enter Name"
-                />
-              ) : (
-                <Text style={textStyles.normalText}>{contact.name}</Text>
-              )}
-              {isAdmin && isEditable ? (
-                <TextInput
+            <View key={index} style={containerStyles.closeRowStack}>
+              <View style={containerStyles.rowContainer}> 
+                {isAdmin && isEditable ? (
+                  <View style={containerStyles.inputContainer}> 
+                    <TextInput
+                    style={textStyles.input}
+                    value={contact.name}
+                    onChangeText={(newText) =>
+                      database.handleTextChange(index, 'name', newText, contactInfo, setContactInfo, setHasChanged)
+                    }
+                    placeholder="Enter Name"
+                  />
+                  </View>
+                ) : (
+                  <Text style={textStyles.detail}>{contact.name}</Text>
+                )}
+              </View>
+              <View style={containerStyles.rowContainer}> 
+                {isAdmin && isEditable ? (
+                <View style={containerStyles.inputContainer}> 
+                  <TextInput
                   style={textStyles.input}
                   value={contact.email}
                   onChangeText={(newText) =>
@@ -71,25 +77,37 @@ const Settings = () => {
                   }
                   placeholder="Enter Email"
                 />
+                </View>
+                
               ) : (
-                <Text style={textStyles.normalText}>{contact.email}</Text>
+                <Text style={textStyles.detail}>{contact.email}</Text>
               )}
-              {isAdmin && isEditable && (
-                <Button onPress={() => database.deleteContact(index, contactInfo, setContactInfo, setHasChanged)} 
-                  style={buttonStyles.deleteButton}>
-                  <Text style={textStyles.deleteButtonText}>Delete Above Contact</Text>
-                </Button>
-              )}
+              </View>
+                <View style={containerStyles.rowContainer}> 
+                  {isAdmin && isEditable && (
+                    <Button onPress={() => database.deleteContact(index, contactInfo, setContactInfo, setHasChanged)} 
+                      style={[buttonStyles.button, {backgroundColor:'red'}]}>
+                      <Text style={textStyles.smallButtonText}>Delete Above Contact</Text>
+                    </Button>
+                  )}
+                </View>
             </View>
           ))}
+          <View style={containerStyles.rowStack}>
           {isAdmin && isEditable ? <Button style={buttonStyles.button} 
                     onPress={() => database.addContact(contactInfo, setContactInfo, setHasChanged)}>
               <Text style={textStyles.smallButtonText}>Add Contact</Text>
             </Button>: null}
+          </View>
+          
         </View>
-        {isAdmin ? <Button style={buttonStyles.button} onPress={() => router.push('/settings/manage_users')}>Manage Users</Button>:null}
-        {isAdmin ? <Button style={buttonStyles.button} onPress={() => router.push('/settings/manage_whitelist')}>Manage Whitelist</Button>:null}
       </ScrollView>
+      {isAdmin ? <Button style={buttonStyles.bigButton} onPress={() => router.push('/settings/manage_users')}>
+          <Text style={textStyles.bigButtonText}>Manage Users</Text>
+          </Button>:null}
+        {isAdmin ? <Button style={buttonStyles.bigButton} onPress={() => router.push('/settings/manage_whitelist')}>
+          <Text style={textStyles.bigButtonText}>Manage Whitelist</Text>
+          </Button>:null}
     </SafeAreaView>
   );
 };

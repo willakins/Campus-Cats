@@ -1,169 +1,95 @@
 //Text styles
-import { StyleSheet } from 'react-native';
+import { StyleSheet, Dimensions } from 'react-native';
+
+const { width, height } = Dimensions.get('window');
 
 const textStyles = StyleSheet.create({
-  title: {
-    fontSize: 32,
+  pageTitle: {
+    fontSize: width * 0.08,
     fontWeight: 'bold',
     color: '#333',
     textAlign: 'center',
-    marginTop: 40,
+    alignSelf: 'center',
+    marginTop: height * 0.02,
   },
-  catalogTitle: {
-    fontSize: 30,
+  lowerPageTitle: {
+    fontSize: width * 0.08,
     fontWeight: 'bold',
     color: '#333',
     textAlign: 'center',
-    marginTop: 10,
-    marginBottom: 5, // Space between title and description
+    alignSelf: 'center',
+    marginTop: height * 0.06,
   },
-  announcementTitle: {
-    fontSize: 30,
+  cardTitle: {
+    fontSize: width * 0.08,
     fontWeight: 'bold',
     color: '#333',
     textAlign: 'center',
-    marginTop: 70,
-    marginBottom: 5, // Space between title and description
   },
-  headline: {
-    fontSize: 20,
-    color: 'black',
+  listTitle: {
+    fontSize: width * 0.06,
     fontWeight: 'bold',
-    textAlign: 'left',
-  },
-  headline2: {
-    fontSize: 20,
-    color: 'black',
-    fontWeight: 'bold',
-    textAlign: 'center',
-  },
-  subHeading: {
-    fontSize: 15,
-    color: '#000',
-    textAlign: 'center',
-    marginBottom: 0
-  },
-    stationText1: {
-        fontSize: 15,
-        color: 'red',
-        textAlign: 'center',
-        padding: 30,
-    },
-    stationText2: {
-        fontSize: 20,
-        color: 'green',
-        textAlign: 'center',
-        padding:30,
-    },
-  normalText: {
-    fontSize: 16,
     color: '#333',
-  },
-  contactInput: {
-    fontSize: 16,
-    borderBottomWidth: 1,
-    borderColor: '#ddd',
-    padding: 5,
-  },
-  subHeading2: {
-    fontSize: 15,
-    color: '#000',
-    textAlign: 'left',
-    marginBottom: 0
-  },
-  logoutText: {
-    color: '#fff',
-    marginLeft: 5,
-  },
-  errorText: {
-    color: 'red',
-    fontSize: 10,
-  },
-  editText: {
-    color: '#fff',
-    marginLeft: 0,
-  },
-  dateText: {
-    fontSize: 15,
-    color: '#000',
     textAlign: 'center',
-    marginTop: 10
   },
-  activeText: {
-    color: '#fff'
+  sectionTitle: {
+    fontSize: width * 0.055,
+    fontWeight: 'bold',
+    textAlign: 'center',
+    color: '#333',
+    marginTop: height * 0.02,
   },
-  buttonText: {
-    fontSize: 18,
+  label: {
+    fontSize: width * 0.045,
+    fontWeight: '600',
+    color: '#1A1A1A',
+    marginTop: height * 0.01,
+  },
+  detail: {
+    fontSize: width * 0.04,
+    color: '#555',
+    marginVertical: height * 0.005,
+  },
+  footerText: {
+    fontSize: width * 0.035,
+    color: '#888',
   },
   smallButtonText: {
-    color: '#fff',
-    fontSize: 12,
+    color: 'white',
+    fontSize: width * 0.03,
     fontWeight: 'bold',
     textAlign: 'center',
   },
-  deleteButtonText: {
-    color: 'white',
-    fontSize: 12,
-    fontWeight: 'bold',
+  buttonText: {
+    fontSize: width * 0.045,
   },
-  sliderText: {
-    color: 'black',
-    fontSize: 12,
-    fontWeight: 'bold',
-    textAlign: 'left',
-    padding: 10,
+  bigButtonText: {
+    color: '#fff',
+    fontSize: width * 0.045,
+    fontWeight: '600',
+    textAlign: 'center',
+    letterSpacing: 0.5,
+  },
+  dateText: {
+    fontSize: width * 0.038,
+    color: '#000',
+    textAlign: 'center',
+    marginTop: height * 0.015,
+  },
+  activeText: {
+    color: '#fff',
   },
   input: {
-    height: 40,
+    fontSize: width * 0.04,
+    fontWeight: '600',
+    color: '#1A1A1A',
     width: '100%',
-    borderColor: '#ccc',
-    borderWidth: 1,
-    borderRadius: 5,
-    marginBottom: 15,
-    paddingHorizontal: 10,
-    backgroundColor: '#fff',
-    color: '#000',
   },
   descInput: {
-    height: 120,
-    width: '100%',
-    borderColor: '#ccc',
-    borderWidth: 1,
-    borderRadius: 5,
-    marginBottom: 15,
-    paddingHorizontal: 10,
-    backgroundColor: '#fff',
+    fontSize: width * 0.04,
     color: '#000',
-    elevation: 3,  // Adds shadow on Android
-    shadowColor: '#000',  // Adds shadow on iOS
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-  },
-  forgotPassword: {
-    marginTop: 10,
-    color: '#007BFF',
-    textAlign: 'center',
-  },
-  description: {
-    fontSize: 14,
-    color: '#777',
-    textAlign: 'center',
-    marginHorizontal: 10, // Add some horizontal padding for better readability
-    marginBottom: 20,
-    marginTop: -20,
-  },
-  catalogDescription: {
-    fontSize: 14,
-    color: '#777',
-    textAlign: 'center',
-    marginHorizontal: 10, // Add some horizontal padding for better readability
-  },
-  announcementDescription: {
-    fontSize: 18,
-    color: '#777',
-    textAlign: 'left',
-    marginHorizontal: 10, // Add some horizontal padding for better readability
+    width: '100%',
+    fontWeight: '300',
   },
 });
 export { textStyles };

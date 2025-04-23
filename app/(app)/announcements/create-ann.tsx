@@ -1,81 +1,59 @@
 import { useState } from 'react';
-import { Image, KeyboardAvoidingView, Platform, ScrollView, Text, View } from 'react-native';
+import { SafeAreaView, ScrollView, Text } from 'react-native';
 
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { Snackbar } from 'react-native-paper';
-import { Button, CameraButton, TextInput } from '@/components';
-import DatabaseService from '@/components/services/DatabaseService';
+import { Button, SnackbarMessage } from '@/components';
+import DatabaseService from '@/services/DatabaseService';
 import { globalStyles, buttonStyles, textStyles, containerStyles } from '@/styles';
+import { useAuth } from '@/providers/AuthProvider';
+import { Announcement } from '@/types';
+import { setSelectedAnnouncement } from '@/stores/announcementStores';
+import { AnnouncementForm } from '@/forms/AnnouncementForm';
 
 
 const create_ann = () =>{
   const router = useRouter();
-  const [visible, setVisible] = useState<boolean>(false);
-  const [info, setInfo] = useState<string>('');
-  const [title, setTitle] = useState<string>('');
-  const [photos, setPhotos] = useState<string[]>([]);
   const database = DatabaseService.getInstance();
-  
-  const handleCreate = async () => {
-    await database.handleAnnouncementCreate(title, info, photos, setVisible);
-    router.push('/announcements');
+  const { user } = useAuth();
+  const [visible, setVisible] = useState<boolean>(false);
+
+  const [photos, setPhotos] = useState<string[]>([]);
+  const [formData, setFormData] = useState({title:"", info:"", authorAlias:"" });
+
+  const createObj = () => {
+    const newAnnouncement = new Announcement({
+      id:"-1", 
+      title:formData.title, 
+      info:formData.info, 
+      createdAt:new Date(), 
+      createdBy:user, 
+      authorAlias:formData.authorAlias});
+    setSelectedAnnouncement(newAnnouncement);
   }
 
-  const addPhoto = (newPhotoUri: string) => {
-    setPhotos((prevPics) => [
-      ...prevPics,
-      newPhotoUri,
-    ]);
-  };
-
-  const deleteImage = (imageUri: string) => {
-    setPhotos((prevPhotos) => prevPhotos.filter((pic) => pic !== imageUri));
-  };
-
   return (
-    <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-      <Button style={buttonStyles.logoutButton} onPress={() => router.push('/announcements')}>
+    <SafeAreaView style={containerStyles.wrapper}>
+      <Button style={buttonStyles.smallButtonTopLeft} onPress={() => router.navigate('/announcements')}>
         <Ionicons name="arrow-back-outline" size={25} color="#fff" />
       </Button>
-      <Button style={buttonStyles.editButton} onPress={handleCreate}>
-        <Text style={textStyles.editText}> Create Announcement</Text>
-      </Button>
-      <ScrollView contentContainerStyle={containerStyles.entryContainer}>
-        <Text style={textStyles.title}>Create An Announcement</Text>
-        <View style={containerStyles.inputContainer}>
-          <Text style={textStyles.headline}>Title</Text>
-          <TextInput 
-            placeholder="title"
-            placeholderTextColor="#888"
-            onChangeText={setTitle} 
-            style={textStyles.input} />
-          <Text style={textStyles.headline}>Description</Text>
-          <TextInput
-            placeholder="Type a description about the announcement."
-            placeholderTextColor="#888"
-            onChangeText={setInfo} 
-            style={textStyles.descInput} 
-            multiline={true}/>
-            <Text style={textStyles.headline2}>Want to Add Photos?</Text>
-        <View style={containerStyles.cameraView}>
-          <CameraButton onPhotoSelected={addPhoto}></CameraButton>
-          {photos ? (photos.map((pic, index) => (
-          <View key={index} style={containerStyles.imageWrapper}>
-            <Image source={{ uri: pic }} style={containerStyles.extraPic} />
-            <Button style={buttonStyles.deleteButton} onPress={() => deleteImage(pic)}>
-              <Text style={textStyles.deleteButtonText}>Delete</Text>
-            </Button>
-          </View>
-          ))):<Text>Loading images...</Text>}
-        </View>
-        </View>
-        
-        <Snackbar visible={visible} onDismiss={() => setVisible(false)} duration={2000}>
-          Creating Announcement...
-        </Snackbar>
+      <SnackbarMessage text="Creating Announcement..." visible={visible} setVisible={setVisible} />
+      <Text style={textStyles.lowerPageTitle}>Create Announcement</Text>
+      <ScrollView contentContainerStyle={containerStyles.scrollView}>
+        <AnnouncementForm
+        formData={formData}
+        setFormData={setFormData}
+        photos={photos}
+        setPhotos={setPhotos}
+        />
       </ScrollView>
-    </KeyboardAvoidingView>
+      <Button style={buttonStyles.bigButton} onPress={async () => {
+        createObj();
+        database.handleAnnouncementCreate(photos, setVisible, router)
+        }}>
+        <Text style={textStyles.bigButtonText}> Create Announcement</Text>
+      </Button>
+    </SafeAreaView>
   );
 }
 export default create_ann;

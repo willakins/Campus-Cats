@@ -4,24 +4,25 @@ import { Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 
 import { Button } from '../ui/Buttons';
-import { AnnouncementEntryObject } from '@/types';
-import DatabaseService from '../services/DatabaseService';
+import { Announcement } from '@/types';
 import { globalStyles, buttonStyles, textStyles, containerStyles } from '@/styles';
+import { setSelectedAnnouncement } from '@/stores/announcementStores';
 
-export const AnnouncementItem: React.FC<AnnouncementEntryObject> = ({ id, title, info, photos }) => {
+export const AnnouncementItem: React.FC<Announcement> = ({ id, title, info, createdAt, createdBy, authorAlias }) => {
   const router = useRouter();
-  const database = DatabaseService.getInstance();
+
+  const createObj = () => {
+    return new Announcement({id, title, info, createdAt, createdBy, authorAlias});
+  }
 
   return (
-    <Button style={containerStyles.entryContainer} onPress={() => 
-        router.push({
-            pathname: '/announcements/view-ann',
-            params: { paramId:id, paramTitle:title, paramInfo:info, paramPhotos:photos },
-          })
-    }>
-      <View style={containerStyles.entryElements}>
-        <Text style={textStyles.catalogTitle}>{title}</Text>
-        <Text style={textStyles.catalogDescription}>{info}</Text>
+    <Button style={containerStyles.card} onPress={() => {
+        setSelectedAnnouncement(createObj());
+        router.push('/announcements/view-ann');
+    }}>
+      <View style={containerStyles.verticalCard}>
+        <Text style={textStyles.listTitle}>{title}</Text>
+        <Text style={textStyles.detail}>{info}</Text>
       </View>
     </Button>
   );
