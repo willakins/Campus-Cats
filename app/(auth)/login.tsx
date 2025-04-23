@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Text, Image, View, SafeAreaView, ScrollView, TextInput } from 'react-native';
+import { Text, Image, View, SafeAreaView, ScrollView, TextInput, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
 
 import { firebaseConfig } from '@/config/firebase';
@@ -79,7 +79,22 @@ const LoginScreen = () => {
           <Button style={buttonStyles.mediumButton}onPress={loginWhitelistUser}>
             <Text style={textStyles.bigButtonText}>Sign in using Email</Text>
           </Button>
-          <Button style={buttonStyles.mediumButton} onPress={() => router.navigate('/saml-sign-in')}>
+          <Button style={buttonStyles.mediumButton} onPress={() => 
+            Alert.alert(
+                    'Select Option',
+                    'Using SSO for the first time currently causes an error. Make sure to click retry sign-on for it to work correctly.',
+                    [
+                      {
+                        text: 'I understand',
+                        onPress: () => router.navigate('/saml-sign-in'),
+                      },
+                      {
+                        text: 'Cancel',
+                        style: 'cancel',
+                      },
+                    ],
+                    { cancelable: true }
+                  )}>
             <Text style={textStyles.bigButtonText}>Sign in using SSO</Text>
           </Button>
           <Button
