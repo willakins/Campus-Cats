@@ -82,6 +82,11 @@ npx expo start --clear --tunnel
  - Press i to open in iOS Simulator (if configured)
 Or scan the QR code with Expo Go on a physical device
 
+- If you're experiencing trouble, maybe try:  
+```bash
+EXPO_TUNNEL_SUBDOMAIN=gatechCampusCats npx expo start --tunnel
+```
+
 ## Troubleshooting
 
 | Issue | Solution |

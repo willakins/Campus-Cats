@@ -1,258 +1,289 @@
 //Container styles
-import { StyleSheet } from 'react-native';
+import { Platform, StyleSheet, Dimensions } from 'react-native';
+
+const { width, height } = Dimensions.get('window');
+const vw = width / 100;
+const vh = height / 100;
 
 const containerStyles = StyleSheet.create({
-    container: {
-        flex: 1,
-        backgroundColor: '#F4F4F9',
-        paddingTop: 20,
-        paddingHorizontal: 15,
-    },
-    scrollView: {
-        padding: 10,
-    },
-    scrollView2: {
-        padding:10,
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
-    loaderContainer: {
-        flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
-        backgroundColor: '#F4F4F9',
-    },
-    buttonGroup: {
-        flexDirection: 'row',
-        justifyContent: 'center',
-        paddingVertical: 10,
-        backgroundColor: '#f0f0f0'
-    },
-    homeContainer: {
-        flex: 1,
-    },
-    cameraView: {
-        alignItems: 'center',
-        paddingVertical: 20,  // Vertical padding
-    },
-    selectedPreview: {
-        margin: 'auto', // Center the image
-        objectFit: 'scale-down', // Don't clip the image
-        width: 240,
-        height: 180,
-    },
-    entryContainer: {
-        flexDirection: 'column', // Stack items vertically
-        justifyContent: 'center', // Center content vertically
-        alignItems: 'center', // Center content horizontally
-        padding: 15,
-        borderRadius:10,
-        backgroundColor: '#fff',
-        shadowColor: '#000',
-        shadowOpacity: 0.1,
-        shadowRadius: 10,
-        elevation: 5,
-        width:'100%'
-    },
-    userContainer: {
-        flexDirection: 'column', // Stack items vertically
-        justifyContent: 'center', // Center content vertically
-        alignItems: 'center', // Center content horizontally
-        padding: 15,
-        borderRadius:10,
-        backgroundColor: '#fff',
-        shadowColor: '#000',
-        shadowOpacity: 0.1,
-        shadowRadius: 10,
-        elevation: 5,
-        width:'95%',
-        margin:10
-    },
-    row: {
-        marginBottom: 20,
-        marginTop:20,
-    },
-    contactContainer: {
-        padding: 20,
-        backgroundColor: '#fff',
-        borderRadius: 10,
-        borderWidth: 1,
-        borderColor: '#ddd',
-        position: 'relative',
-        marginTop:50
-    },
-    entryElements: {
-        flexDirection: "column", // Ensures each item is stacked vertically
-        alignItems: "center",
-    },
-    entryRowElements: {
-        flexDirection: "row", // Ensures each item is stacked vertically
-        alignItems: "center",
-    },
-    extraPicsContainer: {
-        flexDirection: 'row',
-        flexWrap: 'wrap',
-        justifyContent: 'center',
-    },
-    imageWrapper: {
-        alignItems: 'center',
-        margin: 10,
-    },
-    logo: {
-        height: '40%',
-        width: '80%',
-        marginBottom: 20,
-        borderRadius:50,
-        aspectRatio: 1
-    },
-    extraPic: {
-        width: 100,
-        height: 100,
-        borderRadius: 10,
-    },
-    headlineImage: {
-        width: '100%',  // Set a fixed width for the profile picture
-        height: 250, // Set a fixed height for the profile picture
-        borderRadius: 60,  // Makes the image circular
-        marginTop: 10,
-        paddingHorizontal: 20,
-    },
-    extraImage: {
-        width: '100%',  // Set a fixed width for the profile picture
-        height: 250, // Set a fixed height for the profile picture
-        borderRadius: 200,  // Makes the image circular
-        marginTop: 10,
-        paddingHorizontal: 20,
-    },
-    listImage: {
-        width: 250, // Set a fixed width for the image
-        height: 150, // Set a fixed height for the image
-        borderRadius: 40, // Make the image circular
-        marginBottom: 10, // Space between image and text
-    },
-  listImage2: {
-    width: 200, // Set a fixed width for the image
-    height: 150, // Set a fixed height for the image
-    borderRadius: 40, // Make the image circular
-    marginBottom: 10, // Space between image and text
-  },
-  catImage: {
-    width: '100%',
-    height: 200,
-    borderRadius: 10,
-    justifyContent: 'center',
-    textAlign: 'center',
+  /** Screen Wrappers  */
+  wrapper: {
     flex: 1,
-    marginBottom: 15,
+    backgroundColor: '#FAFAFA',
+    paddingTop: vh * 10,
   },
-  splashImage: {
-    width: 200,
-    height: 200,
+  imageWrapper: {
+    flexDirection: "column",
+    position: 'relative',
+    margin: vw * 1,
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: vw * 1.5,
   },
-  mapContainer: {
-    width: '100%', 
-    height: 200, 
-    paddingHorizontal: 5, 
-    borderRadius:10,
-    marginTop: 10,
-    marginBottom: 10,
+  scrollView: {
+    paddingTop: vh,
+    paddingBottom: vh * 20,
   },
-  inputContainer: {
-    width: '100%',
-    backgroundColor: '#f9f9f9',
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    elevation: 3,  // Adds shadow on Android
-    shadowColor: '#000',  // Adds shadow on iOS
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    borderRadius:10,
+  scrollViewPadded: {
+    paddingTop: vh * 5,
+    paddingBottom: vh * 20,
   },
-  loginContainer: {
-    width: '80%',
-    backgroundColor: '#f9f9f9',
-    padding: 20,
-    borderRadius: 10,
-    elevation: 3,  // Adds shadow on Android
-    shadowColor: '#000',  // Adds shadow on iOS
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    margin:10,
-  },
-  profileContainer: {
-    flex: 1,
+  scrollViewCenter: {
+    paddingTop: vh * 2,
+    paddingBottom: vh * 5,
+    alignItems: 'center',
     justifyContent: 'center',
+  },
+  scrollViewCenterPadded: {
+    paddingTop: vh * 2,
+    paddingBottom: vh * 20,
     alignItems: 'center',
-    padding: 20
+    justifyContent: 'center',
   },
-  item: {
-    backgroundColor: '#f9c2ff',
-    padding: 20,
-    marginVertical: 8,
-    marginHorizontal: 16,
-  },
-  sliderContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  picker: {
+  /** Cards */
+  card: {
+    flexDirection: "column",
+    alignSelf:'center',
+    width: vw * 95,
+    padding: vw * 5,
     backgroundColor: '#fff',
-    flex: 1,
+    borderRadius: vw * 4,
+    marginHorizontal: vw * 3,
+    marginBottom: vh * 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  shadedCard: {
+    width: vw * 80,
+    backgroundColor: '#f9f9f9',
+    padding: vw * 5,
+    borderRadius: vw * 2.5,
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    margin: vw * 2,
+  },
+  stationCard: {
+    width: vw * 95,
+    padding: vw * 4,
+    backgroundColor: '#fff',
+    borderRadius: vw * 3,
+    marginHorizontal: vw * 3,
+    marginBottom: vh * 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 6,
+    elevation: 3,
+    alignItems: 'center',
     justifyContent: 'center',
   },
-  dateInput: {
-    height: 70,
-    width: '100%',
+  sectionCard: {
+    padding: vw * 2.5,
+    backgroundColor: '#F0F4F8',
+    borderRadius: vw * 3,
+  },
+  verticalCard: {
+    flexDirection: "column",
+    alignSelf: "center",
+  },
+  /** Input Containers */
+  inputContainer: {
+    padding: Platform.select({
+      ios: vw * 2.5,
+      default: 0
+    }),
+    width: width * .85,
+    height: vh * 5,
     borderColor: '#ccc',
     borderWidth: 1,
-    borderRadius: 5,
-    marginBottom:10,
-    padding:15,
+    borderRadius: vw * 1.5,
+    marginBottom: vh * 2,
+    paddingHorizontal: vw * 2.5,
     backgroundColor: '#fff',
-    flexDirection: 'row', 
-    elevation: 3,  // Adds shadow on Android
-    shadowColor: '#000',  // Adds shadow on iOS
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-  },
-    stationsEntry: {
-        flexDirection: "row",
-        alignItems: "center",
-        backgroundColor: "white", // Ensure background is set
-        padding: 10,
-      },
-      checkboxContainer: {
-        borderWidth: 2, // Thickness of the box
-        borderColor: "black", // Box color
-        padding: 5, // Space between the checkbox and the box edges
-        borderRadius: 5, // Rounded corners
-      },
-      stockContainer: {
-        flex: 1,
-        alignItems:"center",
-        paddingTop: 20,
-        paddingHorizontal: 15,
-    },
-  stationsEntry: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "white", // Ensure background is set
-    padding: 10,
-  },
-  checkboxContainer: {
-    borderWidth: 2, // Thickness of the box
-    borderColor: "black", // Box color
-    padding: 5, // Space between the checkbox and the box edges
-    borderRadius: 5, // Rounded corners
-  },
-  stockContainer: {
+    color: '#000',
+    justifyContent: 'center',
+    textAlign: 'left',
     flex: 1,
-    alignItems:"center",
-    paddingTop: 20,
-    paddingHorizontal: 15,
+  },
+  smallInputContainer: {
+    padding: Platform.select({
+      ios: vw * 2.5,
+      default: 0
+    }),
+    width: width * .7,
+    height: vh * 5,
+    borderColor: '#ccc',
+    borderWidth: 1,
+    borderRadius: vw * 1.5,
+    marginBottom: vh * 2,
+    paddingHorizontal: vw * 2.5,
+    backgroundColor: '#fff',
+    color: '#000',
+    justifyContent: 'center',
+    textAlign: 'left',
+    flex: 1,
+  },
+  descInputContainer: {
+    padding: vw * 2.5,
+    width: width * .85,
+    height: vh * 10,
+    borderColor: '#ccc',
+    borderWidth: 1,
+    borderRadius: vw * 1.5,
+    marginBottom: vh * 2,
+    paddingHorizontal: vw * 2.5,
+    backgroundColor: '#fff',
+    color: '#000',
+    textAlign: 'left',
+  },
+  dateInputContainer: {
+    height: vh * 8,
+    width: width * .85,
+    padding: vw * 2.5,
+    flexDirection: 'row',
+    borderColor: '#ccc',
+    borderWidth: 1,
+    borderRadius: vw * 1.5,
+    marginBottom: vh * 2,
+    paddingHorizontal: vw * 2.5,
+    backgroundColor: '#fff',
+    color: '#000',
+  },
+  /** Text Containers */
+  listDetailsContainer: {
+    flexDirection: 'column',
+    width: width,
+    height: vh * 25,
+    flex: 1,
+    justifyContent: 'flex-start',
+  },
+  rowContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  columnContainer: {
+    flexDirection: 'column',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  footer: {
+    marginTop: vh * 2,
+    borderTopWidth: 1,
+    borderTopColor: '#eee',
+    paddingTop: vh * 1,
+  },
+  rowStack: {
+    flexDirection: 'column',
+    padding: vw * 1.5,
+    gap: vw * 2,
+  },
+  closeRowStack: {
+    flexDirection: 'column',
+    padding: vw * 1.5,
+  },
+  /** Image Containers */
+  imageLarge: {
+    width: vw * 70,
+    height: vh * 35,
+    borderRadius: vw * 5.5,
+    marginBottom: vh * 2,
+    alignSelf: 'center',
+    overflow: 'hidden',
+    justifyContent: 'center',
+  },
+  imageMain: {
+    width: width * .85,
+    height: vh * 25,
+    borderRadius: vw * 5.5,
+    marginBottom: vh * 2,
+    alignSelf: 'center',
+    overflow: 'hidden',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  listImage: {
+    width: width * .8,
+    height: vh * 20,
+    borderRadius: vw * 5.5,
+    marginBottom: vh * 2,
+    alignSelf: 'center',
+    overflow: 'hidden',
+  },
+  cardImage: {
+    width: vw * 40,
+    height: vw * 40,
+    borderRadius: vw * 3,
+    marginRight: vw * 3,
+    justifyContent:'center',
+  },
+  extraPic: {
+    width: vw * 25,
+    height: vw * 25,
+    borderRadius: vw * 3,
+    resizeMode: 'cover',
+  },
+  extraPicsContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+  },
+  /** Misc. elements Containers */
+  cameraContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: vw * 2.5,
+  },
+  datePickerContainer: {
+    backgroundColor: '#fff',
+    flex: 1,
+    justifyContent: 'center',
+  },
+  buttonGroup: {
+    width: width,
+    height: 'auto',
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#f0f0f0',
+    flexWrap: 'nowrap'
+  },
+  buttonGroup2: {
+    width: width * .85,
+    height: 'auto',
+    flexDirection: 'row',
+    justifyContent: 'space-evenly',
+    alignItems: 'center',
+    flexWrap: 'nowrap',
+  },
+  mapContainer: {
+    height: vh * 25,
+    width: width * .85,
+    borderRadius: vw * 3,
+    marginBottom: vh * 1.5,
+    overflow: 'hidden',
+  },
+  snackbarContainer: {
+    position: 'absolute',
+    top: vh * 12,
+    left: vw * 3,
+    right: vw * 3,
+    zIndex: 1000,
+  },
+  snackbar: {
+    width: width * .9,
+    height: vh * 5,
+    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+    color: 'white',
+    borderRadius: vw * 1.5,
   },
 });
 export { containerStyles };

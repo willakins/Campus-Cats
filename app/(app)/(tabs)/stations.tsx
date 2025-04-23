@@ -5,26 +5,26 @@ import { Ionicons } from '@expo/vector-icons';
 import { Button, StationItem } from '@/components';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useState } from 'react';
-import DatabaseService from '@/components/services/DatabaseService';
-import { StationEntryObject } from '@/types';
+import DatabaseService from '@/services/DatabaseService';
+import { Station } from '@/types';
 
 const Stations = () => {
-  const { signOut, user } = useAuth();
+  const { user } = useAuth();
   const isAdmin = user.role === 1 || user.role === 2;
   const router = useRouter();
   const database = DatabaseService.getInstance();
 
   if (!isAdmin) { // Double safety so important info isn't leaked
     return (
-      <SafeAreaView style={containerStyles.container}>
-        <Text style={textStyles.catalogTitle}> You should not be here!</Text>
-        <Button style={buttonStyles.logoutButton} onPress={() => router.push('/(app)/(tabs)')}>
+      <SafeAreaView style={containerStyles.wrapper}>
+        <Text style={textStyles.pageTitle}> You should not be here!</Text>
+        <Button style={buttonStyles.smallButtonTopLeft} onPress={() => router.push('/(app)/(tabs)')}>
           <Ionicons name="arrow-back-outline" size={25} color="#fff" />
         </Button>
       </SafeAreaView>
     );
   } else {
-    const [stationEntries, setStationEntries] = useState<StationEntryObject[]>([]);
+    const [stationEntries, setStationEntries] = useState<Station[]>([]);
     const [filter, setFilter] = useState<'All' | 'Stocked' | 'Unstocked'>('All');
 
     useFocusEffect(() => {
@@ -38,17 +38,12 @@ const Stations = () => {
     });
 
     return (
-      <SafeAreaView style={containerStyles.container}>
-        <Text style={textStyles.title}>Feeding Stations</Text>
-        <Button style={buttonStyles.editButton} onPress={() => router.push('/stations/create-station')}>
-          <Text style={textStyles.editText}> Create Entry</Text>
-        </Button>
-
+      <SafeAreaView style={containerStyles.wrapper}>
         <View style={containerStyles.buttonGroup}>
           {['Stocked', 'Unstocked', 'All'].map((label) => (
             <Button
               key={label}
-              style={[buttonStyles.filterButton, filter === label && buttonStyles.activeButton]}
+              style={[buttonStyles.rowButton2, filter === label && buttonStyles.activeButton]}
               onPress={() => setFilter(label as typeof filter)}
               textStyle={[textStyles.buttonText, filter === label && textStyles.activeText]}
             >
@@ -56,21 +51,25 @@ const Stations = () => {
             </Button>
           ))}
         </View>
+        <Text style={textStyles.pageTitle}>Feeding Stations</Text>
         <ScrollView contentContainerStyle={containerStyles.scrollView}>
           {filteredStations.map((station) => (
             <StationItem
               key={station.id}
               id={station.id}
               name={station.name}
-              longitude={station.longitude}
-              latitude={station.latitude}
+              location={station.location}
               lastStocked={station.lastStocked}
               stockingFreq={station.stockingFreq}
               knownCats={station.knownCats}
               isStocked={station.isStocked}
+              createdBy={station.createdBy}
             />
           ))}
         </ScrollView>
+        <Button style={buttonStyles.bigButton} onPress={() => router.push('/stations/create-station')}>
+          <Text style={textStyles.bigButtonText}> Create Station</Text>
+        </Button>
       </SafeAreaView>
     );
   }

@@ -1,11 +1,11 @@
 {
   "expo": {
     "name": "Campus Cats",
-    "slug": "campus_cats",
-    "version": "0.3.1",
+    "slug": "campus-cats",
+    "version": "0.3.3",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "myapp",
+    "scheme": "campuscats",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "splash": {
@@ -16,12 +16,20 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.gatech.CampusCats",
+      "capabilities": [
+        "push-notifications"
+      ],
       "config": {
         "googleMapsApiKey": "AIzaSyD2koOi8GGUrbCZVju5Dq8Ca_1hxHb1mb8"
       },
       "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "Campus Cats uses your location to help volunteers find nearby feeding stations and cat sightings.",
         "ITSAppUsesNonExemptEncryption": false
-      }
+      },
+      "entitlements": {
+        "aps-environment": "development"
+      },
+      "buildNumber": "1"
     },
     "android": {
       "adaptiveIcon": {
@@ -63,8 +71,15 @@
         "origin": false
       },
       "eas": {
-        "projectId": "7f8a8e08-7f38-436a-b8af-44cd2d22c8e4"
+        "projectId": "80da548d-e526-49ad-a08a-d2817eb4c8fb"
       }
+    },
+    "owner": "gtcampuscats",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/80da548d-e526-49ad-a08a-d2817eb4c8fb"
     }
   }
 }

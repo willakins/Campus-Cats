@@ -1,137 +1,178 @@
-//Button styles
-import { StyleSheet } from 'react-native';
+import { StyleSheet, Dimensions } from 'react-native';
+
+const { width, height } = Dimensions.get('window');
 
 const buttonStyles = StyleSheet.create({
-    editButton: {
-        position: 'absolute',
-        top: 20,
-        right: 20,
-        flexDirection: 'row',
-        alignItems: 'center',
-        backgroundColor: '#333',
-        padding: 5,
-        borderRadius: 5,
-        zIndex: 10, // Ensure the logout button is on top
-    },
-    deleteButton: {
-      backgroundColor: 'red',
-      padding: 5,
-      borderRadius: 5,
-      marginTop: 5,
-    },
-    deleteButton2: {
-      backgroundColor: '#0b6623',
-      padding: 5,
-      borderRadius: 5,
-      marginTop: 5,
-    },
-    deleteButton3: {
-      backgroundColor: '#0492c2',
-      padding: 5,
-      borderRadius: 5,
-      marginTop: 5,
-    },
-    dateButton: {
-      backgroundColor: '#0b6623',
-      padding: 5,
-      borderRadius: 5,
-      marginTop: 5,
-    },
-    iconButton: {
-      backgroundColor: '#333',
-      padding: 5,
-      borderRadius: 5,
-      alignItems: 'center',
-      justifyContent: 'center',
-    },
-    reportButton: {
-        position: 'absolute', // Position the button absolutely
-        bottom: 20,           // Adjust distance from the bottom of the screen
-        alignSelf: 'center',
-        backgroundColor: '#007bff', // Button background color
-        paddingVertical: 10,  // Vertical padding
-        paddingHorizontal: 20, // Horizontal padding
-        borderRadius: 5,      // Rounded corners
-        elevation: 5,         // Shadow for Android
-        shadowColor: '#000',  // Shadow for iOS
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.3,
-        shadowRadius: 3.5,
-      },
-      filterButton: {
-        paddingHorizontal: 15,
-        paddingVertical: 8,
-        marginHorizontal: 5,
-        marginVertical: 0,
-        borderRadius: 20,
-        backgroundColor: '#e0e0e0',
-      },
-      activeButton: {
-        backgroundColor: '#007bff'
-      },
-      logoutButton: {
-        position: 'absolute',
-        top: 10,
-        left: 20,
-        flexDirection: 'row',
-        alignItems: 'center',
-        backgroundColor: '#333',
-        padding: 5,
-        borderRadius: 5,
-        zIndex: 10, // Ensure the logout button is on top
-      },
-      button: {
-        backgroundColor: '#333',
-        padding: 12,
-        borderRadius: 5,
-        alignItems: 'center',
-        margin: 5,
-        display: 'flex',
-        justifyContent: 'center',
-      },
-      refillButton: {
-        backgroundColor: '#333', /* Green color for a fresher, more inviting look */
-        paddingVertical: 12, /* More consistent vertical padding */
-        paddingHorizontal: 24, /* Added horizontal padding for a better balance */
-        borderRadius: 30, /* More rounded edges */
-        alignItems: 'center',
-        justifyContent: 'center',
-        width: '50%', /* Button takes up 50% of the container width */
-        margin: 10, /* Increased margin for better spacing */
-        display: 'flex',
-        elevation: 5, /* Add a subtle shadow effect for a 3D look */
-        shadowColor: '#000', /* Shadow color for iOS */
-        shadowOffset: { width: 0, height: 4 }, /* Shadow offset for iOS */
-        shadowOpacity: 0.1, /* Slight shadow for a soft look */
-        shadowRadius: 6, /* Radius for the shadow */
-      },
-      profileButton: {
-        backgroundColor: '#007bff',
-        padding: 10,
-        borderRadius: 8,
-        marginBottom: 20,
-      },
-      cameraButton: {
-        width: 70,  // Width of the circle
-        height: 70, // Height of the circle (same as width to make it circular)
-        borderRadius: 35, // Half of width/height to make it circular
-        backgroundColor: '#333', // Button color (blue)
-        justifyContent: 'center', // Center the icon vertically
-        alignItems: 'center', // Center the icon horizontally
-        elevation: 5,  // Shadow for Android
-        shadowColor: '#000', // Shadow for iOS
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.3,
-        shadowRadius: 3.5,
-        paddingVertical: 10,  // Vertical padding
-        paddingHorizontal: 20, // Horizontal padding
-      },
-      imageButton: {
-        backgroundColor: '#333',
-        borderRadius: 10,
-        alignItems: 'center',
-        display: 'flex',
-        justifyContent: 'center',
-      },
+  /** General purpose Buttons */
+  button: {
+    width: width * .85,
+    backgroundColor: '#333',
+    alignItems: 'center',
+    display: 'flex',
+    justifyContent: 'center',
+    padding: height * 0.006,
+    borderRadius: width * 0.015,
+  },
+  rowButton: {
+    width: 'auto',
+    minWidth: width * 0.2,
+    maxWidth: width * 0.3,
+    height: height * 0.035,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: width * 0.02,
+    paddingVertical: height * 0.005,
+    marginHorizontal: width * 0.0125,
+    marginVertical: height * 0.01,
+    borderRadius: width * 0.02,
+    fontSize: width * 0.04,
+    textAlign: 'center',
+  },
+  rowButton2: {
+    width: 'auto',
+    minWidth: width * 0.16,
+    maxWidth: width * 0.3,
+    height: height * 0.05,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: width * 0.02,
+    paddingVertical: height * 0.005,
+    marginHorizontal: width * 0.0125,
+    marginVertical: height * 0.01,
+    borderRadius: width * 0.05,
+    backgroundColor: '#e0e0e0',
+    fontSize: width * 0.04,
+    textAlign: 'center',
+  },
+  bigButton: {
+    width: width * 0.9,
+    height: height * 0.06,
+    backgroundColor: '#333',
+    paddingVertical: height * 0.015,
+    paddingHorizontal: 0,
+    borderRadius: width * 0.08,
+    alignItems: 'center',
+    justifyContent: 'center',
+    alignSelf: 'center',
+    display: 'flex',
+    margin: height * 0.006,
+    shadowColor: '#000',
+    shadowOpacity: 0.1,
+    shadowRadius: 5,
+    elevation: 3,
+  },
+  mediumButton: {
+    width: width * 0.7,
+    height: height * 0.06,
+    backgroundColor: '#333',
+    paddingVertical: height * 0.015,
+    paddingHorizontal: 0,
+    borderRadius: width * 0.08,
+    alignItems: 'center',
+    justifyContent: 'center',
+    alignSelf: 'center',
+    display: 'flex',
+    margin: height * 0.006,
+    shadowColor: '#000',
+    shadowOpacity: 0.1,
+    shadowRadius: 5,
+    elevation: 3,
+  },
+  bigDeleteButton: {
+    width: width * 0.9,
+    height: height * 0.06,
+    backgroundColor: 'red',
+    paddingVertical: height * 0.015,
+    paddingHorizontal: width * 0.05,
+    borderRadius: width * 0.08,
+    alignItems: 'center',
+    justifyContent: 'center',
+    alignSelf: 'center',
+    margin: height * 0.006,
+    shadowColor: '#000',
+    shadowOpacity: 0.1,
+    shadowRadius: 5,
+    elevation: 3,
+  },
+  /** Corner buttons  */
+  smallButtonTopRight: {
+    width: width * 0.1,
+    height: height * 0.035,
+    position: 'absolute',
+    top: height * 0.0125,
+    right: width * 0.025,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#333',
+    padding: height * 0.005,
+    borderRadius: width * 0.015,
+    zIndex: 10,
+  },
+  smallButtonTopLeft: {
+    width: width * 0.09,
+    height: width * 0.09,
+    position: 'absolute',
+    top: height * 0.02,
+    left: width * 0.02,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#333',
+    padding: height * 0.005,
+    borderRadius: width * 0.015,
+    zIndex: 10,
+  },
+  /** Special Case Buttons */
+  imageButton: {
+    backgroundColor: '#333',
+    borderRadius: width * 0.025,
+    alignItems: 'center',
+    display: 'flex',
+    justifyContent: 'center',
+  },
+  imageDeleteButton: {
+    width: width * 0.15,
+    height: height * 0.035,
+    backgroundColor: 'red',
+    alignSelf: 'center',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: height * 0.006,
+    borderRadius: width * 0.015,
+  },
+  cameraButton: {
+    width: width * 0.18,
+    height: width * 0.18,
+    borderRadius: width * 0.09,
+    backgroundColor: '#333',
+    justifyContent: 'center',
+    alignItems: 'center',
+    elevation: 5,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 3.5,
+    paddingVertical: height * 0.01,
+    paddingHorizontal: width * 0.05,
+  },
+  reportButton: {
+    position: 'absolute',
+    width: width * 0.25,
+    height: height * 0.062,
+    bottom: height * 0.025,
+    alignSelf: 'center',
+    backgroundColor: '#007bff',
+    paddingVertical: height * 0.012,
+    paddingHorizontal: width * 0.025,
+    borderRadius: width * 0.035,
+    elevation: 5,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 3.5,
+  },
+  activeButton: {
+    backgroundColor: '#007bff',
+  },
 });
+
 export { buttonStyles };

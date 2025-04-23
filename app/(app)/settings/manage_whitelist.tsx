@@ -3,36 +3,35 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { globalStyles, buttonStyles, textStyles, containerStyles } from '@/styles';
-import { Button } from '@/components';
-import { UserItem } from '@/components';
-import DatabaseService from '@/components/services/DatabaseService';
-import { User } from '@/types';
+import { Button, SnackbarMessage } from '@/components';
+import DatabaseService from '@/services/DatabaseService';
+import { WhitelistApp } from '@/types';
+import { WhitelistItem } from '@/components/items/WhitelistItem';
 
 const ManageWhitelist = () => {
   const router = useRouter();
-  const [notGTusers, setnotGTUsers] = useState<User[]>([]);
-  const [pendingUsers, setPendingUsers] = useState<User[]>([]);
   const database = DatabaseService.getInstance();
+  const [visible, setVisible] = useState<boolean>(false);
+  const [applicants, setApplicants] = useState<WhitelistApp[]>([]);
 
   useEffect(() => {
-    database.fetchUsers(setnotGTUsers);
+    database.fetchWhitelist(setApplicants);
   }, []);
 
   return (
-    <SafeAreaView style={containerStyles.container}>
-      <Button style={buttonStyles.logoutButton} onPress={() => router.back()}>
+    <SafeAreaView style={containerStyles.wrapper}>
+      <Button style={buttonStyles.smallButtonTopLeft} onPress={() => router.back()}>
         <Ionicons name="arrow-back-outline" size={25} color="#fff" />
       </Button>
-
-      <Text style={textStyles.title}>View Non-GT users</Text>
-
+      <SnackbarMessage text="Saving Whitelist..." visible={visible} setVisible={setVisible} />
+      <Text style={textStyles.pageTitle}>View Whitelist Applications</Text>
       <ScrollView contentContainerStyle={containerStyles.scrollView}>
-        {notGTusers.map((user) => (
-          <UserItem key={user.id} user={user} setUsers={setnotGTUsers} />
-        ))}
-        <Text style={textStyles.headline2}>Pending users</Text>
-        {pendingUsers.map((user) => (
-          <UserItem key={user.id} user={user} setUsers={setPendingUsers} />
+        {applicants.map((app) => (
+          <WhitelistItem 
+            key={app.id} 
+            app={app}
+            setApps={setApplicants}
+            setVisible={setVisible}/>
         ))}
       </ScrollView>
     </SafeAreaView>

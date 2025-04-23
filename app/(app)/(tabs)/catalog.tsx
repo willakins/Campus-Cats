@@ -4,39 +4,41 @@ import { SafeAreaView, ScrollView, Text } from 'react-native';
 import { useFocusEffect, useRouter } from 'expo-router';
 
 import { Button, CatalogItem } from '@/components';
-import { CatalogEntryObject } from '@/types';
-import DatabaseService from '@/components/services/DatabaseService';
+import { CatalogEntry} from '@/types';
+import DatabaseService from '@/services/DatabaseService';
 import { useAuth } from '@/providers';
 
 import { globalStyles, buttonStyles, textStyles, containerStyles } from '@/styles';
 
 const Catalog = () => {
-  const [catalogEntries, setCatalogEntries] = useState<CatalogEntryObject[]>([]);
-  const { signOut, user } = useAuth();
+  const { user } = useAuth();
   const router = useRouter();
   const database = DatabaseService.getInstance();
   const adminStatus = user.role === 1 || user.role === 2;
+  const [catalogEntries, setCatalogEntries] = useState<CatalogEntry[]>([]);
 
   useFocusEffect(() => {
     database.fetchCatalogData(setCatalogEntries);
   });
 
   return (
-    <SafeAreaView style={containerStyles.container}>
-      <Text style={textStyles.title}>Catalog</Text>
-      {adminStatus ? <Button style={buttonStyles.editButton} onPress={() => router.push('/catalog/create-entry')}>
-        <Text style ={textStyles.editText}> Create Entry</Text>
-      </Button> : null}
+    <SafeAreaView style={containerStyles.wrapper}>
+      <Text style={textStyles.pageTitle}>Catalog</Text>
       <ScrollView contentContainerStyle={containerStyles.scrollView}>
         {catalogEntries.map((entry) => (
           <CatalogItem
-            key={entry.id}
-            id={entry.id}
-            name={entry.name}
-            info={entry.info}
+          key={entry.id}
+          id={entry.id}
+          cat={entry.cat}
+          credits={entry.credits}
+          createdAt={entry.createdAt}
+          createdBy={entry.createdBy}
           />
         ))}
       </ScrollView>
+      {adminStatus ? <Button style={buttonStyles.bigButton} onPress={() => router.push('/catalog/create-entry')}>
+        <Text style ={textStyles.bigButtonText}> Create Entry</Text>
+      </Button> : null}
     </SafeAreaView>
   );
 }

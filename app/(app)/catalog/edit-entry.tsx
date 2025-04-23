@@ -1,100 +1,211 @@
-import React, { useCallback, useState } from 'react';
-import { Image, KeyboardAvoidingView, Platform, ScrollView, Text, View } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { FlatList, SafeAreaView, Text } from 'react-native';
 
 import { Ionicons } from '@expo/vector-icons';
-import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
-import { Snackbar } from 'react-native-paper';
+import { useRouter } from 'expo-router';
 
-import { Button, TextInput, ImageButton, CameraButton, CatalogImageHandler } from '@/components';
-import DatabaseService from '@/components/services/DatabaseService';
+import { Button, SnackbarMessage } from '@/components';
+import DatabaseService from '@/services/DatabaseService';
 import { globalStyles, buttonStyles, textStyles, containerStyles } from '@/styles';
+import { Cat, CatalogEntry, CatStatus, Fur, Sex, TNRStatus } from '@/types/CatalogEntry';
+import { CatalogImageHandler } from '@/image_handlers/CatalogImageHandler';
+import { useAuth } from '@/providers';
+import { getSelectedCatalogEntry, setSelectedCatalogEntry } from '@/stores/CatalogEntryStores';
+import { PickerConfig } from '@/types';
+import { CatalogForm } from '@/forms';
 
 const edit_entry = () => {
   const router = useRouter();
-  const { paramId, paramName, paramInfo} = useLocalSearchParams();
-  const id = paramId as string;
-  const oldName = paramName as string;
-  const [name, setName] = useState<string>(paramName as string);
-  const [info, setInfo] = useState<string>(paramInfo as string);
-  const [visible, setVisible] = useState<boolean>(false);
-
-  const [profilePicUrl, setProfile] = useState<string>('');
-  const [extraPics, setImageUrls] = useState<string[]>([]);
-  const [newPics, setNewPics] = useState<{ url: string; name: string }[]>([]);
-  const [newPhotosAdded, setNewPhotos] = useState<boolean>(false);
+  const { user } = useAuth();
   const database = DatabaseService.getInstance();
-  const imageHandler = new CatalogImageHandler({ 
-    setVisible,  
-    setImageUrls, 
-    setNewPics, 
-    setNewPhotos,
-    setProfile,
-    name, 
-    profilePicUrl});
-    
-  useFocusEffect(
-    useCallback(() => {
-      database.fetchCatImages(name, setProfile, setImageUrls);
-    }, [profilePicUrl])
-  );
+  const entry = getSelectedCatalogEntry();
+  
+  const [photos, setPhotos] = useState<string[]>([]);
+  const [profile, setProfile] = useState<string>('');
+  const [isPicsChanged, setPicsChanged] = useState<boolean>(false);
+  const [visible, setVisible] = useState<boolean>(false);
+  const imageHandler = new CatalogImageHandler({ type:'catalog', id:entry.id, photos, profile, setPhotos, setProfile, setPicsChanged, setVisible});
+  
+  // ---------- Status Picker ----------
+  const [statusValue, setStatusValue] = useState<CatStatus>(entry.cat.currentStatus);
+  const [statusOpen, setStatusOpen] = useState<boolean>(false);
+  const [statusItems, setStatusItems] = useState([
+    { label: 'Adopted', value: 'Adopted' },
+    { label: 'Deceased', value: 'Deceased' },
+    { label: 'Feral', value: 'Feral' },
+    { label: 'Frat Cat', value: 'Frat Cat' },
+    { label: 'Unknown', value: 'Unknown' },
+  ]);
+
+  const statusPicker:PickerConfig<CatStatus> = {
+    value: statusValue,
+    setValue: setStatusValue,
+    open: statusOpen,
+    setOpen: setStatusOpen,
+    items: statusItems,
+    setItems: setStatusItems,
+  };
+
+  // ---------- TNR Picker ----------
+  const [tnrValue, setTnrValue] = useState<TNRStatus>(entry.cat.tnr);
+  const [tnrOpen, setTnrOpen] = useState<boolean>(false);
+  const [tnrItems, setTnrItems] = useState([
+    { label: 'Yes', value: 'Yes' },
+    { label: 'No', value: 'No' },
+    { label: 'Unknown', value: 'Unknown' },
+  ]);
+
+  const tnrPicker:PickerConfig<TNRStatus> = {
+    value: tnrValue,
+    setValue: setTnrValue,
+    open: tnrOpen,
+    setOpen: setTnrOpen,
+    items: tnrItems,
+    setItems: setTnrItems,
+  };
+
+  // ---------- Sex Picker ----------
+  const [sexValue, setSexValue] = useState<Sex>(entry.cat.sex);
+  const [sexOpen, setSexOpen] = useState<boolean>(false);
+  const [sexItems, setSexItems] = useState([
+    { label: 'Male', value: 'Male' },
+    { label: 'Female', value: 'Female' },
+    { label: 'Unknown', value: 'Unknown' },
+  ]);
+
+  const sexPicker:PickerConfig<Sex> = {
+    value: sexValue,
+    setValue: setSexValue,
+    open: sexOpen,
+    setOpen: setSexOpen,
+    items: sexItems,
+    setItems: setSexItems,
+  };
+
+  // ---------- Fur Picker ----------
+  const [furValue, setFurValue] = useState<Fur>(entry.cat.furLength);
+  const [furOpen, setFurOpen] = useState<boolean>(false);
+  const [furItems, setFurItems] = useState([
+    { label: 'Short', value: 'Short' },
+    { label: 'Medium', value: 'Medium' },
+    { label: 'Long', value: 'Long' },
+    { label: 'Unknown', value: 'Unknown' },
+  ]);
+
+  const furPicker:PickerConfig<Fur> = {
+    value: furValue,
+    setValue: setFurValue,
+    open: furOpen,
+    setOpen: setFurOpen,
+    items: furItems,
+    setItems: setFurItems,
+  };
+
+  const pickers = {
+    statusPicker,
+    tnrPicker,
+    sexPicker,
+    furPicker,
+  }; 
+
+  const [formData, setFormData] = useState<{
+    name: string;
+    descShort: string;
+    descLong: string;
+    colorPattern: string;
+    behavior: string;
+    yearsRecorded: string;
+    AoR: string;
+    currentStatus: CatStatus;
+    furLength: Fur;
+    furPattern: string;
+    tnr: TNRStatus;
+    sex: Sex;
+    credits: string;
+  }>({
+    name: entry.cat.name,
+    descShort: entry.cat.descShort,
+    descLong: entry.cat.descLong,
+    colorPattern: entry.cat.colorPattern,
+    behavior: entry.cat.behavior,
+    yearsRecorded: entry.cat.yearsRecorded,
+    AoR: entry.cat.AoR,
+    currentStatus: entry.cat.currentStatus,
+    furLength: entry.cat.furLength,
+    furPattern: entry.cat.furPattern,
+    tnr: entry.cat.tnr,
+    sex: entry.cat.sex,
+    credits: entry.credits,
+  });
+
+  const createCat = () => {
+    const newCat:Cat = {
+      name: formData.name,
+      descShort: formData.descShort,
+      descLong: formData.descLong,
+      colorPattern: formData.colorPattern,
+      behavior: formData.behavior,
+      yearsRecorded: formData.yearsRecorded,
+      AoR: formData.AoR,
+      currentStatus: pickers.statusPicker.value,
+      furLength: pickers.furPicker.value,
+      furPattern: formData.furPattern,
+      tnr: pickers.tnrPicker.value,
+      sex: pickers.sexPicker.value,
+    }
+    return newCat;
+  }
+  
+  const createObj = () => {
+    const newEntry = new CatalogEntry({
+      id:entry.id,
+      cat:createCat(),
+      credits:formData.credits,
+      createdAt: new Date(),
+      createdBy:user,
+    })
+    setSelectedCatalogEntry(newEntry);
+  };
+  
+  useEffect(() => {
+    database.fetchCatImages(entry.id, setProfile, setPhotos);
+  }, []);
 
   return (
-    <KeyboardAvoidingView
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined} // iOS specific behavior
-    >
-      <Button style={buttonStyles.logoutButton} onPress={() => router.push({
-        pathname: '/catalog/view-entry', params: { paramId:id, paramName:name, paramInfo:info }, })}>
+    <SafeAreaView style={containerStyles.wrapper}>
+      <Button style={buttonStyles.smallButtonTopLeft} onPress={() => router.push('/catalog/view-entry')}>
         <Ionicons name="arrow-back-outline" size={25} color="#fff" />
       </Button>
-      <Button style={buttonStyles.editButton} 
-      onPress={() => database.handleCatalogSave(name, oldName, info, newPics, newPhotosAdded, id, setVisible, router)}>
-        <Text style ={textStyles.editText}> Save Entry</Text>
+      <SnackbarMessage text="Saving Entry..." visible={visible} setVisible={setVisible} />
+      <Text style={textStyles.pageTitle}>Edit Entry</Text>
+      <FlatList
+        data={[1]}
+        keyExtractor={() => '1'}
+        contentContainerStyle={containerStyles.scrollView}
+        renderItem={() => (
+          <CatalogForm
+            formData={formData}
+            setFormData={setFormData}
+            pickers={pickers}
+            photos={photos}
+            profile={profile}
+            setPhotos={setPhotos}
+            setPicsChanged={setPicsChanged}
+            imageHandler={imageHandler}
+            isCreate={false}
+          />
+      )}/>
+      <Button style={buttonStyles.bigButton} 
+      onPress={() => {
+        createObj();
+        database.handleCatalogSave(photos, profile, isPicsChanged, setVisible, router);
+      }}>
+        <Text style ={textStyles.bigButtonText}> Save Entry</Text>
       </Button>
-      <ScrollView contentContainerStyle={containerStyles.entryContainer}>
-        <Text style={textStyles.title}>Edit A Catalog Entry</Text>
-        {profilePicUrl ? (<Image source={{ uri: profilePicUrl }} style={containerStyles.headlineImage} resizeMode="contain" />) : 
-          <Text style={textStyles.title}>Loading image...</Text>}
-          <View style={containerStyles.extraPicsContainer}>
-          <Snackbar visible={visible} onDismiss={() => setVisible(false)}>
-                Saving...
-          </Snackbar>
-        </View>
-        <View style={containerStyles.loginContainer}>
-          <Text style={textStyles.headline}>Cat's Name</Text>
-          <TextInput 
-            value={name}
-            placeholderTextColor = "#888"
-            onChangeText={setName} 
-            style={textStyles.input} />
-          <Text style={textStyles.headline}>Description</Text>
-          <TextInput
-            value={info}
-            placeholderTextColor = "#888"
-            onChangeText={setInfo} 
-            style={textStyles.descInput} 
-            multiline={true}/>
-        </View>
-        {extraPics.length > 0 ? <Text style={textStyles.headline}> Extra Photos</Text>: null}
-        {extraPics.length > 0 ? <Text style={textStyles.subHeading}> The photo you click will turn into the cat's profile picture</Text>: null}
-        <View style={containerStyles.extraPicsContainer}>
-          {extraPics ? (extraPics.map((pic, index) => (
-            <View key={index} style={containerStyles.imageWrapper}>
-              <ImageButton key={index} onPress={() => imageHandler.swapProfilePicture(pic)}>
-                <Image source={{ uri: pic }} style={containerStyles.extraPic} />
-              </ImageButton>
-              <Button style={buttonStyles.deleteButton} onPress={() => imageHandler.confirmDeletion(pic)}>
-                <Text style={textStyles.deleteButtonText}>Delete</Text>
-              </Button>
-            </View>
-          ))):<Text>Loading images...</Text>}
-        </View>
-        <Text style={textStyles.headline}> Upload Additional Photos</Text>
-        <CameraButton onPhotoSelected={imageHandler.addPhoto}></CameraButton>
-        <Button style={buttonStyles.deleteButton}onPress={() => database.deleteCatalogEntry(name, id, setVisible, router)}> Delete Catalog Entry</Button>
-      </ScrollView>
-    </KeyboardAvoidingView>
+      <Button style={buttonStyles.bigDeleteButton}onPress={() => database.deleteCatalogEntry(entry.id, setVisible, router)}> 
+        <Text style={textStyles.bigButtonText}>Delete Catalog Entry</Text>
+      </Button>
+    </SafeAreaView>
   );
 }
 export default edit_entry;
-
-//comment 3

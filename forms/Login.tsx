@@ -1,15 +1,16 @@
 import { useState } from 'react';
-import { View } from 'react-native';
+import { View, Text } from 'react-native';
 
+import { FirebaseError } from 'firebase/app';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
-import { Portal, Snackbar } from 'react-native-paper';
 import { z } from 'zod';
 
 import { Button, BorderlessButton } from '@/components';
 import { ControlledInput } from './controls';
-import { textStyles, containerStyles } from '@/styles';
-import { FirebaseError } from 'firebase/app';
+import { textStyles, containerStyles, globalStyles, buttonStyles } from '@/styles';
+import { Errorbar } from '@/components';
+import { handleFirebaseAuthError } from '@/utils';
 
 // Login requirements
 const loginSchema = z.object({
@@ -24,29 +25,6 @@ type LoginProps = {
   type: 'login' | 'createAccount';
   onSwitchType?: (... args: any[]) => any;
   forgotPassword?: boolean;
-};
-
-const handleFirebaseAuthError = (errorCode: string) => {
-  switch (errorCode) {
-    case 'auth/user-not-found':
-      return 'No user found with this email.';
-    case 'auth/invalid-credential':
-      // Firebase now often returns this instead of user-not-found
-      return 'Login failed. Incorrect email or password.';
-    case 'auth/wrong-password':
-      return 'Incorrect password. Please try again.';
-    case 'auth/invalid-email':
-      return 'Invalid email format.';
-    case 'auth/too-many-requests':
-      return 'Too many failed attempts. Please try again later.';
-    case 'auth/internal-error':
-      return 'Internal error. Please try again later.';
-    case 'auth/network-request-failed':
-      return 'Network error. Please check your connection.';
-    default:
-      console.warn('Unhandled auth error:', errorCode);
-      return 'Login failed.';
-  }
 };
 
 export const LoginForm: React.FC<LoginProps> = ({
@@ -76,37 +54,24 @@ export const LoginForm: React.FC<LoginProps> = ({
   };
 
   return (
-    <View style={containerStyles.loginContainer}>
-      <ControlledInput control={control} name="email" label="Email" />
-      <ControlledInput control={control} name="password" label="Password" secureTextEntry />
-      <Button onPress={handleSubmit(submitHandler)}>
-        {type === 'login' ? 'Sign In' : 'Create Account'}
+    <View style={containerStyles.shadedCard}>
+      <Text style={textStyles.label}>Email</Text>
+      <View style={containerStyles.smallInputContainer}>
+        <ControlledInput style={textStyles.input}control={control} name="email"/>
+      </View>
+      <Text style={textStyles.label}>Password</Text>
+      <View style={containerStyles.smallInputContainer}>
+        <ControlledInput control={control} name="password" secureTextEntry />
+      </View>
+      <Button style={buttonStyles.mediumButton}onPress={handleSubmit(submitHandler)}>
+        <Text style={textStyles.bigButtonText}>{type === 'login' ? 'Sign In' : 'Create Account'}</Text>
       </Button>
       {onSwitchType !== undefined ?
-        <Button onPress={onSwitchType}>
-          {type === 'login' ? 'Create Account' : 'Go Back'}
+        <Button style={buttonStyles.mediumButton}onPress={onSwitchType}>
+          <Text style={textStyles.bigButtonText}>{type === 'login' ? 'Apply For Whitelist' : 'Go Back'}</Text>
         </Button>
         : null}
-      {forgotPassword ?
-        <BorderlessButton
-          onPress={() => alert("Contact an Administrator")}
-          textStyle={textStyles.forgotPassword}>
-          Forgot password?
-        </BorderlessButton>
-        : null}
-      <Portal>
-        <Snackbar
-          visible={!!error}
-          onDismiss={() => setError('')}
-          duration={3000}
-          action={{
-            label: 'Dismiss',
-            onPress: () => setError(''),
-          }}
-        >
-          {error}
-        </Snackbar>
-      </Portal>
+      <Errorbar error={error} onDismiss={() => setError('')} />
     </View>
   );
 }

@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { StyleProp, Text, TextStyle, TouchableOpacity, TouchableOpacityProps, View, ViewStyle } from 'react-native';
-import { PhotoHandler } from '../image_handlers/PhotoHandler';
+import { PhotoHandler } from '../../image_handlers/PhotoHandler';
 import { globalStyles, buttonStyles, textStyles, containerStyles } from '@/styles';
 
 type IoniconsName = React.ComponentProps<typeof Ionicons>['name'];
@@ -52,7 +52,7 @@ export const IconButton: React.FC<IconProps> = ({
   ...props
 }) => {
   return (
-    <TouchableOpacity style={[buttonStyles.iconButton, style]} onPress={onPress} {...props}>
+    <TouchableOpacity style={[buttonStyles.button, style]} onPress={onPress} {...props}>
       <Ionicons name={iconName} size={iconSize} color={iconColor} />
     </TouchableOpacity>
   );
@@ -96,8 +96,8 @@ export const CameraButton: React.FC<CameraButtonProps> = ({ onPhotoSelected, sty
   const photoHandler = new PhotoHandler(onPhotoSelected);
   
   return (
-    <View style={containerStyles.cameraView}>
-      <Button style={buttonStyles.cameraButton} onPress={() => photoHandler.handlePress()}>
+    <View style={containerStyles.cameraContainer}>
+      <Button style={buttonStyles.cameraButton} onPress={() => photoHandler.promptForImageSource()}>
         <Ionicons name="camera-outline" size={29} color="#fff" />
       </Button>
     </View>
