@@ -5,29 +5,55 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 
 import { Button, SnackbarMessage } from '@/components';
-import DatabaseService from '@/services/DatabaseService';
-import { globalStyles, buttonStyles, textStyles, containerStyles } from '@/styles';
-import { Cat, CatalogEntry, CatStatus, Fur, Sex, TNRStatus } from '@/types/CatalogEntry';
+import { CatalogForm } from '@/forms';
 import { CatalogImageHandler } from '@/image_handlers/CatalogImageHandler';
 import { useAuth } from '@/providers';
-import { getSelectedCatalogEntry, setSelectedCatalogEntry } from '@/stores/CatalogEntryStores';
+import DatabaseService from '@/services/DatabaseService';
+import {
+  getSelectedCatalogEntry,
+  setSelectedCatalogEntry,
+} from '@/stores/CatalogEntryStores';
+import {
+  buttonStyles,
+  containerStyles,
+  globalStyles,
+  textStyles,
+} from '@/styles';
 import { PickerConfig } from '@/types';
-import { CatalogForm } from '@/forms';
+import {
+  Cat,
+  CatStatus,
+  CatalogEntry,
+  Fur,
+  Sex,
+  TNRStatus,
+} from '@/types/CatalogEntry';
 
 const edit_entry = () => {
   const router = useRouter();
   const { user } = useAuth();
   const database = DatabaseService.getInstance();
   const entry = getSelectedCatalogEntry();
-  
+
   const [photos, setPhotos] = useState<string[]>([]);
   const [profile, setProfile] = useState<string>('');
   const [isPicsChanged, setPicsChanged] = useState<boolean>(false);
   const [visible, setVisible] = useState<boolean>(false);
-  const imageHandler = new CatalogImageHandler({ type:'catalog', id:entry.id, photos, profile, setPhotos, setProfile, setPicsChanged, setVisible});
-  
+  const imageHandler = new CatalogImageHandler({
+    type: 'catalog',
+    id: entry.id,
+    photos,
+    profile,
+    setPhotos,
+    setProfile,
+    setPicsChanged,
+    setVisible,
+  });
+
   // ---------- Status Picker ----------
-  const [statusValue, setStatusValue] = useState<CatStatus>(entry.cat.currentStatus);
+  const [statusValue, setStatusValue] = useState<CatStatus>(
+    entry.cat.currentStatus,
+  );
   const [statusOpen, setStatusOpen] = useState<boolean>(false);
   const [statusItems, setStatusItems] = useState([
     { label: 'Adopted', value: 'Adopted' },
@@ -37,7 +63,7 @@ const edit_entry = () => {
     { label: 'Unknown', value: 'Unknown' },
   ]);
 
-  const statusPicker:PickerConfig<CatStatus> = {
+  const statusPicker: PickerConfig<CatStatus> = {
     value: statusValue,
     setValue: setStatusValue,
     open: statusOpen,
@@ -55,7 +81,7 @@ const edit_entry = () => {
     { label: 'Unknown', value: 'Unknown' },
   ]);
 
-  const tnrPicker:PickerConfig<TNRStatus> = {
+  const tnrPicker: PickerConfig<TNRStatus> = {
     value: tnrValue,
     setValue: setTnrValue,
     open: tnrOpen,
@@ -73,7 +99,7 @@ const edit_entry = () => {
     { label: 'Unknown', value: 'Unknown' },
   ]);
 
-  const sexPicker:PickerConfig<Sex> = {
+  const sexPicker: PickerConfig<Sex> = {
     value: sexValue,
     setValue: setSexValue,
     open: sexOpen,
@@ -92,7 +118,7 @@ const edit_entry = () => {
     { label: 'Unknown', value: 'Unknown' },
   ]);
 
-  const furPicker:PickerConfig<Fur> = {
+  const furPicker: PickerConfig<Fur> = {
     value: furValue,
     setValue: setFurValue,
     open: furOpen,
@@ -106,7 +132,7 @@ const edit_entry = () => {
     tnrPicker,
     sexPicker,
     furPicker,
-  }; 
+  };
 
   const [formData, setFormData] = useState<{
     name: string;
@@ -139,7 +165,7 @@ const edit_entry = () => {
   });
 
   const createCat = () => {
-    const newCat:Cat = {
+    const newCat: Cat = {
       name: formData.name,
       descShort: formData.descShort,
       descLong: formData.descLong,
@@ -152,31 +178,38 @@ const edit_entry = () => {
       furPattern: formData.furPattern,
       tnr: pickers.tnrPicker.value,
       sex: pickers.sexPicker.value,
-    }
+    };
     return newCat;
-  }
-  
+  };
+
   const createObj = () => {
     const newEntry = new CatalogEntry({
-      id:entry.id,
-      cat:createCat(),
-      credits:formData.credits,
+      id: entry.id,
+      cat: createCat(),
+      credits: formData.credits,
       createdAt: new Date(),
-      createdBy:user,
-    })
+      createdBy: user,
+    });
     setSelectedCatalogEntry(newEntry);
   };
-  
+
   useEffect(() => {
     database.fetchCatImages(entry.id, setProfile, setPhotos);
   }, []);
 
   return (
     <SafeAreaView style={containerStyles.wrapper}>
-      <Button style={buttonStyles.smallButtonTopLeft} onPress={() => router.push('/catalog/view-entry')}>
+      <Button
+        style={buttonStyles.smallButtonTopLeft}
+        onPress={() => router.push('/catalog/view-entry')}
+      >
         <Ionicons name="arrow-back-outline" size={25} color="#fff" />
       </Button>
-      <SnackbarMessage text="Saving Entry..." visible={visible} setVisible={setVisible} />
+      <SnackbarMessage
+        text="Saving Entry..."
+        visible={visible}
+        setVisible={setVisible}
+      />
       <Text style={textStyles.pageTitle}>Edit Entry</Text>
       <FlatList
         data={[1]}
@@ -194,18 +227,32 @@ const edit_entry = () => {
             imageHandler={imageHandler}
             isCreate={false}
           />
-      )}/>
-      <Button style={buttonStyles.bigButton} 
-      onPress={() => {
-        createObj();
-        database.handleCatalogSave(photos, profile, isPicsChanged, setVisible, router);
-      }}>
-        <Text style ={textStyles.bigButtonText}> Save Entry</Text>
+        )}
+      />
+      <Button
+        style={buttonStyles.bigButton}
+        onPress={() => {
+          createObj();
+          database.handleCatalogSave(
+            photos,
+            profile,
+            isPicsChanged,
+            setVisible,
+            router,
+          );
+        }}
+      >
+        <Text style={textStyles.bigButtonText}> Save Entry</Text>
       </Button>
-      <Button style={buttonStyles.bigDeleteButton}onPress={() => database.deleteCatalogEntry(entry.id, setVisible, router)}> 
+      <Button
+        style={buttonStyles.bigDeleteButton}
+        onPress={() =>
+          database.deleteCatalogEntry(entry.id, setVisible, router)
+        }
+      >
         <Text style={textStyles.bigButtonText}>Delete Catalog Entry</Text>
       </Button>
     </SafeAreaView>
   );
-}
+};
 export default edit_entry;

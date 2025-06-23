@@ -1,11 +1,11 @@
-import { StyleSheet, Dimensions } from 'react-native';
+import { Dimensions, StyleSheet } from 'react-native';
 
 const { width, height } = Dimensions.get('window');
 
 const buttonStyles = StyleSheet.create({
   /** General purpose Buttons */
   button: {
-    width: width * .85,
+    width: width * 0.85,
     backgroundColor: '#333',
     alignItems: 'center',
     display: 'flex',

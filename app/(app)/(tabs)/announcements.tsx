@@ -1,12 +1,17 @@
 import React, { useCallback, useState } from 'react';
 import { SafeAreaView, ScrollView, Text } from 'react-native';
 
-import { globalStyles, buttonStyles, textStyles, containerStyles } from '@/styles';
+import { router, useFocusEffect } from 'expo-router';
 
 import { AnnouncementItem, Button, LoadingIndicator } from '@/components';
 import { useAuth } from '@/providers';
-import { router, useFocusEffect } from 'expo-router';
 import DatabaseService from '@/services/DatabaseService';
+import {
+  buttonStyles,
+  containerStyles,
+  globalStyles,
+  textStyles,
+} from '@/styles';
 import { Announcement } from '@/types';
 
 const Announcements = () => {
@@ -22,7 +27,7 @@ const Announcements = () => {
   useFocusEffect(
     useCallback(() => {
       database.fetchAnnouncementData(setAnns);
-    }, [])
+    }, []),
   );
 
   return (
@@ -41,9 +46,14 @@ const Announcements = () => {
           />
         ))}
       </ScrollView>
-      {isAdmin ? <Button style={buttonStyles.bigButton} onPress={() => router.push('/announcements/create-ann')}>
-        <Text style ={textStyles.bigButtonText}> Create Announcement</Text>
-      </Button> : null}
+      {isAdmin ? (
+        <Button
+          style={buttonStyles.bigButton}
+          onPress={() => router.push('/announcements/create-ann')}
+        >
+          <Text style={textStyles.bigButtonText}> Create Announcement</Text>
+        </Button>
+      ) : null}
     </SafeAreaView>
   );
 };

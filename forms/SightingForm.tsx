@@ -1,10 +1,11 @@
 import React, { Dispatch } from 'react';
-import { View, Text, Switch, TextInput, Image } from 'react-native';
-import MapView, { Marker } from 'react-native-maps';
+import { Image, Switch, Text, TextInput, View } from 'react-native';
 import DropdownPicker from 'react-native-dropdown-picker';
+import MapView, { Marker } from 'react-native-maps';
+
 import { DateTimeInput, FormCamera } from '@/components';
-import { buttonStyles, containerStyles, textStyles } from '@/styles';
 import { CatalogImageHandler } from '@/image_handlers/CatalogImageHandler';
+import { buttonStyles, containerStyles, textStyles } from '@/styles';
 
 interface SightingFormProps {
   formData: any;
@@ -24,8 +25,20 @@ interface SightingFormProps {
 }
 
 const SightingForm: React.FC<SightingFormProps> = ({
-  formData, setFormData, value, setValue,
-  open, setOpen, items, setItems, photos, profile, setPhotos, setPicsChanged, imageHandler, isCreate
+  formData,
+  setFormData,
+  value,
+  setValue,
+  open,
+  setOpen,
+  items,
+  setItems,
+  photos,
+  profile,
+  setPhotos,
+  setPicsChanged,
+  imageHandler,
+  isCreate,
 }) => {
   const handleChange = (field: string, val: any) => {
     setFormData((prev: any) => ({ ...prev, [field]: val }));
@@ -33,10 +46,20 @@ const SightingForm: React.FC<SightingFormProps> = ({
 
   return (
     <View style={containerStyles.card}>
-      {!isCreate ?
-       <>{profile ? (<Image source={{ uri: profile }} style={containerStyles.imageMain} />):
-        <View style={containerStyles.imageMain}><Text style={textStyles.listTitle}>Loading...</Text></View>}</>
-       : null}
+      {!isCreate ? (
+        <>
+          {profile ? (
+            <Image
+              source={{ uri: profile }}
+              style={containerStyles.imageMain}
+            />
+          ) : (
+            <View style={containerStyles.imageMain}>
+              <Text style={textStyles.listTitle}>Loading...</Text>
+            </View>
+          )}
+        </>
+      ) : null}
 
       <Text style={textStyles.label}>Location</Text>
       <MapView
@@ -64,7 +87,10 @@ const SightingForm: React.FC<SightingFormProps> = ({
       </View>
 
       <Text style={textStyles.label}>Day of Sighting</Text>
-      <DateTimeInput date={formData.date} setDate={(date) => handleChange('date', date)} />
+      <DateTimeInput
+        date={formData.date}
+        setDate={(date) => handleChange('date', date)}
+      />
 
       <Text style={textStyles.label}>Time of Sighting</Text>
       <DropdownPicker
@@ -94,24 +120,30 @@ const SightingForm: React.FC<SightingFormProps> = ({
       <View style={containerStyles.sectionCard}>
         <View style={containerStyles.rowStack}>
           <View style={containerStyles.rowContainer}>
-            <Switch value={formData.fed} onValueChange={(val) => handleChange('fed', val)} />
+            <Switch
+              value={formData.fed}
+              onValueChange={(val) => handleChange('fed', val)}
+            />
             <Text style={textStyles.label}>Has been fed</Text>
           </View>
 
           <View style={containerStyles.rowContainer}>
-            <Switch value={formData.health} onValueChange={(val) => handleChange('health', val)} />
+            <Switch
+              value={formData.health}
+              onValueChange={(val) => handleChange('health', val)}
+            />
             <Text style={textStyles.label}>Is in good health</Text>
           </View>
         </View>
       </View>
-      
-      
+
       <FormCamera
         photos={photos}
         setPhotos={setPhotos}
         setPicsChanged={setPicsChanged}
         imageHandler={imageHandler}
-        isCreate={isCreate}/>
+        isCreate={isCreate}
+      />
     </View>
   );
 };

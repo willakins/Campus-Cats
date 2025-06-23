@@ -1,4 +1,4 @@
-import { Platform, StyleSheet, Dimensions } from 'react-native';
+import { Dimensions, Platform, StyleSheet } from 'react-native';
 
 const { width, height } = Dimensions.get('window');
 const vw = width / 100;
@@ -21,10 +21,10 @@ const globalStyles = StyleSheet.create({
   },
   safeView: {
     flex: 1,
-    backgroundColor: "#E5E5E5",
+    backgroundColor: '#E5E5E5',
     marginBottom: Platform.select({
       ios: -vh * 5, // avoid iOS extra space on bottom
-      default: 0
+      default: 0,
     }),
   },
 });

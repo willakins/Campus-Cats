@@ -4,7 +4,8 @@ import { ErrorText, Switch } from '@/components';
 import { SwitchProps } from '@/components/ui/Switch';
 import { InputControllerType } from '@/types';
 
-type ControlledSwitchProps<T extends FieldValues> = SwitchProps & InputControllerType<T>;
+type ControlledSwitchProps<T extends FieldValues> = SwitchProps &
+  InputControllerType<T>;
 
 const ControlledSwitch = <T extends FieldValues>({
   control,

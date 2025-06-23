@@ -1,18 +1,24 @@
+import { useState } from 'react';
+import { useForm } from 'react-hook-form';
 import { Image, ScrollView, Text, View } from 'react-native';
 
+import {
+  ControlledDateTimeInput,
+  ControlledFilePicker,
+  ControlledInput,
+  ControlledMapPicker,
+  ControlledSwitch,
+} from './controls';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 
 import { Button, Errorbar } from '@/components';
 import { DefaultLocation } from '@/config/constants';
 import { auth } from '@/config/firebase';
-import { ControlledDateTimeInput, ControlledFilePicker, ControlledInput, ControlledMapPicker, ControlledSwitch } from './controls';
 import { Sighting } from '@/models';
-import { textStyles, containerStyles, buttonStyles } from '@/styles';
+import { buttonStyles, containerStyles, textStyles } from '@/styles';
 import { LatLngSchema } from '@/types';
 import { uploadFromURI } from '@/utils';
-import { useState } from 'react';
 
 const reportSchema = z.object({
   name: z.string(),
@@ -27,7 +33,9 @@ const reportSchema = z.object({
 
 type ReportDataType = z.infer<typeof reportSchema>;
 
-const sightingFormConverter = async (data: ReportDataType): Promise<Sighting> => {
+const sightingFormConverter = async (
+  data: ReportDataType,
+): Promise<Sighting> => {
   // Upload all files to storage and get their refs
   const sightingStoragePath = '/';
   const uploadPromise = uploadFromURI(sightingStoragePath, data.file);
@@ -54,7 +62,7 @@ const sightingFormConverter = async (data: ReportDataType): Promise<Sighting> =>
   };
 
   return Sighting.parse(sightingData);
-}
+};
 
 const sightingConverter = (data: Sighting): ReportDataType => {
   return {
@@ -68,7 +76,7 @@ const sightingConverter = (data: Sighting): ReportDataType => {
     timestamp: data.spotted_time || new Date(),
     fed: data.fed,
     health: data.health,
-    timeofDay: data.timeofDay
+    timeofDay: data.timeofDay,
   };
 };
 
@@ -76,7 +84,7 @@ type ReportFormProps = {
   type: 'create' | 'edit';
   onSubmit: (data: Sighting) => Promise<void>;
   onDelete?: () => Promise<void>;
-  imageURL?: string,
+  imageURL?: string;
   defaultValues?: Sighting;
 };
 
@@ -91,7 +99,7 @@ export const SightingReportForm: React.FC<ReportFormProps> = ({
 
   const { handleSubmit, control } = useForm<ReportDataType>({
     resolver: zodResolver(reportSchema),
-    defaultValues: (!!defaultValues) ? sightingConverter(defaultValues) : {},
+    defaultValues: !!defaultValues ? sightingConverter(defaultValues) : {},
   });
 
   const submitHandler = async (data: ReportDataType) => {
@@ -118,39 +126,61 @@ export const SightingReportForm: React.FC<ReportFormProps> = ({
             {type === 'edit' ? 'Edit A Sighting' : null}
           </Text>
           {/* TODO: Abstract into a component. Make sure to handle firebase errors where image URL does not exist */}
-          {type === 'edit' ? (imageURL
-            ? (<Image source={{ uri: imageURL }} style={containerStyles.imageMain} resizeMode='contain'/>)
-            : (<Text style={textStyles.title}>Loading image...</Text>)
-          ): null}
+          {type === 'edit' ? (
+            imageURL ? (
+              <Image
+                source={{ uri: imageURL }}
+                style={containerStyles.imageMain}
+                resizeMode="contain"
+              />
+            ) : (
+              <Text style={textStyles.title}>Loading image...</Text>
+            )
+          ) : null}
           <View style={containerStyles.inputContainer}>
             <ControlledMapPicker control={control} name="location" />
             <ControlledDateTimeInput control={control} name="timestamp" />
-            <ControlledInput control={control} name="timeofDay"
+            <ControlledInput
+              control={control}
+              name="timeofDay"
               placeholder="Time of sighting (morning, afternoon, night)"
               placeholderTextColor="#888"
               style={textStyles.input}
             />
-            <ControlledInput control={control} name="name"
+            <ControlledInput
+              control={control}
+              name="name"
               placeholder="Cat's name"
               placeholderTextColor="#888"
               style={textStyles.input}
             />
-            <ControlledInput control={control} name="notes"
+            <ControlledInput
+              control={control}
+              name="notes"
               placeholder="Additional Notes"
               placeholderTextColor="#888"
               style={textStyles.input}
             />
             <ControlledFilePicker control={control} name="file" />
-            <ControlledSwitch control={control} name="fed" label="Has been fed" />
-            <ControlledSwitch control={control} name="health" label="Is in good health" />
+            <ControlledSwitch
+              control={control}
+              name="fed"
+              label="Has been fed"
+            />
+            <ControlledSwitch
+              control={control}
+              name="health"
+              label="Is in good health"
+            />
           </View>
         </View>
-        {onDelete ? <Button onPress={onDelete}>
-          Delete
-        </Button> : null}
+        {onDelete ? <Button onPress={onDelete}>Delete</Button> : null}
       </ScrollView>
-      <Button style={buttonStyles.bigButton} onPress={handleSubmit(submitHandler, onInvalid)}>
-        <Text style= {textStyles.bigButtonText}>
+      <Button
+        style={buttonStyles.bigButton}
+        onPress={handleSubmit(submitHandler, onInvalid)}
+      >
+        <Text style={textStyles.bigButtonText}>
           {type === 'create' ? 'Submit Sighting' : null}
           {type === 'edit' ? 'Save' : null}
         </Text>

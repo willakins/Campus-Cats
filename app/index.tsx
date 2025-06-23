@@ -1,4 +1,5 @@
-import React, { useCallback, useEffect, useState, useRef } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Redirect } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
@@ -6,7 +7,6 @@ import * as SplashScreen from 'expo-splash-screen';
 import { LoadingIndicator } from '@/components';
 import { auth } from '@/config/firebase';
 import { useAuth } from '@/providers';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { globalStyles } from '@/styles';
 
 // Instruct SplashScreen not to hide yet, we want to do this manually
@@ -22,7 +22,7 @@ SplashScreen.setOptions({
 
 const App = () => {
   const { loading, user } = useAuth(); // Make sure useAuth returns user too
-  
+
   // Use useEffect to handle splash screen hiding
   useEffect(() => {
     if (!loading) {

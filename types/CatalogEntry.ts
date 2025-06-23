@@ -1,8 +1,14 @@
-import { User } from "./User";
+import { User } from './User';
 
 type TNRStatus = 'Yes' | 'No' | 'Unknown';
 type Sex = 'Male' | 'Female' | 'Unknown';
-type CatStatus = 'Feral' | 'Adopted' | 'Deceased' | 'Feral' | 'Frat Cat' | 'Unknown';
+type CatStatus =
+  | 'Feral'
+  | 'Adopted'
+  | 'Deceased'
+  | 'Feral'
+  | 'Frat Cat'
+  | 'Unknown';
 type Fur = 'Short' | 'Medium' | 'Long' | 'Unknown';
 
 interface Cat {
@@ -44,22 +50,23 @@ class CatalogEntry {
   }
 
   static readonly dummy = new CatalogEntry({
-    id: "dummy",
+    id: 'dummy',
     cat: {
-      name: "Unnamed Cat",
-      descShort: "No description available.",
-      descLong: "This is a placeholder catalog entry for an unidentified or sample cat.",
-      colorPattern: "Unknown",
-      behavior: "Unknown",
-      yearsRecorded: "N/A",
-      AoR: "N/A",
-      currentStatus: "Unknown",
-      furLength: "Unknown",
-      furPattern: "Unknown",
-      tnr: "Unknown",
-      sex: "Unknown",
+      name: 'Unnamed Cat',
+      descShort: 'No description available.',
+      descLong:
+        'This is a placeholder catalog entry for an unidentified or sample cat.',
+      colorPattern: 'Unknown',
+      behavior: 'Unknown',
+      yearsRecorded: 'N/A',
+      AoR: 'N/A',
+      currentStatus: 'Unknown',
+      furLength: 'Unknown',
+      furPattern: 'Unknown',
+      tnr: 'Unknown',
+      sex: 'Unknown',
     },
-    credits: "N/A",
+    credits: 'N/A',
     createdAt: new Date(),
     createdBy: User.dummy,
   });
@@ -71,8 +78,18 @@ class CatalogEntry {
 
   private static getNiceDateString(date: Date) {
     const monthNames = [
-      "January", "February", "March", "April", "May", "June", 
-      "July", "August", "September", "October", "November", "December"
+      'January',
+      'February',
+      'March',
+      'April',
+      'May',
+      'June',
+      'July',
+      'August',
+      'September',
+      'October',
+      'November',
+      'December',
     ];
     return `${monthNames[date.getMonth()]} ${date.getDate()}, ${date.getFullYear()}`;
   }

@@ -1,5 +1,17 @@
-import { Switch as RNSwitch, SwitchProps as RNSwitchProps, Text, TextStyle, View } from 'react-native';
-import { globalStyles, buttonStyles, textStyles, containerStyles } from '@/styles';
+import {
+  Switch as RNSwitch,
+  SwitchProps as RNSwitchProps,
+  Text,
+  TextStyle,
+  View,
+} from 'react-native';
+
+import {
+  buttonStyles,
+  containerStyles,
+  globalStyles,
+  textStyles,
+} from '@/styles';
 
 export type SwitchProps = RNSwitchProps & {
   label: string;
@@ -19,7 +31,9 @@ export const Switch: React.FC<SwitchProps> = ({
     <>
       <View style={containerStyles.card}>
         <RNSwitch value={value} onValueChange={onValueChange} {...props} />
-        {label ? <Text style={[style_, {marginLeft: 12}]}>{label}</Text> : null}
+        {label ? (
+          <Text style={[style_, { marginLeft: 12 }]}>{label}</Text>
+        ) : null}
       </View>
     </>
   );

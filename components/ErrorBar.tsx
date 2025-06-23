@@ -1,7 +1,8 @@
-import { containerStyles } from '@/styles';
 import { useEffect, useState } from 'react';
 import { View } from 'react-native';
 import { Portal, Snackbar } from 'react-native-paper';
+
+import { containerStyles } from '@/styles';
 
 type ErrorbarProps = {
   error: string;
@@ -31,7 +32,7 @@ export const Errorbar: React.FC<ErrorbarProps> = ({
 
   return (
     <Portal>
-      <View style={{flex: 1, margin: 10}}>
+      <View style={{ flex: 1, margin: 10 }}>
         <Snackbar
           visible={visible}
           onDismiss={handleDismiss}

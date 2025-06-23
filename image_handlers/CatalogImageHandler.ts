@@ -1,6 +1,7 @@
-import BaseImageHandler from "./BaseImageHandler";
-import DatabaseService from "../services/DatabaseService";
-import { Alert } from "react-native";
+import { Alert } from 'react-native';
+
+import DatabaseService from '../services/DatabaseService';
+import BaseImageHandler from './BaseImageHandler';
 
 interface CatalogImageHandlerProps {
   type: string;
@@ -10,7 +11,7 @@ interface CatalogImageHandlerProps {
   setPhotos: React.Dispatch<React.SetStateAction<string[]>>;
   setProfile: React.Dispatch<React.SetStateAction<string>>;
   setPicsChanged: React.Dispatch<React.SetStateAction<boolean>>;
-  setVisible:  React.Dispatch<React.SetStateAction<boolean>>;
+  setVisible: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
 class CatalogImageHandler extends BaseImageHandler {
@@ -27,13 +28,13 @@ class CatalogImageHandler extends BaseImageHandler {
 
   constructor({
     type,
-    id, 
-    photos, 
-    profile, 
-    setPhotos, 
-    setProfile, 
-    setPicsChanged, 
-    setVisible
+    id,
+    photos,
+    profile,
+    setPhotos,
+    setProfile,
+    setPicsChanged,
+    setVisible,
   }: CatalogImageHandlerProps) {
     super();
     this.type = type;
@@ -42,7 +43,7 @@ class CatalogImageHandler extends BaseImageHandler {
     this.profile = profile;
     this.setProfile = setProfile;
     this.setPhotos = setPhotos;
-    this.setPicsChanged = setPicsChanged;    
+    this.setPicsChanged = setPicsChanged;
     this.setVisible = setVisible;
   }
 
@@ -59,13 +60,27 @@ class CatalogImageHandler extends BaseImageHandler {
         alert('Error: Invalid picture filename.');
         return;
       }
-      await this.database.swapProfilePicture(this.type, this.id, picUrl, picName, this.profile);
+      await this.database.swapProfilePicture(
+        this.type,
+        this.id,
+        picUrl,
+        picName,
+        this.profile,
+      );
       if (this.type == 'catalog') {
         this.database.fetchCatImages(this.id, this.setProfile, this.setPhotos);
       } else if (this.type == 'sightings') {
-        this.database.fetchSightingImages(this.id, this.setProfile, this.setPhotos);
+        this.database.fetchSightingImages(
+          this.id,
+          this.setProfile,
+          this.setPhotos,
+        );
       } else if (this.type == 'stations') {
-        this.database.fetchStationImages(this.id, this.setProfile, this.setPhotos);
+        this.database.fetchStationImages(
+          this.id,
+          this.setProfile,
+          this.setPhotos,
+        );
       }
     } catch (error) {
       console.error('Swap error:', error);
@@ -84,26 +99,36 @@ class CatalogImageHandler extends BaseImageHandler {
         {
           text: 'Delete Forever',
           onPress: async () => {
-            if (this.type == 'catalog'){
-              await this.database.deleteCatalogPicture(this.id, picName)
-              this.database.fetchCatImages(this.id, this.setProfile, this.setPhotos);
+            if (this.type == 'catalog') {
+              await this.database.deleteCatalogPicture(this.id, picName);
+              this.database.fetchCatImages(
+                this.id,
+                this.setProfile,
+                this.setPhotos,
+              );
             } else if (this.type == 'sightings') {
               await this.database.deleteSightingPicture(this.id, picName);
-              this.database.fetchSightingImages(this.id, this.setProfile, this.setPhotos);
+              this.database.fetchSightingImages(
+                this.id,
+                this.setProfile,
+                this.setPhotos,
+              );
             } else if (this.type == 'stations') {
               await this.database.deleteStationPicture(this.id, picName);
-              this.database.fetchStationImages(this.id, this.setProfile, this.setPhotos);
+              this.database.fetchStationImages(
+                this.id,
+                this.setProfile,
+                this.setPhotos,
+              );
             }
-            
           },
-            
         },
         {
           text: 'Cancel',
           style: 'cancel',
         },
       ],
-      { cancelable: true }
+      { cancelable: true },
     );
   };
 

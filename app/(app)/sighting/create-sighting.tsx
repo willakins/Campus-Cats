@@ -1,17 +1,16 @@
 import React, { useState } from 'react';
-import { SafeAreaView, Text, FlatList } from 'react-native';
+import { FlatList, SafeAreaView, Text } from 'react-native';
 
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 
 import { Button, SnackbarMessage } from '@/components';
-import { buttonStyles, textStyles, containerStyles } from '@/styles';
-import { setSelectedSighting } from '@/stores/sightingStores';
-import DatabaseService from '@/services/DatabaseService';
-import { useAuth } from '@/providers';
-import { Sighting } from '@/types';
 import { SightingForm } from '@/forms';
-
+import { useAuth } from '@/providers';
+import DatabaseService from '@/services/DatabaseService';
+import { setSelectedSighting } from '@/stores/sightingStores';
+import { buttonStyles, containerStyles, textStyles } from '@/styles';
+import { Sighting } from '@/types';
 
 const SightingCreateScreen = () => {
   const router = useRouter();
@@ -19,8 +18,8 @@ const SightingCreateScreen = () => {
   const database = DatabaseService.getInstance();
 
   const [visible, setVisible] = useState(false);
-  
-  const [value, setValue] = useState("");
+
+  const [value, setValue] = useState('');
   const [open, setOpen] = useState(false);
   const [items, setItems] = useState([
     { label: 'Morning', value: 'Morning' },
@@ -30,8 +29,8 @@ const SightingCreateScreen = () => {
 
   const [photos, setPhotos] = useState<string[]>([]);
   const [formData, setFormData] = useState({
-    name: "",
-    info: "",
+    name: '',
+    info: '',
     fed: false,
     health: false,
     location: { latitude: 0, longitude: 0 },
@@ -40,7 +39,7 @@ const SightingCreateScreen = () => {
 
   const createObj = () => {
     const newSighting = new Sighting({
-      id: "-1",
+      id: '-1',
       name: formData.name,
       info: formData.info,
       fed: formData.fed,
@@ -56,11 +55,18 @@ const SightingCreateScreen = () => {
 
   return (
     <SafeAreaView style={containerStyles.wrapper}>
-      <Button style={buttonStyles.smallButtonTopLeft} onPress={() => router.push('/(app)/(tabs)')}>
+      <Button
+        style={buttonStyles.smallButtonTopLeft}
+        onPress={() => router.push('/(app)/(tabs)')}
+      >
         <Ionicons name="arrow-back-outline" size={25} color="#fff" />
       </Button>
 
-      <SnackbarMessage text="Creating Report..." visible={visible} setVisible={setVisible} />
+      <SnackbarMessage
+        text="Creating Report..."
+        visible={visible}
+        setVisible={setVisible}
+      />
 
       <Text style={textStyles.pageTitle}>Create A Report</Text>
       <FlatList
@@ -84,10 +90,13 @@ const SightingCreateScreen = () => {
         )}
       />
 
-      <Button style={buttonStyles.bigButton} onPress={() => {
-        createObj();
-        database.createSighting(photos, setVisible, router);
-      }}>
+      <Button
+        style={buttonStyles.bigButton}
+        onPress={() => {
+          createObj();
+          database.createSighting(photos, setVisible, router);
+        }}
+      >
         <Text style={textStyles.bigButtonText}>Create Report</Text>
       </Button>
     </SafeAreaView>
