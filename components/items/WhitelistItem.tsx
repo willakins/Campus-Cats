@@ -4,13 +4,8 @@ import { Text, View } from 'react-native';
 import DatabaseService from '../../services/DatabaseService';
 import { Button } from '../ui/Buttons';
 
-import {
-  buttonStyles,
-  containerStyles,
-  globalStyles,
-  textStyles,
-} from '@/styles';
-import { User, WhitelistApp } from '@/types';
+import { buttonStyles, containerStyles, textStyles } from '@/styles';
+import { WhitelistApp } from '@/types';
 
 export const WhitelistItem: React.FC<{
   app: WhitelistApp;

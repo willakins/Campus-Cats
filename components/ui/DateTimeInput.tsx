@@ -2,7 +2,7 @@ import DateTimePicker, {
   DateTimePickerEvent,
 } from '@react-native-community/datetimepicker';
 import { useState } from 'react';
-import { Text, TouchableOpacity, View } from 'react-native';
+import { Text, View } from 'react-native';
 
 import { containerStyles, textStyles } from '@/styles';
 import { SetState } from '@/utils';
@@ -29,7 +29,7 @@ export const DateTimeInput: React.FC<DateTimeInputProps> = ({
     if (selectedDate) {
       setDate(selectedDate);
       setShowPicker(false);
-      const timeout = setTimeout(() => {
+      setTimeout(() => {
         setShowPicker(true);
       }, 10);
     }

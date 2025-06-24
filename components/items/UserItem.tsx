@@ -6,12 +6,7 @@ import { Button } from '../ui/Buttons';
 import { useRouter } from 'expo-router';
 
 import { useAuth } from '@/providers';
-import {
-  buttonStyles,
-  containerStyles,
-  globalStyles,
-  textStyles,
-} from '@/styles';
+import { buttonStyles, containerStyles, textStyles } from '@/styles';
 import { User } from '@/types';
 
 export const UserItem: React.FC<{
@@ -21,7 +16,7 @@ export const UserItem: React.FC<{
   const router = useRouter();
   const database = DatabaseService.getInstance();
   const { user: currentUser } = useAuth();
-  const isHigher = currentUser.role == 2 || currentUser.role > user.role;
+  const isHigher = currentUser.role === 2 || currentUser.role > user.role;
 
   const handleUserUpdate = async (action: () => Promise<void>) => {
     await action();

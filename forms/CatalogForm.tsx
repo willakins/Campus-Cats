@@ -18,8 +18,8 @@ interface CatalogFormProps {
   };
   photos: string[];
   profile?: string;
-  setPhotos: React.Dispatch<React.SetStateAction<string[]>>;
-  setPicsChanged?: Dispatch<React.SetStateAction<boolean>>;
+  setPhotos: Dispatch<SetStateAction<string[]>>;
+  setPicsChanged?: Dispatch<SetStateAction<boolean>>;
   imageHandler?: CatalogImageHandler;
   isCreate: boolean;
 }

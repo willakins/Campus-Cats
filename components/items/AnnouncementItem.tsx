@@ -5,12 +5,7 @@ import { Button } from '../ui/Buttons';
 import { useRouter } from 'expo-router';
 
 import { setSelectedAnnouncement } from '@/stores/announcementStores';
-import {
-  buttonStyles,
-  containerStyles,
-  globalStyles,
-  textStyles,
-} from '@/styles';
+import { containerStyles, textStyles } from '@/styles';
 import { Announcement } from '@/types';
 
 export const AnnouncementItem: React.FC<Announcement> = ({

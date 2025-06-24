@@ -12,16 +12,10 @@ import {
 import { useRouter } from 'expo-router';
 
 import { Button, SnackbarMessage } from '@/components';
-import { firebaseConfig } from '@/config/firebase';
 // Get Firebase auth reference
 import { auth as firebaseAuth } from '@/config/firebase';
 import { useAuth } from '@/providers';
-import {
-  buttonStyles,
-  containerStyles,
-  globalStyles,
-  textStyles,
-} from '@/styles';
+import { buttonStyles, containerStyles, textStyles } from '@/styles';
 import {
   registerForPushNotificationsAsync,
   savePushTokenToFirestore,

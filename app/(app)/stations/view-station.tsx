@@ -7,14 +7,9 @@ import { useRouter } from 'expo-router';
 import { Button, SnackbarMessage, StationEntry } from '@/components';
 import { useAuth } from '@/providers';
 import DatabaseService from '@/services/DatabaseService';
-import {
-  buttonStyles,
-  containerStyles,
-  globalStyles,
-  textStyles,
-} from '@/styles';
+import { buttonStyles, containerStyles, textStyles } from '@/styles';
 
-const view_entry = () => {
+const ViewEntry = () => {
   const { user } = useAuth();
   const router = useRouter();
   const database = DatabaseService.getInstance();
@@ -54,4 +49,4 @@ const view_entry = () => {
     </SafeAreaView>
   );
 };
-export default view_entry;
+export default ViewEntry;

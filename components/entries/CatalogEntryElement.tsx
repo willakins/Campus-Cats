@@ -1,17 +1,12 @@
 import React, { useEffect, useState } from 'react';
-import { Image, Platform, Text, View } from 'react-native';
+import { Image, Text, View } from 'react-native';
 import MapView, { Marker } from 'react-native-maps';
 
 import DatabaseService from '../../services/DatabaseService';
 import { Button } from '../ui/Buttons';
 
 import { getSelectedCatalogEntry } from '@/stores/CatalogEntryStores';
-import {
-  buttonStyles,
-  containerStyles,
-  globalStyles,
-  textStyles,
-} from '@/styles';
+import { buttonStyles, containerStyles, textStyles } from '@/styles';
 import { CatalogEntry, Sighting } from '@/types';
 
 const CatalogEntryElement: React.FC = () => {
@@ -25,7 +20,10 @@ const CatalogEntryElement: React.FC = () => {
   useEffect(() => {
     database.fetchCatImages(entry.id, setProfile, setPhotos);
     database.getSightings(entry.cat.name, setSightings);
-  }, []);
+    // NOTE: database is a singleton class provided by DatabaseService and
+    // will never change; it does not need to be a dependency.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [entry]);
 
   return (
     <View style={containerStyles.card}>

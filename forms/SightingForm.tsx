@@ -5,7 +5,7 @@ import MapView, { Marker } from 'react-native-maps';
 
 import { DateTimeInput, FormCamera } from '@/components';
 import { CatalogImageHandler } from '@/image_handlers/CatalogImageHandler';
-import { buttonStyles, containerStyles, textStyles } from '@/styles';
+import { containerStyles, textStyles } from '@/styles';
 
 interface SightingFormProps {
   formData: any;

@@ -101,6 +101,8 @@ export const sendAnnouncement = functions.https.onCall(async (request) => {
   }
 
   const userDoc = await admin.firestore().collection('users').doc(uid).get();
+  // NOTE: We don't do type checking, so use type coercion here
+  // eslint-disable-next-line eqeqeq
   if (!userDoc.exists || userDoc.data()?.role == 0) {
     throw new functions.https.HttpsError(
       'permission-denied',

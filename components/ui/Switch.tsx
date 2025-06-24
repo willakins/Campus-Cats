@@ -6,12 +6,7 @@ import {
   View,
 } from 'react-native';
 
-import {
-  buttonStyles,
-  containerStyles,
-  globalStyles,
-  textStyles,
-} from '@/styles';
+import { containerStyles, textStyles } from '@/styles';
 
 export type SwitchProps = RNSwitchProps & {
   label: string;

@@ -4,12 +4,7 @@ import { Image, Text, View } from 'react-native';
 import DatabaseService from '../../services/DatabaseService';
 
 import { getSelectedAnnouncement } from '@/stores/announcementStores';
-import {
-  buttonStyles,
-  containerStyles,
-  globalStyles,
-  textStyles,
-} from '@/styles';
+import { containerStyles, textStyles } from '@/styles';
 import { Announcement } from '@/types';
 
 export const AnnouncementEntry: React.FC = () => {
@@ -19,7 +14,10 @@ export const AnnouncementEntry: React.FC = () => {
 
   useEffect(() => {
     database.fetchAnnouncementImages(ann.id, setPhotos);
-  }, []);
+    // NOTE: database is a singleton class provided by DatabaseService and
+    // will never change; it does not need to be a dependency.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ann.id]);
 
   return (
     <View style={containerStyles.card}>

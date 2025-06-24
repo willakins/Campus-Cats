@@ -35,7 +35,8 @@ class Station {
   }: StationProps) {
     this.id = id;
     this.name = name;
-    (this.location = location), (this.lastStocked = lastStocked);
+    this.location = location;
+    this.lastStocked = lastStocked;
     this.stockingFreq = stockingFreq;
     this.knownCats = knownCats;
     this.isStocked = isStocked;

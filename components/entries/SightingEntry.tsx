@@ -6,12 +6,7 @@ import { Checkbox } from 'react-native-paper';
 import DatabaseService from '../../services/DatabaseService';
 
 import { getSelectedSighting } from '@/stores/sightingStores';
-import {
-  buttonStyles,
-  containerStyles,
-  globalStyles,
-  textStyles,
-} from '@/styles';
+import { containerStyles, textStyles } from '@/styles';
 import { Sighting } from '@/types';
 
 const SightingEntry: React.FC = () => {
@@ -22,6 +17,9 @@ const SightingEntry: React.FC = () => {
 
   useEffect(() => {
     database.fetchSightingImages(sighting.id, setProfile, setPhotos);
+    // NOTE: database is a singleton class provided by DatabaseService and
+    // will never change; it does not need to be a dependency.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return (

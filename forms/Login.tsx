@@ -7,14 +7,9 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { FirebaseError } from 'firebase/app';
 import { z } from 'zod';
 
-import { BorderlessButton, Button } from '@/components';
+import { Button } from '@/components';
 import { Errorbar } from '@/components';
-import {
-  buttonStyles,
-  containerStyles,
-  globalStyles,
-  textStyles,
-} from '@/styles';
+import { buttonStyles, containerStyles, textStyles } from '@/styles';
 import { handleFirebaseAuthError } from '@/utils';
 
 // Login requirements
@@ -36,7 +31,6 @@ export const LoginForm: React.FC<LoginProps> = ({
   onSubmit,
   type,
   onSwitchType,
-  forgotPassword = false,
 }) => {
   const [error, setError] = useState<string>('');
 

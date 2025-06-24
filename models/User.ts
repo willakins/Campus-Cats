@@ -9,6 +9,10 @@ const User = z.object({
   role: z.number().int().default(0),
 });
 
+// TODO: Change this pattern, as it may be confusing.
+// NOTE: This is an established pattern, where a schema and a type have the same
+// name. Since types exist only before compile time, this is fine.
+// eslint-disable-next-line @typescript-eslint/no-redeclare
 type User = z.infer<typeof User>;
 
 const path = 'users';

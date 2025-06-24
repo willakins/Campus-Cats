@@ -12,15 +12,10 @@ import {
   getSelectedAnnouncement,
   setSelectedAnnouncement,
 } from '@/stores/announcementStores';
-import {
-  buttonStyles,
-  containerStyles,
-  globalStyles,
-  textStyles,
-} from '@/styles';
+import { buttonStyles, containerStyles, textStyles } from '@/styles';
 import { Announcement } from '@/types';
 
-const edit_ann = () => {
+const EditAnn = () => {
   const router = useRouter();
   const database = DatabaseService.getInstance();
   const { user } = useAuth();
@@ -50,6 +45,9 @@ const edit_ann = () => {
 
   useEffect(() => {
     database.fetchAnnouncementImages(ann.id, setPhotos);
+    // NOTE: database is a singleton class provided by DatabaseService and
+    // will never change; it does not need to be a dependency.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return (
@@ -103,4 +101,4 @@ const edit_ann = () => {
     </SafeAreaView>
   );
 };
-export default edit_ann;
+export default EditAnn;

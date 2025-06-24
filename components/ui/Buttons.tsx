@@ -11,12 +11,7 @@ import {
 import { PhotoHandler } from '../../image_handlers/PhotoHandler';
 import { Ionicons } from '@expo/vector-icons';
 
-import {
-  buttonStyles,
-  containerStyles,
-  globalStyles,
-  textStyles,
-} from '@/styles';
+import { buttonStyles, containerStyles, textStyles } from '@/styles';
 
 type IoniconsName = React.ComponentProps<typeof Ionicons>['name'];
 
@@ -111,9 +106,7 @@ export const ImageButton: React.FC<ButtonProps> = ({
 
 export const CameraButton: React.FC<CameraButtonProps> = ({
   onPhotoSelected,
-  style,
 }) => {
-  const style_: StyleProp<ViewStyle> = [buttonStyles.imageButton, style];
   const photoHandler = new PhotoHandler(onPhotoSelected);
 
   return (

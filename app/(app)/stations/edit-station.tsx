@@ -10,15 +10,10 @@ import { CatalogImageHandler } from '@/image_handlers/CatalogImageHandler';
 import { useAuth } from '@/providers';
 import DatabaseService from '@/services/DatabaseService';
 import { getSelectedStation, setSelectedStation } from '@/stores/stationStores';
-import {
-  buttonStyles,
-  containerStyles,
-  globalStyles,
-  textStyles,
-} from '@/styles';
+import { buttonStyles, containerStyles, textStyles } from '@/styles';
 import { Station } from '@/types';
 
-const edit_station = () => {
+const EditStation = () => {
   const router = useRouter();
   const { user } = useAuth();
   const database = DatabaseService.getInstance();
@@ -48,6 +43,9 @@ const edit_station = () => {
 
   useEffect(() => {
     database.fetchStationImages(station.id, setProfile, setPhotos);
+    // NOTE: database is a singleton class provided by DatabaseService and
+    // will never change; it does not need to be a dependency.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const createObj = () => {
@@ -114,4 +112,4 @@ const edit_station = () => {
     </SafeAreaView>
   );
 };
-export default edit_station;
+export default EditStation;

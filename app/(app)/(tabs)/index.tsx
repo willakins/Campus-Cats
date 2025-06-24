@@ -24,6 +24,9 @@ const HomeScreen = () => {
   useFocusEffect(
     useCallback(() => {
       database.fetchPins(setPins, setMapKey);
+      // NOTE: database is a singleton class provided by DatabaseService and
+      // will never change; it does not need to be a dependency.
+      // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []),
   );
 

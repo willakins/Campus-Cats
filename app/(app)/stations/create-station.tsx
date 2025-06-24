@@ -9,15 +9,10 @@ import { StationForm } from '@/forms';
 import { useAuth } from '@/providers';
 import DatabaseService from '@/services/DatabaseService';
 import { setSelectedStation } from '@/stores/stationStores';
-import {
-  buttonStyles,
-  containerStyles,
-  globalStyles,
-  textStyles,
-} from '@/styles';
+import { buttonStyles, containerStyles, textStyles } from '@/styles';
 import { Station } from '@/types';
 
-const create_station = () => {
+const CreateStation = () => {
   const router = useRouter();
   const database = DatabaseService.getInstance();
   const { user } = useAuth();
@@ -84,4 +79,4 @@ const create_station = () => {
     </SafeAreaView>
   );
 };
-export default create_station;
+export default CreateStation;

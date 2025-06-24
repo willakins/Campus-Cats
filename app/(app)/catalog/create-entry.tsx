@@ -1,4 +1,4 @@
-import { Dispatch, useState } from 'react';
+import { useState } from 'react';
 import { FlatList, SafeAreaView, Text } from 'react-native';
 
 import { Ionicons } from '@expo/vector-icons';
@@ -9,12 +9,7 @@ import { CatalogForm } from '@/forms';
 import { useAuth } from '@/providers/AuthProvider';
 import DatabaseService from '@/services/DatabaseService';
 import { setSelectedCatalogEntry } from '@/stores/CatalogEntryStores';
-import {
-  buttonStyles,
-  containerStyles,
-  globalStyles,
-  textStyles,
-} from '@/styles';
+import { buttonStyles, containerStyles, textStyles } from '@/styles';
 import {
   Cat,
   CatStatus,
@@ -25,7 +20,7 @@ import {
   TNRStatus,
 } from '@/types';
 
-const create_entry = () => {
+const CreateEntry = () => {
   const router = useRouter();
   const { user } = useAuth();
   const database = DatabaseService.getInstance();
@@ -213,4 +208,4 @@ const create_entry = () => {
     </SafeAreaView>
   );
 };
-export default create_entry;
+export default CreateEntry;

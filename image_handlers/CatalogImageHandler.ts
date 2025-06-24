@@ -67,15 +67,15 @@ class CatalogImageHandler extends BaseImageHandler {
         picName,
         this.profile,
       );
-      if (this.type == 'catalog') {
+      if (this.type === 'catalog') {
         this.database.fetchCatImages(this.id, this.setProfile, this.setPhotos);
-      } else if (this.type == 'sightings') {
+      } else if (this.type === 'sightings') {
         this.database.fetchSightingImages(
           this.id,
           this.setProfile,
           this.setPhotos,
         );
-      } else if (this.type == 'stations') {
+      } else if (this.type === 'stations') {
         this.database.fetchStationImages(
           this.id,
           this.setProfile,
@@ -99,21 +99,21 @@ class CatalogImageHandler extends BaseImageHandler {
         {
           text: 'Delete Forever',
           onPress: async () => {
-            if (this.type == 'catalog') {
+            if (this.type === 'catalog') {
               await this.database.deleteCatalogPicture(this.id, picName);
               this.database.fetchCatImages(
                 this.id,
                 this.setProfile,
                 this.setPhotos,
               );
-            } else if (this.type == 'sightings') {
+            } else if (this.type === 'sightings') {
               await this.database.deleteSightingPicture(this.id, picName);
               this.database.fetchSightingImages(
                 this.id,
                 this.setProfile,
                 this.setPhotos,
               );
-            } else if (this.type == 'stations') {
+            } else if (this.type === 'stations') {
               await this.database.deleteStationPicture(this.id, picName);
               this.database.fetchStationImages(
                 this.id,

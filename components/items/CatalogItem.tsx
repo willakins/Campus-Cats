@@ -7,12 +7,7 @@ import { Button } from '../ui/Buttons';
 import { useRouter } from 'expo-router';
 
 import { setSelectedCatalogEntry } from '@/stores/CatalogEntryStores';
-import {
-  buttonStyles,
-  containerStyles,
-  globalStyles,
-  textStyles,
-} from '@/styles';
+import { containerStyles, textStyles } from '@/styles';
 import { CatalogEntry } from '@/types';
 
 export const CatalogItem: React.FC<CatalogEntry> = ({
@@ -28,6 +23,9 @@ export const CatalogItem: React.FC<CatalogEntry> = ({
 
   useEffect(() => {
     database.fetchCatImages(id, setProfile);
+    // NOTE: database is a singleton class provided by DatabaseService and
+    // will never change; it does not need to be a dependency.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const createObj = () => {

@@ -14,13 +14,11 @@ import {
 } from 'firebase/firestore';
 import { getFunctions, httpsCallable } from 'firebase/functions';
 
-import { app, auth, db } from '@/config/firebase';
+import { app, db } from '@/config/firebase';
 import { ContactInfo, User, WhitelistApp } from '@/types';
 
 //Wrapper class for settings database funcitonality
 class SettingsService {
-  public constructor() {}
-
   /**
    * Effect: Pulls contact info data from firestore
    */
@@ -240,7 +238,7 @@ class SettingsService {
         }
 
         // If no existing application, proceed to add the new one
-        const docRef = await addDoc(collection(db, 'whitelist'), {
+        await addDoc(collection(db, 'whitelist'), {
           name: app.name,
           graduationYear: app.graduationYear,
           email: app.email,
@@ -296,7 +294,7 @@ class SettingsService {
   ) {
     try {
       setVisible(true);
-      if (decision == 'accept') {
+      if (decision === 'accept') {
         const password = this.generatePassword(10);
         const functions = getFunctions(app);
 

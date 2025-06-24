@@ -2,8 +2,6 @@ import { useEffect, useState } from 'react';
 import { View } from 'react-native';
 import { Portal, Snackbar } from 'react-native-paper';
 
-import { containerStyles } from '@/styles';
-
 type ErrorbarProps = {
   error: string;
   onDismiss: () => void;

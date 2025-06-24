@@ -25,8 +25,6 @@ import { Station } from '@/types';
 
 //Wrapper class for stations database funcitonality
 class StationsService {
-  public constructor() {}
-
   /**
    * Effect: Pulls a list of stations from firestore
    */
@@ -72,7 +70,7 @@ class StationsService {
       );
 
       // Separate the profile image and other images
-      const profileImage = urls.find((url, index) => {
+      const profileImage = urls.find((_url, index) => {
         // Check if the file name contains 'profile'
         return result.items[index].name.toLowerCase().includes('profile');
       });
@@ -83,7 +81,7 @@ class StationsService {
       }
 
       // Filter out the profile image and set the rest as photos
-      const otherImages = urls.filter((url, index) => {
+      const otherImages = urls.filter((_url, index) => {
         // Check if the file name does NOT contain 'profile'
         return !result.items[index].name.toLowerCase().includes('profile');
       });
@@ -107,7 +105,7 @@ class StationsService {
       setVisible(true);
       const station = getSelectedStation();
       const error_message = this.validateInput(station, photos);
-      if (error_message == '') {
+      if (error_message === '') {
         const stationCollectionRef = collection(db, 'stations');
         const docRef = await addDoc(stationCollectionRef, {
           name: station.name,
@@ -152,7 +150,7 @@ class StationsService {
       setVisible(true);
       const station = getSelectedStation();
       const error_message = this.validateInput(station, [profile]);
-      if (error_message == '') {
+      if (error_message === '') {
         // Reference to the Firestore document using its ID
         const stationDocRef = doc(db, 'stations', station.id);
         await updateDoc(stationDocRef, {
@@ -249,6 +247,7 @@ class StationsService {
         createdBy: station.createdBy,
       });
     } catch (error) {
+      Alert.alert(error as string);
     } finally {
       setVisible(false);
       setTimeout(() => {
@@ -351,7 +350,7 @@ class StationsService {
       isNaN(station.lastStocked.getTime())
     ) {
       return 'Last Stocked date is invalid';
-    } else if (photos.length == 0) {
+    } else if (photos.length === 0) {
       return 'Please select a photo.';
     }
 

@@ -7,12 +7,7 @@ import { useFocusEffect, useRouter } from 'expo-router';
 import { Button, StationItem } from '@/components';
 import { useAuth } from '@/providers';
 import DatabaseService from '@/services/DatabaseService';
-import {
-  buttonStyles,
-  containerStyles,
-  globalStyles,
-  textStyles,
-} from '@/styles';
+import { buttonStyles, containerStyles, textStyles } from '@/styles';
 import { Station } from '@/types';
 
 const Stations = () => {
@@ -20,6 +15,19 @@ const Stations = () => {
   const isAdmin = user.role === 1 || user.role === 2;
   const router = useRouter();
   const database = DatabaseService.getInstance();
+
+  const [stationEntries, setStationEntries] = useState<Station[]>([]);
+  const [filter, setFilter] = useState<'All' | 'Stocked' | 'Unstocked'>('All');
+
+  useFocusEffect(() => {
+    database.fetchStations(setStationEntries);
+  });
+
+  const filteredStations = stationEntries.filter((station) => {
+    if (filter === 'Stocked') return station.isStocked;
+    if (filter === 'Unstocked') return !station.isStocked;
+    return true;
+  });
 
   if (!isAdmin) {
     // Double safety so important info isn't leaked
@@ -34,70 +42,55 @@ const Stations = () => {
         </Button>
       </SafeAreaView>
     );
-  } else {
-    const [stationEntries, setStationEntries] = useState<Station[]>([]);
-    const [filter, setFilter] = useState<'All' | 'Stocked' | 'Unstocked'>(
-      'All',
-    );
-
-    useFocusEffect(() => {
-      database.fetchStations(setStationEntries);
-    });
-
-    const filteredStations = stationEntries.filter((station) => {
-      if (filter === 'Stocked') return station.isStocked;
-      if (filter === 'Unstocked') return !station.isStocked;
-      return true;
-    });
-
-    return (
-      <SafeAreaView style={containerStyles.wrapper}>
-        <View style={containerStyles.buttonGroup}>
-          {['Stocked', 'Unstocked', 'All'].map((label) => (
-            <Button
-              key={label}
-              style={[
-                buttonStyles.rowButton2,
-                filter === label && buttonStyles.activeButton,
-              ]}
-              onPress={() => setFilter(label as typeof filter)}
-              textStyle={[
-                textStyles.buttonText,
-                filter === label && textStyles.activeText,
-              ]}
-            >
-              {label === 'All'
-                ? 'All'
-                : label === 'Stocked'
-                  ? 'Stocked'
-                  : 'Unstocked'}
-            </Button>
-          ))}
-        </View>
-        <Text style={textStyles.pageTitle}>Feeding Stations</Text>
-        <ScrollView contentContainerStyle={containerStyles.scrollView}>
-          {filteredStations.map((station) => (
-            <StationItem
-              key={station.id}
-              id={station.id}
-              name={station.name}
-              location={station.location}
-              lastStocked={station.lastStocked}
-              stockingFreq={station.stockingFreq}
-              knownCats={station.knownCats}
-              isStocked={station.isStocked}
-              createdBy={station.createdBy}
-            />
-          ))}
-        </ScrollView>
-        <Button
-          style={buttonStyles.bigButton}
-          onPress={() => router.push('/stations/create-station')}
-        >
-          <Text style={textStyles.bigButtonText}> Create Station</Text>
-        </Button>
-      </SafeAreaView>
-    );
   }
+
+  return (
+    <SafeAreaView style={containerStyles.wrapper}>
+      <View style={containerStyles.buttonGroup}>
+        {['Stocked', 'Unstocked', 'All'].map((label) => (
+          <Button
+            key={label}
+            style={[
+              buttonStyles.rowButton2,
+              filter === label && buttonStyles.activeButton,
+            ]}
+            onPress={() => setFilter(label as typeof filter)}
+            textStyle={[
+              textStyles.buttonText,
+              filter === label && textStyles.activeText,
+            ]}
+          >
+            {label === 'All'
+              ? 'All'
+              : label === 'Stocked'
+                ? 'Stocked'
+                : 'Unstocked'}
+          </Button>
+        ))}
+      </View>
+      <Text style={textStyles.pageTitle}>Feeding Stations</Text>
+      <ScrollView contentContainerStyle={containerStyles.scrollView}>
+        {filteredStations.map((station) => (
+          <StationItem
+            key={station.id}
+            id={station.id}
+            name={station.name}
+            location={station.location}
+            lastStocked={station.lastStocked}
+            stockingFreq={station.stockingFreq}
+            knownCats={station.knownCats}
+            isStocked={station.isStocked}
+            createdBy={station.createdBy}
+          />
+        ))}
+      </ScrollView>
+      <Button
+        style={buttonStyles.bigButton}
+        onPress={() => router.push('/stations/create-station')}
+      >
+        <Text style={textStyles.bigButtonText}> Create Station</Text>
+      </Button>
+    </SafeAreaView>
+  );
 };
 export default Stations;

@@ -8,7 +8,6 @@ import {
   collection,
   deleteDoc,
   doc,
-  getDoc,
   getDocs,
   query,
   serverTimestamp,
@@ -30,8 +29,6 @@ import { Sighting } from '@/types';
 
 //Wrapper class for sightings database funcitonality
 class SightingsService {
-  public constructor() {}
-
   /**
    * Effect: Pulls cat sightings from firestore and stores them in Marker friendly format
    */
@@ -225,7 +222,7 @@ class SightingsService {
       router.push('/(app)/(tabs)');
       alert('Cat sighting deleted successfully!');
     } catch (error) {
-      alert('Failed to delete sighting.');
+      alert('Failed to delete sighting.' + error);
     } finally {
       setVisible(false);
     }
@@ -245,10 +242,10 @@ class SightingsService {
       setVisible(true);
       const sighting = getSelectedSighting();
       const error_message = this.validateInput(sighting, [profile]);
-      if (error_message == '') {
+      if (error_message === '') {
         const stamp = Timestamp.fromDate(new Date(sighting.date));
         const sightingRef = doc(db, 'cat-sightings', sighting.id);
-        const docRef = await updateDoc(sightingRef, {
+        await updateDoc(sightingRef, {
           spotted_time: stamp,
           timestamp: serverTimestamp(),
           fed: sighting.fed,
@@ -355,7 +352,7 @@ class SightingsService {
    * Private 2
    */
   private validateInput(sighting: Sighting, photos: string[]) {
-    if (sighting.name == '') {
+    if (sighting.name === '') {
       return 'Please enter a name for the cat.';
     } else if (
       isNaN(sighting.location.longitude) ||
@@ -366,7 +363,7 @@ class SightingsService {
       return 'Please Select a location on the map';
     } else if (!sighting.timeofDay) {
       return 'Please select a time of day for the sighting.';
-    } else if (photos.length == 0) {
+    } else if (photos.length === 0) {
       return 'Please select a photo.';
     }
     return '';

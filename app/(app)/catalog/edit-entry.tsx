@@ -13,12 +13,7 @@ import {
   getSelectedCatalogEntry,
   setSelectedCatalogEntry,
 } from '@/stores/CatalogEntryStores';
-import {
-  buttonStyles,
-  containerStyles,
-  globalStyles,
-  textStyles,
-} from '@/styles';
+import { buttonStyles, containerStyles, textStyles } from '@/styles';
 import { PickerConfig } from '@/types';
 import {
   Cat,
@@ -29,7 +24,7 @@ import {
   TNRStatus,
 } from '@/types/CatalogEntry';
 
-const edit_entry = () => {
+const EditEntry = () => {
   const router = useRouter();
   const { user } = useAuth();
   const database = DatabaseService.getInstance();
@@ -195,6 +190,9 @@ const edit_entry = () => {
 
   useEffect(() => {
     database.fetchCatImages(entry.id, setProfile, setPhotos);
+    // NOTE: database is a singleton class provided by DatabaseService and
+    // will never change; it does not need to be a dependency.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return (
@@ -255,4 +253,4 @@ const edit_entry = () => {
     </SafeAreaView>
   );
 };
-export default edit_entry;
+export default EditEntry;

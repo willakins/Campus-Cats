@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { SafeAreaView, ScrollView, Text } from 'react-native';
 
 import { useFocusEffect, useRouter } from 'expo-router';
@@ -6,12 +6,7 @@ import { useFocusEffect, useRouter } from 'expo-router';
 import { Button, CatalogItem } from '@/components';
 import { useAuth } from '@/providers';
 import DatabaseService from '@/services/DatabaseService';
-import {
-  buttonStyles,
-  containerStyles,
-  globalStyles,
-  textStyles,
-} from '@/styles';
+import { buttonStyles, containerStyles, textStyles } from '@/styles';
 import { CatalogEntry } from '@/types';
 
 const Catalog = () => {

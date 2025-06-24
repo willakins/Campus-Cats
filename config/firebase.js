@@ -1,9 +1,8 @@
 import ReactNativeAsyncStorage from '@react-native-async-storage/async-storage';
 
 import { getReactNativePersistence } from '@firebase/auth/dist/rn/index.js';
-import { getAnalytics } from 'firebase/analytics';
 import { deleteApp, getApps, initializeApp } from 'firebase/app';
-import { getAuth, initializeAuth } from 'firebase/auth';
+import { initializeAuth } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
 import { getStorage } from 'firebase/storage';
 

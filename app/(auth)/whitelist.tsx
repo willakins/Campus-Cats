@@ -6,12 +6,7 @@ import { useRouter } from 'expo-router';
 
 import { Button, SnackbarMessage, TextInput } from '@/components';
 import DatabaseService from '@/services/DatabaseService';
-import {
-  buttonStyles,
-  containerStyles,
-  globalStyles,
-  textStyles,
-} from '@/styles';
+import { buttonStyles, containerStyles, textStyles } from '@/styles';
 import { WhitelistApp } from '@/types';
 
 const Whitelist = () => {

@@ -5,14 +5,9 @@ import { useRouter } from 'expo-router';
 
 import { AnnouncementEntry, Button } from '@/components';
 import { useAuth } from '@/providers';
-import {
-  buttonStyles,
-  containerStyles,
-  globalStyles,
-  textStyles,
-} from '@/styles';
+import { buttonStyles, containerStyles, textStyles } from '@/styles';
 
-const view_entry = () => {
+const ViewAnn = () => {
   const router = useRouter();
   const { user } = useAuth();
   const isAdmin = user.role === 1 || user.role === 2;
@@ -44,4 +39,4 @@ const view_entry = () => {
     </SafeAreaView>
   );
 };
-export default view_entry;
+export default ViewAnn;

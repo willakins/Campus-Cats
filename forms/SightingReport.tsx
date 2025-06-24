@@ -99,7 +99,7 @@ export const SightingReportForm: React.FC<ReportFormProps> = ({
 
   const { handleSubmit, control } = useForm<ReportDataType>({
     resolver: zodResolver(reportSchema),
-    defaultValues: !!defaultValues ? sightingConverter(defaultValues) : {},
+    defaultValues: defaultValues ? sightingConverter(defaultValues) : {},
   });
 
   const submitHandler = async (data: ReportDataType) => {

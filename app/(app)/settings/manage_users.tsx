@@ -7,12 +7,7 @@ import { useRouter } from 'expo-router';
 import { Button, UserItem } from '@/components';
 import { useAuth } from '@/providers';
 import DatabaseService from '@/services/DatabaseService';
-import {
-  buttonStyles,
-  containerStyles,
-  globalStyles,
-  textStyles,
-} from '@/styles';
+import { buttonStyles, containerStyles, textStyles } from '@/styles';
 import { User } from '@/types';
 
 const ManageUsers = () => {
@@ -25,6 +20,9 @@ const ManageUsers = () => {
     if (user?.id) {
       database.fetchUsers(setUsers, user.id);
     }
+    // NOTE: database is a singleton class provided by DatabaseService and
+    // will never change; it does not need to be a dependency.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.id]);
 
   return (

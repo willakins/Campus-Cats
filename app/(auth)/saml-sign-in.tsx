@@ -9,7 +9,7 @@ import { SAMLAuthProvider, getAuth, signInWithCredential } from 'firebase/auth';
 
 import { Button, SnackbarMessage } from '@/components';
 import { firebaseConfig } from '@/config/firebase';
-import { fetchUser, mutateUser } from '@/models';
+import { fetchUser } from '@/models';
 import { buttonStyles, containerStyles, textStyles } from '@/styles';
 import {
   registerForPushNotificationsAsync,
@@ -26,6 +26,8 @@ const SAMLRedirect = () => {
 
   useEffect(() => {
     _openAuthSessionAsync();
+    // NOTE: The function is based on the env, and should never change
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const _openAuthSessionAsync = async () => {

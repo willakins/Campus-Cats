@@ -23,7 +23,10 @@ export const StationItem: React.FC<Station> = ({
   const router = useRouter();
   const database = DatabaseService.getInstance();
   const [profile, setProfile] = useState<string>('');
-  const [photos, setPhotos] = useState<string[]>([]);
+  // TODO: Remove this.
+  // Filler code to work with fetchStationImages, since a setState is needed but
+  // no state is ever used here.
+  const setPhotos = (_: any) => {};
 
   const createObj = () => {
     const newStation = new Station({

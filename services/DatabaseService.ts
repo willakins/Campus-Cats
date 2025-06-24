@@ -312,21 +312,21 @@ class DatabaseService {
     picName: string,
     profilePicUrl?: string,
   ) {
-    if (type == 'catalog') {
+    if (type === 'catalog') {
       await DatabaseService.catalogService.swapProfilePicture(
         id,
         picUrl,
         picName,
         profilePicUrl,
       );
-    } else if (type == 'sightings') {
+    } else if (type === 'sightings') {
       await DatabaseService.sightingsService.swapProfilePicture(
         id,
         picUrl,
         picName,
         profilePicUrl,
       );
-    } else if (type == 'stations') {
+    } else if (type === 'stations') {
       await DatabaseService.stationsService.swapProfilePicture(
         id,
         picUrl,
@@ -669,6 +669,8 @@ class DatabaseService {
       try {
         // Update the field in the user's document
         const selfData = await getDoc(selfDocRef);
+        // NOTE: We don't do type checking, so use type coercion here
+        // eslint-disable-next-line eqeqeq
         return selfData.data()?.role == 2;
       } catch (error) {
         Alert.alert('Error getting field: ' + error);

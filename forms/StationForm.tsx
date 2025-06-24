@@ -1,25 +1,18 @@
-import React, { Dispatch } from 'react';
-import { Image, Switch, Text, TextInput, View } from 'react-native';
-import DropdownPicker from 'react-native-dropdown-picker';
+import React, { Dispatch, SetStateAction } from 'react';
+import { Image, Text, TextInput, View } from 'react-native';
 import MapView, { Marker } from 'react-native-maps';
 
-import {
-  Button,
-  CameraButton,
-  DateTimeInput,
-  FormCamera,
-  ImageButton,
-} from '@/components';
+import { DateTimeInput, FormCamera } from '@/components';
 import { CatalogImageHandler } from '@/image_handlers/CatalogImageHandler';
-import { buttonStyles, containerStyles, textStyles } from '@/styles';
+import { containerStyles, textStyles } from '@/styles';
 
 interface StationFormProps {
   formData: any;
-  setFormData: React.Dispatch<React.SetStateAction<any>>;
+  setFormData: Dispatch<SetStateAction<any>>;
   photos: string[];
   profile?: string;
-  setPhotos: React.Dispatch<React.SetStateAction<string[]>>;
-  setPicsChanged?: Dispatch<React.SetStateAction<boolean>>;
+  setPhotos: Dispatch<SetStateAction<string[]>>;
+  setPicsChanged?: Dispatch<SetStateAction<boolean>>;
   imageHandler?: CatalogImageHandler;
   isCreate: boolean;
 }

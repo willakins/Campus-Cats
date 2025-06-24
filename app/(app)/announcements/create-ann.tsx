@@ -9,15 +9,10 @@ import { AnnouncementForm } from '@/forms/AnnouncementForm';
 import { useAuth } from '@/providers/AuthProvider';
 import DatabaseService from '@/services/DatabaseService';
 import { setSelectedAnnouncement } from '@/stores/announcementStores';
-import {
-  buttonStyles,
-  containerStyles,
-  globalStyles,
-  textStyles,
-} from '@/styles';
+import { buttonStyles, containerStyles, textStyles } from '@/styles';
 import { Announcement } from '@/types';
 
-const create_ann = () => {
+const CreateAnn = () => {
   const router = useRouter();
   const database = DatabaseService.getInstance();
   const { user } = useAuth();
@@ -76,4 +71,4 @@ const create_ann = () => {
     </SafeAreaView>
   );
 };
-export default create_ann;
+export default CreateAnn;

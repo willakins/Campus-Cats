@@ -8,14 +8,11 @@ import {
   deleteDoc,
   doc,
   getDocs,
-  query,
   updateDoc,
-  where,
 } from 'firebase/firestore';
 import {
   deleteObject,
   getDownloadURL,
-  getStorage,
   listAll,
   ref,
   uploadBytes,
@@ -28,8 +25,6 @@ import { CatalogEntry } from '@/types';
 
 //Wrapper class for catalog database funcitonality
 class CatalogService {
-  public constructor() {}
-
   // Overload signatures
   public async fetchCatImages(
     id: string,
@@ -120,7 +115,7 @@ class CatalogService {
     try {
       const entry = getSelectedCatalogEntry();
       const error_message = this.validateInput(entry, [profile]);
-      if (error_message == '') {
+      if (error_message === '') {
         setVisible(true);
         // Reference to the Firestore document using its ID
         const catDocRef = doc(db, 'catalog', entry.id);
@@ -179,7 +174,7 @@ class CatalogService {
     try {
       const entry = getSelectedCatalogEntry();
       const error_message = this.validateInput(entry, photos);
-      if (error_message == '') {
+      if (error_message === '') {
         setVisible(true);
         const docRef = await addDoc(collection(db, 'catalog'), {
           cat: entry.cat,
@@ -376,7 +371,7 @@ class CatalogService {
       }
     }
 
-    if (photos.length == 0) {
+    if (photos.length === 0) {
       return 'Please upload a profile photo of the cat.';
     }
 

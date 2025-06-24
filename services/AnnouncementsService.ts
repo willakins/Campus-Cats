@@ -7,7 +7,6 @@ import {
   collection,
   deleteDoc,
   doc,
-  getDoc,
   getDocs,
   orderBy,
   query,
@@ -20,19 +19,15 @@ import {
   getDownloadURL,
   listAll,
   ref,
-  uploadBytes,
   uploadBytesResumable,
 } from 'firebase/storage';
 
 import { auth, db, storage } from '@/config/firebase';
-import { useAuth } from '@/providers/AuthProvider';
 import { getSelectedAnnouncement } from '@/stores/announcementStores';
 import { Announcement } from '@/types';
 
 //Wrapper class for announcements database funcitonality
 class AnnouncementsService {
-  public constructor() {}
-
   /**
    * Effect: pulls announcement data from firestore
    */
@@ -71,7 +66,7 @@ class AnnouncementsService {
     try {
       const ann = getSelectedAnnouncement();
       const error_message = this.validate_input(ann);
-      if (error_message == '') {
+      if (error_message === '') {
         setVisible(true);
         const functions = getFunctions();
         const sendAnnouncement = httpsCallable(functions, 'sendAnnouncement');
@@ -81,7 +76,7 @@ class AnnouncementsService {
         if (!currentUser) {
           throw new Error('User not authenticated');
         }
-        const token = await currentUser.getIdToken();
+        await currentUser.getIdToken();
 
         try {
           await sendAnnouncement({
@@ -129,7 +124,7 @@ class AnnouncementsService {
       setVisible(true);
       const ann = getSelectedAnnouncement();
       const error_message = this.validate_input(ann);
-      if (error_message == '') {
+      if (error_message === '') {
         const announcementRef = doc(db, 'announcements', ann.id);
         await updateDoc(announcementRef, {
           //Update firestore

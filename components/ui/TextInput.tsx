@@ -5,12 +5,7 @@ import {
   View,
 } from 'react-native';
 
-import {
-  buttonStyles,
-  containerStyles,
-  globalStyles,
-  textStyles,
-} from '@/styles';
+import { textStyles } from '@/styles';
 
 export type TextInputProps = React.PropsWithoutRef<RNTextInputProps> & {
   label?: string;
