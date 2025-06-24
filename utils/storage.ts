@@ -35,5 +35,5 @@ export const uploadFromURI = async (
 // Get the download URL of a storage path
 export const getStorageURL = async (path: string) => {
   const storageRef = ref(storage, path);
-  return await getDownloadURL(storageRef);
+  return getDownloadURL(storageRef);
 };

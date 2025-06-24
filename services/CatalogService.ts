@@ -21,7 +21,7 @@ import {
 
 import { db, storage } from '@/config/firebase';
 import { getSelectedCatalogEntry } from '@/stores/CatalogEntryStores';
-import { CatalogEntry } from '@/types';
+import { Cat, CatalogEntry } from '@/types';
 
 //Wrapper class for catalog database funcitonality
 class CatalogService {
@@ -29,12 +29,7 @@ class CatalogService {
   public async fetchCatImages(
     id: string,
     setProfile: Dispatch<SetStateAction<string>>,
-  ): Promise<void>;
-
-  public async fetchCatImages(
-    id: string,
-    setProfile: Dispatch<SetStateAction<string>>,
-    setImageUrls: Dispatch<SetStateAction<string[]>>,
+    setImageUrls?: Dispatch<SetStateAction<string[]>>,
   ): Promise<void>;
 
   /**
@@ -89,12 +84,12 @@ class CatalogService {
   ) {
     try {
       const querySnapshot = await getDocs(collection(db, 'catalog'));
-      const entries: CatalogEntry[] = querySnapshot.docs.map((doc) => ({
-        id: doc.id,
-        cat: doc.data().cat,
-        credits: doc.data().credits,
-        createdAt: doc.data().createdAt.toDate(),
-        createdBy: doc.data().createdBy,
+      const entries: CatalogEntry[] = querySnapshot.docs.map((document) => ({
+        id: document.id,
+        cat: document.data().cat,
+        credits: document.data().credits,
+        createdAt: document.data().createdAt.toDate(),
+        createdBy: document.data().createdBy,
       }));
       setCatalogEntries(entries);
     } catch (error) {
@@ -224,7 +219,7 @@ class CatalogService {
     const selectedPicRef = ref(storage, `catalog/${id}/${picName}`);
 
     // Fetch image blobs
-    const oldProfileBlob = await (await fetch(profilePicUrl!)).blob();
+    const oldProfileBlob = await (await fetch(profilePicUrl ?? '')).blob();
     const selectedPicBlob = await (await fetch(picUrl)).blob();
 
     // Swap images:
@@ -272,7 +267,7 @@ class CatalogService {
         {
           text: 'Delete Forever',
           onPress: async () =>
-            await this.confirmDeleteCatalogEntry(id, setVisible, router),
+            this.confirmDeleteCatalogEntry(id, setVisible, router),
         },
         {
           text: 'Cancel',
@@ -316,11 +311,11 @@ class CatalogService {
     existingFiles: string[],
     originalName: string,
   ) {
-    let fileNameBase = originalName.replace(/\.[^/.]+$/, ''); // Remove extension
+    const fileNameBase = originalName.replace(/\.[^/.]+$/, ''); // Remove extension
     let newFileName: string;
 
     do {
-      let randomInt = Math.floor(Math.random() * 10000); // Generate random number (0-9999)
+      const randomInt = Math.floor(Math.random() * 10000); // Generate random number (0-9999)
       newFileName = `${fileNameBase}_${randomInt}.jpg`;
     } while (existingFiles.includes(newFileName)); // Ensure it's unique
 
@@ -351,7 +346,7 @@ class CatalogService {
    * Private 2
    */
   private validateInput(entry: CatalogEntry, photos: string[]) {
-    const requiredCatFields = [
+    const requiredCatFields: { key: keyof Cat; label: string }[] = [
       { key: 'name', label: 'Name' },
       { key: 'descShort', label: 'Short Description' },
       { key: 'descLong', label: 'Long Description' },
@@ -365,7 +360,7 @@ class CatalogService {
     }
 
     for (const field of requiredCatFields) {
-      const value = (entry.cat as any)[field.key];
+      const value = entry.cat[field.key];
       if (!value || !value.trim()) {
         return `${field.label} field must not be empty`;
       }

@@ -41,13 +41,13 @@ class AnnouncementsService {
       );
 
       const querySnapshot = await getDocs(annsQuery);
-      const anns: Announcement[] = querySnapshot.docs.map((doc) => ({
-        id: doc.id,
-        title: doc.data().title,
-        info: doc.data().info,
-        createdAt: doc.data().createdAt.toDate(),
-        createdBy: doc.data().createdBy,
-        authorAlias: doc.data().authorAlias,
+      const anns: Announcement[] = querySnapshot.docs.map((document) => ({
+        id: document.id,
+        title: document.data().title,
+        info: document.data().info,
+        createdAt: document.data().createdAt.toDate(),
+        createdBy: document.data().createdBy,
+        authorAlias: document.data().authorAlias,
       }));
       setAnns(anns);
     } catch (error) {

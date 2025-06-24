@@ -13,7 +13,6 @@ import {
   doc,
   getDoc,
   getDocs,
-  getFirestore,
   query,
   updateDoc,
   where,
@@ -95,7 +94,6 @@ class DatabaseService {
     ];
 
     if (userId) {
-      const db = getFirestore();
       const userDocRef = doc(db, 'users', userId); // Reference to the user's document
 
       try {
@@ -216,12 +214,7 @@ class DatabaseService {
   public async fetchCatImages(
     id: string,
     setProfile: Dispatch<SetStateAction<string>>,
-  ): Promise<void>;
-
-  public async fetchCatImages(
-    id: string,
-    setProfile: Dispatch<SetStateAction<string>>,
-    setImageUrls: Dispatch<SetStateAction<string[]>>,
+    setImageUrls?: Dispatch<SetStateAction<string[]>>,
   ): Promise<void>;
 
   /**
@@ -663,7 +656,6 @@ class DatabaseService {
    */
   private async isSuperAdmin(selfId: string) {
     if (selfId) {
-      const db = getFirestore();
       const selfDocRef = doc(db, 'users', selfId); // Reference to the user's document
 
       try {

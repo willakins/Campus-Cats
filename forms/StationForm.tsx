@@ -6,9 +6,15 @@ import { DateTimeInput, FormCamera } from '@/components';
 import { CatalogImageHandler } from '@/image_handlers/CatalogImageHandler';
 import { containerStyles, textStyles } from '@/styles';
 
+// TODO: Replace this with proper type checking via react-hook-forms
+/* eslint-disable @typescript-eslint/no-explicit-any */
+type StationFormDataType = any;
+type StationFormInputType = any;
+/* eslint-enable @typescript-eslint/no-explicit-any */
+
 interface StationFormProps {
-  formData: any;
-  setFormData: Dispatch<SetStateAction<any>>;
+  formData: StationFormDataType;
+  setFormData: Dispatch<SetStateAction<StationFormDataType>>;
   photos: string[];
   profile?: string;
   setPhotos: Dispatch<SetStateAction<string[]>>;
@@ -27,8 +33,8 @@ const StationForm: React.FC<StationFormProps> = ({
   imageHandler,
   isCreate,
 }) => {
-  const handleChange = (field: string, val: any) => {
-    setFormData((prev: any) => ({ ...prev, [field]: val }));
+  const handleChange = (field: string, val: StationFormInputType) => {
+    setFormData((prev: StationFormDataType) => ({ ...prev, [field]: val }));
   };
 
   return (

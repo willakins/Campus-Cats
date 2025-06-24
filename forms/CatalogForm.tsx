@@ -7,9 +7,15 @@ import { CatalogImageHandler } from '@/image_handlers/CatalogImageHandler';
 import { containerStyles, textStyles } from '@/styles';
 import { CatStatus, Fur, PickerConfig, Sex, TNRStatus } from '@/types';
 
+// TODO: Replace this with proper type checking via react-hook-forms
+/* eslint-disable @typescript-eslint/no-explicit-any */
+type CatalogFormDataType = any;
+type CatalogFormInputType = any;
+/* eslint-enable @typescript-eslint/no-explicit-any */
+
 interface CatalogFormProps {
-  formData: any;
-  setFormData: React.Dispatch<React.SetStateAction<any>>;
+  formData: CatalogFormDataType;
+  setFormData: React.Dispatch<React.SetStateAction<CatalogFormDataType>>;
   pickers: {
     statusPicker: PickerConfig<CatStatus>;
     tnrPicker: PickerConfig<TNRStatus>;
@@ -35,8 +41,8 @@ const CatalogForm: React.FC<CatalogFormProps> = ({
   imageHandler,
   isCreate,
 }) => {
-  const handleChange = (field: string, val: any) => {
-    setFormData((prev: any) => ({ ...prev, [field]: val }));
+  const handleChange = (field: string, val: CatalogFormInputType) => {
+    setFormData((prev: CatalogFormDataType) => ({ ...prev, [field]: val }));
   };
 
   return (

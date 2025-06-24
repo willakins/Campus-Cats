@@ -33,18 +33,18 @@ class StationsService {
   ) {
     try {
       const querySnapshot = await getDocs(collection(db, 'stations'));
-      const stations: Station[] = querySnapshot.docs.map((doc) => ({
-        id: doc.id,
-        name: doc.data().name,
-        location: doc.data().location,
-        lastStocked: doc.data().lastStocked.toDate(),
-        stockingFreq: doc.data().stockingFreq,
-        knownCats: doc.data().knownCats,
+      const stations: Station[] = querySnapshot.docs.map((document) => ({
+        id: document.id,
+        name: document.data().name,
+        location: document.data().location,
+        lastStocked: document.data().lastStocked.toDate(),
+        stockingFreq: document.data().stockingFreq,
+        knownCats: document.data().knownCats,
         isStocked: Station.calculateStocked(
-          doc.data().lastStocked.toDate(),
-          doc.data().stockingFreq,
+          document.data().lastStocked.toDate(),
+          document.data().stockingFreq,
         ),
-        createdBy: doc.data().createdBy,
+        createdBy: document.data().createdBy,
       }));
       setStationEntries(stations);
     } catch (error) {
@@ -214,7 +214,7 @@ class StationsService {
         {
           text: 'Delete Forever',
           onPress: async () =>
-            await this.confirmDeleteStationEntry(setVisible, router),
+            this.confirmDeleteStationEntry(setVisible, router),
         },
         {
           text: 'Cancel',
@@ -291,7 +291,7 @@ class StationsService {
     const selectedPicRef = ref(storage, `stations/${id}/${picName}`);
 
     // Fetch image blobs
-    const oldProfileBlob = await (await fetch(profilePicUrl!)).blob();
+    const oldProfileBlob = await (await fetch(profilePicUrl ?? '')).blob();
     const selectedPicBlob = await (await fetch(picUrl)).blob();
 
     // Swap images:
@@ -441,11 +441,11 @@ class StationsService {
     existingFiles: string[],
     originalName: string,
   ) {
-    let fileNameBase = originalName.replace(/\.[^/.]+$/, ''); // Remove extension
+    const fileNameBase = originalName.replace(/\.[^/.]+$/, ''); // Remove extension
     let newFileName: string;
 
     do {
-      let randomInt = Math.floor(Math.random() * 1000000000); // Generate random number (0-9999)
+      const randomInt = Math.floor(Math.random() * 1000000000); // Generate random number (0-9999)
       newFileName = `${fileNameBase}_${randomInt}.jpg`;
     } while (existingFiles.includes(newFileName)); // Ensure it's unique
 

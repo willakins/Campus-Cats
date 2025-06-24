@@ -26,7 +26,7 @@ export const StationItem: React.FC<Station> = ({
   // TODO: Remove this.
   // Filler code to work with fetchStationImages, since a setState is needed but
   // no state is ever used here.
-  const setPhotos = (_: any) => {};
+  const setPhotos = (_: string[]) => {};
 
   const createObj = () => {
     const newStation = new Station({

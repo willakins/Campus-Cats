@@ -4,9 +4,15 @@ import { Image, Text, TextInput, View } from 'react-native';
 import { Button, CameraButton } from '@/components';
 import { buttonStyles, containerStyles, textStyles } from '@/styles';
 
+// TODO: Replace this with proper type checking via react-hook-forms
+/* eslint-disable @typescript-eslint/no-explicit-any */
+type AnnouncementFormDataType = any;
+type AnnouncementFormInputType = any;
+/* eslint-enable @typescript-eslint/no-explicit-any */
+
 interface AnnouncementFormProps {
-  formData: any;
-  setFormData: React.Dispatch<React.SetStateAction<any>>;
+  formData: AnnouncementFormDataType;
+  setFormData: React.Dispatch<React.SetStateAction<AnnouncementFormDataType>>;
   photos: string[];
   setPhotos: React.Dispatch<React.SetStateAction<string[]>>;
   setPicsChanged?: Dispatch<React.SetStateAction<boolean>>;
@@ -19,8 +25,11 @@ const AnnouncementForm: React.FC<AnnouncementFormProps> = ({
   setPhotos,
   setPicsChanged,
 }) => {
-  const handleChange = (field: string, val: any) => {
-    setFormData((prev: any) => ({ ...prev, [field]: val }));
+  const handleChange = (field: string, val: AnnouncementFormInputType) => {
+    setFormData((prev: AnnouncementFormDataType) => ({
+      ...prev,
+      [field]: val,
+    }));
   };
 
   return (

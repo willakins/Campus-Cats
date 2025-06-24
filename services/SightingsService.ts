@@ -40,16 +40,16 @@ class SightingsService {
       const querySnapshot = await getDocs(collection(db, 'cat-sightings'));
 
       // First gather all raw sightings
-      const pins: Sighting[] = querySnapshot.docs.map((doc) => ({
-        id: doc.id,
-        date: doc.data().spotted_time.toDate(),
-        fed: doc.data().fed,
-        health: doc.data().health,
-        info: doc.data().info,
-        location: doc.data().location,
-        name: doc.data().name,
-        createdBy: doc.data().createdBy,
-        timeofDay: doc.data().timeofDay,
+      const pins: Sighting[] = querySnapshot.docs.map((document) => ({
+        id: document.id,
+        date: document.data().spotted_time.toDate(),
+        fed: document.data().fed,
+        health: document.data().health,
+        info: document.data().info,
+        location: document.data().location,
+        name: document.data().name,
+        createdBy: document.data().createdBy,
+        timeofDay: document.data().timeofDay,
       }));
 
       setPins(pins);
@@ -114,16 +114,16 @@ class SightingsService {
       const q = query(sightingsRef, where('name', '==', name));
       const querySnapshot = await getDocs(q);
 
-      const sightings: Sighting[] = querySnapshot.docs.map((doc) => ({
-        id: doc.id,
-        date: doc.data().spotted_time.toDate(),
-        fed: doc.data().fed,
-        health: doc.data().health,
-        info: doc.data().info,
-        location: doc.data().location,
-        name: doc.data().name,
-        createdBy: doc.data().createdBy,
-        timeofDay: doc.data().timeofDay,
+      const sightings: Sighting[] = querySnapshot.docs.map((document) => ({
+        id: document.id,
+        date: document.data().spotted_time.toDate(),
+        fed: document.data().fed,
+        health: document.data().health,
+        info: document.data().info,
+        location: document.data().location,
+        name: document.data().name,
+        createdBy: document.data().createdBy,
+        timeofDay: document.data().timeofDay,
       }));
 
       setSightings(sightings);
@@ -196,7 +196,7 @@ class SightingsService {
         {
           text: 'Delete Forever',
           onPress: async () =>
-            await this.confirmDeleteSighting(id, setVisible, router),
+            this.confirmDeleteSighting(id, setVisible, router),
         },
         {
           text: 'Cancel',
@@ -315,7 +315,7 @@ class SightingsService {
     const selectedPicRef = ref(storage, `cat-sightings/${id}/${picName}`);
 
     // Fetch image blobs
-    const oldProfileBlob = await (await fetch(profilePicUrl!)).blob();
+    const oldProfileBlob = await (await fetch(profilePicUrl ?? '')).blob();
     const selectedPicBlob = await (await fetch(picUrl)).blob();
 
     // Swap images:
@@ -434,11 +434,11 @@ class SightingsService {
     existingFiles: string[],
     originalName: string,
   ) {
-    let fileNameBase = originalName.replace(/\.[^/.]+$/, ''); // Remove extension
+    const fileNameBase = originalName.replace(/\.[^/.]+$/, ''); // Remove extension
     let newFileName: string;
 
     do {
-      let randomInt = Math.floor(Math.random() * 1000000000); // Generate random number (0-9999)
+      const randomInt = Math.floor(Math.random() * 1000000000); // Generate random number (0-9999)
       newFileName = `${fileNameBase}_${randomInt}.jpg`;
     } while (existingFiles.includes(newFileName)); // Ensure it's unique
 

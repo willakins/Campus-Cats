@@ -112,7 +112,7 @@ export const SightingReportForm: React.FC<ReportFormProps> = ({
     }
   };
 
-  const onInvalid = (errors: any) => {
+  const onInvalid = (errors: unknown) => {
     console.log('Form submission errors:', errors);
     setError('There are errors in your form. Please check and try again.');
   };

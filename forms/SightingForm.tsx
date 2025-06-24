@@ -7,15 +7,24 @@ import { DateTimeInput, FormCamera } from '@/components';
 import { CatalogImageHandler } from '@/image_handlers/CatalogImageHandler';
 import { containerStyles, textStyles } from '@/styles';
 
+// TODO: Replace this with proper type checking via react-hook-forms
+/* eslint-disable @typescript-eslint/no-explicit-any */
+type SightingFormDataType = any;
+type SightingFormInputType = any;
+type SightingFormTimeOfDayPickerOptionsType = any;
+/* eslint-enable @typescript-eslint/no-explicit-any */
+
 interface SightingFormProps {
-  formData: any;
-  setFormData: React.Dispatch<React.SetStateAction<any>>;
+  formData: SightingFormDataType;
+  setFormData: React.Dispatch<React.SetStateAction<SightingFormDataType>>;
   value: string;
-  setValue: Dispatch<React.SetStateAction<any>>;
+  setValue: Dispatch<React.SetStateAction<string>>;
   open: boolean;
   setOpen: Dispatch<React.SetStateAction<boolean>>;
-  items: any[];
-  setItems: Dispatch<React.SetStateAction<any>>;
+  items: SightingFormTimeOfDayPickerOptionsType[];
+  setItems: Dispatch<
+    React.SetStateAction<SightingFormTimeOfDayPickerOptionsType>
+  >;
   photos: string[];
   profile?: string;
   setPhotos: React.Dispatch<React.SetStateAction<string[]>>;
@@ -40,8 +49,8 @@ const SightingForm: React.FC<SightingFormProps> = ({
   imageHandler,
   isCreate,
 }) => {
-  const handleChange = (field: string, val: any) => {
-    setFormData((prev: any) => ({ ...prev, [field]: val }));
+  const handleChange = (field: string, val: SightingFormInputType) => {
+    setFormData((prev: SightingFormDataType) => ({ ...prev, [field]: val }));
   };
 
   return (

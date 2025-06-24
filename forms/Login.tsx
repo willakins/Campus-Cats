@@ -21,9 +21,9 @@ const loginSchema = z.object({
 type LoginDataType = z.infer<typeof loginSchema>;
 
 type LoginProps = {
-  onSubmit: (email: string, pass: string) => any;
+  onSubmit: (email: string, pass: string) => Promise<void>;
   type: 'login' | 'createAccount';
-  onSwitchType?: (...args: any[]) => any;
+  onSwitchType?: () => void;
   forgotPassword?: boolean;
 };
 

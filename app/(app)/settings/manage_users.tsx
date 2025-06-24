@@ -37,8 +37,8 @@ const ManageUsers = () => {
       <Text style={textStyles.pageTitle}>Manage Users</Text>
 
       <ScrollView contentContainerStyle={containerStyles.scrollView}>
-        {users.map((user) => (
-          <UserItem key={user.id} user={user} setUsers={setUsers} />
+        {users.map((u) => (
+          <UserItem key={u.id} user={u} setUsers={setUsers} />
         ))}
       </ScrollView>
     </SafeAreaView>

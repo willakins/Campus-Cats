@@ -27,10 +27,10 @@ class SettingsService {
   ) {
     try {
       const querySnapshot = await getDocs(collection(db, 'contact-info'));
-      const data: ContactInfo[] = querySnapshot.docs.map((doc) => ({
-        id: doc.id,
-        name: doc.data().name,
-        email: doc.data().email,
+      const data: ContactInfo[] = querySnapshot.docs.map((document) => ({
+        id: document.id,
+        name: document.data().name,
+        email: document.data().email,
       }));
       setContactInfo(data);
     } catch (error) {
@@ -180,10 +180,10 @@ class SettingsService {
     try {
       const querySnapshot = await getDocs(collection(db, 'users'));
       const userList = querySnapshot.docs
-        .map((doc) => ({
-          id: doc.id,
-          email: doc.data().email,
-          role: doc.data().role,
+        .map((document) => ({
+          id: document.id,
+          email: document.data().email,
+          role: document.data().role,
         }))
         .filter((user) => user.id !== currentUserId);
 
@@ -213,19 +213,19 @@ class SettingsService {
    * Effect: Sends a whitelist application to the database
    */
   public async submitWhitelist(
-    app: WhitelistApp,
+    application: WhitelistApp,
     setVisible: Dispatch<SetStateAction<boolean>>,
     router: Router,
   ) {
     try {
       setVisible(true);
-      const error_message = this.validateInput(app);
+      const error_message = this.validateInput(application);
 
       if (error_message === '') {
         // Check if the user's email already exists in the whitelist collection
         const q = query(
           collection(db, 'whitelist'),
-          where('email', '==', app.email),
+          where('email', '==', application.email),
         );
         const querySnapshot = await getDocs(q);
 
@@ -239,10 +239,10 @@ class SettingsService {
 
         // If no existing application, proceed to add the new one
         await addDoc(collection(db, 'whitelist'), {
-          name: app.name,
-          graduationYear: app.graduationYear,
-          email: app.email,
-          codeWord: app.codeWord,
+          name: application.name,
+          graduationYear: application.graduationYear,
+          email: application.email,
+          codeWord: application.codeWord,
         });
 
         alert(
@@ -270,12 +270,12 @@ class SettingsService {
   ) {
     try {
       const querySnapshot = await getDocs(collection(db, 'whitelist'));
-      const whitelist: WhitelistApp[] = querySnapshot.docs.map((doc) => ({
-        id: doc.id,
-        name: doc.data().name,
-        graduationYear: doc.data().graduationYear,
-        email: doc.data().email,
-        codeWord: doc.data().codeWord,
+      const whitelist: WhitelistApp[] = querySnapshot.docs.map((document) => ({
+        id: document.id,
+        name: document.data().name,
+        graduationYear: document.data().graduationYear,
+        email: document.data().email,
+        codeWord: document.data().codeWord,
       }));
       setWhitelist(whitelist);
     } catch (error) {
@@ -330,15 +330,15 @@ class SettingsService {
   /**
    * Private 1
    */
-  private validateInput(app: WhitelistApp) {
-    const requiredFields = [
+  private validateInput(application: WhitelistApp) {
+    const requiredFields: { key: keyof WhitelistApp; label: string }[] = [
       { key: 'name', label: 'Name' },
       { key: 'graduationYear', label: 'Graduation Year' },
       { key: 'email', label: 'Email' },
     ];
 
     for (const field of requiredFields) {
-      const value = (app as any)[field.key];
+      const value = application[field.key];
       if (!value || !value.trim()) {
         return `${field.label} field must not be empty`;
       }
