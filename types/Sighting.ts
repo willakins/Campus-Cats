@@ -1,5 +1,6 @@
-import { User } from './User';
 import { LatLng } from 'react-native-maps';
+
+import { User } from './User';
 
 interface SightingProps {
   id: string;
@@ -47,28 +48,38 @@ class Sighting {
   }
 
   static readonly dummy = new Sighting({
-    id: "dummy",
-    name: "Unknown Cat",
-    info: "This is a placeholder sighting.",
+    id: 'dummy',
+    name: 'Unknown Cat',
+    info: 'This is a placeholder sighting.',
     fed: false,
     health: false,
     date: new Date(),
     location: { latitude: 0, longitude: 0 },
     createdBy: User.dummy,
-    timeofDay: "Unknown",
+    timeofDay: 'Unknown',
   });
 
-  static getDateString (sighting:Sighting) {
+  static getDateString(sighting: Sighting) {
     const dateString = Sighting.getNiceDateString(sighting.date);
     return `${sighting.timeofDay} of ${dateString}`;
   }
 
-  private static getNiceDateString(date:Date) {
+  private static getNiceDateString(date: Date) {
     const monthNames = [
-        "January", "February", "March", "April", "May", "June", 
-        "July", "August", "September", "October", "November", "December"
-      ];
-    return`${monthNames[date.getMonth()]} ${date.getDate()}, ${date.getFullYear()}`;
+      'January',
+      'February',
+      'March',
+      'April',
+      'May',
+      'June',
+      'July',
+      'August',
+      'September',
+      'October',
+      'November',
+      'December',
+    ];
+    return `${monthNames[date.getMonth()]} ${date.getDate()}, ${date.getFullYear()}`;
   }
 }
 

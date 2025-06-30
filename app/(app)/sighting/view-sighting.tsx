@@ -1,28 +1,39 @@
 import React from 'react';
-import { Text, ScrollView, SafeAreaView } from 'react-native';
-import { useRouter } from 'expo-router';
-import { Button } from '@/components';
-import { useAuth } from '@/providers';
+import { SafeAreaView, ScrollView, Text } from 'react-native';
+
 import { Ionicons } from '@expo/vector-icons';
-import { buttonStyles, textStyles, containerStyles } from '@/styles';
-import { getSelectedSighting } from '@/stores/sightingStores';
+import { useRouter } from 'expo-router';
+
+import { Button } from '@/components';
 import { SightingEntry } from '@/components';
+import { useAuth } from '@/providers';
+import { getSelectedSighting } from '@/stores/sightingStores';
+import { buttonStyles, containerStyles, textStyles } from '@/styles';
 
 const SightingScreen = () => {
   const router = useRouter();
   const { user } = useAuth();
-  const isAuthorized = user.role === 1 || user.role === 2 || user.id === getSelectedSighting().createdBy.id;
+  const isAuthorized =
+    user.role === 1 ||
+    user.role === 2 ||
+    user.id === getSelectedSighting().createdBy.id;
 
   return (
     <SafeAreaView style={containerStyles.wrapper}>
-      <Button style={buttonStyles.smallButtonTopLeft} onPress={() => router.push('/(app)/(tabs)')}>
+      <Button
+        style={buttonStyles.smallButtonTopLeft}
+        onPress={() => router.push('/(app)/(tabs)')}
+      >
         <Ionicons name="arrow-back-outline" size={25} color="#fff" />
       </Button>
       <ScrollView contentContainerStyle={containerStyles.scrollViewPadded}>
-        <SightingEntry/>
+        <SightingEntry />
       </ScrollView>
       {isAuthorized && (
-        <Button style={buttonStyles.bigButton} onPress={() => router.push('./edit-sighting')}>
+        <Button
+          style={buttonStyles.bigButton}
+          onPress={() => router.push('./edit-sighting')}
+        >
           <Text style={textStyles.bigButtonText}>Edit</Text>
         </Button>
       )}

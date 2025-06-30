@@ -1,4 +1,4 @@
-import { Announcement } from "@/types";
+import { Announcement } from '@/types';
 
 let selectedAnnouncement: Announcement = Announcement.dummy;
 
