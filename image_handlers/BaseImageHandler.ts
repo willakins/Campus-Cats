@@ -1,20 +1,32 @@
-import { Alert } from "react-native";
-import * as ImagePicker from "expo-image-picker";
+import { Alert } from 'react-native';
+
+import * as ImagePicker from 'expo-image-picker';
 
 abstract class BaseImageHandler {
-  protected async requestPermission(requestFn: () => Promise<{ status: string }>, type: string): Promise<boolean> {
+  protected async requestPermission(
+    requestFn: () => Promise<{ status: string }>,
+    type: string,
+  ): Promise<boolean> {
     const { status } = await requestFn();
-    if (status !== "granted") {
+    if (status !== 'granted') {
       alert(`Sorry, we need ${type} permissions to make this work!`);
       return false;
     }
     return true;
   }
 
-  protected async pickImage(fromCamera: boolean = false): Promise<string | null> {
+  protected async pickImage(
+    fromCamera: boolean = false,
+  ): Promise<string | null> {
     const permissionGranted = fromCamera
-      ? await this.requestPermission(ImagePicker.requestCameraPermissionsAsync, "camera")
-      : await this.requestPermission(ImagePicker.requestMediaLibraryPermissionsAsync, "media library");
+      ? await this.requestPermission(
+          ImagePicker.requestCameraPermissionsAsync,
+          'camera',
+        )
+      : await this.requestPermission(
+          ImagePicker.requestMediaLibraryPermissionsAsync,
+          'media library',
+        );
 
     if (!permissionGranted) return null;
 
@@ -28,23 +40,23 @@ abstract class BaseImageHandler {
 
   public promptForImageSource(): void {
     Alert.alert(
-      "Select Option",
-      "Would you like to take a photo or select from your library?",
+      'Select Option',
+      'Would you like to take a photo or select from your library?',
       [
         {
-          text: "Take Photo",
+          text: 'Take Photo',
           onPress: () => this.onSelectPhoto(true),
         },
         {
-          text: "Choose from Library",
+          text: 'Choose from Library',
           onPress: () => this.onSelectPhoto(false),
         },
         {
-          text: "Cancel",
-          style: "cancel",
+          text: 'Cancel',
+          style: 'cancel',
         },
       ],
-      { cancelable: true }
+      { cancelable: true },
     );
   }
 

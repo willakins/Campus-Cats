@@ -3,7 +3,7 @@ import { Image, KeyboardAvoidingView } from 'react-native';
 
 import { useRouter } from 'expo-router';
 
-import { LoginForm } from '@/forms'
+import { LoginForm } from '@/forms';
 import { useAuth } from '@/providers';
 import { containerStyles, globalStyles } from '@/styles';
 
@@ -18,10 +18,13 @@ const CreateAccount = () => {
 
   return (
     <KeyboardAvoidingView style={globalStyles.screen} behavior="padding">
-      <Image source={require('@/assets/images/campus_cats_logo.png')} style={containerStyles.logo}/>
+      <Image
+        source={require('@/assets/images/campus_cats_logo.png')}
+        style={containerStyles.logo}
+      />
       <LoginForm
         onSubmit={createNewUser}
-        type='createAccount'
+        type="createAccount"
         onSwitchType={router.back}
       />
     </KeyboardAvoidingView>

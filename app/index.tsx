@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState, useRef } from 'react';
+import React, { useEffect } from 'react';
 
 import { Redirect } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
@@ -6,8 +6,6 @@ import * as SplashScreen from 'expo-splash-screen';
 import { LoadingIndicator } from '@/components';
 import { auth } from '@/config/firebase';
 import { useAuth } from '@/providers';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { globalStyles } from '@/styles';
 
 // Instruct SplashScreen not to hide yet, we want to do this manually
 SplashScreen.preventAutoHideAsync().catch(() => {
@@ -21,8 +19,10 @@ SplashScreen.setOptions({
 });
 
 const App = () => {
-  const { loading, user } = useAuth(); // Make sure useAuth returns user too
-  
+  // NOTE: A previous comment specified that useAuth should return `user` here
+  // as well, though no justification was given.
+  const { loading } = useAuth();
+
   // Use useEffect to handle splash screen hiding
   useEffect(() => {
     if (!loading) {

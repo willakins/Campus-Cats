@@ -16,9 +16,7 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.gatech.CampusCats",
-      "capabilities": [
-        "push-notifications"
-      ],
+      "capabilities": ["push-notifications"],
       "config": {
         "googleMapsApiKey": "AIzaSyD2koOi8GGUrbCZVju5Dq8Ca_1hxHb1mb8"
       },

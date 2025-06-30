@@ -1,4 +1,5 @@
 import { MapViewProps, Marker } from 'react-native-maps';
+
 import { MapView } from '@/components/ui/MapView';
 import { Sighting } from '@/types';
 
@@ -13,7 +14,7 @@ const SightingMapView: React.FC<SightingMapViewProps> = ({
   filter,
   onPerMarkerPress,
   children,
-	...props
+  ...props
 }) => {
   return (
     <MapView {...props}>
@@ -26,7 +27,7 @@ const SightingMapView: React.FC<SightingMapViewProps> = ({
           }}
           title={item.name}
           description={item.info}
-          onPress={onPerMarkerPress ? (() => onPerMarkerPress(item)) : undefined}
+          onPress={onPerMarkerPress ? () => onPerMarkerPress(item) : undefined}
         />
       ))}
       {children}
