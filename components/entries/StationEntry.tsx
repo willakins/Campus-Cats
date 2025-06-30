@@ -16,7 +16,7 @@ export const StationEntry: React.FC = () => {
   const [profile, setProfile] = useState<string>('');
 
   useEffect(() => {
-    database.fetchStationImages(station.id, setProfile, setPhotos);
+    void database.fetchStationImages(station.id, setProfile, setPhotos);
     // NOTE: database is a singleton class provided by DatabaseService and
     // will never change; it does not need to be a dependency.
     // eslint-disable-next-line react-hooks/exhaustive-deps

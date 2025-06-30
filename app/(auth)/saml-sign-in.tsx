@@ -25,7 +25,7 @@ const SAMLRedirect = () => {
   const [visible, setVisible] = useState<boolean>(false);
 
   useEffect(() => {
-    _openAuthSessionAsync();
+    void _openAuthSessionAsync();
     // NOTE: The function is based on the env, and should never change
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);

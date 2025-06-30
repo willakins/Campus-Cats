@@ -22,7 +22,7 @@ export const CatalogItem: React.FC<CatalogEntry> = ({
   const database = DatabaseService.getInstance();
 
   useEffect(() => {
-    database.fetchCatImages(id, setProfile);
+    void database.fetchCatImages(id, setProfile);
     // NOTE: database is a singleton class provided by DatabaseService and
     // will never change; it does not need to be a dependency.
     // eslint-disable-next-line react-hooks/exhaustive-deps

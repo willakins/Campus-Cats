@@ -18,8 +18,8 @@ const CatalogEntryElement: React.FC = () => {
   const entry = getSelectedCatalogEntry();
 
   useEffect(() => {
-    database.fetchCatImages(entry.id, setProfile, setPhotos);
-    database.getSightings(entry.cat.name, setSightings);
+    void database.fetchCatImages(entry.id, setProfile, setPhotos);
+    void database.getSightings(entry.cat.name, setSightings);
     // NOTE: database is a singleton class provided by DatabaseService and
     // will never change; it does not need to be a dependency.
     // eslint-disable-next-line react-hooks/exhaustive-deps

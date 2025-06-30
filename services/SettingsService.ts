@@ -1,3 +1,8 @@
+// TODO: Use proper types
+/* eslint @typescript-eslint/no-unsafe-argument: 0 */
+/* eslint @typescript-eslint/no-unsafe-assignment: 0 */
+/* eslint @typescript-eslint/no-unsafe-member-access: 0 */
+/* eslint @typescript-eslint/no-unsafe-return: 0 */
 import { Dispatch, SetStateAction } from 'react';
 import { Alert } from 'react-native';
 
@@ -41,7 +46,7 @@ class SettingsService {
   /**
    * Effect: Updates firestore with new contact info with extra steps
    */
-  public async handleTextChange(
+  public handleTextChange(
     index: number,
     field: 'name' | 'email',
     newText: string,
@@ -130,7 +135,7 @@ class SettingsService {
   /**
    * Effect: deletes a user from the firestore
    */
-  public async handleDeleteUser(user: User, router: Router) {
+  public handleDeleteUser(user: User, router: Router) {
     Alert.alert(
       'Delete User',
       `Are you sure you want to delete ${user.email}?`,

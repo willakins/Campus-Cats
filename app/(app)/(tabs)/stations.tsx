@@ -20,7 +20,7 @@ const Stations = () => {
   const [filter, setFilter] = useState<'All' | 'Stocked' | 'Unstocked'>('All');
 
   useFocusEffect(() => {
-    database.fetchStations(setStationEntries);
+    void database.fetchStations(setStationEntries);
   });
 
   const filteredStations = stationEntries.filter((station) => {

@@ -189,7 +189,7 @@ const EditEntry = () => {
   };
 
   useEffect(() => {
-    database.fetchCatImages(entry.id, setProfile, setPhotos);
+    void database.fetchCatImages(entry.id, setProfile, setPhotos);
     // NOTE: database is a singleton class provided by DatabaseService and
     // will never change; it does not need to be a dependency.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -231,7 +231,7 @@ const EditEntry = () => {
         style={buttonStyles.bigButton}
         onPress={() => {
           createObj();
-          database.handleCatalogSave(
+          void database.handleCatalogSave(
             photos,
             profile,
             isPicsChanged,

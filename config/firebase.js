@@ -17,7 +17,11 @@ const firebaseConfig = {
 
 // Check for existing apps and delete them
 if (getApps().length > 0) {
-  getApps().forEach((app) => deleteApp(app));
+  getApps().forEach((app) => {
+    deleteApp(app).catch((error) => {
+      console.log('Error deleting app:', error);
+    });
+  });
 }
 
 // Initialize Firebase

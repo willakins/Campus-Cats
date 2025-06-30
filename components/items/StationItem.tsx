@@ -26,7 +26,8 @@ export const StationItem: React.FC<Station> = ({
   // TODO: Remove this.
   // Filler code to work with fetchStationImages, since a setState is needed but
   // no state is ever used here.
-  const setPhotos = (_: string[]) => {};
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const [photos, setPhotos] = useState<string[]>([]);
 
   const createObj = () => {
     const newStation = new Station({
@@ -43,7 +44,7 @@ export const StationItem: React.FC<Station> = ({
   };
 
   useFocusEffect(() => {
-    database.fetchStationImages(id, setProfile, setPhotos);
+    void database.fetchStationImages(id, setProfile, setPhotos);
   });
 
   return (

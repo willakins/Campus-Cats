@@ -17,7 +17,12 @@ module.exports = {
     '@typescript-eslint/no-meaningless-void-operator': 'error',
     '@typescript-eslint/no-misused-promises': [
       'error',
-      { checksVoidReturn: { attributes: false } },
+      {
+        checksVoidReturn: {
+          attributes: false,
+          properties: false,
+        },
+      },
     ],
   },
   ignorePatterns: [
@@ -34,4 +39,30 @@ module.exports = {
     tsconfigRootDir: __dirname,
   },
   root: true,
+  overrides: [
+    {
+      files: [
+        'app/(auth)/create-account.tsx',
+        'app/(auth)/saml-sign-in.tsx',
+        'components/ui/DateTimeInput.android.tsx',
+        'config/firebase.js',
+        'forms/AnnouncementForm.tsx',
+        'forms/CatalogForm.tsx',
+        'forms/SightingForm.tsx',
+        'forms/SightingReport.tsx',
+        'forms/StationForm.tsx',
+        'forms/controls/FilePicker.tsx',
+        'functions/src/index.ts',
+        'services/AnnouncementsService.ts',
+        'services/CatalogService.ts',
+      ],
+      rules: {
+        '@typescript-eslint/no-unsafe-argument': 'off',
+        '@typescript-eslint/no-unsafe-assignment': 'off',
+        '@typescript-eslint/no-unsafe-call': 'off',
+        '@typescript-eslint/no-unsafe-member-access': 'off',
+        '@typescript-eslint/no-unsafe-return': 'off',
+      },
+    },
+  ],
 };

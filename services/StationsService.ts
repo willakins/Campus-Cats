@@ -1,3 +1,9 @@
+// TODO: Use proper types
+/* eslint @typescript-eslint/no-unsafe-argument: 0 */
+/* eslint @typescript-eslint/no-unsafe-assignment: 0 */
+/* eslint @typescript-eslint/no-unsafe-call: 0 */
+/* eslint @typescript-eslint/no-unsafe-member-access: 0 */
+/* eslint @typescript-eslint/no-unsafe-return: 0 */
 import { Dispatch, SetStateAction } from 'react';
 import { Alert } from 'react-native';
 
@@ -203,7 +209,7 @@ class StationsService {
   /**
    * Deletes the station from the database
    */
-  public async deleteStation(
+  public deleteStation(
     setVisible: Dispatch<SetStateAction<boolean>>,
     router: Router,
   ) {

@@ -1,3 +1,8 @@
+// TODO: Use proper types
+/* eslint @typescript-eslint/no-unsafe-argument: 0 */
+/* eslint @typescript-eslint/no-unsafe-assignment: 0 */
+/* eslint @typescript-eslint/no-unsafe-member-access: 0 */
+/* eslint @typescript-eslint/no-unsafe-return: 0 */
 import { Dispatch, SetStateAction } from 'react';
 import { Alert } from 'react-native';
 
@@ -222,22 +227,6 @@ class AnnouncementsService {
   }
 
   /**
-   * Private 2
-   */
-  private async deleteAllImagesInFolder(folderPath: string) {
-    try {
-      const folderRef = ref(storage, folderPath);
-      const result = await listAll(folderRef);
-      await Promise.all(result.items.map((item) => deleteObject(item)));
-
-      console.log('All old images deleted successfully');
-    } catch (error) {
-      console.error('Error deleting images in folder: ', error);
-      throw error;
-    }
-  }
-
-  /**
    * Private 3
    */
   private validate_input(ann: Announcement) {
@@ -248,27 +237,6 @@ class AnnouncementsService {
       return 'Description cannot be empty.';
     }
     return '';
-  }
-
-  /**
-   * Private 4
-   */
-  private getDateString(date: Date) {
-    const monthNames = [
-      'January',
-      'February',
-      'March',
-      'April',
-      'May',
-      'June',
-      'July',
-      'August',
-      'September',
-      'October',
-      'November',
-      'December',
-    ];
-    return `${monthNames[date.getMonth()]} ${date.getDate()}, ${date.getFullYear()}`;
   }
 
   // Helper method to fetch existing images URLs from Firebase Storage folder

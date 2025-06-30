@@ -1,3 +1,8 @@
+// TODO: Use proper types
+/* eslint @typescript-eslint/no-unsafe-argument: 0 */
+/* eslint @typescript-eslint/no-unsafe-assignment: 0 */
+/* eslint @typescript-eslint/no-unsafe-member-access: 0 */
+/* eslint @typescript-eslint/no-unsafe-return: 0 */
 import { Dispatch, SetStateAction } from 'react';
 import { Alert } from 'react-native';
 
@@ -255,7 +260,7 @@ class CatalogService {
   /**
    * Effect: Deletes an existing catalog entry from firebase
    */
-  public async deleteCatalogEntry(
+  public deleteCatalogEntry(
     id: string,
     setVisible: Dispatch<SetStateAction<boolean>>,
     router: Router,

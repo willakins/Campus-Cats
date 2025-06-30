@@ -61,9 +61,9 @@ const CreateAnn = () => {
       </ScrollView>
       <Button
         style={buttonStyles.bigButton}
-        onPress={async () => {
+        onPress={() => {
           createObj();
-          database.handleAnnouncementCreate(photos, setVisible, router);
+          void database.handleAnnouncementCreate(photos, setVisible, router);
         }}
       >
         <Text style={textStyles.bigButtonText}> Create Announcement</Text>

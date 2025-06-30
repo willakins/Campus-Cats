@@ -84,7 +84,7 @@ class DatabaseService {
     if (!selfId) {
       return;
     }
-    if (!this.isSuperAdmin(selfId)) {
+    if (!(await this.isSuperAdmin(selfId))) {
       Alert.alert('You do not have permissions to create admins');
       return;
     }
@@ -103,8 +103,12 @@ class DatabaseService {
         });
 
         Alert.alert(userData.email + ' is now an admin!');
-      } catch (error) {
-        Alert.alert('Error updating field: ' + error);
+      } catch (error: unknown) {
+        if (error instanceof Error) {
+          Alert.alert(`Error updating field: ${error.message}`);
+        } else {
+          Alert.alert(`Unexpected error: ${String(error)}`);
+        }
       }
     } else {
       Alert.alert('No user is logged in.');
@@ -183,16 +187,12 @@ class DatabaseService {
   /**
    * Effect: updates firestore when deleting a cat sighting
    */
-  public async deleteSighting(
+  public deleteSighting(
     id: string,
     setVisible: Dispatch<SetStateAction<boolean>>,
     router: Router,
   ) {
-    await DatabaseService.sightingsService.deleteSighting(
-      id,
-      setVisible,
-      router,
-    );
+    DatabaseService.sightingsService.deleteSighting(id, setVisible, router);
   }
 
   /**
@@ -283,16 +283,12 @@ class DatabaseService {
   /**
    * Effect: Deletes an existing catalog entry from firebase
    */
-  public async deleteCatalogEntry(
+  public deleteCatalogEntry(
     id: string,
     setVisible: Dispatch<SetStateAction<boolean>>,
     router: Router,
   ) {
-    await DatabaseService.catalogService.deleteCatalogEntry(
-      id,
-      setVisible,
-      router,
-    );
+    DatabaseService.catalogService.deleteCatalogEntry(id, setVisible, router);
   }
 
   /**
@@ -475,11 +471,11 @@ class DatabaseService {
   /**
    * TODO
    */
-  public async deleteStation(
+  public deleteStation(
     setVisible: Dispatch<SetStateAction<boolean>>,
     router: Router,
   ) {
-    await DatabaseService.stationsService.deleteStation(setVisible, router);
+    DatabaseService.stationsService.deleteStation(setVisible, router);
   }
 
   /**
@@ -507,7 +503,7 @@ class DatabaseService {
   /**
    * Effect: Updates firestore with new contact info with extra steps
    */
-  public async handleTextChange(
+  public handleTextChange(
     index: number,
     field: 'name' | 'email',
     newText: string,
@@ -515,7 +511,7 @@ class DatabaseService {
     setContactInfo: Dispatch<SetStateAction<ContactInfo[]>>,
     setHasChanged: Dispatch<SetStateAction<boolean>>,
   ) {
-    await DatabaseService.settingsService.handleTextChange(
+    DatabaseService.settingsService.handleTextChange(
       index,
       field,
       newText,
@@ -560,8 +556,8 @@ class DatabaseService {
   /**
    * Effect: deletes a user from the firestore
    */
-  public async handleDeleteUser(user: User, router: Router) {
-    await DatabaseService.settingsService.handleDeleteUser(user, router);
+  public handleDeleteUser(user: User, router: Router) {
+    DatabaseService.settingsService.handleDeleteUser(user, router);
   }
 
   /**
@@ -664,8 +660,12 @@ class DatabaseService {
         // NOTE: We don't do type checking, so use type coercion here
         // eslint-disable-next-line eqeqeq
         return selfData.data()?.role == 2;
-      } catch (error) {
-        Alert.alert('Error getting field: ' + error);
+      } catch (error: unknown) {
+        if (error instanceof Error) {
+          Alert.alert(`Error getting field: ${error.message}`);
+        } else {
+          Alert.alert(`Unexpected error: ${String(error)}`);
+        }
       }
     }
     return false;

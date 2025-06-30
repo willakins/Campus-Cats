@@ -2,13 +2,7 @@ import { User } from './User';
 
 type TNRStatus = 'Yes' | 'No' | 'Unknown';
 type Sex = 'Male' | 'Female' | 'Unknown';
-type CatStatus =
-  | 'Feral'
-  | 'Adopted'
-  | 'Deceased'
-  | 'Feral'
-  | 'Frat Cat'
-  | 'Unknown';
+type CatStatus = 'Feral' | 'Adopted' | 'Deceased' | 'Frat Cat' | 'Unknown';
 type Fur = 'Short' | 'Medium' | 'Long' | 'Unknown';
 
 interface Cat {

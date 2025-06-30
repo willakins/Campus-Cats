@@ -1,3 +1,7 @@
+// TODO: Use proper types
+/* eslint @typescript-eslint/no-unsafe-argument: 0 */
+/* eslint @typescript-eslint/no-unsafe-assignment: 0 */
+/* eslint @typescript-eslint/no-unsafe-return: 0 */
 import React, { useState } from 'react';
 import {
   Alert,

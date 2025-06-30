@@ -17,7 +17,7 @@ const Announcements = () => {
 
   useFocusEffect(
     useCallback(() => {
-      database.fetchAnnouncementData(setAnns);
+      void database.fetchAnnouncementData(setAnns);
       // NOTE: database is a singleton class provided by DatabaseService and
       // will never change; it does not need to be a dependency.
       // eslint-disable-next-line react-hooks/exhaustive-deps

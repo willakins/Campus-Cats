@@ -15,7 +15,7 @@ import { storage } from '@/config/firebase';
 export const uploadFromURI = async (
   uploadDir: string,
   uri: string,
-  filename?: string | undefined,
+  filename?: string,
 ): Promise<UploadResult> => {
   // Get a unique ref
   const filename_ = filename || uuidv4();

@@ -17,7 +17,7 @@ const Catalog = () => {
   const [catalogEntries, setCatalogEntries] = useState<CatalogEntry[]>([]);
 
   useFocusEffect(() => {
-    database.fetchCatalogData(setCatalogEntries);
+    void database.fetchCatalogData(setCatalogEntries);
   });
 
   return (

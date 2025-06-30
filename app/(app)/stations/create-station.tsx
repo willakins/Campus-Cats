@@ -71,7 +71,7 @@ const CreateStation = () => {
         style={buttonStyles.bigButton}
         onPress={() => {
           createObj();
-          database.createStation(photos, setVisible, router);
+          void database.createStation(photos, setVisible, router);
         }}
       >
         <Text style={textStyles.bigButtonText}> Create Station</Text>

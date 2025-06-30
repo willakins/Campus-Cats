@@ -13,7 +13,7 @@ export const AnnouncementEntry: React.FC = () => {
   const ann = getSelectedAnnouncement();
 
   useEffect(() => {
-    database.fetchAnnouncementImages(ann.id, setPhotos);
+    void database.fetchAnnouncementImages(ann.id, setPhotos);
     // NOTE: database is a singleton class provided by DatabaseService and
     // will never change; it does not need to be a dependency.
     // eslint-disable-next-line react-hooks/exhaustive-deps

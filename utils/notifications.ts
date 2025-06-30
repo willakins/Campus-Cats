@@ -16,13 +16,13 @@ export const registerForPushNotificationsAsync = async (): Promise<
   const { status: existingStatus } = await Notifications.getPermissionsAsync();
   let finalStatus = existingStatus;
 
-  if (existingStatus !== 'granted') {
+  if (existingStatus !== Notifications.PermissionStatus.GRANTED) {
     // Requesting permission
     const { status } = await Notifications.requestPermissionsAsync();
     finalStatus = status;
   }
 
-  if (finalStatus !== 'granted') {
+  if (finalStatus !== Notifications.PermissionStatus.GRANTED) {
     // Alert if that doesn't happen
     alert('Failed to get push token for push notification!');
     return null;

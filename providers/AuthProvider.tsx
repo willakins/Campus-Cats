@@ -46,7 +46,7 @@ const AuthProvider = ({ children }: { children: ReactNode }) => {
     );
     const authUser = userCredential.user;
     // Create a default user
-    mutateUser({
+    await mutateUser({
       id: authUser.uid,
       email: email,
       role: 0,
@@ -59,7 +59,7 @@ const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (authUser) => {
+    const handleAuthStateChange = async (authUser: AuthUser | null) => {
       try {
         if (authUser?.uid && authUser?.email) {
           // Get user doc on start
@@ -71,6 +71,10 @@ const AuthProvider = ({ children }: { children: ReactNode }) => {
         console.log(error);
       }
       setLoading(false);
+    };
+
+    const unsubscribe = onAuthStateChanged(auth, (authUser) => {
+      void handleAuthStateChange(authUser);
     });
 
     return unsubscribe;

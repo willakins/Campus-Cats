@@ -18,7 +18,7 @@ const ManageUsers = () => {
 
   useEffect(() => {
     if (user?.id) {
-      database.fetchUsers(setUsers, user.id);
+      void database.fetchUsers(setUsers, user.id);
     }
     // NOTE: database is a singleton class provided by DatabaseService and
     // will never change; it does not need to be a dependency.

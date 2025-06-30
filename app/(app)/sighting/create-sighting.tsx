@@ -94,7 +94,7 @@ const SightingCreateScreen = () => {
         style={buttonStyles.bigButton}
         onPress={() => {
           createObj();
-          database.createSighting(photos, setVisible, router);
+          void database.createSighting(photos, setVisible, router);
         }}
       >
         <Text style={textStyles.bigButtonText}>Create Report</Text>

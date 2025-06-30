@@ -25,7 +25,7 @@ const Settings = () => {
   const database = DatabaseService.getInstance();
 
   useEffect(() => {
-    database.fetchContactInfo(setContactInfo);
+    void database.fetchContactInfo(setContactInfo);
     // NOTE: database is a singleton class provided by DatabaseService and
     // will never change; it does not need to be a dependency.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -33,7 +33,7 @@ const Settings = () => {
 
   const handleEdit = () => {
     if (isEditable) {
-      database.updateContactInfo(contactInfo, hasChanged);
+      void database.updateContactInfo(contactInfo, hasChanged);
       setHasChanged(false);
     }
     setIsEditable(!isEditable);

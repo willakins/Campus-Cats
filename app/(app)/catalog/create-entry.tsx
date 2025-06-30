@@ -200,7 +200,7 @@ const CreateEntry = () => {
         style={buttonStyles.bigButton}
         onPress={() => {
           createObj();
-          database.handleCatalogCreate(photos, setVisible, router);
+          void database.handleCatalogCreate(photos, setVisible, router);
         }}
       >
         <Text style={textStyles.bigButtonText}> Create Entry</Text>

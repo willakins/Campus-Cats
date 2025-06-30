@@ -72,7 +72,7 @@ const SightingEditScreen = () => {
   };
 
   useEffect(() => {
-    database.fetchSightingImages(sighting.id, setProfile, setPhotos);
+    void database.fetchSightingImages(sighting.id, setProfile, setPhotos);
     // NOTE: database is a singleton class provided by DatabaseService and
     // will never change; it does not need to be a dependency.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -120,7 +120,7 @@ const SightingEditScreen = () => {
         style={buttonStyles.bigButton}
         onPress={() => {
           createObj();
-          database.saveSighting(
+          void database.saveSighting(
             photos,
             profile,
             isPicsChanged,

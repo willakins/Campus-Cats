@@ -20,7 +20,7 @@ export const UserItem: React.FC<{
 
   const handleUserUpdate = async (action: () => Promise<void>) => {
     await action();
-    database.fetchUsers(setUsers, currentUser.id);
+    void database.fetchUsers(setUsers, currentUser.id);
   };
 
   return (
