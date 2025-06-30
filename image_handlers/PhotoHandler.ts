@@ -1,4 +1,4 @@
-import BaseImageHandler from "./BaseImageHandler";
+import BaseImageHandler from './BaseImageHandler';
 
 class PhotoHandler extends BaseImageHandler {
   private onPhotoCallback: (uri: string) => void;
