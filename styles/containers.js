@@ -1,5 +1,5 @@
 //Container styles
-import { Platform, StyleSheet, Dimensions } from 'react-native';
+import { Dimensions, Platform, StyleSheet } from 'react-native';
 
 const { width, height } = Dimensions.get('window');
 const vw = width / 100;
@@ -13,7 +13,7 @@ const containerStyles = StyleSheet.create({
     paddingTop: vh * 10,
   },
   imageWrapper: {
-    flexDirection: "column",
+    flexDirection: 'column',
     position: 'relative',
     margin: vw * 1,
     alignItems: 'center',
@@ -42,8 +42,8 @@ const containerStyles = StyleSheet.create({
   },
   /** Cards */
   card: {
-    flexDirection: "column",
-    alignSelf:'center',
+    flexDirection: 'column',
+    alignSelf: 'center',
     width: vw * 95,
     padding: vw * 5,
     backgroundColor: '#fff',
@@ -89,16 +89,16 @@ const containerStyles = StyleSheet.create({
     borderRadius: vw * 3,
   },
   verticalCard: {
-    flexDirection: "column",
-    alignSelf: "center",
+    flexDirection: 'column',
+    alignSelf: 'center',
   },
   /** Input Containers */
   inputContainer: {
     padding: Platform.select({
       ios: vw * 2.5,
-      default: 0
+      default: 0,
     }),
-    width: width * .85,
+    width: width * 0.85,
     height: vh * 5,
     borderColor: '#ccc',
     borderWidth: 1,
@@ -114,9 +114,9 @@ const containerStyles = StyleSheet.create({
   smallInputContainer: {
     padding: Platform.select({
       ios: vw * 2.5,
-      default: 0
+      default: 0,
     }),
-    width: width * .7,
+    width: width * 0.7,
     height: vh * 5,
     borderColor: '#ccc',
     borderWidth: 1,
@@ -131,7 +131,7 @@ const containerStyles = StyleSheet.create({
   },
   descInputContainer: {
     padding: vw * 2.5,
-    width: width * .85,
+    width: width * 0.85,
     height: vh * 10,
     borderColor: '#ccc',
     borderWidth: 1,
@@ -144,7 +144,7 @@ const containerStyles = StyleSheet.create({
   },
   dateInputContainer: {
     height: vh * 8,
-    width: width * .85,
+    width: width * 0.85,
     padding: vw * 2.5,
     flexDirection: 'row',
     borderColor: '#ccc',
@@ -199,7 +199,7 @@ const containerStyles = StyleSheet.create({
     justifyContent: 'center',
   },
   imageMain: {
-    width: width * .85,
+    width: width * 0.85,
     height: vh * 25,
     borderRadius: vw * 5.5,
     marginBottom: vh * 2,
@@ -209,7 +209,7 @@ const containerStyles = StyleSheet.create({
     justifyContent: 'center',
   },
   listImage: {
-    width: width * .8,
+    width: width * 0.8,
     height: vh * 20,
     borderRadius: vw * 5.5,
     marginBottom: vh * 2,
@@ -221,7 +221,7 @@ const containerStyles = StyleSheet.create({
     height: vw * 40,
     borderRadius: vw * 3,
     marginRight: vw * 3,
-    justifyContent:'center',
+    justifyContent: 'center',
   },
   extraPic: {
     width: vw * 25,
@@ -254,10 +254,10 @@ const containerStyles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: '#f0f0f0',
-    flexWrap: 'nowrap'
+    flexWrap: 'nowrap',
   },
   buttonGroup2: {
-    width: width * .85,
+    width: width * 0.85,
     height: 'auto',
     flexDirection: 'row',
     justifyContent: 'space-evenly',
@@ -266,7 +266,7 @@ const containerStyles = StyleSheet.create({
   },
   mapContainer: {
     height: vh * 25,
-    width: width * .85,
+    width: width * 0.85,
     borderRadius: vw * 3,
     marginBottom: vh * 1.5,
     overflow: 'hidden',
@@ -279,7 +279,7 @@ const containerStyles = StyleSheet.create({
     zIndex: 1000,
   },
   snackbar: {
-    width: width * .9,
+    width: width * 0.9,
     height: vh * 5,
     backgroundColor: 'rgba(0, 0, 0, 0.8)',
     color: 'white',

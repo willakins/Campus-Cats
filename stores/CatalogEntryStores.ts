@@ -1,9 +1,9 @@
-import { CatalogEntry } from "@/types";
+import { CatalogEntry } from '@/types';
 
 let selectedCatalogEntry: CatalogEntry = CatalogEntry.dummy;
 
 export const setSelectedCatalogEntry = (entry: CatalogEntry) => {
-  selectedCatalogEntry= entry;
+  selectedCatalogEntry = entry;
 };
 
 export const getSelectedCatalogEntry = () => selectedCatalogEntry;

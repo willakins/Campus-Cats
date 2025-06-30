@@ -17,6 +17,10 @@ const Sighting = z.object({
   timeofDay: z.string(),
 });
 
+// TODO: Change this pattern, as it may be confusing.
+// NOTE: This is an established pattern, where a schema and a type have the same
+// name. Since types exist only before compile time, this is fine.
+// eslint-disable-next-line @typescript-eslint/no-redeclare
 type Sighting = z.infer<typeof Sighting>;
 
 const sightingPath = 'cat-sightings';
