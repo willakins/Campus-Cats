@@ -1,13 +1,17 @@
-import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { Ionicons } from '@expo/vector-icons';
-import { useAuth } from '@/providers'; // Assuming useAuth gives you user info
-import HomeScreen from './index';
+import React from 'react';
+import { Platform } from 'react-native';
+
 import Announcements from './announcements';
 import Catalog from './catalog';
+import HomeScreen from './index';
 import Settings from './settings';
-import Stations from './stations'; // Admin-only screen
-import { Platform } from 'react-native';
+// Admin-only screen
+import Stations from './stations';
+import { Ionicons } from '@expo/vector-icons';
+
+// Assuming useAuth gives you user info
+import { useAuth } from '@/providers';
 
 const Tab = createBottomTabNavigator();
 
@@ -15,11 +19,11 @@ const TabNavigator = () => {
   const { user } = useAuth(); // Assuming useAuth hook provides user details
   const isAdmin = user.role === 1 || user.role === 2;
   const size2 = 29;
-  const color2 = '#333'
+  const color2 = '#333';
   const bar_height: number = Platform.select({
     ios: 80,
     android: 60,
-    default: 80
+    default: 80,
   });
 
   return (
@@ -35,7 +39,7 @@ const TabNavigator = () => {
         name="Home"
         component={HomeScreen}
         options={{
-          tabBarLabel: "",
+          tabBarLabel: '',
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="location-outline" size={size2} color={color2} />
           ),
@@ -45,9 +49,13 @@ const TabNavigator = () => {
         name="Announcements"
         component={Announcements}
         options={{
-          tabBarLabel: "",
+          tabBarLabel: '',
           tabBarIcon: ({ color, size }) => (
-            <Ionicons name="notifications-outline" size={size2} color={color2} />
+            <Ionicons
+              name="notifications-outline"
+              size={size2}
+              color={color2}
+            />
           ),
         }}
       />
@@ -56,7 +64,7 @@ const TabNavigator = () => {
           name="Stations"
           component={Stations}
           options={{
-            tabBarLabel: "",
+            tabBarLabel: '',
             tabBarIcon: ({ color, size }) => (
               <Ionicons name="paw-outline" size={size2} color={color2} />
             ),
@@ -67,7 +75,7 @@ const TabNavigator = () => {
         name="Catalog"
         component={Catalog}
         options={{
-          tabBarLabel: "",
+          tabBarLabel: '',
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="image-outline" size={size2} color={color2} />
           ),
@@ -77,9 +85,13 @@ const TabNavigator = () => {
         name="Info"
         component={Settings}
         options={{
-          tabBarLabel: "",
+          tabBarLabel: '',
           tabBarIcon: ({ color, size }) => (
-            <Ionicons name="information-circle-outline" size={size2} color={color2} />
+            <Ionicons
+              name="information-circle-outline"
+              size={size2}
+              color={color2}
+            />
           ),
         }}
       />

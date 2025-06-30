@@ -1,4 +1,4 @@
-import BaseImageHandler from "./BaseImageHandler";
+import BaseImageHandler from './BaseImageHandler';
 
 interface AnnouncementImageHandlerProps {
   setVisible: (visible: boolean) => void;

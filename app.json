@@ -9,16 +9,14 @@
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "splash": {
-      "image": "./assets/images/app-icon.png",
+      "image": "./assets/images/icon.png",
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.gatech.CampusCats",
-      "capabilities": [
-        "push-notifications"
-      ],
+      "capabilities": ["push-notifications"],
       "config": {
         "googleMapsApiKey": "AIzaSyD2koOi8GGUrbCZVju5Dq8Ca_1hxHb1mb8"
       },
@@ -32,10 +30,6 @@
       "buildNumber": "1"
     },
     "android": {
-      "adaptiveIcon": {
-        "foregroundImage": "./assets/images/adaptive-icon.png",
-        "backgroundColor": "#ffffff"
-      },
       "config": {
         "googleMaps": {
           "apiKey": "AIzaSyD2koOi8GGUrbCZVju5Dq8Ca_1hxHb1mb8"
@@ -45,7 +39,8 @@
         "android.permission.CAMERA",
         "android.permission.RECORD_AUDIO"
       ],
-      "package": "com.gatech.CampusCats"
+      "package": "com.gatech.CampusCats",
+      "versionCode": "8"
     },
     "web": {
       "bundler": "metro",

@@ -9,6 +9,7 @@
 # New Software Features
 
 ## Primary Features
+
 - **Cat Reporting Capabilities:** Users can now upload pictures in a cat sighting report, marking their name, condition, and location!
 - **Cat Sighting Map:** Created a map with pins representing the location of sightings, and provided a filtering option based on time.
 - **Announcements:** Integrated a new announcements page that allows admin users to create announcements that are then displayed to all users!
@@ -21,6 +22,7 @@
 - **Admin Management Throughout:** In almost every screen, admin users are able to edit and create items, allowing for proper management of the app's content
 
 ## Extra Features
+
 - **GT-SSO:** For secure app access, Georgia Tech Single-Sign-On has been utilized for account creation and login.
 - **Whitelist:** A form has been included to allow GT-alum to apply for app access. Admins can accept/deny whitelist applications from the settings page
 - **Settings Page:** A Club Contact Information card has been added so that club members know how to contact people in charge.

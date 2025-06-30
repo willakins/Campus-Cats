@@ -5,7 +5,8 @@ import { ErrorText, MapPicker } from '@/components';
 import { DefaultLocation } from '@/config/constants';
 import { InputControllerType } from '@/types';
 
-type ControlledMapPickerProps<T extends FieldValues> = MapViewProps & InputControllerType<T>;
+type ControlledMapPickerProps<T extends FieldValues> = MapViewProps &
+  InputControllerType<T>;
 
 const ControlledMapPicker = <T extends FieldValues>({
   control,

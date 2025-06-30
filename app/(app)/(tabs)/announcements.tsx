@@ -1,12 +1,12 @@
 import React, { useCallback, useState } from 'react';
 import { SafeAreaView, ScrollView, Text } from 'react-native';
 
-import { globalStyles, buttonStyles, textStyles, containerStyles } from '@/styles';
+import { router, useFocusEffect } from 'expo-router';
 
 import { AnnouncementItem, Button, LoadingIndicator } from '@/components';
 import { useAuth } from '@/providers';
-import { router, useFocusEffect } from 'expo-router';
 import DatabaseService from '@/services/DatabaseService';
+import { buttonStyles, containerStyles, textStyles } from '@/styles';
 import { Announcement } from '@/types';
 
 const Announcements = () => {
@@ -15,15 +15,18 @@ const Announcements = () => {
   const database = DatabaseService.getInstance();
   const [anns, setAnns] = useState<Announcement[]>([]);
 
+  useFocusEffect(
+    useCallback(() => {
+      void database.fetchAnnouncementData(setAnns);
+      // NOTE: database is a singleton class provided by DatabaseService and
+      // will never change; it does not need to be a dependency.
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []),
+  );
+
   if (loading) {
     return <LoadingIndicator />;
   }
-
-  useFocusEffect(
-    useCallback(() => {
-      database.fetchAnnouncementData(setAnns);
-    }, [])
-  );
 
   return (
     <SafeAreaView style={containerStyles.wrapper}>
@@ -41,9 +44,14 @@ const Announcements = () => {
           />
         ))}
       </ScrollView>
-      {isAdmin ? <Button style={buttonStyles.bigButton} onPress={() => router.push('/announcements/create-ann')}>
-        <Text style ={textStyles.bigButtonText}> Create Announcement</Text>
-      </Button> : null}
+      {isAdmin ? (
+        <Button
+          style={buttonStyles.bigButton}
+          onPress={() => router.push('/announcements/create-ann')}
+        >
+          <Text style={textStyles.bigButtonText}> Create Announcement</Text>
+        </Button>
+      ) : null}
     </SafeAreaView>
   );
 };

@@ -10,4 +10,4 @@ const InitialRegion = {
   longitudeDelta: 0.01,
 };
 
-export { DefaultLocation, InitialRegion }
+export { DefaultLocation, InitialRegion };

@@ -1,6 +1,6 @@
-import { Image, StyleSheet } from "react-native";
+import { Image, StyleSheet } from 'react-native';
 
-import { CameraButton } from "@/components/ui/Buttons";
+import { CameraButton } from '@/components/ui/Buttons';
 
 type FilePickerProps = {
   uri: string;
@@ -16,7 +16,9 @@ export const FilePicker: React.FC<FilePickerProps> = ({
   return (
     <>
       {disabled || <CameraButton onPhotoSelected={onChange} />}
-      {uri ? <Image source={{ uri: uri }} style={styles.selectedPreview} /> : null}
+      {uri ? (
+        <Image source={{ uri: uri }} style={styles.selectedPreview} />
+      ) : null}
     </>
   );
 };

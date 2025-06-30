@@ -9,9 +9,7 @@
     "esModuleInterop": true,
     "strict": true,
     "paths": {
-      "@/*": [
-        "./*"
-      ]
+      "@/*": ["./*"]
     }
   },
   "include": [
@@ -20,6 +18,7 @@
     "**/*.ts",
     "**/*.tsx",
     ".expo/types/**/*.ts",
-    "expo-env.d.ts"
-, "components/image_handlers/CatalogImageHandler.ts"  ]
+    "expo-env.d.ts",
+    "components/image_handlers/CatalogImageHandler.ts"
+  ]
 }

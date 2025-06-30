@@ -1,5 +1,11 @@
-import { Text, TextInput as RNTextInput, TextInputProps as RNTextInputProps, View } from 'react-native';
-import { globalStyles, buttonStyles, textStyles, containerStyles } from '@/styles';
+import {
+  TextInput as RNTextInput,
+  TextInputProps as RNTextInputProps,
+  Text,
+  View,
+} from 'react-native';
+
+import { textStyles } from '@/styles';
 
 export type TextInputProps = React.PropsWithoutRef<RNTextInputProps> & {
   label?: string;
@@ -14,11 +20,10 @@ export const TextInput: React.FC<TextInputProps> = ({
 
   return (
     <View>
-      {label && <Text style={[textStyles.detail, {marginLeft:12}]}>{label}</Text>}
-      <RNTextInput
-        style={style_}
-        {...props}
-      />
+      {label && (
+        <Text style={[textStyles.detail, { marginLeft: 12 }]}>{label}</Text>
+      )}
+      <RNTextInput style={style_} {...props} />
     </View>
   );
 };

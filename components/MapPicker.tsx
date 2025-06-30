@@ -6,7 +6,7 @@ import { InitialRegion } from '@/config/constants';
 
 type MapPickerProps = MapViewProps & {
   location: LatLng;
-  onChange: (location: LatLng) => void,
+  onChange: (location: LatLng) => void;
 };
 
 const MapPicker: React.FC<MapPickerProps> = ({
@@ -20,7 +20,7 @@ const MapPicker: React.FC<MapPickerProps> = ({
   const handleChange = (event: MapPressEvent) => {
     const coords = event.nativeEvent.coordinate;
     onChange(coords);
-  }
+  };
 
   return (
     <MapView
@@ -31,7 +31,7 @@ const MapPicker: React.FC<MapPickerProps> = ({
     >
       {location ? <Marker coordinate={location} /> : null}
     </MapView>
-  )
+  );
 };
 
 export { MapPicker };
@@ -41,5 +41,5 @@ const styles = StyleSheet.create({
     width: '100%',
     height: 200,
     marginVertical: 10,
-  }
+  },
 });
