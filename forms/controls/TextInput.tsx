@@ -4,8 +4,7 @@ import { ErrorText, TextInput } from '@/components';
 import { TextInputProps } from '@/components/ui/TextInput';
 import { InputControllerType } from '@/types';
 
-type ControlledInputProps<T extends FieldValues> = TextInputProps &
-  InputControllerType<T>;
+type ControlledInputProps<T extends FieldValues> = TextInputProps & InputControllerType<T>;
 
 const ControlledInput = <T extends FieldValues>({
   control,

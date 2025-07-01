@@ -1,17 +1,7 @@
-import {
-  StyleProp,
-  Text,
-  TextStyle,
-  TouchableOpacity,
-  TouchableOpacityProps,
-  View,
-  ViewStyle,
-} from 'react-native';
-
-import { PhotoHandler } from '../../image_handlers/PhotoHandler';
 import { Ionicons } from '@expo/vector-icons';
-
-import { buttonStyles, containerStyles, textStyles } from '@/styles';
+import { StyleProp, Text, TextStyle, TouchableOpacity, TouchableOpacityProps, View, ViewStyle } from 'react-native';
+import { PhotoHandler } from '../../image_handlers/PhotoHandler';
+import { globalStyles, buttonStyles, textStyles, containerStyles } from '@/styles';
 
 type IoniconsName = React.ComponentProps<typeof Ionicons>['name'];
 
@@ -35,23 +25,23 @@ type IconProps = React.PropsWithoutRef<TouchableOpacityProps> & {
 };
 
 export const Button: React.FC<ButtonProps> = ({
-  children,
-  style,
-  textStyle,
-  ...props
+	children,
+	style,
+	textStyle,
+	...props
 }) => {
   const style_: StyleProp<ViewStyle> = [buttonStyles.button, style];
-  const textStyle_: StyleProp<TextStyle> = [
-    textStyles.smallButtonText,
-    textStyle,
-  ];
+  const textStyle_: StyleProp<TextStyle> = [textStyles.smallButtonText, textStyle];
 
   return (
     <TouchableOpacity style={style_} {...props}>
-      <Text style={textStyle_}>{children}</Text>
+      <Text style={textStyle_}>
+        {children}
+      </Text>
     </TouchableOpacity>
   );
 };
+
 
 export const IconButton: React.FC<IconProps> = ({
   iconName,
@@ -62,61 +52,54 @@ export const IconButton: React.FC<IconProps> = ({
   ...props
 }) => {
   return (
-    <TouchableOpacity
-      style={[buttonStyles.button, style]}
-      onPress={onPress}
-      {...props}
-    >
+    <TouchableOpacity style={[buttonStyles.button, style]} onPress={onPress} {...props}>
       <Ionicons name={iconName} size={iconSize} color={iconColor} />
     </TouchableOpacity>
   );
 };
 
 export const BorderlessButton: React.FC<ButtonProps> = ({
-  children,
-  style,
-  textStyle,
-  ...props
+	children,
+	style,
+	textStyle,
+	...props
 }) => {
   return (
     <TouchableOpacity style={style} {...props}>
-      <Text style={textStyle}>{children}</Text>
+      <Text style={textStyle}>
+        {children}
+      </Text>
     </TouchableOpacity>
   );
 };
 
 export const ImageButton: React.FC<ButtonProps> = ({
-  children,
-  style,
-  textStyle,
-  ...props
+	children,
+	style,
+	textStyle,
+	...props
 }) => {
   const style_: StyleProp<ViewStyle> = [buttonStyles.imageButton, style];
-  const textStyle_: StyleProp<TextStyle> = [
-    textStyles.smallButtonText,
-    textStyle,
-  ];
+  const textStyle_: StyleProp<TextStyle> = [textStyles.smallButtonText, textStyle];
 
   return (
     <TouchableOpacity style={style_} {...props}>
-      <Text style={textStyle_}>{children}</Text>
+      <Text style={textStyle_}>
+        {children}
+      </Text>
     </TouchableOpacity>
   );
-};
+}
 
-export const CameraButton: React.FC<CameraButtonProps> = ({
-  onPhotoSelected,
-}) => {
+export const CameraButton: React.FC<CameraButtonProps> = ({ onPhotoSelected, style }) => {
+  const style_: StyleProp<ViewStyle> = [buttonStyles.imageButton, style];
   const photoHandler = new PhotoHandler(onPhotoSelected);
-
+  
   return (
     <View style={containerStyles.cameraContainer}>
-      <Button
-        style={buttonStyles.cameraButton}
-        onPress={() => photoHandler.promptForImageSource()}
-      >
+      <Button style={buttonStyles.cameraButton} onPress={() => photoHandler.promptForImageSource()}>
         <Ionicons name="camera-outline" size={29} color="#fff" />
       </Button>
     </View>
   );
-};
+}

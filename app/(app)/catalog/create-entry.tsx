@@ -1,26 +1,17 @@
-import { useState } from 'react';
+import { Dispatch, useState } from 'react';
 import { FlatList, SafeAreaView, Text } from 'react-native';
 
-import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-
+import { Ionicons } from '@expo/vector-icons';
 import { Button, SnackbarMessage } from '@/components';
-import { CatalogForm } from '@/forms';
-import { useAuth } from '@/providers/AuthProvider';
 import DatabaseService from '@/services/DatabaseService';
+import { globalStyles, buttonStyles, textStyles, containerStyles } from '@/styles';
+import { Cat, CatalogEntry, Sex, TNRStatus, CatStatus, Fur, PickerConfig } from '@/types';
+import { useAuth } from '@/providers/AuthProvider';
 import { setSelectedCatalogEntry } from '@/stores/CatalogEntryStores';
-import { buttonStyles, containerStyles, textStyles } from '@/styles';
-import {
-  Cat,
-  CatStatus,
-  CatalogEntry,
-  Fur,
-  PickerConfig,
-  Sex,
-  TNRStatus,
-} from '@/types';
+import { CatalogForm } from '@/forms';
 
-const CreateEntry = () => {
+const create_entry = () =>{
   const router = useRouter();
   const { user } = useAuth();
   const database = DatabaseService.getInstance();
@@ -38,7 +29,7 @@ const CreateEntry = () => {
     { label: 'Unknown', value: 'Unknown' },
   ]);
 
-  const statusPicker: PickerConfig<CatStatus> = {
+  const statusPicker:PickerConfig<CatStatus> = {
     value: statusValue,
     setValue: setStatusValue,
     open: statusOpen,
@@ -56,7 +47,7 @@ const CreateEntry = () => {
     { label: 'Unknown', value: 'Unknown' },
   ]);
 
-  const tnrPicker: PickerConfig<TNRStatus> = {
+  const tnrPicker:PickerConfig<TNRStatus> = {
     value: tnrValue,
     setValue: setTnrValue,
     open: tnrOpen,
@@ -74,7 +65,7 @@ const CreateEntry = () => {
     { label: 'Unknown', value: 'Unknown' },
   ]);
 
-  const sexPicker: PickerConfig<Sex> = {
+  const sexPicker:PickerConfig<Sex> = {
     value: sexValue,
     setValue: setSexValue,
     open: sexOpen,
@@ -93,7 +84,7 @@ const CreateEntry = () => {
     { label: 'Unknown', value: 'Unknown' },
   ]);
 
-  const furPicker: PickerConfig<Fur> = {
+  const furPicker:PickerConfig<Fur> = {
     value: furValue,
     setValue: setFurValue,
     open: furOpen,
@@ -107,7 +98,7 @@ const CreateEntry = () => {
     tnrPicker,
     sexPicker,
     furPicker,
-  };
+  };  
 
   const [formData, setFormData] = useState<{
     name: string;
@@ -124,23 +115,23 @@ const CreateEntry = () => {
     sex: Sex;
     credits: string;
   }>({
-    name: '',
-    descShort: '',
-    descLong: '',
-    colorPattern: '',
-    behavior: '',
-    yearsRecorded: '',
-    AoR: '',
-    currentStatus: 'Unknown',
-    furLength: 'Unknown',
-    furPattern: '',
-    tnr: 'Unknown',
-    sex: 'Unknown',
-    credits: '',
+    name: "",
+    descShort: "",
+    descLong: "",
+    colorPattern: "",
+    behavior: "",
+    yearsRecorded: "",
+    AoR: "",
+    currentStatus: "Unknown",
+    furLength: "Unknown",
+    furPattern: "",
+    tnr: "Unknown",
+    sex: "Unknown",
+    credits: "",
   });
 
   const createCat = () => {
-    const newCat: Cat = {
+    const newCat:Cat = {
       name: formData.name,
       descShort: formData.descShort,
       descLong: formData.descLong,
@@ -153,59 +144,48 @@ const CreateEntry = () => {
       furPattern: formData.furPattern,
       tnr: pickers.tnrPicker.value,
       sex: pickers.sexPicker.value,
-    };
+    }
     return newCat;
-  };
+  }
   const createObj = () => {
     const newEntry = new CatalogEntry({
-      id: '-1',
-      cat: createCat(),
-      credits: formData.credits,
+      id:"-1",
+      cat:createCat(),
+      credits:formData.credits,
       createdAt: new Date(),
-      createdBy: user,
-    });
+      createdBy:user,
+    })
     setSelectedCatalogEntry(newEntry);
   };
-
+  
   return (
     <SafeAreaView style={containerStyles.wrapper}>
-      <Button
-        style={buttonStyles.smallButtonTopLeft}
-        onPress={() => router.back()}
-      >
+      <Button style={buttonStyles.smallButtonTopLeft} onPress={() => router.back()}>
         <Ionicons name="arrow-back-outline" size={25} color="#fff" />
       </Button>
-      <SnackbarMessage
-        text="Creating Entry..."
-        visible={visible}
-        setVisible={setVisible}
-      />
+      <SnackbarMessage text="Creating Entry..." visible={visible} setVisible={setVisible} />
       <Text style={textStyles.pageTitle}>Create Entry</Text>
       <FlatList
-        data={[1]}
-        keyExtractor={() => '1'}
-        contentContainerStyle={containerStyles.scrollView}
-        renderItem={() => (
-          <CatalogForm
-            formData={formData}
-            setFormData={setFormData}
-            pickers={pickers}
-            photos={photos}
-            setPhotos={setPhotos}
-            isCreate={true}
-          />
-        )}
-      />
-      <Button
-        style={buttonStyles.bigButton}
-        onPress={() => {
-          createObj();
-          void database.handleCatalogCreate(photos, setVisible, router);
-        }}
-      >
+              data={[1]}
+              keyExtractor={() => '1'}
+              contentContainerStyle={containerStyles.scrollView}
+              renderItem={() => (
+        <CatalogForm
+          formData={formData}
+          setFormData={setFormData}
+          pickers={pickers}
+          photos={photos}
+          setPhotos={setPhotos}
+          isCreate={true}
+        />
+              )}/>
+      <Button style={buttonStyles.bigButton} onPress={() => {
+        createObj();
+        database.handleCatalogCreate(photos, setVisible, router);
+      }}>
         <Text style={textStyles.bigButtonText}> Create Entry</Text>
       </Button>
     </SafeAreaView>
   );
-};
-export default CreateEntry;
+}
+export default create_entry;
