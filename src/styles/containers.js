@@ -10,7 +10,10 @@ const containerStyles = StyleSheet.create({
   wrapper: {
     flex: 1,
     backgroundColor: '#FAFAFA',
-    paddingTop: vh * 10,
+    paddingTop: Platform.select({
+      ios: vh * 10, // avoid iOS Dynamic Island
+      default: 0,
+    }),
   },
   imageWrapper: {
     flexDirection: 'column',
