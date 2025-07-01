@@ -1,42 +1,30 @@
 import React, { useEffect, useState } from 'react';
-import { FlatList, SafeAreaView, Text } from 'react-native';
+import { SafeAreaView, Text, FlatList } from 'react-native';
 
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 
-import { Button, SnackbarMessage } from '@/components';
-import { SightingForm } from '@/forms';
+import { getSelectedSighting, setSelectedSighting } from '@/stores/sightingStores';
 import { CatalogImageHandler } from '@/image_handlers/CatalogImageHandler';
-import { useAuth } from '@/providers';
+import { buttonStyles, textStyles, containerStyles } from '@/styles';
+import { Button, SnackbarMessage } from '@/components';
 import DatabaseService from '@/services/DatabaseService';
-import {
-  getSelectedSighting,
-  setSelectedSighting,
-} from '@/stores/sightingStores';
-import { buttonStyles, containerStyles, textStyles } from '@/styles';
+import { useAuth } from '@/providers';
 import { Sighting } from '@/types';
+import { SightingForm } from '@/forms';
 
 const SightingEditScreen = () => {
   const router = useRouter();
   const { user } = useAuth();
   const database = DatabaseService.getInstance();
   const sighting = getSelectedSighting();
-
+  
   const [photos, setPhotos] = useState<string[]>([]);
   const [profile, setProfile] = useState<string>('');
   const [isPicsChanged, setPicsChanged] = useState<boolean>(false);
   const [visible, setVisible] = useState<boolean>(false);
-  const imageHandler = new CatalogImageHandler({
-    type: 'sightings',
-    id: sighting.id,
-    photos,
-    profile,
-    setPhotos,
-    setProfile,
-    setPicsChanged,
-    setVisible,
-  });
-
+  const imageHandler = new CatalogImageHandler({ type:'sightings', id:sighting.id, photos, profile, setPhotos, setProfile, setPicsChanged, setVisible});
+  
   const [value, setValue] = useState(sighting.timeofDay);
   const [open, setOpen] = useState(false);
   const [items, setItems] = useState([
@@ -44,7 +32,7 @@ const SightingEditScreen = () => {
     { label: 'Afternoon', value: 'Afternoon' },
     { label: 'Night', value: 'Night' },
   ]);
-
+  
   const [formData, setFormData] = useState({
     name: sighting.name,
     info: sighting.info,
@@ -69,32 +57,22 @@ const SightingEditScreen = () => {
     });
 
     setSelectedSighting(newSighting);
-  };
-
+  };  
+    
   useEffect(() => {
-    void database.fetchSightingImages(sighting.id, setProfile, setPhotos);
-    // NOTE: database is a singleton class provided by DatabaseService and
-    // will never change; it does not need to be a dependency.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    database.fetchSightingImages(sighting.id, setProfile, setPhotos);
   }, []);
 
   return (
     <SafeAreaView style={containerStyles.wrapper}>
-      <Button
-        style={buttonStyles.smallButtonTopLeft}
-        onPress={() => router.back()}
-      >
+      <Button style={buttonStyles.smallButtonTopLeft} onPress={() => router.back()}>
         <Ionicons name="arrow-back-outline" size={25} color="#fff" />
       </Button>
-      <SnackbarMessage
-        text="Saving Report..."
-        visible={visible}
-        setVisible={setVisible}
-      />
+      <SnackbarMessage text="Saving Report..." visible={visible} setVisible={setVisible} />
       <Text style={textStyles.pageTitle}>Edit Report</Text>
-
+      
       <FlatList
-        data={[1]} // A dummy array to make FlatList scrollable
+        data={[1]}  // A dummy array to make FlatList scrollable
         keyExtractor={() => '1'}
         contentContainerStyle={containerStyles.scrollView}
         renderItem={() => (
@@ -113,28 +91,14 @@ const SightingEditScreen = () => {
             setPicsChanged={setPicsChanged}
             imageHandler={imageHandler}
             isCreate={false}
-          />
-        )}
-      />
-      <Button
-        style={buttonStyles.bigButton}
-        onPress={() => {
+          />)}/>
+      <Button style={buttonStyles.bigButton} onPress={() => {
           createObj();
-          void database.saveSighting(
-            photos,
-            profile,
-            isPicsChanged,
-            setVisible,
-            router,
-          );
-        }}
-      >
+          database.saveSighting(photos, profile, isPicsChanged, setVisible, router);
+        }}>
         <Text style={textStyles.bigButtonText}>Save Report</Text>
       </Button>
-      <Button
-        style={buttonStyles.bigDeleteButton}
-        onPress={() => database.deleteSighting(sighting.id, setVisible, router)}
-      >
+      <Button style={buttonStyles.bigDeleteButton} onPress={() => database.deleteSighting(sighting.id, setVisible, router)}>
         <Text style={textStyles.bigButtonText}>Delete Report</Text>
       </Button>
     </SafeAreaView>

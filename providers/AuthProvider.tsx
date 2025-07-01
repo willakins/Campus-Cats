@@ -1,28 +1,16 @@
-import {
-  ReactNode,
-  createContext,
-  useContext,
-  useEffect,
-  useState,
-} from 'react';
+import { createContext, ReactNode, useContext, useEffect, useState } from 'react';
 
-import { Router } from 'expo-router';
-import {
-  User as AuthUser,
-  createUserWithEmailAndPassword,
-  onAuthStateChanged,
-  signInWithEmailAndPassword,
-  signOut as signOutAuthUser,
-} from 'firebase/auth';
+import { createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut as signOutAuthUser, onAuthStateChanged, User as AuthUser } from 'firebase/auth';
 
 import { auth } from '@/config/firebase';
 import { User, fetchUser, mutateUser } from '@/models';
+import { Router } from 'expo-router';
 
 type AuthContextType = {
   login: (email: string, password: string) => Promise<void>;
   createAccount: (email: string, password: string) => Promise<void>;
-  signOut: (router: Router) => Promise<void>;
-  currentUser: AuthUser | null;
+  signOut: (router:Router) => Promise<void>;
+  currentUser: AuthUser | null,
   user: User;
   loading: boolean;
 };
@@ -39,27 +27,23 @@ const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const createAccount = async (email: string, password: string) => {
-    const userCredential = await createUserWithEmailAndPassword(
-      auth,
-      email,
-      password,
-    );
+    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
     const authUser = userCredential.user;
     // Create a default user
-    await mutateUser({
+    mutateUser({
       id: authUser.uid,
       email: email,
       role: 0,
     });
   };
 
-  const signOut = async (router: Router) => {
+  const signOut = async (router:Router) => {
     await signOutAuthUser(auth);
     router.push('/login');
   };
 
   useEffect(() => {
-    const handleAuthStateChange = async (authUser: AuthUser | null) => {
+    const unsubscribe = onAuthStateChanged(auth, async (authUser) => {
       try {
         if (authUser?.uid && authUser?.email) {
           // Get user doc on start
@@ -71,25 +55,21 @@ const AuthProvider = ({ children }: { children: ReactNode }) => {
         console.log(error);
       }
       setLoading(false);
-    };
-
-    const unsubscribe = onAuthStateChanged(auth, (authUser) => {
-      void handleAuthStateChange(authUser);
     });
 
     return unsubscribe;
   }, []);
 
   const value = {
-    login,
-    createAccount,
-    signOut,
-    currentUser,
-    user,
-    loading,
-  };
+    login, createAccount, signOut,
+    currentUser, user, loading,
+  }
 
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+  return (
+    <AuthContext.Provider value={value}>
+      {children}
+    </AuthContext.Provider>
+  );
 };
 
 // This hook can be used to access the user info.
