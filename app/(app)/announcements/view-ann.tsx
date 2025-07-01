@@ -1,42 +1,29 @@
 import { SafeAreaView, ScrollView, Text } from 'react-native';
 
-import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 
-import { AnnouncementEntry, Button } from '@/components';
+import { Button, AnnouncementEntry } from '@/components';
 import { useAuth } from '@/providers';
-import { buttonStyles, containerStyles, textStyles } from '@/styles';
+import { globalStyles, buttonStyles, textStyles, containerStyles } from '@/styles';
 
-const ViewAnn = () => {
+const view_entry = () =>{
   const router = useRouter();
   const { user } = useAuth();
   const isAdmin = user.role === 1 || user.role === 2;
-
+  
   return (
     <SafeAreaView style={containerStyles.wrapper}>
-      <Button
-        style={buttonStyles.smallButtonTopLeft}
-        onPress={() => router.navigate('/announcements')}
-      >
+      <Button style={buttonStyles.smallButtonTopLeft} onPress={() => router.navigate('/announcements')}>
         <Ionicons name="arrow-back-outline" size={25} color="#fff" />
       </Button>
-      <ScrollView
-        contentContainerStyle={[
-          containerStyles.scrollView,
-          { paddingTop: '10%' },
-        ]}
-      >
-        <AnnouncementEntry />
+      <ScrollView contentContainerStyle={[containerStyles.scrollView, {paddingTop:'10%'}]}>
+      <AnnouncementEntry/>
       </ScrollView>
-      {isAdmin ? (
-        <Button
-          style={buttonStyles.bigButton}
-          onPress={() => router.push('/announcements/edit-ann')}
-        >
-          <Text style={textStyles.bigButtonText}> Edit Announcement</Text>
-        </Button>
-      ) : null}
+      {isAdmin ? <Button style={buttonStyles.bigButton} onPress={() => router.push('/announcements/edit-ann')}>
+        <Text style ={textStyles.bigButtonText}> Edit Announcement</Text>
+      </Button> : null}
     </SafeAreaView>
   );
-};
-export default ViewAnn;
+}
+export default view_entry;

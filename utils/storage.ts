@@ -1,22 +1,11 @@
-import 'react-native-get-random-values';
-
-import {
-  UploadResult,
-  getDownloadURL,
-  ref,
-  uploadBytes,
-} from 'firebase/storage';
-// get-random-values needed for uuid
+import { getDownloadURL, ref, uploadBytes, UploadResult } from 'firebase/storage';
+import 'react-native-get-random-values'; // Needed for uuid
 import { v4 as uuidv4 } from 'uuid';
 
 import { storage } from '@/config/firebase';
 
 // Upload a file
-export const uploadFromURI = async (
-  uploadDir: string,
-  uri: string,
-  filename?: string,
-): Promise<UploadResult> => {
+export const uploadFromURI = async (uploadDir: string, uri: string, filename?: string | undefined): Promise<UploadResult> => {
   // Get a unique ref
   const filename_ = filename || uuidv4();
   const filepath = uploadDir + filename_;
@@ -35,5 +24,5 @@ export const uploadFromURI = async (
 // Get the download URL of a storage path
 export const getStorageURL = async (path: string) => {
   const storageRef = ref(storage, path);
-  return getDownloadURL(storageRef);
+  return await getDownloadURL(storageRef);
 };

@@ -23,3 +23,4 @@ export const handleFirebaseAuthError = (errorCode: string) => {
       return 'Login failed.';
   }
 };
+

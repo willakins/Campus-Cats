@@ -1,5 +1,4 @@
 import { Text, TextProps } from 'react-native';
-
 import { textStyles } from '@/styles';
 
 type ErrorTextProps = Omit<TextProps, 'children'> & {

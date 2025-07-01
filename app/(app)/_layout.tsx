@@ -1,7 +1,7 @@
 import { Redirect, Stack } from 'expo-router';
 
-import { LoadingIndicator } from '@/components';
 import { useAuth } from '@/providers';
+import { LoadingIndicator } from '@/components';
 
 const AppLayout = () => {
   const { currentUser, loading } = useAuth();
@@ -15,13 +15,11 @@ const AppLayout = () => {
     return <Redirect href="/login" />;
   }
 
-  return (
-    <Stack
-      screenOptions={{
-        headerShown: false,
-      }}
-    />
-  );
+  return <Stack
+    screenOptions={{
+      headerShown: false,
+    }}
+  />;
 };
 
 export default AppLayout;

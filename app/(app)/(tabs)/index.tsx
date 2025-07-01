@@ -3,16 +3,12 @@ import { View } from 'react-native';
 
 import { useFocusEffect, useRouter } from 'expo-router';
 
-import { Button, SightingMapView } from '@/components';
 import DatabaseService from '@/services/DatabaseService';
+import { Button, SightingMapView } from '@/components';
+import { Sighting} from '@/types';
+
+import { globalStyles, buttonStyles, textStyles, containerStyles } from '@/styles';
 import { setSelectedSighting } from '@/stores/sightingStores';
-import {
-  buttonStyles,
-  containerStyles,
-  globalStyles,
-  textStyles,
-} from '@/styles';
-import { Sighting } from '@/types';
 
 const HomeScreen = () => {
   const router = useRouter();
@@ -23,11 +19,8 @@ const HomeScreen = () => {
 
   useFocusEffect(
     useCallback(() => {
-      void database.fetchPins(setPins, setMapKey);
-      // NOTE: database is a singleton class provided by DatabaseService and
-      // will never change; it does not need to be a dependency.
-      // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []),
+      database.fetchPins(setPins, setMapKey);
+    }, [])
   );
 
   const filterPins = (pin: Sighting) => {
@@ -41,18 +34,12 @@ const HomeScreen = () => {
   return (
     <View style={globalStyles.screen}>
       <View style={containerStyles.buttonGroup}>
-        {['7', '30', '90', '365', 'all'].map((range) => (
+        {['7', '30', '90', '365', 'all'].map(range => (
           <Button
             key={range}
-            style={[
-              buttonStyles.rowButton2,
-              filter === range && buttonStyles.activeButton,
-            ]}
+            style={[buttonStyles.rowButton2, filter === range && buttonStyles.activeButton]}
             onPress={() => setFilter(range)}
-            textStyle={[
-              textStyles.buttonText,
-              filter === range && textStyles.activeText,
-            ]}
+            textStyle={[textStyles.buttonText, filter === range && textStyles.activeText]}
           >
             {range === '365' ? '1Y' : range === 'all' ? 'All' : `${range}D`}
           </Button>
