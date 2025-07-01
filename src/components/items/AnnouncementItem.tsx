@@ -1,7 +1,7 @@
 import React from 'react';
 import { Text, View } from 'react-native';
 
-import { Button } from '../ui/Buttons';
+import { Button } from '../common';
 import { useRouter } from 'expo-router';
 
 import { setSelectedAnnouncement } from '@/stores/announcementStores';

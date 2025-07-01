@@ -1,7 +1,6 @@
 import { FieldValues, useController } from 'react-hook-form';
 
-import { ErrorText, TextInput } from '@/components';
-import { TextInputProps } from '@/components/ui/TextInput';
+import { ErrorText, TextInput, TextInputProps } from '@/components';
 import { InputControllerType } from '@/types';
 
 type ControlledInputProps<T extends FieldValues> = TextInputProps &

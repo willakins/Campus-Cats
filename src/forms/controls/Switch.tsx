@@ -1,7 +1,6 @@
 import { FieldValues, useController } from 'react-hook-form';
 
-import { ErrorText, Switch } from '@/components';
-import { SwitchProps } from '@/components/ui/Switch';
+import { ErrorText, Switch, SwitchProps } from '@/components';
 import { InputControllerType } from '@/types';
 
 type ControlledSwitchProps<T extends FieldValues> = SwitchProps &

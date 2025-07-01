@@ -3,8 +3,7 @@ import { Image, Text, View } from 'react-native';
 import MapView, { Marker } from 'react-native-maps';
 import { Checkbox } from 'react-native-paper';
 
-import DatabaseService from '../../services/DatabaseService';
-
+import DatabaseService from '@/services/DatabaseService';
 import { getSelectedSighting } from '@/stores/sightingStores';
 import { containerStyles, textStyles } from '@/styles';
 import { Sighting } from '@/types';

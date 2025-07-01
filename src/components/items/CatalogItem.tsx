@@ -2,10 +2,10 @@
 import React, { useEffect, useState } from 'react';
 import { Image, Text, View } from 'react-native';
 
-import DatabaseService from '../../services/DatabaseService';
-import { Button } from '../ui/Buttons';
+import { Button } from '../common';
 import { useRouter } from 'expo-router';
 
+import DatabaseService from '@/services/DatabaseService';
 import { setSelectedCatalogEntry } from '@/stores/CatalogEntryStores';
 import { containerStyles, textStyles } from '@/styles';
 import { CatalogEntry } from '@/types';

@@ -1,8 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Image, Text, View } from 'react-native';
 
-import DatabaseService from '../../services/DatabaseService';
-
+import DatabaseService from '@/services/DatabaseService';
 import { getSelectedAnnouncement } from '@/stores/announcementStores';
 import { containerStyles, textStyles } from '@/styles';
 import { Announcement } from '@/types';

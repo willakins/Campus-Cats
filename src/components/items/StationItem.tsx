@@ -2,10 +2,10 @@ import React, { useState } from 'react';
 import { Image, Text, View } from 'react-native';
 import { Checkbox } from 'react-native-paper';
 
-import DatabaseService from '../../services/DatabaseService';
-import { Button } from '../ui/Buttons';
+import { Button } from '../common';
 import { useFocusEffect, useRouter } from 'expo-router';
 
+import DatabaseService from '@/services/DatabaseService';
 import { setSelectedStation } from '@/stores/stationStores';
 import { containerStyles, textStyles } from '@/styles';
 import { Station } from '@/types';

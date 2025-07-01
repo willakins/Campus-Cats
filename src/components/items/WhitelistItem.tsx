@@ -1,9 +1,9 @@
 import React from 'react';
 import { Text, View } from 'react-native';
 
-import DatabaseService from '../../services/DatabaseService';
-import { Button } from '../ui/Buttons';
+import { Button } from '../common';
 
+import DatabaseService from '@/services/DatabaseService';
 import { buttonStyles, containerStyles, textStyles } from '@/styles';
 import { WhitelistApp } from '@/types';
 

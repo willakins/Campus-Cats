@@ -1,6 +1,6 @@
 import { MapViewProps, Marker } from 'react-native-maps';
 
-import { MapView } from '@/components/ui/MapView';
+import { MapView } from '@/components/common';
 import { Sighting } from '@/types';
 
 type SightingMapViewProps = MapViewProps & {

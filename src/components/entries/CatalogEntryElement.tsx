@@ -2,9 +2,9 @@ import React, { useEffect, useState } from 'react';
 import { Image, Text, View } from 'react-native';
 import MapView, { Marker } from 'react-native-maps';
 
-import DatabaseService from '../../services/DatabaseService';
-import { Button } from '../ui/Buttons';
+import { Button } from '../common';
 
+import DatabaseService from '@/services/DatabaseService';
 import { getSelectedCatalogEntry } from '@/stores/CatalogEntryStores';
 import { buttonStyles, containerStyles, textStyles } from '@/styles';
 import { CatalogEntry, Sighting } from '@/types';

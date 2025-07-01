@@ -4,14 +4,12 @@ import {
   TextStyle,
   TouchableOpacity,
   TouchableOpacityProps,
-  View,
   ViewStyle,
 } from 'react-native';
 
-import { PhotoHandler } from '../../image_handlers/PhotoHandler';
 import { Ionicons } from '@expo/vector-icons';
 
-import { buttonStyles, containerStyles, textStyles } from '@/styles';
+import { buttonStyles, textStyles } from '@/styles';
 
 type IoniconsName = React.ComponentProps<typeof Ionicons>['name'];
 
@@ -19,11 +17,6 @@ type ButtonProps = React.PropsWithoutRef<TouchableOpacityProps> & {
   children?: React.ReactNode;
   style?: StyleProp<ViewStyle>;
   textStyle?: StyleProp<TextStyle>;
-};
-
-type CameraButtonProps = {
-  onPhotoSelected: (uri: string) => void;
-  style?: StyleProp<ViewStyle>;
 };
 
 type IconProps = React.PropsWithoutRef<TouchableOpacityProps> & {
@@ -101,22 +94,5 @@ export const ImageButton: React.FC<ButtonProps> = ({
     <TouchableOpacity style={style_} {...props}>
       <Text style={textStyle_}>{children}</Text>
     </TouchableOpacity>
-  );
-};
-
-export const CameraButton: React.FC<CameraButtonProps> = ({
-  onPhotoSelected,
-}) => {
-  const photoHandler = new PhotoHandler(onPhotoSelected);
-
-  return (
-    <View style={containerStyles.cameraContainer}>
-      <Button
-        style={buttonStyles.cameraButton}
-        onPress={() => photoHandler.promptForImageSource()}
-      >
-        <Ionicons name="camera-outline" size={29} color="#fff" />
-      </Button>
-    </View>
   );
 };
