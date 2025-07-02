@@ -2,16 +2,17 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import React from 'react';
 import { Platform } from 'react-native';
 
+import { Ionicons } from '@expo/vector-icons';
+
+// Assuming useAuth gives you user info
+import { useAuth } from '@/providers';
+
 import Announcements from './announcements';
 import Catalog from './catalog';
 import HomeScreen from './index';
 import Settings from './settings';
 // Admin-only screen
 import Stations from './stations';
-import { Ionicons } from '@expo/vector-icons';
-
-// Assuming useAuth gives you user info
-import { useAuth } from '@/providers';
 
 const Tab = createBottomTabNavigator();
 

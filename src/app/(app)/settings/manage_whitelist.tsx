@@ -1,17 +1,13 @@
 import { useEffect, useState } from 'react';
 import { SafeAreaView, ScrollView, Text } from 'react-native';
 
-import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
-
-import { Button, SnackbarMessage } from '@/components';
+import { BackButton, SnackbarMessage } from '@/components';
 import { WhitelistItem } from '@/components/items/WhitelistItem';
 import DatabaseService from '@/services/DatabaseService';
-import { buttonStyles, containerStyles, textStyles } from '@/styles';
+import { containerStyles, textStyles } from '@/styles';
 import { WhitelistApp } from '@/types';
 
 const ManageWhitelist = () => {
-  const router = useRouter();
   const database = DatabaseService.getInstance();
   const [visible, setVisible] = useState<boolean>(false);
   const [applicants, setApplicants] = useState<WhitelistApp[]>([]);
@@ -25,12 +21,7 @@ const ManageWhitelist = () => {
 
   return (
     <SafeAreaView style={containerStyles.wrapper}>
-      <Button
-        style={buttonStyles.smallButtonTopLeft}
-        onPress={() => router.back()}
-      >
-        <Ionicons name="arrow-back-outline" size={25} color="#fff" />
-      </Button>
+      <BackButton />
       <SnackbarMessage
         text="Saving Whitelist..."
         visible={visible}

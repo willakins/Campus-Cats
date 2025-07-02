@@ -1,10 +1,9 @@
 import { useState } from 'react';
 import { SafeAreaView, ScrollView, Text, View } from 'react-native';
 
-import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 
-import { Button, SnackbarMessage, TextInput } from '@/components';
+import { BackButton, Button, SnackbarMessage, TextInput } from '@/components';
 import DatabaseService from '@/services/DatabaseService';
 import { buttonStyles, containerStyles, textStyles } from '@/styles';
 import { WhitelistApp } from '@/types';
@@ -40,12 +39,7 @@ const Whitelist = () => {
 
   return (
     <SafeAreaView style={containerStyles.wrapper}>
-      <Button
-        style={buttonStyles.smallButtonTopLeft}
-        onPress={() => router.back()}
-      >
-        <Ionicons name="arrow-back-outline" size={25} color="#fff" />
-      </Button>
+      <BackButton />
       <SnackbarMessage
         text="Saving Application..."
         visible={visible}

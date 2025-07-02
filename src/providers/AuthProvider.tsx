@@ -1,6 +1,6 @@
 import {
-  ReactNode,
   createContext,
+  ReactNode,
   useContext,
   useEffect,
   useState,
@@ -16,7 +16,7 @@ import {
 } from 'firebase/auth';
 
 import { auth } from '@/config/firebase';
-import { User, fetchUser, mutateUser } from '@/models';
+import { fetchUser, mutateUser, User } from '@/models';
 
 type AuthContextType = {
   login: (email: string, password: string) => Promise<void>;

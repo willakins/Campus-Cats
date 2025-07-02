@@ -2,13 +2,6 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { Image, ScrollView, Text, View } from 'react-native';
 
-import {
-  ControlledDateTimeInput,
-  ControlledFilePicker,
-  ControlledInput,
-  ControlledMapPicker,
-  ControlledSwitch,
-} from './controls';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 
@@ -19,6 +12,14 @@ import { Sighting } from '@/models';
 import { buttonStyles, containerStyles, textStyles } from '@/styles';
 import { LatLngSchema } from '@/types';
 import { uploadFromURI } from '@/utils';
+
+import {
+  ControlledDateTimeInput,
+  ControlledFilePicker,
+  ControlledInput,
+  ControlledMapPicker,
+  ControlledSwitch,
+} from './controls';
 
 const reportSchema = z.object({
   name: z.string(),

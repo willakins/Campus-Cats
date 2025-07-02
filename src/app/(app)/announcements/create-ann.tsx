@@ -1,10 +1,9 @@
 import { useState } from 'react';
 import { SafeAreaView, ScrollView, Text } from 'react-native';
 
-import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 
-import { Button, SnackbarMessage } from '@/components';
+import { BackButton, Button, SnackbarMessage } from '@/components';
 import { AnnouncementForm } from '@/forms/AnnouncementForm';
 import { useAuth } from '@/providers/AuthProvider';
 import DatabaseService from '@/services/DatabaseService';
@@ -39,12 +38,7 @@ const CreateAnn = () => {
 
   return (
     <SafeAreaView style={containerStyles.wrapper}>
-      <Button
-        style={buttonStyles.smallButtonTopLeft}
-        onPress={() => router.navigate('/announcements')}
-      >
-        <Ionicons name="arrow-back-outline" size={25} color="#fff" />
-      </Button>
+      <BackButton />
       <SnackbarMessage
         text="Creating Announcement..."
         visible={visible}

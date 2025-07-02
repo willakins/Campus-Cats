@@ -1,10 +1,10 @@
 import React, { Dispatch } from 'react';
 import { Image, Text, View } from 'react-native';
 
-import { Button, CameraButton, ImageButton } from './buttons';
-
 import { CatalogImageHandler } from '@/image_handlers/CatalogImageHandler';
 import { buttonStyles, containerStyles, textStyles } from '@/styles';
+
+import { Button, CameraButton, ImageButton } from './buttons';
 
 interface FormCameraProps {
   photos: string[];

@@ -1,13 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { Alert, SafeAreaView, ScrollView, Text } from 'react-native';
 
-import { Ionicons } from '@expo/vector-icons';
 import * as Linking from 'expo-linking';
 import { useRouter } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
-import { SAMLAuthProvider, getAuth, signInWithCredential } from 'firebase/auth';
+import { getAuth, SAMLAuthProvider, signInWithCredential } from 'firebase/auth';
 
-import { Button, SnackbarMessage } from '@/components';
+import { BackButton, Button, SnackbarMessage } from '@/components';
 import { firebaseConfig } from '@/config/firebase';
 import { fetchUser } from '@/models';
 import { buttonStyles, containerStyles, textStyles } from '@/styles';
@@ -82,12 +81,7 @@ const SAMLRedirect = () => {
 
   return (
     <SafeAreaView style={containerStyles.wrapper}>
-      <Button
-        style={buttonStyles.smallButtonTopLeft}
-        onPress={() => router.push('/catalog/view-entry')}
-      >
-        <Ionicons name="arrow-back-outline" size={25} color="#fff" />
-      </Button>
+      <BackButton />
       <SnackbarMessage
         text="Logging in..."
         visible={visible}

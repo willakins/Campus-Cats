@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { Text, View } from 'react-native';
 
-import { ControlledInput } from './controls';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { FirebaseError } from 'firebase/app';
 import { z } from 'zod';
@@ -11,6 +10,8 @@ import { Button } from '@/components';
 import { Errorbar } from '@/components';
 import { buttonStyles, containerStyles, textStyles } from '@/styles';
 import { handleFirebaseAuthError } from '@/utils';
+
+import { ControlledInput } from './controls';
 
 // Login requirements
 const loginSchema = z.object({

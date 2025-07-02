@@ -1,10 +1,9 @@
 import { useState } from 'react';
 import { FlatList, SafeAreaView, Text } from 'react-native';
 
-import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 
-import { Button, SnackbarMessage } from '@/components';
+import { BackButton, Button, SnackbarMessage } from '@/components';
 import { CatalogForm } from '@/forms';
 import { useAuth } from '@/providers/AuthProvider';
 import DatabaseService from '@/services/DatabaseService';
@@ -12,8 +11,8 @@ import { setSelectedCatalogEntry } from '@/stores/CatalogEntryStores';
 import { buttonStyles, containerStyles, textStyles } from '@/styles';
 import {
   Cat,
-  CatStatus,
   CatalogEntry,
+  CatStatus,
   Fur,
   PickerConfig,
   Sex,
@@ -169,12 +168,7 @@ const CreateEntry = () => {
 
   return (
     <SafeAreaView style={containerStyles.wrapper}>
-      <Button
-        style={buttonStyles.smallButtonTopLeft}
-        onPress={() => router.back()}
-      >
-        <Ionicons name="arrow-back-outline" size={25} color="#fff" />
-      </Button>
+      <BackButton />
       <SnackbarMessage
         text="Creating Entry..."
         visible={visible}

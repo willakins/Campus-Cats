@@ -1,10 +1,14 @@
 import { useState } from 'react';
 import { SafeAreaView, ScrollView, Text } from 'react-native';
 
-import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 
-import { Button, SnackbarMessage, StationEntry } from '@/components';
+import {
+  BackButton,
+  Button,
+  SnackbarMessage,
+  StationEntry,
+} from '@/components';
 import { useAuth } from '@/providers';
 import DatabaseService from '@/services/DatabaseService';
 import { buttonStyles, containerStyles, textStyles } from '@/styles';
@@ -18,12 +22,7 @@ const ViewEntry = () => {
 
   return (
     <SafeAreaView style={containerStyles.wrapper}>
-      <Button
-        style={buttonStyles.smallButtonTopLeft}
-        onPress={() => router.navigate('/stations')}
-      >
-        <Ionicons name="arrow-back-outline" size={25} color="#fff" />
-      </Button>
+      <BackButton />
       <SnackbarMessage
         text="Refilling..."
         visible={visible}

@@ -3,7 +3,7 @@ import { SafeAreaView, ScrollView, Text } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 
-import { Button, CatalogEntryElement } from '@/components';
+import { BackButton, Button, CatalogEntryElement } from '@/components';
 import { useAuth } from '@/providers';
 import { buttonStyles, containerStyles, textStyles } from '@/styles';
 
@@ -14,13 +14,7 @@ const ViewEntry = () => {
 
   return (
     <SafeAreaView style={containerStyles.wrapper}>
-      <Button
-        style={buttonStyles.smallButtonTopLeft}
-        onPress={() => router.navigate('/catalog')}
-      >
-        <Ionicons name="arrow-back-outline" size={25} color="#fff" />
-      </Button>
-
+      <BackButton />
       <ScrollView
         contentContainerStyle={[
           containerStyles.scrollView,

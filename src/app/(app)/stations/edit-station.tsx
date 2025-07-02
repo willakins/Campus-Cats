@@ -1,10 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { SafeAreaView, ScrollView, Text } from 'react-native';
 
-import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 
-import { Button, SnackbarMessage } from '@/components';
+import { BackButton, Button, SnackbarMessage } from '@/components';
 import { StationForm } from '@/forms';
 import { CatalogImageHandler } from '@/image_handlers/CatalogImageHandler';
 import { useAuth } from '@/providers';
@@ -67,9 +66,7 @@ const EditStation = () => {
 
   return (
     <SafeAreaView style={containerStyles.wrapper}>
-      <Button style={buttonStyles.smallButtonTopLeft} onPress={router.back}>
-        <Ionicons name="arrow-back-outline" size={25} color="#fff" />
-      </Button>
+      <BackButton />
       <SnackbarMessage
         text="Saving Station..."
         visible={visible}

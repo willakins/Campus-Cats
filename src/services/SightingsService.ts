@@ -9,7 +9,6 @@ import { Alert } from 'react-native';
 
 import { Router } from 'expo-router';
 import {
-  Timestamp,
   addDoc,
   collection,
   deleteDoc,
@@ -17,6 +16,7 @@ import {
   getDocs,
   query,
   serverTimestamp,
+  Timestamp,
   updateDoc,
   where,
 } from 'firebase/firestore';

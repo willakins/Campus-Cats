@@ -1,16 +1,11 @@
 import { Dispatch, SetStateAction } from 'react';
 import { Alert } from 'react-native';
 
-import AnnouncementsService from './AnnouncementsService';
-import CatalogService from './CatalogService';
-import SettingsService from './SettingsService';
-import SightingsService from './SightingsService';
-import StationsService from './StationsService';
 import { Router } from 'expo-router';
 import {
-  DocumentData,
   collection,
   doc,
+  DocumentData,
   getDoc,
   getDocs,
   query,
@@ -29,6 +24,12 @@ import {
   User,
   WhitelistApp,
 } from '@/types';
+
+import AnnouncementsService from './AnnouncementsService';
+import CatalogService from './CatalogService';
+import SettingsService from './SettingsService';
+import SightingsService from './SightingsService';
+import StationsService from './StationsService';
 
 //Singleton class
 class DatabaseService {

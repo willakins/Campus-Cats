@@ -1,10 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { FlatList, SafeAreaView, Text } from 'react-native';
 
-import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 
-import { Button, SnackbarMessage } from '@/components';
+import { BackButton, Button, SnackbarMessage } from '@/components';
 import { CatalogForm } from '@/forms';
 import { CatalogImageHandler } from '@/image_handlers/CatalogImageHandler';
 import { useAuth } from '@/providers';
@@ -17,8 +16,8 @@ import { buttonStyles, containerStyles, textStyles } from '@/styles';
 import { PickerConfig } from '@/types';
 import {
   Cat,
-  CatStatus,
   CatalogEntry,
+  CatStatus,
   Fur,
   Sex,
   TNRStatus,
@@ -197,12 +196,7 @@ const EditEntry = () => {
 
   return (
     <SafeAreaView style={containerStyles.wrapper}>
-      <Button
-        style={buttonStyles.smallButtonTopLeft}
-        onPress={() => router.push('/catalog/view-entry')}
-      >
-        <Ionicons name="arrow-back-outline" size={25} color="#fff" />
-      </Button>
+      <BackButton />
       <SnackbarMessage
         text="Saving Entry..."
         visible={visible}
