@@ -66,14 +66,9 @@ const CatalogEntryElement: React.FC = () => {
           />
         ))}
       </MapView>
-      <Button
-        style={buttonStyles.bigButton}
-        onPress={() => setShowDetails(!showDetails)}
-      >
-        <Text style={textStyles.bigButtonText}>
-          {' '}
-          {showDetails ? 'Show less details' : 'Show more details'}
-        </Text>
+      <Button onPress={() => setShowDetails(!showDetails)}>
+        {' '}
+        {showDetails ? 'Show less details' : 'Show more details'}
       </Button>
       {showDetails ? (
         <>

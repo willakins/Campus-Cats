@@ -30,12 +30,7 @@ const SightingScreen = () => {
         <SightingEntry />
       </ScrollView>
       {isAuthorized && (
-        <Button
-          style={buttonStyles.bigButton}
-          onPress={() => router.push('./edit-sighting')}
-        >
-          <Text style={textStyles.bigButtonText}>Edit</Text>
-        </Button>
+        <Button onPress={() => router.push('./edit-sighting')}>Edit</Button>
       )}
     </SafeAreaView>
   );

@@ -60,13 +60,12 @@ const CreateAnn = () => {
         />
       </ScrollView>
       <Button
-        style={buttonStyles.bigButton}
         onPress={() => {
           createObj();
           void database.handleAnnouncementCreate(photos, setVisible, router);
         }}
       >
-        <Text style={textStyles.bigButtonText}> Create Announcement</Text>
+        Create Announcement
       </Button>
     </SafeAreaView>
   );

@@ -55,16 +55,19 @@ const Stations = () => {
               filter === label && buttonStyles.activeButton,
             ]}
             onPress={() => setFilter(label as typeof filter)}
-            textStyle={[
-              textStyles.buttonText,
-              filter === label && textStyles.activeText,
-            ]}
           >
-            {label === 'All'
-              ? 'All'
-              : label === 'Stocked'
-                ? 'Stocked'
-                : 'Unstocked'}
+            <Text
+              style={[
+                textStyles.buttonText,
+                filter === label && textStyles.activeText,
+              ]}
+            >
+              {label === 'All'
+                ? 'All'
+                : label === 'Stocked'
+                  ? 'Stocked'
+                  : 'Unstocked'}
+            </Text>
           </Button>
         ))}
       </View>
@@ -84,11 +87,8 @@ const Stations = () => {
           />
         ))}
       </ScrollView>
-      <Button
-        style={buttonStyles.bigButton}
-        onPress={() => router.push('/stations/create-station')}
-      >
-        <Text style={textStyles.bigButtonText}> Create Station</Text>
+      <Button onPress={() => router.push('/stations/create-station')}>
+        Create Station
       </Button>
     </SafeAreaView>
   );

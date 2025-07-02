@@ -36,11 +36,8 @@ const Catalog = () => {
         ))}
       </ScrollView>
       {adminStatus ? (
-        <Button
-          style={buttonStyles.bigButton}
-          onPress={() => router.push('/catalog/create-entry')}
-        >
-          <Text style={textStyles.bigButtonText}> Create Entry</Text>
+        <Button onPress={() => router.push('/catalog/create-entry')}>
+          Create Entry
         </Button>
       ) : null}
     </SafeAreaView>

@@ -117,7 +117,6 @@ const SightingEditScreen = () => {
         )}
       />
       <Button
-        style={buttonStyles.bigButton}
         onPress={() => {
           createObj();
           void database.saveSighting(
@@ -129,13 +128,13 @@ const SightingEditScreen = () => {
           );
         }}
       >
-        <Text style={textStyles.bigButtonText}>Save Report</Text>
+        Save Report
       </Button>
       <Button
         style={buttonStyles.bigDeleteButton}
         onPress={() => database.deleteSighting(sighting.id, setVisible, router)}
       >
-        <Text style={textStyles.bigButtonText}>Delete Report</Text>
+        Delete Report
       </Button>
     </SafeAreaView>
   );

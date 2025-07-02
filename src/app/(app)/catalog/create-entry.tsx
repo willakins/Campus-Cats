@@ -197,13 +197,12 @@ const CreateEntry = () => {
         )}
       />
       <Button
-        style={buttonStyles.bigButton}
         onPress={() => {
           createObj();
           void database.handleCatalogCreate(photos, setVisible, router);
         }}
       >
-        <Text style={textStyles.bigButtonText}> Create Entry</Text>
+        Create Entry
       </Button>
     </SafeAreaView>
   );

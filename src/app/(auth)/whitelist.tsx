@@ -106,12 +106,11 @@ const Whitelist = () => {
         </View>
       </ScrollView>
       <Button
-        style={buttonStyles.bigButton}
         onPress={() =>
           database.submitWhitelist(createObj(), setVisible, router)
         }
       >
-        <Text style={textStyles.bigButtonText}>Submit Application</Text>
+        Submit Application
       </Button>
     </SafeAreaView>
   );

@@ -79,7 +79,6 @@ const EditAnn = () => {
         />
       </ScrollView>
       <Button
-        style={buttonStyles.bigButton}
         onPress={() => {
           createObj();
           void database.handleAnnouncementSave(
@@ -90,13 +89,13 @@ const EditAnn = () => {
           );
         }}
       >
-        <Text style={textStyles.bigButtonText}> Save Announcement</Text>
+        Save Announcement
       </Button>
       <Button
         style={buttonStyles.bigDeleteButton}
         onPress={() => database.deleteAnnouncement(ann.id, router, setVisible)}
       >
-        <Text style={textStyles.bigButtonText}>Delete Announcement</Text>
+        Delete Announcement
       </Button>
     </SafeAreaView>
   );

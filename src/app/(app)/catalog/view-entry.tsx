@@ -30,11 +30,8 @@ const ViewEntry = () => {
         <CatalogEntryElement />
       </ScrollView>
       {isAdmin ? (
-        <Button
-          style={buttonStyles.bigButton}
-          onPress={() => router.push('/catalog/edit-entry')}
-        >
-          <Text style={textStyles.bigButtonText}> Edit Entry</Text>
+        <Button onPress={() => router.push('/catalog/edit-entry')}>
+          Edit Entry
         </Button>
       ) : null}
     </SafeAreaView>

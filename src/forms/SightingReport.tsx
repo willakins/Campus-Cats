@@ -176,14 +176,9 @@ export const SightingReportForm: React.FC<ReportFormProps> = ({
         </View>
         {onDelete ? <Button onPress={onDelete}>Delete</Button> : null}
       </ScrollView>
-      <Button
-        style={buttonStyles.bigButton}
-        onPress={handleSubmit(submitHandler, onInvalid)}
-      >
-        <Text style={textStyles.bigButtonText}>
-          {type === 'create' ? 'Submit Sighting' : null}
-          {type === 'edit' ? 'Save' : null}
-        </Text>
+      <Button onPress={handleSubmit(submitHandler, onInvalid)}>
+        {type === 'create' ? 'Submit Sighting' : null}
+        {type === 'edit' ? 'Save' : null}
       </Button>
       <Errorbar error={error} onDismiss={() => setError('')} />
     </>

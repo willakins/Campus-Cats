@@ -91,13 +91,12 @@ const SightingCreateScreen = () => {
       />
 
       <Button
-        style={buttonStyles.bigButton}
         onPress={() => {
           createObj();
           void database.createSighting(photos, setVisible, router);
         }}
       >
-        <Text style={textStyles.bigButtonText}>Create Report</Text>
+        Create Report
       </Button>
     </SafeAreaView>
   );

@@ -29,11 +29,8 @@ const ViewAnn = () => {
         <AnnouncementEntry />
       </ScrollView>
       {isAdmin ? (
-        <Button
-          style={buttonStyles.bigButton}
-          onPress={() => router.push('/announcements/edit-ann')}
-        >
-          <Text style={textStyles.bigButtonText}> Edit Announcement</Text>
+        <Button onPress={() => router.push('/announcements/edit-ann')}>
+          Edit Announcement
         </Button>
       ) : null}
     </SafeAreaView>

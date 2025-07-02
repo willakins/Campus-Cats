@@ -160,19 +160,13 @@ const Settings = () => {
         </View>
       </ScrollView>
       {isAdmin ? (
-        <Button
-          style={buttonStyles.bigButton}
-          onPress={() => router.push('/settings/manage_users')}
-        >
-          <Text style={textStyles.bigButtonText}>Manage Users</Text>
+        <Button onPress={() => router.push('/settings/manage_users')}>
+          Manage Users
         </Button>
       ) : null}
       {isAdmin ? (
-        <Button
-          style={buttonStyles.bigButton}
-          onPress={() => router.push('/settings/manage_whitelist')}
-        >
-          <Text style={textStyles.bigButtonText}>Manage Whitelist</Text>
+        <Button onPress={() => router.push('/settings/manage_whitelist')}>
+          Manage Whitelist
         </Button>
       ) : null}
     </SafeAreaView>

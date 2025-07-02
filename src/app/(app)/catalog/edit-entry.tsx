@@ -228,7 +228,6 @@ const EditEntry = () => {
         )}
       />
       <Button
-        style={buttonStyles.bigButton}
         onPress={() => {
           createObj();
           void database.handleCatalogSave(
@@ -240,7 +239,7 @@ const EditEntry = () => {
           );
         }}
       >
-        <Text style={textStyles.bigButtonText}> Save Entry</Text>
+        Save Entry
       </Button>
       <Button
         style={buttonStyles.bigDeleteButton}
@@ -248,7 +247,7 @@ const EditEntry = () => {
           database.deleteCatalogEntry(entry.id, setVisible, router)
         }
       >
-        <Text style={textStyles.bigButtonText}>Delete Catalog Entry</Text>
+        Delete Catalog Entry
       </Button>
     </SafeAreaView>
   );
