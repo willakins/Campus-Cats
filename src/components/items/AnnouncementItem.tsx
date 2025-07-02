@@ -1,7 +1,6 @@
 import React from 'react';
-import { Text, View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 
-import { Button } from '../common';
 import { useRouter } from 'expo-router';
 
 import { setSelectedAnnouncement } from '@/stores/announcementStores';
@@ -30,7 +29,7 @@ export const AnnouncementItem: React.FC<Announcement> = ({
   };
 
   return (
-    <Button
+    <Pressable
       style={containerStyles.card}
       onPress={() => {
         setSelectedAnnouncement(createObj());
@@ -41,7 +40,7 @@ export const AnnouncementItem: React.FC<Announcement> = ({
         <Text style={textStyles.listTitle}>{title}</Text>
         <Text style={textStyles.detail}>{info}</Text>
       </View>
-    </Button>
+    </Pressable>
   );
 };
 export default AnnouncementItem;

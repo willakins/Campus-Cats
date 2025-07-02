@@ -1,8 +1,8 @@
 // CatalogItem.js
 import React, { useEffect, useState } from 'react';
 import { Image, Text, View } from 'react-native';
+import { Pressable } from 'react-native';
 
-import { Button } from '../common';
 import { useRouter } from 'expo-router';
 
 import DatabaseService from '@/services/DatabaseService';
@@ -40,7 +40,7 @@ export const CatalogItem: React.FC<CatalogEntry> = ({
   };
 
   return (
-    <Button
+    <Pressable
       style={containerStyles.card}
       onPress={() => {
         createObj();
@@ -62,7 +62,7 @@ export const CatalogItem: React.FC<CatalogEntry> = ({
       <Text style={[textStyles.detail, { alignSelf: 'center' }]}>
         {cat.descShort}
       </Text>
-    </Button>
+    </Pressable>
   );
 };
 export default CatalogItem;
