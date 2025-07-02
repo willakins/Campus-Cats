@@ -1,10 +1,9 @@
 import { useState } from 'react';
 import { SafeAreaView, ScrollView, Text, View } from 'react-native';
 
-import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect, useRouter } from 'expo-router';
 
-import { Button, StationItem } from '@/components';
+import { BackButton, Button, StationItem } from '@/components';
 import { useAuth } from '@/providers';
 import DatabaseService from '@/services/DatabaseService';
 import { buttonStyles, containerStyles, textStyles } from '@/styles';
@@ -33,13 +32,8 @@ const Stations = () => {
     // Double safety so important info isn't leaked
     return (
       <SafeAreaView style={containerStyles.wrapper}>
+        <BackButton />
         <Text style={textStyles.pageTitle}> You should not be here!</Text>
-        <Button
-          style={buttonStyles.smallButtonTopLeft}
-          onPress={() => router.push('/(app)/(tabs)')}
-        >
-          <Ionicons name="arrow-back-outline" size={25} color="#fff" />
-        </Button>
       </SafeAreaView>
     );
   }
@@ -55,16 +49,19 @@ const Stations = () => {
               filter === label && buttonStyles.activeButton,
             ]}
             onPress={() => setFilter(label as typeof filter)}
-            textStyle={[
-              textStyles.buttonText,
-              filter === label && textStyles.activeText,
-            ]}
           >
-            {label === 'All'
-              ? 'All'
-              : label === 'Stocked'
-                ? 'Stocked'
-                : 'Unstocked'}
+            <Text
+              style={[
+                textStyles.buttonText,
+                filter === label && textStyles.activeText,
+              ]}
+            >
+              {label === 'All'
+                ? 'All'
+                : label === 'Stocked'
+                  ? 'Stocked'
+                  : 'Unstocked'}
+            </Text>
           </Button>
         ))}
       </View>
@@ -84,11 +81,8 @@ const Stations = () => {
           />
         ))}
       </ScrollView>
-      <Button
-        style={buttonStyles.bigButton}
-        onPress={() => router.push('/stations/create-station')}
-      >
-        <Text style={textStyles.bigButtonText}> Create Station</Text>
+      <Button onPress={() => router.push('/stations/create-station')}>
+        Create Station
       </Button>
     </SafeAreaView>
   );

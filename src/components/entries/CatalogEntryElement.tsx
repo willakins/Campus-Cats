@@ -2,9 +2,9 @@ import React, { useEffect, useState } from 'react';
 import { Image, Text, View } from 'react-native';
 import MapView, { Marker } from 'react-native-maps';
 
-import DatabaseService from '../../services/DatabaseService';
-import { Button } from '../ui/Buttons';
+import { Button } from '../common';
 
+import DatabaseService from '@/services/DatabaseService';
 import { getSelectedCatalogEntry } from '@/stores/CatalogEntryStores';
 import { buttonStyles, containerStyles, textStyles } from '@/styles';
 import { CatalogEntry, Sighting } from '@/types';
@@ -66,14 +66,9 @@ const CatalogEntryElement: React.FC = () => {
           />
         ))}
       </MapView>
-      <Button
-        style={buttonStyles.bigButton}
-        onPress={() => setShowDetails(!showDetails)}
-      >
-        <Text style={textStyles.bigButtonText}>
-          {' '}
-          {showDetails ? 'Show less details' : 'Show more details'}
-        </Text>
+      <Button onPress={() => setShowDetails(!showDetails)}>
+        {' '}
+        {showDetails ? 'Show less details' : 'Show more details'}
       </Button>
       {showDetails ? (
         <>

@@ -48,6 +48,7 @@ const containerStyles = StyleSheet.create({
     flexDirection: 'column',
     alignSelf: 'center',
     width: vw * 95,
+    height: 'auto',
     padding: vw * 5,
     backgroundColor: '#fff',
     borderRadius: vw * 4,

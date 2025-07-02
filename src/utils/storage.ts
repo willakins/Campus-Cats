@@ -1,10 +1,10 @@
 import 'react-native-get-random-values';
 
 import {
-  UploadResult,
   getDownloadURL,
   ref,
   uploadBytes,
+  UploadResult,
 } from 'firebase/storage';
 // get-random-values needed for uuid
 import { v4 as uuidv4 } from 'uuid';

@@ -1,6 +1,6 @@
 import { Image, StyleSheet } from 'react-native';
 
-import { CameraButton } from '@/components/ui/Buttons';
+import { CameraButton } from '@/components/common';
 
 type FilePickerProps = {
   uri: string;

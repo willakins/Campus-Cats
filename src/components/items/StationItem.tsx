@@ -1,11 +1,10 @@
 import React, { useState } from 'react';
-import { Image, Text, View } from 'react-native';
+import { Image, Pressable, Text, View } from 'react-native';
 import { Checkbox } from 'react-native-paper';
 
-import DatabaseService from '../../services/DatabaseService';
-import { Button } from '../ui/Buttons';
 import { useFocusEffect, useRouter } from 'expo-router';
 
+import DatabaseService from '@/services/DatabaseService';
 import { setSelectedStation } from '@/stores/stationStores';
 import { containerStyles, textStyles } from '@/styles';
 import { Station } from '@/types';
@@ -48,7 +47,7 @@ export const StationItem: React.FC<Station> = ({
   });
 
   return (
-    <Button
+    <Pressable
       style={containerStyles.card}
       onPress={() => {
         createObj();
@@ -84,7 +83,7 @@ export const StationItem: React.FC<Station> = ({
           </Text>
         </View>
       </View>
-    </Button>
+    </Pressable>
   );
 };
 export default StationItem;

@@ -4,7 +4,7 @@ import { SafeAreaView, ScrollView, Text, TextInput, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 
-import { Button } from '@/components';
+import { Button, IconButton } from '@/components';
 import { useAuth } from '@/providers';
 import DatabaseService from '@/services/DatabaseService';
 import {
@@ -41,12 +41,11 @@ const Settings = () => {
 
   return (
     <SafeAreaView style={containerStyles.wrapper}>
-      <Button
+      <IconButton
+        icon="log-out-outline"
         style={buttonStyles.smallButtonTopLeft}
         onPress={() => signOut(router)}
-      >
-        <Ionicons name="log-out-outline" size={25} color="#fff" />
-      </Button>
+      />
       {isAdmin && (
         <Ionicons
           name="lock-closed"
@@ -160,19 +159,13 @@ const Settings = () => {
         </View>
       </ScrollView>
       {isAdmin ? (
-        <Button
-          style={buttonStyles.bigButton}
-          onPress={() => router.push('/settings/manage_users')}
-        >
-          <Text style={textStyles.bigButtonText}>Manage Users</Text>
+        <Button onPress={() => router.push('/settings/manage_users')}>
+          Manage Users
         </Button>
       ) : null}
       {isAdmin ? (
-        <Button
-          style={buttonStyles.bigButton}
-          onPress={() => router.push('/settings/manage_whitelist')}
-        >
-          <Text style={textStyles.bigButtonText}>Manage Whitelist</Text>
+        <Button onPress={() => router.push('/settings/manage_whitelist')}>
+          Manage Whitelist
         </Button>
       ) : null}
     </SafeAreaView>

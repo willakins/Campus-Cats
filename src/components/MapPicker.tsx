@@ -1,7 +1,7 @@
 import { StyleSheet, ViewStyle } from 'react-native';
 import { LatLng, MapPressEvent, MapViewProps, Marker } from 'react-native-maps';
 
-import { MapView } from '@/components/ui/MapView';
+import { MapView } from '@/components/common';
 import { InitialRegion } from '@/config/constants';
 
 type MapPickerProps = MapViewProps & {

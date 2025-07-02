@@ -1,5 +1,5 @@
 import React, { useCallback, useState } from 'react';
-import { View } from 'react-native';
+import { Text, View } from 'react-native';
 
 import { useFocusEffect, useRouter } from 'expo-router';
 
@@ -49,12 +49,15 @@ const HomeScreen = () => {
               filter === range && buttonStyles.activeButton,
             ]}
             onPress={() => setFilter(range)}
-            textStyle={[
-              textStyles.buttonText,
-              filter === range && textStyles.activeText,
-            ]}
           >
-            {range === '365' ? '1Y' : range === 'all' ? 'All' : `${range}D`}
+            <Text
+              style={[
+                textStyles.buttonText,
+                filter === range && textStyles.activeText,
+              ]}
+            >
+              {range === '365' ? '1Y' : range === 'all' ? 'All' : `${range}D`}
+            </Text>
           </Button>
         ))}
       </View>
@@ -78,9 +81,8 @@ const HomeScreen = () => {
       <Button
         style={buttonStyles.reportButton}
         onPress={() => router.push('/sighting/create-sighting')}
-        textStyle={textStyles.buttonText}
       >
-        Report
+        <Text style={textStyles.buttonText}>Report</Text>
       </Button>
     </View>
   );

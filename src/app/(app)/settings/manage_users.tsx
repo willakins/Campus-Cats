@@ -1,17 +1,13 @@
 import { useEffect, useState } from 'react';
 import { SafeAreaView, ScrollView, Text } from 'react-native';
 
-import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
-
-import { Button, UserItem } from '@/components';
+import { BackButton, UserItem } from '@/components';
 import { useAuth } from '@/providers';
 import DatabaseService from '@/services/DatabaseService';
-import { buttonStyles, containerStyles, textStyles } from '@/styles';
+import { containerStyles, textStyles } from '@/styles';
 import { User } from '@/types';
 
 const ManageUsers = () => {
-  const router = useRouter();
   const { user } = useAuth();
   const [users, setUsers] = useState<User[]>([]);
   const database = DatabaseService.getInstance();
@@ -27,12 +23,7 @@ const ManageUsers = () => {
 
   return (
     <SafeAreaView style={containerStyles.wrapper}>
-      <Button
-        style={buttonStyles.smallButtonTopLeft}
-        onPress={() => router.back()}
-      >
-        <Ionicons name="arrow-back-outline" size={25} color="#fff" />
-      </Button>
+      <BackButton />
 
       <Text style={textStyles.pageTitle}>Manage Users</Text>
 

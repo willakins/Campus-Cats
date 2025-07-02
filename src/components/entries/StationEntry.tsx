@@ -2,8 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Image, Text, View } from 'react-native';
 import MapView, { Marker } from 'react-native-maps';
 
-import DatabaseService from '../../services/DatabaseService';
-
+import DatabaseService from '@/services/DatabaseService';
 import { getSelectedStation } from '@/stores/stationStores';
 import { containerStyles, textStyles } from '@/styles';
 import { Station } from '@/types';

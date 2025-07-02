@@ -39,7 +39,7 @@ module.exports = {
       files: [
         'src/app/(auth)/create-account.tsx',
         'src/app/(auth)/saml-sign-in.tsx',
-        'src/components/ui/DateTimeInput.android.tsx',
+        'src/components/common/DateTimeInput.android.tsx',
         'src/config/firebase.js',
         'src/forms/AnnouncementForm.tsx',
         'src/forms/CatalogForm.tsx',

@@ -1,11 +1,11 @@
 // CatalogItem.js
 import React, { useEffect, useState } from 'react';
 import { Image, Text, View } from 'react-native';
+import { Pressable } from 'react-native';
 
-import DatabaseService from '../../services/DatabaseService';
-import { Button } from '../ui/Buttons';
 import { useRouter } from 'expo-router';
 
+import DatabaseService from '@/services/DatabaseService';
 import { setSelectedCatalogEntry } from '@/stores/CatalogEntryStores';
 import { containerStyles, textStyles } from '@/styles';
 import { CatalogEntry } from '@/types';
@@ -40,7 +40,7 @@ export const CatalogItem: React.FC<CatalogEntry> = ({
   };
 
   return (
-    <Button
+    <Pressable
       style={containerStyles.card}
       onPress={() => {
         createObj();
@@ -62,7 +62,7 @@ export const CatalogItem: React.FC<CatalogEntry> = ({
       <Text style={[textStyles.detail, { alignSelf: 'center' }]}>
         {cat.descShort}
       </Text>
-    </Button>
+    </Pressable>
   );
 };
 export default CatalogItem;

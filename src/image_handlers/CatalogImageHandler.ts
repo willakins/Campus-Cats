@@ -1,6 +1,7 @@
 import { Alert } from 'react-native';
 
 import DatabaseService from '../services/DatabaseService';
+
 import BaseImageHandler from './BaseImageHandler';
 
 interface CatalogImageHandlerProps {
