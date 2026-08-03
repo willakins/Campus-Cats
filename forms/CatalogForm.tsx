@@ -4,7 +4,8 @@ import DropdownPicker from 'react-native-dropdown-picker';
 import { FormCamera } from '@/components';
 import { containerStyles, textStyles } from '@/styles';
 import { CatalogImageHandler } from '@/image_handlers/CatalogImageHandler';
-import { CatStatus, Fur, Sex, TNRStatus, PickerConfig } from '@/types';
+import { CatStatus, Fur, Sex, TNRStatus } from '@/core/domain';
+import { PickerConfig } from '@/types';
 
 interface CatalogFormProps {
   formData: any;
@@ -21,10 +22,13 @@ interface CatalogFormProps {
   setPicsChanged?: Dispatch<React.SetStateAction<boolean>>;
   imageHandler?: CatalogImageHandler;
   isCreate: boolean;
+  onPromotePhoto?: (uri: string) => void;
+  onDeletePhoto?: (uri: string) => void;
 }
 
 const CatalogForm: React.FC<CatalogFormProps> = ({
-  formData, setFormData, pickers, photos, profile, setPhotos, setPicsChanged, imageHandler, isCreate
+  formData, setFormData, pickers, photos, profile, setPhotos, setPicsChanged, imageHandler, isCreate,
+  onPromotePhoto, onDeletePhoto,
 }) => {
     const handleChange = (field: string, val: any) => {
         setFormData((prev: any) => ({ ...prev, [field]: val }));
@@ -199,6 +203,8 @@ const CatalogForm: React.FC<CatalogFormProps> = ({
                 setPhotos={setPhotos}
                 setPicsChanged={setPicsChanged}
                 imageHandler={imageHandler}
+                onPromotePhoto={onPromotePhoto}
+                onDeletePhoto={onDeletePhoto}
                 isCreate={isCreate}/>
         </View>
     );

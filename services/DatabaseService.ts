@@ -1,10 +1,9 @@
 import { getDownloadURL, ref } from 'firebase/storage';
 import { getDocs, getDoc, updateDoc, doc, collection, query, where, DocumentData, getFirestore } from 'firebase/firestore';
 import { auth, db, storage } from '@/config/firebase';
-import { Announcement, CatalogEntry, ContactInfo, Station, User, WhitelistApp } from '@/types';
+import { Announcement, ContactInfo, Station, User, WhitelistApp } from '@/types';
 import { Dispatch, SetStateAction } from 'react';
 import { Alert } from 'react-native';
-import CatalogService from './CatalogService';
 import AnnouncementsService from './AnnouncementsService';
 import StationsService from './StationsService';
 import { Router } from 'expo-router';
@@ -13,7 +12,6 @@ import SettingsService from './SettingsService';
 //Singleton class
 class DatabaseService {
   private static instance: DatabaseService;
-  private static catalogService: CatalogService = new CatalogService();
   private static announcementsService: AnnouncementsService = new AnnouncementsService();
   private static stationsService: StationsService = new StationsService();
   private static settingsService: SettingsService = new SettingsService();
@@ -99,74 +97,6 @@ class DatabaseService {
     }
   }
 
-  // Overload signatures
-  public async fetchCatImages(
-      id: string,
-      setProfile: Dispatch<SetStateAction<string>>
-  ): Promise<void>;
-
-  public async fetchCatImages(
-      id: string,
-      setProfile: Dispatch<SetStateAction<string>>,
-      setImageUrls: Dispatch<SetStateAction<string[]>>
-  ): Promise<void>;
-
-  /**
-   * Implementation that handles both overloads
-   * Effect: Pulls images from firestore storage, sets profile picture, sets extra images if applicable
-   */
-  public async fetchCatImages(
-    id: string,
-    setProfile: Dispatch<SetStateAction<string>>,
-    setImageUrls?: Dispatch<SetStateAction<string[]>>
-  ): Promise<void> {
-    if (setImageUrls){
-      await DatabaseService.catalogService.fetchCatImages(id, setProfile, setImageUrls);
-    } else {
-      await DatabaseService.catalogService.fetchCatImages(id, setProfile);
-    }
-  }
-
-  /**
-   * Effect: Pulls catalog documents from firestore
-   */
-  public async fetchCatalogData(setCatalogEntries:Dispatch<SetStateAction<CatalogEntry[]>> ) {
-    await DatabaseService.catalogService.fetchCatalogData(setCatalogEntries);
-  }
-
-  
-  /**
-   * Effect: Updates firestore and storage when editing a catalog entry
-   */
-  public async handleCatalogSave(
-    photos: string[],
-    profile: string,
-    isPicsChanged: boolean,
-    setVisible: Dispatch<SetStateAction<boolean>>, 
-    router: Router) {
-    await DatabaseService.catalogService.handleCatalogSave(photos, profile, isPicsChanged, setVisible, router);
-  }
-
-  /**
-   * Effect: Creates a new catalog entry and stores it in firebase
-   */
-  public async handleCatalogCreate(
-    photos: string[],
-    setVisible: Dispatch<SetStateAction<boolean>>, 
-    router: Router) {
-    await DatabaseService.catalogService.handleCatalogCreate(photos, setVisible, router);
-  }
-
-  /**
-   * Effect: Deletes an existing catalog entry from firebase
-   */
-  public async deleteCatalogEntry(
-    id: string, 
-    setVisible: Dispatch<SetStateAction<boolean>>, 
-    router: Router,) {
-    await DatabaseService.catalogService.deleteCatalogEntry(id, setVisible, router);
-  }
-
   /**
    * Effect: Swaps the profile picture for a catalog entry
    */
@@ -176,21 +106,10 @@ class DatabaseService {
     picUrl:string, 
     picName:string, 
     profilePicUrl?:string) {
-      if (type == 'catalog') {
-        await DatabaseService.catalogService.swapProfilePicture(id, picUrl, picName, profilePicUrl);
-      } else if (type == 'stations') {
+      if (type == 'stations') {
         await DatabaseService.stationsService.swapProfilePicture(id, picUrl, picName, profilePicUrl);
       }
     
-  }
-
-  /**
-  * Effect: deletes a picture from a catalog entry
-  */
-  public async deleteCatalogPicture(
-    id:string, 
-    picName: string, ) {
-    await DatabaseService.catalogService.deleteCatalogPicture(id, picName);
   }
 
   /**

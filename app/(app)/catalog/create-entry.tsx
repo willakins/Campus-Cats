@@ -1,20 +1,19 @@
 import { Dispatch, useState } from 'react';
-import { FlatList, SafeAreaView, Text } from 'react-native';
+import { Alert, FlatList, SafeAreaView, Text } from 'react-native';
 
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Button, SnackbarMessage } from '@/components';
-import DatabaseService from '@/services/DatabaseService';
+import { appModules } from '@/composition/appModules';
+import { Cat, CatStatus, Fur, Sex, TNRStatus, parseUser } from '@/core/domain';
 import { globalStyles, buttonStyles, textStyles, containerStyles } from '@/styles';
-import { Cat, CatalogEntry, Sex, TNRStatus, CatStatus, Fur, PickerConfig } from '@/types';
+import { PickerConfig } from '@/types';
 import { useAuth } from '@/providers/AuthProvider';
-import { setSelectedCatalogEntry } from '@/stores/CatalogEntryStores';
 import { CatalogForm } from '@/forms';
 
 const create_entry = () =>{
   const router = useRouter();
   const { user } = useAuth();
-  const database = DatabaseService.getInstance();
   const [visible, setVisible] = useState<boolean>(false);
   const [photos, setPhotos] = useState<string[]>([]);
 
@@ -147,15 +146,22 @@ const create_entry = () =>{
     }
     return newCat;
   }
-  const createObj = () => {
-    const newEntry = new CatalogEntry({
-      id:"-1",
-      cat:createCat(),
-      credits:formData.credits,
-      createdAt: new Date(),
-      createdBy:user,
-    })
-    setSelectedCatalogEntry(newEntry);
+  const createEntry = async () => {
+    setVisible(true);
+    const result = await appModules.catalog.create(parseUser(user), {
+      cat: createCat(),
+      credits: formData.credits,
+      photos,
+    });
+    setVisible(false);
+    if (!result.ok) {
+      Alert.alert('Could not create entry', result.error.message);
+      return;
+    }
+    router.replace({
+      pathname: '/catalog/view-entry',
+      params: { id: result.value.id },
+    });
   };
   
   return (
@@ -179,10 +185,7 @@ const create_entry = () =>{
           isCreate={true}
         />
               )}/>
-      <Button style={buttonStyles.bigButton} onPress={() => {
-        createObj();
-        database.handleCatalogCreate(photos, setVisible, router);
-      }}>
+      <Button style={buttonStyles.bigButton} onPress={() => void createEntry()}>
         <Text style={textStyles.bigButtonText}> Create Entry</Text>
       </Button>
     </SafeAreaView>
