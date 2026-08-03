@@ -107,6 +107,7 @@ export class SightingsModule {
     const sighting = parseSighting({ id, ...draft, createdBy: actor });
     const mediaResult = await this.dependencies.mediaCoordinator.reconcile({
       folder: `${COLLECTIONS.sightings}/${id}`,
+      ownerId: actor.id,
       profile: localMedia(draft.photos[0]),
       gallery: draft.photos.slice(1).map(localMedia),
       persist: async () =>
@@ -148,6 +149,7 @@ export class SightingsModule {
     });
     const mediaResult = await this.dependencies.mediaCoordinator.reconcile({
       folder: `${COLLECTIONS.sightings}/${id}`,
+      ownerId: actor.id,
       profile: update.profile,
       gallery: update.gallery,
       persist: async () =>
@@ -178,12 +180,6 @@ export class SightingsModule {
     }
 
     try {
-      await this.dependencies.documents.remove(COLLECTIONS.sightings, id);
-    } catch {
-      return failure('dependency_failure', 'Could not delete the sighting');
-    }
-
-    try {
       const assets = await this.dependencies.media.list(
         `${COLLECTIONS.sightings}/${id}`,
       );
@@ -191,24 +187,27 @@ export class SightingsModule {
         assets.map(({ id: mediaId }) => this.dependencies.media.remove(mediaId)),
       );
       const cleanupFailed = cleanup.some(({ status }) => status === 'rejected');
-      return success(
-        undefined,
-        cleanupFailed
-          ? [
-              {
-                code: 'cleanup_failed',
-                message: 'The sighting was deleted, but some media remains',
-              },
-            ]
-          : [],
-      );
+      if (cleanupFailed) {
+        return failure(
+          'partial_failure',
+          'Some sighting media could not be removed; the record was preserved',
+        );
+      }
     } catch {
-      return success(undefined, [
-        {
-          code: 'cleanup_failed',
-          message: 'The sighting was deleted, but some media remains',
-        },
-      ]);
+      return failure(
+        'dependency_failure',
+        'Could not load sighting media for deletion',
+      );
+    }
+
+    try {
+      await this.dependencies.documents.remove(COLLECTIONS.sightings, id);
+      return success(undefined);
+    } catch {
+      return failure(
+        'partial_failure',
+        'Sighting media was removed, but the record could not be deleted',
+      );
     }
   }
 }

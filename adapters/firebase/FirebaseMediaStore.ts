@@ -37,7 +37,13 @@ export class FirebaseMediaStore implements MediaStore {
 
   async upload(upload: MediaUpload): Promise<StoredMediaAsset> {
     const object = ref(this.storage, upload.id);
-    await uploadBytes(object, await this.loadBlob(upload.localUri));
+    await uploadBytes(
+      object,
+      await this.loadBlob(upload.localUri),
+      upload.ownerId
+        ? { customMetadata: { ownerId: upload.ownerId } }
+        : undefined,
+    );
     return {
       id: mediaAssetId(object.fullPath),
       url: await getDownloadURL(object),

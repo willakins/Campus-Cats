@@ -2,8 +2,102 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function userDocument() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid));
+    }
+
+    function role() {
+      return signedIn() && userDocument().data.role is int
+        ? userDocument().data.role
+        : -1;
+    }
+
+    function isAdmin() {
+      return role() >= 1;
+    }
+
+    function ownsSighting(data) {
+      return signedIn()
+        && data.createdBy is map
+        && data.createdBy.id == request.auth.uid;
+    }
+
+    function validWhitelistApplication() {
+      return request.resource.data.keys().hasOnly([
+          'name',
+          'graduationYear',
+          'email',
+          'codeWord'
+        ])
+        && request.resource.data.name is string
+        && request.resource.data.name.size() > 0
+        && request.resource.data.name.size() <= 200
+        && request.resource.data.graduationYear is string
+        && request.resource.data.graduationYear.size() > 0
+        && request.resource.data.graduationYear.size() <= 20
+        && request.resource.data.email is string
+        && request.resource.data.email.size() >= 3
+        && request.resource.data.email.size() <= 320
+        && request.resource.data.email.matches('^[^@]+@[^@]+\\.[^@]+$')
+        && request.resource.data.codeWord is string
+        && request.resource.data.codeWord.size() <= 200;
+    }
+
+    match /cat-sightings/{sightingId} {
+      allow read: if signedIn();
+      allow create: if ownsSighting(request.resource.data);
+      allow update: if ownsSighting(resource.data)
+        && request.resource.data.createdBy == resource.data.createdBy;
+      allow delete: if ownsSighting(resource.data);
+    }
+
+    match /catalog/{entryId} {
+      allow read: if signedIn();
+      allow create, update, delete: if isAdmin();
+    }
+
+    match /stations/{stationId} {
+      allow read: if signedIn();
+      allow create, update, delete: if isAdmin();
+    }
+
+    match /announcements/{announcementId} {
+      allow read: if signedIn();
+      allow create, update, delete: if isAdmin();
+    }
+
+    match /contact-info/{contactId} {
+      allow read: if signedIn();
+      allow create, update, delete: if isAdmin();
+    }
+
+    match /whitelist/{applicationId} {
+      allow create: if validWhitelistApplication();
+      allow read, delete: if isAdmin();
+      allow update: if false;
+    }
+
+    match /users/{userId} {
+      allow get: if signedIn() && (request.auth.uid == userId || isAdmin());
+      allow list: if isAdmin();
+      allow create: if signedIn()
+        && request.auth.uid == userId
+        && request.resource.data.keys().hasOnly(['email', 'role'])
+        && request.resource.data.email == request.auth.token.email
+        && request.resource.data.role == 0;
+      allow update: if signedIn()
+        && request.auth.uid == userId
+        && request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(['expoPushToken']);
+      allow delete: if false;
+    }
+
     match /{document=**} {
-      allow read, write: if request.auth != null;
+      allow read, write: if false;
     }
   }
 }

@@ -1,127 +1,180 @@
-import * as admin from "firebase-admin"
-import * as functions from "firebase-functions/v2"
-import * as logger from "firebase-functions/logger";
+import { createHash } from 'node:crypto';
+
 import sgMail from '@sendgrid/mail';
-import { defineSecret } from "firebase-functions/params";
-import fetch from "node-fetch";
+import * as admin from 'firebase-admin';
+import { logger } from 'firebase-functions';
+import { defineSecret } from 'firebase-functions/params';
+import {
+  CallableRequest,
+  HttpsError,
+  onCall,
+} from 'firebase-functions/v2/https';
 
-if (admin.apps.length === 0) {
-  admin.initializeApp()
-}
+import {
+  HandlerDependencies,
+  HandlerError,
+  ManagedUser,
+  WhitelistApplication,
+  handleCreateWhitelistUser,
+  handleRemoveManagedUser,
+  handleSendAnnouncement,
+  handleSendWhitelistEmail,
+  handleSubmitWhitelistApplication,
+  handleUpdateUserRole,
+} from './handlers';
 
-const SENDGRID_API_KEY = defineSecret("SENDGRID_API_KEY");
+if (admin.apps.length === 0) admin.initializeApp();
 
-export const sendWhitelistEmail = functions.https.onCall(
-  {
-    secrets: [SENDGRID_API_KEY],
+const SENDGRID_API_KEY = defineSecret('SENDGRID_API_KEY');
+const firestore = admin.firestore();
+const auth = admin.auth();
+
+const dependencies: HandlerDependencies = {
+  async getUser(id): Promise<ManagedUser | undefined> {
+    const snapshot = await firestore.collection('users').doc(id).get();
+    if (!snapshot.exists) return undefined;
+    const data = snapshot.data();
+    if (
+      typeof data?.email !== 'string' ||
+      (data.role !== 0 && data.role !== 1 && data.role !== 2)
+    ) {
+      throw new HandlerError('internal', 'Stored user profile is invalid');
+    }
+    return { id: snapshot.id, email: data.email, role: data.role };
   },
-  async (request) => {
+
+  async listPushTokens() {
+    const snapshot = await firestore.collection('users').get();
+    return snapshot.docs
+      .map((document) => document.data().expoPushToken)
+      .filter((token): token is string => typeof token === 'string' && !!token);
+  },
+
+  async sendPushBatch(messages) {
+    const response = await fetch('https://exp.host/--/api/v2/push/send', {
+      method: 'POST',
+      headers: {
+        Accept: 'application/json',
+        'Accept-Encoding': 'gzip, deflate',
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(messages),
+    });
+    if (!response.ok) {
+      throw new Error(`Expo push provider returned ${response.status}`);
+    }
+  },
+
+  async createAuthUser(email, password) {
+    return (await auth.createUser({ email, password })).uid;
+  },
+
+  async deleteAuthUser(id) {
+    await auth.deleteUser(id);
+  },
+
+  async putUser(user) {
+    await firestore.collection('users').doc(user.id).set({
+      email: user.email,
+      role: user.role,
+    });
+  },
+
+  async deleteUser(id) {
+    await firestore.collection('users').doc(id).delete();
+  },
+
+  async updateUserRole(id, role) {
+    await firestore.collection('users').doc(id).update({ role });
+  },
+
+  async sendWhitelistCredentials(email, password) {
     sgMail.setApiKey(SENDGRID_API_KEY.value());
-    const uid = request.auth?.uid
-    if (uid === undefined) {
-      throw new functions.https.HttpsError("unauthenticated", "You need to be authenticated to perform this action")
-    }
-    const { email, password } = request.data;
-
-    if (!email || !password) {
-      throw new functions.https.HttpsError('invalid-argument', 'Email and password are required');
-    }
-
-    const msg = {
+    await sgMail.send({
       to: email,
       from: 'gtcampuscats@gmail.com',
       subject: 'Campus Cats – Whitelist Approved!',
-      text: `Welcome! Your whitelist application has been approved. You can use this email as your username. Your login password is: ${password}`,
-      html: `<p>Welcome to Campus Cats! 😺</p><p>You can use this email as your username.</p><p>Your password is: <strong>${password}</strong></p>`,
-    };
+      text: `Your Campus Cats account is ready. Your temporary password is: ${password}`,
+      html: `<p>Your Campus Cats account is ready.</p><p>Your temporary password is: <strong>${password}</strong></p>`,
+    });
+  },
 
+  async findWhitelistByEmail(email) {
+    const snapshot = await firestore
+      .collection('whitelist')
+      .where('email', '==', email)
+      .limit(1)
+      .get();
+    return !snapshot.empty;
+  },
+
+  async createWhitelistApplication(application: WhitelistApplication) {
+    const id = createHash('sha256')
+      .update(application.email.toLowerCase())
+      .digest('hex');
     try {
-      await sgMail.send(msg);
-      return { success: true };
+      await firestore.collection('whitelist').doc(id).create(application);
+      return { created: true, id };
     } catch (error) {
-      console.error('Error sending email:', error);
-      throw new functions.https.HttpsError('unknown', 'Failed to send email');
+      const code =
+        typeof error === 'object' && error !== null && 'code' in error
+          ? String(error.code)
+          : '';
+      if (code === '6' || code.toLowerCase().includes('already-exists')) {
+        return { created: false, id };
+      }
+      throw error;
     }
+  },
+};
+
+async function execute<T>(operation: () => Promise<T>): Promise<T> {
+  try {
+    return await operation();
+  } catch (error) {
+    if (error instanceof HandlerError) {
+      throw new HttpsError(error.code, error.message);
+    }
+    logger.error('Callable workflow failed', error);
+    throw new HttpsError('internal', 'The requested operation could not be completed');
   }
+}
+
+const requestFor = <T>(request: CallableRequest<T>) => ({
+  authUid: request.auth?.uid,
+  data: request.data,
+});
+
+export const sendWhitelistEmail = onCall(
+  { secrets: [SENDGRID_API_KEY] },
+  (request) =>
+    execute(() =>
+      handleSendWhitelistEmail(requestFor(request), dependencies),
+    ),
 );
 
-export const createWhitelistUser = functions.https.onCall(
-  async (request: functions.https.CallableRequest<{ email: string; password: string }>) => {
-    const { email, password } = request.data;
-
-    if (!email || !password) {
-      throw new functions.https.HttpsError('invalid-argument', 'Missing email or password');
-    }
-    try {
-      const userRecord = await admin.auth().createUser({
-        email,
-        password,
-      });
-      logger.debug("userRecord.uid", userRecord.uid);
-      await admin.firestore().collection('users').doc(userRecord.uid).set({
-        email,
-        role: 0,
-      });
-
-      return { success: true, uid: userRecord.uid };
-    } catch (error) {
-      console.error('Failed to create user:', error);
-      throw new functions.https.HttpsError('internal', 'User creation failed');
-    }
-  }
+export const createWhitelistUser = onCall((request) =>
+  execute(() => handleCreateWhitelistUser(requestFor(request), dependencies)),
 );
 
-export const sendAnnouncement = functions.https.onCall(
-  async (request) => {
-    if (!request.auth) {
-      throw new functions.https.HttpsError(
-          "unknown", 
-          "You need to be authenticated to perform this action"
-        );
-    }
-    const uid = request.auth?.uid
-    if (uid === undefined) {
-      throw new functions.https.HttpsError("invalid-argument", "You need to be authenticated to perform this action")
-    }
+export const removeWhitelistUser = onCall((request) =>
+  execute(() => handleRemoveManagedUser(requestFor(request), dependencies)),
+);
 
-    const userDoc = await admin.firestore().collection('users').doc(uid).get();
-    if (!userDoc.exists || userDoc.data()?.role == 0) {
-      throw new functions.https.HttpsError('permission-denied', 'Only admins can send announcements.');
-    }
+export const updateUserRole = onCall((request) =>
+  execute(() => handleUpdateUserRole(requestFor(request), dependencies)),
+);
 
-    // Not really sure this is needed ngl
-    const { title, message } = request.data;
-    if (!title || !message) {
-      throw new functions.https.HttpsError('invalid-argument', 'Missing title or message');
-    }
+export const removeManagedUser = onCall((request) =>
+  execute(() => handleRemoveManagedUser(requestFor(request), dependencies)),
+);
 
-    const usersSnap = await admin.firestore().collection("users").get();
-    const tokens = usersSnap.docs
-      .map(doc => doc.data().expoPushToken) // get all the tokens
-      .filter(Boolean); // remove everything that dont exist
+export const sendAnnouncement = onCall((request) =>
+  execute(() => handleSendAnnouncement(requestFor(request), dependencies)),
+);
 
-    const chunks = []; 
-    for (let i = 0; i < tokens.length; i += 100) {
-      chunks.push(tokens.slice(i, i + 100)); // Allows at most 100 notifications at a time, I genuinely don't think this is neccessary
-    }
-
-    await Promise.all(chunks.map(async chunk => {
-      await fetch("https://exp.host/--/api/v2/push/send", { // I think this is neccessary for notifications
-        method: "POST",
-        headers: {
-          "Accept": "application/json",
-          "Accept-Encoding": "gzip, deflate",
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(chunk.map(token => ({
-          to: token,
-          sound: "default",
-          title,
-          body: message,
-        }))),
-      });
-    }));
-
-    return { success: true, sent: tokens.length };
-  }
+export const submitWhitelistApplication = onCall((request) =>
+  execute(() =>
+    handleSubmitWhitelistApplication(requestFor(request), dependencies),
+  ),
 );

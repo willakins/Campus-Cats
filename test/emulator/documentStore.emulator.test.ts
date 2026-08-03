@@ -5,7 +5,7 @@ import {
   RulesTestEnvironment,
   initializeTestEnvironment,
 } from '@firebase/rules-unit-testing';
-import { Firestore } from 'firebase/firestore';
+import { doc, Firestore, setDoc } from 'firebase/firestore';
 
 import { FirebaseDocumentStore } from '../../adapters/firebase/FirebaseDocumentStore';
 import { documentStoreContract } from '../contracts/documentStoreContract';
@@ -25,6 +25,12 @@ describe('Firebase document adapter', () => {
         port: 8080,
         rules: readFileSync(resolve(process.cwd(), 'firestore.rules'), 'utf8'),
       },
+    });
+    await environment.withSecurityRulesDisabled(async (context) => {
+      await setDoc(doc(context.firestore(), 'users', 'super-admin-1'), {
+        email: 'admin@gatech.edu',
+        role: 2,
+      });
     });
   });
 

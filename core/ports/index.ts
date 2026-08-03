@@ -4,3 +4,4 @@ export * from './imageSelection';
 export * from './media';
 export * from './passwords';
 export * from './session';
+export * from './whitelist';

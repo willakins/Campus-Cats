@@ -11,6 +11,7 @@ export interface MediaUpload {
   readonly id: MediaAssetId;
   readonly localUri: string;
   readonly role: MediaRole;
+  readonly ownerId?: string;
 }
 
 export interface MediaStore {

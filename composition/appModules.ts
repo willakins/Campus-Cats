@@ -7,6 +7,7 @@ import { FirebaseCallableEffects } from '../adapters/firebase/FirebaseCallableEf
 import { FirebaseDocumentStore } from '../adapters/firebase/FirebaseDocumentStore';
 import { FirebaseMediaStore } from '../adapters/firebase/FirebaseMediaStore';
 import { FirebaseSession } from '../adapters/firebase/FirebaseSession';
+import { FirebaseWhitelistSubmission } from '../adapters/firebase/FirebaseWhitelistSubmission';
 import { RandomPasswordGenerator } from '../adapters/runtime/RandomPasswordGenerator';
 import { UuidGenerator } from '../adapters/runtime/UuidGenerator';
 import { SystemClock, createFirestoreCodecs } from '../core/domain';
@@ -93,7 +94,7 @@ export const appModules: AppModules = Object.freeze({
     documents,
     effects,
     passwords: new RandomPasswordGenerator(),
-    ids,
+    submissions: new FirebaseWhitelistSubmission(getFunctions(app)),
     codecs,
   }),
 });
