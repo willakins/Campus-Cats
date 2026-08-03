@@ -6,6 +6,7 @@ import {
   initializeTestEnvironment,
 } from '@firebase/rules-unit-testing';
 import { FirebaseStorage } from 'firebase/storage';
+import { doc, setDoc } from 'firebase/firestore';
 
 import { FirebaseMediaStore } from '../../adapters/firebase/FirebaseMediaStore';
 import { mediaStoreContract } from '../contracts/mediaStoreContract';
@@ -25,6 +26,17 @@ describe('Firebase media adapter', () => {
         port: 9199,
         rules: readFileSync(resolve(process.cwd(), 'storage.rules'), 'utf8'),
       },
+      firestore: {
+        host: '127.0.0.1',
+        port: 8080,
+        rules: readFileSync(resolve(process.cwd(), 'firestore.rules'), 'utf8'),
+      },
+    });
+    await environment.withSecurityRulesDisabled(async (context) => {
+      await setDoc(doc(context.firestore(), 'users', 'super-admin-1'), {
+        email: 'admin@gatech.edu',
+        role: 2,
+      });
     });
   });
 

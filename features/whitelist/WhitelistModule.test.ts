@@ -1,5 +1,6 @@
 import { InMemoryCallableEffects } from '../../adapters/inMemory/InMemoryCallableEffects';
 import { InMemoryDocumentStore } from '../../adapters/inMemory/InMemoryDocumentStore';
+import { InMemoryWhitelistSubmission } from '../../adapters/inMemory/InMemoryWhitelistSubmission';
 import {
   COLLECTIONS,
   Role,
@@ -30,7 +31,10 @@ function buildModule() {
       documents,
       effects,
       passwords: password,
-      ids: new SequenceIdGenerator(['application-1', 'application-2']),
+      submissions: new InMemoryWhitelistSubmission(
+        documents,
+        new SequenceIdGenerator(['application-1', 'application-2']),
+      ),
       codecs: createFirestoreCodecs({ fromDate: (date) => date }),
     }),
     documents,

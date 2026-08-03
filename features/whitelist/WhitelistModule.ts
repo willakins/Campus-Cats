@@ -1,7 +1,6 @@
 import {
   COLLECTIONS,
   FirestoreCodec,
-  IdGenerator,
   Outcome,
   User,
   WhitelistApplication,
@@ -14,6 +13,7 @@ import {
   CallableEffects,
   DocumentStore,
   PasswordGenerator,
+  WhitelistSubmissionPort,
 } from '../../core/ports';
 
 export interface WhitelistDraft {
@@ -27,7 +27,7 @@ interface WhitelistDependencies {
   readonly documents: DocumentStore;
   readonly effects: CallableEffects;
   readonly passwords: PasswordGenerator;
-  readonly ids: IdGenerator;
+  readonly submissions: WhitelistSubmissionPort;
   readonly codecs: {
     readonly whitelist: FirestoreCodec<WhitelistApplication>;
   };
@@ -46,46 +46,18 @@ export class WhitelistModule {
         'Name, graduation year, and a valid email are required',
       );
     }
-    let applications: readonly WhitelistApplication[];
-    try {
-      const documents = await this.dependencies.documents.list(COLLECTIONS.whitelist);
-      applications = documents.map(({ id, data }) =>
-        this.dependencies.codecs.whitelist.decode(id, data),
-      );
-    } catch {
-      return failure('dependency_failure', 'Could not check existing applications');
-    }
-    if (
-      applications.some(
-        ({ email }) => email.toLowerCase() === validatedDraft.email.toLowerCase(),
-      )
-    ) {
-      return failure(
-        'conflict',
-        'An application has already been submitted for this email',
-      );
-    }
-
-    let application: WhitelistApplication;
     try {
       const { id: _validationId, ...validatedFields } = validatedDraft;
-      application = parseWhitelistApplication({
-        id: this.dependencies.ids.next(),
-        ...validatedFields,
-      });
-    } catch {
-      return failure(
-        'validation',
-        'Name, graduation year, and a valid email are required',
+      const submitted = await this.dependencies.submissions.submit(validatedFields);
+      if (submitted.status === 'conflict') {
+        return failure(
+          'conflict',
+          'An application has already been submitted for this email',
+        );
+      }
+      return success(
+        parseWhitelistApplication({ id: submitted.id, ...validatedFields }),
       );
-    }
-    try {
-      await this.dependencies.documents.put(
-        COLLECTIONS.whitelist,
-        application.id,
-        this.dependencies.codecs.whitelist.encode(application),
-      );
-      return success(application);
     } catch {
       return failure('dependency_failure', 'Could not submit the application');
     }
