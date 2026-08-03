@@ -18,7 +18,10 @@ const CreateAccount = () => {
 
   return (
     <KeyboardAvoidingView style={globalStyles.screen} behavior="padding">
-      <Image source={require('@/assets/images/campus_cats_logo.png')} style={containerStyles.logo}/>
+      <Image
+        source={require('@/assets/images/campus_cats_logo.png')}
+        style={containerStyles.logo}
+      />
       <LoginForm
         onSubmit={createNewUser}
         type='createAccount'

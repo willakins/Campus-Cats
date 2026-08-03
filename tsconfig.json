@@ -16,10 +16,10 @@
   },
   "include": [
     "node_modules/react-native/types/**/*.d.ts",
-    "src/**/*",
     "**/*.ts",
     "**/*.tsx",
     ".expo/types/**/*.ts",
     "expo-env.d.ts"
-, "components/image_handlers/CatalogImageHandler.ts"  ]
+  ],
+  "exclude": ["functions/lib", "functions/node_modules"]
 }

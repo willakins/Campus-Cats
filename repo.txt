@@ -1,2 +1,0 @@
-willakins/JIC-4331-ScrapCats
-auth=REDACTED_HISTORICAL_CREDENTIAL

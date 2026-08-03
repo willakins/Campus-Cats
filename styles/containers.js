@@ -6,6 +6,12 @@ const vw = width / 100;
 const vh = height / 100;
 
 const containerStyles = StyleSheet.create({
+  logo: {
+    width: width * 0.8,
+    height: height * 0.25,
+    alignSelf: 'center',
+    resizeMode: 'contain',
+  },
   /** Screen Wrappers  */
   wrapper: {
     flex: 1,

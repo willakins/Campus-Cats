@@ -26,7 +26,7 @@ export const DateTimeInput: React.FC<DateTimeInputProps> = ({
 
   return (
     <TouchableOpacity onPress={() => setShowPicker(true)}>
-      <View style={containerStyles.dateInput}>
+      <View style={containerStyles.dateInputContainer}>
         <Text style={textStyles.dateText}>
           {date ? date.toDateString() : 'Select Sighting Date'}
         </Text>
@@ -35,7 +35,7 @@ export const DateTimeInput: React.FC<DateTimeInputProps> = ({
           mode="date"
           display="default"
           onChange={onChange}
-          style={containerStyles.picker}
+          style={containerStyles.datePickerContainer}
         /> : null}
       </View>
     </TouchableOpacity>
