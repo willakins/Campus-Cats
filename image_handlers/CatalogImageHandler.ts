@@ -60,9 +60,7 @@ class CatalogImageHandler extends BaseImageHandler {
         return;
       }
       await this.database.swapProfilePicture(this.type, this.id, picUrl, picName, this.profile);
-      if (this.type == 'catalog') {
-        this.database.fetchCatImages(this.id, this.setProfile, this.setPhotos);
-      } else if (this.type == 'stations') {
+      if (this.type == 'stations') {
         this.database.fetchStationImages(this.id, this.setProfile, this.setPhotos);
       }
     } catch (error) {
@@ -82,10 +80,7 @@ class CatalogImageHandler extends BaseImageHandler {
         {
           text: 'Delete Forever',
           onPress: async () => {
-            if (this.type == 'catalog'){
-              await this.database.deleteCatalogPicture(this.id, picName)
-              this.database.fetchCatImages(this.id, this.setProfile, this.setPhotos);
-            } else if (this.type == 'stations') {
+            if (this.type == 'stations') {
               await this.database.deleteStationPicture(this.id, picName);
               this.database.fetchStationImages(this.id, this.setProfile, this.setPhotos);
             }

@@ -1,45 +1,51 @@
-// CatalogItem.js
 import React, { useEffect, useState } from 'react';
 import { Image, Text, View } from 'react-native';
 
 import { useRouter } from 'expo-router';
-import { Button } from '../ui/Buttons';
-import { CatalogEntry } from '@/types';
-import DatabaseService from '../../services/DatabaseService';
-import { globalStyles, buttonStyles, textStyles, containerStyles } from '@/styles';
-import { setSelectedCatalogEntry } from '@/stores/CatalogEntryStores';
 
-export const CatalogItem: React.FC<CatalogEntry> = 
-({ id, cat, credits, createdAt, createdBy }) => {
+import { appModules } from '@/composition/appModules';
+import { CatalogEntry } from '@/core/domain';
+import { StoredMediaAsset } from '@/core/ports';
+import { containerStyles, textStyles } from '@/styles';
+
+import { Button } from '../ui/Buttons';
+
+export const CatalogItem: React.FC<CatalogEntry> = (entry) => {
   const router = useRouter();
-  const [profile, setProfile] = useState<string>('');
-  const database = DatabaseService.getInstance();
+  const [profile, setProfile] = useState<StoredMediaAsset>();
 
   useEffect(() => {
-    database.fetchCatImages(id, setProfile);
-  }, []);
-
-  const createObj = () => {
-    const newEntry = new CatalogEntry({
-      id:id,
-      cat:cat,
-      credits:credits,
-      createdAt:createdAt,
-      createdBy:createdBy,
+    void appModules.catalog.media(entry.id).then((result) => {
+      if (result.ok) {
+        setProfile(result.value.find(({ role }) => role === 'profile'));
+      }
     });
-    setSelectedCatalogEntry(newEntry);
-  }
+  }, [entry.id]);
 
   return (
-    <Button style={containerStyles.card} onPress={() => {
-      createObj();
-      router.push('/catalog/view-entry')
-    }}>
-      <Text style={textStyles.listTitle}>{cat.name}</Text>
-          {profile ? <Image source={{ uri: profile }} style={containerStyles.listImage} resizeMode="cover"/>:
-            <View style={containerStyles.listImage}><Text style={textStyles.listTitle}>Loading...</Text></View>}
-        <Text style={[textStyles.detail, {alignSelf:'center'}]}>{cat.descShort}</Text>
+    <Button
+      style={containerStyles.card}
+      onPress={() =>
+        router.push({ pathname: '/catalog/view-entry', params: { id: entry.id } })
+      }
+    >
+      <Text style={textStyles.listTitle}>{entry.cat.name}</Text>
+      {profile ? (
+        <Image
+          source={{ uri: profile.url }}
+          style={containerStyles.listImage}
+          resizeMode="cover"
+        />
+      ) : (
+        <View style={containerStyles.listImage}>
+          <Text style={textStyles.listTitle}>No profile photo</Text>
+        </View>
+      )}
+      <Text style={[textStyles.detail, { alignSelf: 'center' }]}>
+        {entry.cat.descShort}
+      </Text>
     </Button>
   );
 };
+
 export default CatalogItem;

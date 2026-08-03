@@ -1,45 +1,49 @@
-import React, {  useEffect, useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import { SafeAreaView, ScrollView, Text } from 'react-native';
 
 import { useFocusEffect, useRouter } from 'expo-router';
 
-import { Button, CatalogItem } from '@/components';
-import { CatalogEntry} from '@/types';
-import DatabaseService from '@/services/DatabaseService';
+import { Button, CatalogItem, Errorbar } from '@/components';
+import { appModules } from '@/composition/appModules';
+import { CatalogEntry } from '@/core/domain';
 import { useAuth } from '@/providers';
-
-import { globalStyles, buttonStyles, textStyles, containerStyles } from '@/styles';
+import { buttonStyles, containerStyles, textStyles } from '@/styles';
 
 const Catalog = () => {
   const { user } = useAuth();
   const router = useRouter();
-  const database = DatabaseService.getInstance();
-  const adminStatus = user.role === 1 || user.role === 2;
-  const [catalogEntries, setCatalogEntries] = useState<CatalogEntry[]>([]);
+  const isAdmin = user.role === 1 || user.role === 2;
+  const [entries, setEntries] = useState<readonly CatalogEntry[]>([]);
+  const [error, setError] = useState('');
 
-  useFocusEffect(() => {
-    database.fetchCatalogData(setCatalogEntries);
-  });
+  useFocusEffect(
+    useCallback(() => {
+      void appModules.catalog.list().then((result) => {
+        if (result.ok) setEntries(result.value);
+        else setError(result.error.message);
+      });
+    }, []),
+  );
 
   return (
     <SafeAreaView style={containerStyles.wrapper}>
+      <Errorbar error={error} onDismiss={() => setError('')} />
       <Text style={textStyles.pageTitle}>Catalog</Text>
       <ScrollView contentContainerStyle={containerStyles.scrollView}>
-        {catalogEntries.map((entry) => (
-          <CatalogItem
-          key={entry.id}
-          id={entry.id}
-          cat={entry.cat}
-          credits={entry.credits}
-          createdAt={entry.createdAt}
-          createdBy={entry.createdBy}
-          />
+        {entries.map((entry) => (
+          <CatalogItem key={entry.id} {...entry} />
         ))}
       </ScrollView>
-      {adminStatus ? <Button style={buttonStyles.bigButton} onPress={() => router.push('/catalog/create-entry')}>
-        <Text style ={textStyles.bigButtonText}> Create Entry</Text>
-      </Button> : null}
+      {isAdmin ? (
+        <Button
+          style={buttonStyles.bigButton}
+          onPress={() => router.push('/catalog/create-entry')}
+        >
+          <Text style={textStyles.bigButtonText}>Create Entry</Text>
+        </Button>
+      ) : null}
     </SafeAreaView>
   );
-}
+};
+
 export default Catalog;
