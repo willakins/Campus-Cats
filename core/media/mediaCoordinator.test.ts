@@ -111,4 +111,90 @@ describe('MediaCoordinator', () => {
     });
     expect(media.ids()).toContain('stations/station-1/obsolete.jpg');
   });
+
+  it('reconciles an optional gallery without requiring profile media', async () => {
+    const media = new InMemoryMediaStore([
+      {
+        id: 'announcements/announcement-1/keep.jpg',
+        url: 'memory://keep',
+        role: 'gallery',
+      },
+      {
+        id: 'announcements/announcement-1/delete.jpg',
+        url: 'memory://delete',
+        role: 'gallery',
+      },
+    ]);
+    const coordinator = new MediaCoordinator(
+      media,
+      new SequenceIdGenerator(['new-photo']),
+    );
+    let persisted: readonly string[] = [];
+
+    const result = await coordinator.reconcileGallery({
+      folder: 'announcements/announcement-1',
+      gallery: [
+        storedMedia('announcements/announcement-1/keep.jpg'),
+        localMedia('file://new.jpg'),
+      ],
+      persist: async (assets) => {
+        persisted = assets.map(({ id }) => id);
+      },
+    });
+
+    expect(result).toMatchObject({ ok: true, warnings: [] });
+    expect(persisted).toEqual([
+      'announcements/announcement-1/keep.jpg',
+      'announcements/announcement-1/new-photo.jpg',
+    ]);
+    expect(media.ids()).toEqual(persisted);
+  });
+
+  it('compensates gallery uploads when persistence fails', async () => {
+    const media = new InMemoryMediaStore();
+    const coordinator = new MediaCoordinator(
+      media,
+      new SequenceIdGenerator(['temporary']),
+    );
+
+    const result = await coordinator.reconcileGallery({
+      folder: 'announcements/announcement-1',
+      gallery: [localMedia('file://temporary.jpg')],
+      persist: async () => {
+        throw new Error('Firestore unavailable');
+      },
+    });
+
+    expect(result).toEqual({
+      ok: false,
+      error: {
+        code: 'dependency_failure',
+        message: 'Could not persist media changes',
+      },
+    });
+    expect(media.ids()).toEqual([]);
+  });
+
+  it('returns a dependency outcome when existing media cannot be loaded', async () => {
+    const media = new InMemoryMediaStore();
+    const coordinator = new MediaCoordinator(
+      media,
+      new SequenceIdGenerator([]),
+    );
+    media.failNext('list', new Error('Storage unavailable'));
+
+    await expect(
+      coordinator.reconcileGallery({
+        folder: 'announcements/announcement-1',
+        gallery: [],
+        persist: async () => undefined,
+      }),
+    ).resolves.toEqual({
+      ok: false,
+      error: {
+        code: 'dependency_failure',
+        message: 'Could not load existing media',
+      },
+    });
+  });
 });

@@ -22,6 +22,12 @@ export interface ReconcileMediaRequest {
   readonly persist: (media: ReconciledMedia) => Promise<void>;
 }
 
+export interface ReconcileGalleryRequest {
+  readonly folder: string;
+  readonly gallery: readonly MediaSelection[];
+  readonly persist: (gallery: readonly StoredMediaAsset[]) => Promise<void>;
+}
+
 export const storedMedia = (id: string): MediaSelection => ({
   kind: 'stored',
   id: mediaAssetId(id),
@@ -41,7 +47,12 @@ export class MediaCoordinator {
   async reconcile(
     request: ReconcileMediaRequest,
   ): Promise<Outcome<ReconciledMedia>> {
-    const current = await this.media.list(request.folder);
+    let current: readonly StoredMediaAsset[];
+    try {
+      current = await this.media.list(request.folder);
+    } catch {
+      return failure('dependency_failure', 'Could not load existing media');
+    }
     const currentById = new Map(current.map((asset) => [asset.id, asset]));
     const uploaded: StoredMediaAsset[] = [];
 
@@ -110,6 +121,74 @@ export class MediaCoordinator {
     return success(
       next,
       cleanupFailed
+        ? [
+            {
+              code: 'cleanup_failed',
+              message:
+                'Saved changes, but some obsolete media could not be removed',
+            },
+          ]
+        : [],
+    );
+  }
+
+  async reconcileGallery(
+    request: ReconcileGalleryRequest,
+  ): Promise<Outcome<readonly StoredMediaAsset[]>> {
+    let current: readonly StoredMediaAsset[];
+    try {
+      current = await this.media.list(request.folder);
+    } catch {
+      return failure('dependency_failure', 'Could not load existing media');
+    }
+    const currentById = new Map(current.map((asset) => [asset.id, asset]));
+    const uploaded: StoredMediaAsset[] = [];
+
+    let gallery: readonly StoredMediaAsset[];
+    try {
+      gallery = await Promise.all(
+        request.gallery.map(async (selection) => {
+          if (selection.kind === 'stored') {
+            const existing = currentById.get(selection.id);
+            if (!existing) throw new Error('Selected stored media does not exist');
+            return { ...existing, role: 'gallery' as const };
+          }
+          const filename = `${this.ids.next()}.jpg`;
+          const asset = await this.media.upload({
+            id: mediaAssetId(`${request.folder}/${filename}`),
+            localUri: selection.localUri,
+            role: 'gallery',
+          });
+          uploaded.push(asset);
+          return asset;
+        }),
+      );
+    } catch {
+      await this.compensate(uploaded);
+      return failure('dependency_failure', 'Could not upload selected media');
+    }
+
+    try {
+      await request.persist(gallery);
+    } catch {
+      const compensated = await this.compensate(uploaded);
+      return compensated
+        ? failure('dependency_failure', 'Could not persist media changes')
+        : failure(
+            'partial_failure',
+            'Could not persist media changes or remove temporary uploads',
+          );
+    }
+
+    const retainedIds = new Set(gallery.map(({ id }) => id));
+    const cleanup = await Promise.allSettled(
+      current
+        .filter(({ id }) => !retainedIds.has(id))
+        .map(({ id }) => this.media.remove(id)),
+    );
+    return success(
+      gallery,
+      cleanup.some(({ status }) => status === 'rejected')
         ? [
             {
               code: 'cleanup_failed',
