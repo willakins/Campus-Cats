@@ -4,7 +4,6 @@ import MapView, { Marker } from 'react-native-maps';
 import DropdownPicker from 'react-native-dropdown-picker';
 import { DateTimeInput, FormCamera } from '@/components';
 import { buttonStyles, containerStyles, textStyles } from '@/styles';
-import { CatalogImageHandler } from '@/image_handlers/CatalogImageHandler';
 
 interface SightingFormProps {
   formData: any;
@@ -19,7 +18,6 @@ interface SightingFormProps {
   profile?: string;
   setPhotos: React.Dispatch<React.SetStateAction<string[]>>;
   setPicsChanged?: Dispatch<React.SetStateAction<boolean>>;
-  imageHandler?: CatalogImageHandler;
   isCreate: boolean;
   onPromotePhoto?: (uri: string) => void;
   onDeletePhoto?: (uri: string) => void;
@@ -27,7 +25,7 @@ interface SightingFormProps {
 
 const SightingForm: React.FC<SightingFormProps> = ({
   formData, setFormData, value, setValue,
-  open, setOpen, items, setItems, photos, profile, setPhotos, setPicsChanged, imageHandler, isCreate,
+  open, setOpen, items, setItems, photos, profile, setPhotos, setPicsChanged, isCreate,
   onPromotePhoto, onDeletePhoto,
 }) => {
   const handleChange = (field: string, val: any) => {
@@ -113,7 +111,6 @@ const SightingForm: React.FC<SightingFormProps> = ({
         photos={photos}
         setPhotos={setPhotos}
         setPicsChanged={setPicsChanged}
-        imageHandler={imageHandler}
         onPromotePhoto={onPromotePhoto}
         onDeletePhoto={onDeletePhoto}
         isCreate={isCreate}/>

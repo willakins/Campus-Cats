@@ -1,39 +1,40 @@
 import React, { useState } from 'react';
-import { SafeAreaView, ScrollView, Text } from 'react-native';
+import { Alert, SafeAreaView, ScrollView, Text } from 'react-native';
 
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
 import { globalStyles, buttonStyles, textStyles, containerStyles } from '@/styles';
 import { Button, SnackbarMessage } from '@/components';
-import DatabaseService from '@/services/DatabaseService';
+import { appModules } from '@/composition/appModules';
+import { parseUser } from '@/core/domain';
 import { useAuth } from '@/providers';
-import { Station } from '@/types';
-import { setSelectedStation } from '@/stores/stationStores';
 import { StationForm } from '@/forms';
 
 const create_station = () =>{
   const router = useRouter();
-  const database = DatabaseService.getInstance();
   const { user } = useAuth();
   const [visible, setVisible] = useState<boolean>(false);
 
   const [photos, setPhotos] = useState<string[]>([]);
   const [formData, setFormData] = useState({name: "", location:{latitude:0, longitude: 0}, lastStocked:new Date(), stockingFreq: 7, knownCats: ""});
     
-  const createObj = () => {
-    const newStation = new Station({
-      id:'-1', 
-      name:formData.name, 
-      location:formData.location, 
-      lastStocked:formData.lastStocked, 
-      stockingFreq:formData.stockingFreq, 
-      knownCats:formData.knownCats,
-      isStocked:Station.calculateStocked(formData.lastStocked, formData.stockingFreq),
-      createdBy:user,
+  const createStation = async () => {
+    setVisible(true);
+    const result = await appModules.stations.create(parseUser(user), {
+      ...formData,
+      photos,
     });
-    setSelectedStation(newStation);
-  }
+    setVisible(false);
+    if (!result.ok) {
+      Alert.alert('Could not create station', result.error.message);
+      return;
+    }
+    router.replace({
+      pathname: '/stations/view-station',
+      params: { id: result.value.id },
+    });
+  };
 
   return (
     <SafeAreaView  style={containerStyles.wrapper}>
@@ -50,10 +51,7 @@ const create_station = () =>{
           setPhotos={setPhotos}
           isCreate={true}/>
       </ScrollView>
-      <Button style={buttonStyles.bigButton} onPress={() => {
-        createObj();
-        database.createStation(photos, setVisible, router);
-      }}>
+      <Button style={buttonStyles.bigButton} onPress={() => void createStation()}>
         <Text style={textStyles.bigButtonText}> Create Station</Text>
       </Button>
     </SafeAreaView>

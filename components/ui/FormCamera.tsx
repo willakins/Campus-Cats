@@ -2,19 +2,17 @@ import React, { Dispatch } from 'react';
 import { View, Text, Image } from 'react-native';
 import { CameraButton, Button, ImageButton } from './Buttons';
 import { buttonStyles, containerStyles, textStyles } from '@/styles';
-import { CatalogImageHandler } from '@/image_handlers/CatalogImageHandler';
 
 interface FormCameraProps {
     photos: string[];
     setPhotos: React.Dispatch<React.SetStateAction<string[]>>;
     setPicsChanged?: Dispatch<React.SetStateAction<boolean>>;
-    imageHandler?: CatalogImageHandler;
     isCreate: boolean;
     onPromotePhoto?: (uri: string) => void;
     onDeletePhoto?: (uri: string) => void;
 }
 
-const FormCamera: React.FC<FormCameraProps> = ({ photos, setPhotos, setPicsChanged, imageHandler, isCreate, onPromotePhoto, onDeletePhoto }) => {
+const FormCamera: React.FC<FormCameraProps> = ({ photos, setPhotos, setPicsChanged, isCreate, onPromotePhoto, onDeletePhoto }) => {
 
     return (
         <>
@@ -47,10 +45,10 @@ const FormCamera: React.FC<FormCameraProps> = ({ photos, setPhotos, setPicsChang
                 <View style={containerStyles.extraPicsContainer}>
                     {photos.map((pic, index) => (
                     <View key={index} style={containerStyles.imageWrapper}>
-                        <ImageButton key={index} onPress={() => onPromotePhoto ? onPromotePhoto(pic) : imageHandler?.swapProfilePicture(pic)}>
+                        <ImageButton key={index} onPress={() => onPromotePhoto?.(pic)}>
                         <Image source={{ uri: pic }} style={containerStyles.extraPic} />
                         </ImageButton>
-                        <Button style={buttonStyles.imageDeleteButton} onPress={() => onDeletePhoto ? onDeletePhoto(pic) : imageHandler?.confirmDeletion(pic)}>
+                        <Button style={buttonStyles.imageDeleteButton} onPress={() => onDeletePhoto?.(pic)}>
                         <Text style={textStyles.smallButtonText}>Delete</Text>
                         </Button>
                     </View>
