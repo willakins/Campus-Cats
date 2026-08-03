@@ -193,4 +193,85 @@ describe('AnnouncementsModule', () => {
       warnings: [{ code: 'cleanup_failed' }],
     });
   });
+
+  it('covers update authorization, validation, not-found, and media failures', async () => {
+    await expect(
+      buildModule().module.update(member, 'missing', {
+        title: draft.title,
+        info: draft.info,
+        authorAlias: '',
+        photos: [],
+      }),
+    ).resolves.toMatchObject({ ok: false, error: { code: 'forbidden' } });
+    await expect(
+      buildModule().module.update(admin, 'missing', {
+        title: draft.title,
+        info: draft.info,
+        authorAlias: '',
+        photos: [],
+      }),
+    ).resolves.toMatchObject({ ok: false, error: { code: 'not_found' } });
+
+    const invalid = buildModule();
+    await invalid.module.create(admin, draft);
+    await expect(
+      invalid.module.update(admin, 'announcement-1', {
+        title: '',
+        info: draft.info,
+        authorAlias: '',
+        photos: [],
+      }),
+    ).resolves.toMatchObject({ ok: false, error: { code: 'validation' } });
+
+    const failed = buildModule();
+    await failed.module.create(admin, draft);
+    failed.media.failNext('list', new Error('storage offline'));
+    await expect(
+      failed.module.update(admin, 'announcement-1', {
+        title: draft.title,
+        info: draft.info,
+        authorAlias: '',
+        photos: [],
+      }),
+    ).resolves.toMatchObject({
+      ok: false,
+      error: { code: 'dependency_failure' },
+    });
+  });
+
+  it('covers create and delete dependency paths', async () => {
+    const createFailure = buildModule();
+    createFailure.media.failNext('list', new Error('storage offline'));
+    await expect(createFailure.module.create(admin, draft)).resolves.toMatchObject({
+      ok: false,
+      error: { code: 'dependency_failure' },
+    });
+
+    await expect(
+      buildModule().module.remove(member, 'missing'),
+    ).resolves.toMatchObject({ ok: false, error: { code: 'forbidden' } });
+    await expect(
+      buildModule().module.remove(admin, 'missing'),
+    ).resolves.toMatchObject({ ok: false, error: { code: 'not_found' } });
+
+    const documentFailure = buildModule();
+    await documentFailure.module.create(admin, draft);
+    documentFailure.documents.failNext('remove', new Error('offline'));
+    await expect(
+      documentFailure.module.remove(admin, 'announcement-1'),
+    ).resolves.toMatchObject({
+      ok: false,
+      error: { code: 'dependency_failure' },
+    });
+
+    const listFailure = buildModule();
+    await listFailure.module.create(admin, draft);
+    listFailure.media.failNext('list', new Error('offline'));
+    await expect(
+      listFailure.module.remove(admin, 'announcement-1'),
+    ).resolves.toMatchObject({
+      ok: true,
+      warnings: [{ code: 'cleanup_failed' }],
+    });
+  });
 });

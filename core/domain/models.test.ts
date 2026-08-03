@@ -156,4 +156,31 @@ describe('Firestore codecs', () => {
       lastStocked: new Date('2025-04-10T12:00:00.000Z'),
     });
   });
+
+  it('accepts native dates and rejects invalid document and timestamp shapes', () => {
+    expect(
+      codecs.announcement.decode('announcement-1', {
+        title: 'Update',
+        info: 'Details',
+        createdAt: new Date('2025-04-10T12:00:00.000Z'),
+        createdBy: member,
+        authorAlias: 'Campus Cats',
+      }),
+    ).toMatchObject({ createdAt: new Date('2025-04-10T12:00:00.000Z') });
+    expect(() => codecs.user.decode('member-1', null)).toThrow(
+      'Expected Firestore document data',
+    );
+    expect(() => codecs.user.decode('member-1', [])).toThrow(
+      'Expected Firestore document data',
+    );
+    expect(() =>
+      codecs.announcement.decode('announcement-1', {
+        title: 'Update',
+        info: 'Details',
+        createdAt: 'not-a-timestamp',
+        createdBy: member,
+        authorAlias: 'Campus Cats',
+      }),
+    ).toThrow('Expected a Firestore timestamp');
+  });
 });

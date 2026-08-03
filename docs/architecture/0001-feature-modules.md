@@ -42,12 +42,41 @@ operations define compensation behavior for partial failures.
 
 ## Consequences
 
-- Features can be migrated vertically while the legacy facade remains temporarily.
+- Features are migrated vertically and composed once in `composition/appModules.ts`.
+- The old singleton facade, persistence services, selected-record stores, duplicate
+  class models, and image-handler hierarchy have been removed.
 - Tests describe caller-visible behavior at module, adapter-contract, route, callable,
   and security-rule seams.
 - Dependency direction is presentation → application/domain → ports, with adapters
   implementing ports at the edge.
 - Adding a generic repository, command bus, Redux store, or query cache requires a
   separate demonstrated need.
-- The singleton facade, selected-record stores, duplicate model systems, and image
-  handler hierarchy are removed after their final callers migrate.
+
+## Implemented dependency boundaries
+
+```mermaid
+flowchart TD
+    P[Routes, screens, and presentation hooks] --> A[AppModules]
+    A --> M[Feature modules]
+    M --> D[Domain models, outcomes, and policies]
+    M --> R[Ports]
+    C[MediaCoordinator] --> R
+    F[Firebase, Expo, and runtime adapters] --> R
+    T[In-memory test adapters] --> R
+```
+
+- `app/`, `forms/`, and `providers/` may depend on the composition and public feature
+  interfaces. They own loading, alerts, confirmations, and route transitions.
+- `features/` depends only on `core/domain`, `core/media`, and `core/ports`; feature
+  methods accept domain inputs and return `Outcome<T>`.
+- `core/` contains framework-independent models, policies, ports, and media
+  compensation. It does not import React, Expo Router, or Firebase.
+- `adapters/` implements ports for production or deterministic tests. Firebase types
+  stop at this boundary.
+- `functions/src/handlers.ts` contains injected callable behavior. Firebase callable
+  wrappers translate authentication and infrastructure at the edge.
+
+Records cross routes only as IDs. Screens reload records through their feature module,
+which prevents stale module-global selections. Firestore codecs preserve the existing
+collections and field names, and media adapters preserve the existing Storage folder
+layout; this refactor therefore requires no production-data migration.

@@ -13,7 +13,7 @@
     "web": "expo start --web",
     "test": "jest --watch",
     "test:ci": "jest --runInBand",
-    "test:coverage": "jest --runInBand --coverage",
+    "test:coverage": "jest --runInBand --coverage && node scripts/check-coverage.js",
     "test:emulator": "jest --config jest.emulator.config.js --runInBand",
     "emulator:exec": "firebase emulators:exec --project demo-campus-cats-test --only firestore,storage \"npm run test:emulator\"",
     "typecheck": "tsc --noEmit",

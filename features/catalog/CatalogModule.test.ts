@@ -123,15 +123,103 @@ describe('CatalogModule', () => {
   });
 
   it('returns not-found and dependency outcomes', async () => {
-    const { module, documents } = buildModule();
+    const { module, documents, media } = buildModule();
     await expect(module.get('missing')).resolves.toMatchObject({
       ok: false,
       error: { code: 'not_found' },
+    });
+    documents.failNext('get', new Error('offline'));
+    await expect(module.get('missing')).resolves.toMatchObject({
+      ok: false,
+      error: { code: 'dependency_failure' },
     });
     documents.failNext('list', new Error('offline'));
     await expect(module.list()).resolves.toMatchObject({
       ok: false,
       error: { code: 'dependency_failure' },
     });
+    media.failNext('list', new Error('offline'));
+    await expect(module.media('missing')).resolves.toMatchObject({
+      ok: false,
+      error: { code: 'dependency_failure' },
+    });
+  });
+
+  it('covers update authorization, validation, not-found, and media failures', async () => {
+    const update = {
+      cat,
+      credits: '',
+      profile: storedMedia('catalog/cat-1/profile-1.jpg'),
+      gallery: [],
+    };
+    await expect(buildModule().module.update(undefined, 'missing', update)).resolves.toMatchObject({
+      ok: false,
+      error: { code: 'unauthenticated' },
+    });
+    await expect(buildModule().module.update(member, 'missing', update)).resolves.toMatchObject({
+      ok: false,
+      error: { code: 'forbidden' },
+    });
+    await expect(buildModule().module.update(admin, 'missing', update)).resolves.toMatchObject({
+      ok: false,
+      error: { code: 'not_found' },
+    });
+
+    const invalid = buildModule();
+    await invalid.module.create(admin, { cat, credits: '', photos: ['file://profile.jpg'] });
+    await expect(
+      invalid.module.update(admin, 'cat-1', { ...update, cat: { ...cat, name: '' } }),
+    ).resolves.toMatchObject({ ok: false, error: { code: 'validation' } });
+
+    const failed = buildModule();
+    await failed.module.create(admin, { cat, credits: '', photos: ['file://profile.jpg'] });
+    failed.media.failNext('list', new Error('offline'));
+    await expect(failed.module.update(admin, 'cat-1', update)).resolves.toMatchObject({
+      ok: false,
+      error: { code: 'dependency_failure' },
+    });
+  });
+
+  it('reports create and delete dependency outcomes', async () => {
+    const createFailure = buildModule();
+    createFailure.media.failNext('list', new Error('offline'));
+    await expect(
+      createFailure.module.create(admin, { cat, credits: '', photos: ['file://profile.jpg'] }),
+    ).resolves.toMatchObject({ ok: false, error: { code: 'dependency_failure' } });
+
+    await expect(buildModule().module.remove(undefined, 'missing')).resolves.toMatchObject({
+      ok: false,
+      error: { code: 'unauthenticated' },
+    });
+    await expect(buildModule().module.remove(member, 'missing')).resolves.toMatchObject({
+      ok: false,
+      error: { code: 'forbidden' },
+    });
+    await expect(buildModule().module.remove(admin, 'missing')).resolves.toMatchObject({
+      ok: false,
+      error: { code: 'not_found' },
+    });
+
+    const documentFailure = buildModule();
+    await documentFailure.module.create(admin, { cat, credits: '', photos: ['file://profile.jpg'] });
+    documentFailure.documents.failNext('remove', new Error('offline'));
+    await expect(documentFailure.module.remove(admin, 'cat-1')).resolves.toMatchObject({
+      ok: false,
+      error: { code: 'dependency_failure' },
+    });
+
+    for (const operation of ['list', 'remove'] as const) {
+      const cleanupFailure = buildModule();
+      await cleanupFailure.module.create(admin, {
+        cat,
+        credits: '',
+        photos: ['file://profile.jpg'],
+      });
+      cleanupFailure.media.failNext(operation, new Error('offline'));
+      await expect(cleanupFailure.module.remove(admin, 'cat-1')).resolves.toMatchObject({
+        ok: true,
+        warnings: [{ code: 'cleanup_failed' }],
+      });
+    }
   });
 });

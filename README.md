@@ -48,17 +48,24 @@ Campus Cats brings those workflows into one mobile experience. Members can recor
 
 ```mermaid
 flowchart LR
-    A[Expo / React Native client] --> B[Expo Router and role-aware UI]
-    B --> C[Typed forms and service layer]
-    B --> D[Firebase Authentication and GT SAML]
-    C --> E[(Cloud Firestore)]
-    C --> F[(Firebase Storage)]
-    C --> G[Cloud Functions]
-    G --> H[Expo Push API]
-    G --> I[SendGrid]
+    A[Expo Router screens] --> B[Immutable AppModules composition]
+    B --> C[Vertical feature modules]
+    C --> D[Domain models, outcomes, and policies]
+    C --> E[Typed ports]
+    E --> F[Firebase and Expo adapters]
+    E --> G[Deterministic in-memory adapters]
+    F --> H[(Firestore, Storage, Auth)]
+    F --> I[Callable Functions]
+    I --> J[Expo Push API and SendGrid]
 ```
 
-The client uses typed domain models and reusable service modules to keep presentation, business logic, and persistence concerns distinct. Firebase supplies authentication, document storage, media storage, and serverless functions; external integrations deliver push notifications and whitelist emails.
+The client is organized as behavior-first vertical modules for sightings, catalog,
+stations, announcements, contacts, users, whitelist, session, and image selection.
+Screens own presentation and navigation; modules return typed outcomes; narrow ports
+isolate Firebase and Expo. Deterministic in-memory adapters and Firebase Emulator
+contracts protect behavior during refactors. See the
+[architecture decision](docs/architecture/0001-feature-modules.md) for the dependency
+rules and compatibility constraints.
 
 ### Technology
 
@@ -88,6 +95,10 @@ The interface can be explored locally, but authentication, maps, notifications, 
 - [Release notes](CHANGELOG.md)
 - [Detailed design document](Detailed%20Design%20Document.pdf) — the team's original capstone design artifact; it includes planned ideas beyond the final v1 scope
 - [Firebase operations](FIREBASE.md)
+- [Architecture](docs/architecture/0001-feature-modules.md)
+- [Authorization matrix](docs/architecture/behavior-matrix.md)
+- [Testing guide](docs/testing.md)
+- [Contributing](CONTRIBUTING.md)
 
 ## Team
 
