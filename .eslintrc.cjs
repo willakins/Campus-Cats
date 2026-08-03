@@ -37,6 +37,15 @@ module.exports = {
         '@typescript-eslint/no-unused-vars': 'off',
       },
     },
+    {
+      files: ['core/**/*.ts', 'features/**/*.ts', 'adapters/**/*.ts'],
+      rules: {
+        '@typescript-eslint/no-unused-vars': [
+          'error',
+          { argsIgnorePattern: '^_', varsIgnorePattern: '^_' },
+        ],
+      },
+    },
   ],
   rules: {
     'no-empty': 'off',
