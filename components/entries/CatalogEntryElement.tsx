@@ -4,9 +4,11 @@ import { Text, Image, View, Platform } from 'react-native';
 import MapView, { Marker } from 'react-native-maps';
 
 import DatabaseService from '../../services/DatabaseService';
+import { appModules } from '@/composition/appModules';
+import { Sighting } from '@/core/domain';
 import { globalStyles, buttonStyles, textStyles, containerStyles } from '@/styles';
 import { Button } from '../ui/Buttons';
-import { CatalogEntry, Sighting } from '@/types';
+import { CatalogEntry } from '@/types';
 import { getSelectedCatalogEntry } from '@/stores/CatalogEntryStores';
 
 const CatalogEntryElement: React.FC = () => {
@@ -19,7 +21,11 @@ const CatalogEntryElement: React.FC = () => {
 
   useEffect(() => {
     database.fetchCatImages(entry.id, setProfile, setPhotos);
-    database.getSightings(entry.cat.name, setSightings);
+    void appModules.sightings.list().then((result) => {
+      if (result.ok) {
+        setSightings(result.value.filter(({ name }) => name === entry.cat.name));
+      }
+    });
   }, []);
 
   return (

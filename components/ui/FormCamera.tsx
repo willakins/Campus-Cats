@@ -10,9 +10,11 @@ interface FormCameraProps {
     setPicsChanged?: Dispatch<React.SetStateAction<boolean>>;
     imageHandler?: CatalogImageHandler;
     isCreate: boolean;
+    onPromotePhoto?: (uri: string) => void;
+    onDeletePhoto?: (uri: string) => void;
 }
 
-const FormCamera: React.FC<FormCameraProps> = ({ photos, setPhotos, setPicsChanged, imageHandler, isCreate }) => {
+const FormCamera: React.FC<FormCameraProps> = ({ photos, setPhotos, setPicsChanged, imageHandler, isCreate, onPromotePhoto, onDeletePhoto }) => {
 
     return (
         <>
@@ -38,17 +40,17 @@ const FormCamera: React.FC<FormCameraProps> = ({ photos, setPhotos, setPicsChang
                 </View>
             ) : (
             <>
-            {photos.length > 0 && imageHandler ? (
+            {photos.length > 0 ? (
                 <>
                 <Text style={textStyles.label}>Extra Photos</Text>
                 <Text style={textStyles.detail}>The photo you click will turn into the profile picture</Text>
                 <View style={containerStyles.extraPicsContainer}>
                     {photos.map((pic, index) => (
                     <View key={index} style={containerStyles.imageWrapper}>
-                        <ImageButton key={index} onPress={() => imageHandler.swapProfilePicture(pic)}>
+                        <ImageButton key={index} onPress={() => onPromotePhoto ? onPromotePhoto(pic) : imageHandler?.swapProfilePicture(pic)}>
                         <Image source={{ uri: pic }} style={containerStyles.extraPic} />
                         </ImageButton>
-                        <Button style={buttonStyles.imageDeleteButton} onPress={() => imageHandler.confirmDeletion(pic)}>
+                        <Button style={buttonStyles.imageDeleteButton} onPress={() => onDeletePhoto ? onDeletePhoto(pic) : imageHandler?.confirmDeletion(pic)}>
                         <Text style={textStyles.smallButtonText}>Delete</Text>
                         </Button>
                     </View>

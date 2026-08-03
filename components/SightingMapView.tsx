@@ -1,9 +1,9 @@
 import { MapViewProps, Marker } from 'react-native-maps';
 import { MapView } from '@/components/ui/MapView';
-import { Sighting } from '@/types';
+import { Sighting } from '@/core/domain';
 
 type SightingMapViewProps = MapViewProps & {
-  list: Sighting[];
+  list: readonly Sighting[];
   filter: (item: Sighting) => boolean;
   onPerMarkerPress?: (item: Sighting) => void;
 };
