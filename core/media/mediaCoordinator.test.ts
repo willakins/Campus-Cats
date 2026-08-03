@@ -197,4 +197,97 @@ describe('MediaCoordinator', () => {
       },
     });
   });
+
+  it('rejects references to stored media that no longer exists', async () => {
+    const media = new InMemoryMediaStore();
+    const coordinator = new MediaCoordinator(media, new SequenceIdGenerator([]));
+
+    await expect(
+      coordinator.reconcile({
+        folder: 'catalog/cat-1',
+        profile: storedMedia('catalog/cat-1/missing.jpg'),
+        gallery: [],
+        persist: async () => undefined,
+      }),
+    ).resolves.toMatchObject({ ok: false, error: { code: 'dependency_failure' } });
+    await expect(
+      coordinator.reconcileGallery({
+        folder: 'announcements/announcement-1',
+        gallery: [storedMedia('announcements/announcement-1/missing.jpg')],
+        persist: async () => undefined,
+      }),
+    ).resolves.toMatchObject({ ok: false, error: { code: 'dependency_failure' } });
+  });
+
+  it('reports partial failure when profile compensation cannot remove an upload', async () => {
+    const media = new InMemoryMediaStore();
+    const coordinator = new MediaCoordinator(media, new SequenceIdGenerator(['temporary']));
+
+    const result = await coordinator.reconcile({
+      folder: 'catalog/cat-1',
+      profile: localMedia('file://temporary.jpg'),
+      gallery: [],
+      persist: async () => {
+        media.failNext('remove', new Error('cleanup offline'));
+        throw new Error('Firestore unavailable');
+      },
+    });
+
+    expect(result).toMatchObject({ ok: false, error: { code: 'partial_failure' } });
+    expect(media.ids()).toEqual(['catalog/cat-1/profile-temporary.jpg']);
+  });
+
+  it('reports partial failure when gallery compensation cannot remove an upload', async () => {
+    const media = new InMemoryMediaStore();
+    const coordinator = new MediaCoordinator(media, new SequenceIdGenerator(['temporary']));
+
+    const result = await coordinator.reconcileGallery({
+      folder: 'announcements/announcement-1',
+      gallery: [localMedia('file://temporary.jpg')],
+      persist: async () => {
+        media.failNext('remove', new Error('cleanup offline'));
+        throw new Error('Firestore unavailable');
+      },
+    });
+
+    expect(result).toMatchObject({ ok: false, error: { code: 'partial_failure' } });
+  });
+
+  it('reports obsolete gallery cleanup as a warning', async () => {
+    const media = new InMemoryMediaStore([
+      {
+        id: 'announcements/announcement-1/obsolete.jpg',
+        url: 'memory://obsolete',
+        role: 'gallery',
+      },
+    ]);
+    const coordinator = new MediaCoordinator(media, new SequenceIdGenerator([]));
+    media.failNext('remove', new Error('cleanup offline'));
+
+    await expect(
+      coordinator.reconcileGallery({
+        folder: 'announcements/announcement-1',
+        gallery: [],
+        persist: async () => undefined,
+      }),
+    ).resolves.toMatchObject({
+      ok: true,
+      warnings: [{ code: 'cleanup_failed' }],
+    });
+  });
+
+  it('maps profile media list failures to dependency outcomes', async () => {
+    const media = new InMemoryMediaStore();
+    const coordinator = new MediaCoordinator(media, new SequenceIdGenerator([]));
+    media.failNext('list', new Error('offline'));
+
+    await expect(
+      coordinator.reconcile({
+        folder: 'catalog/cat-1',
+        profile: storedMedia('catalog/cat-1/profile.jpg'),
+        gallery: [],
+        persist: async () => undefined,
+      }),
+    ).resolves.toMatchObject({ ok: false, error: { code: 'dependency_failure' } });
+  });
 });

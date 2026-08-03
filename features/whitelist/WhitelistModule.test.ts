@@ -73,6 +73,10 @@ describe('WhitelistModule', () => {
       ok: false,
       error: { code: 'forbidden' },
     });
+    await expect(module.list(undefined)).resolves.toMatchObject({
+      ok: false,
+      error: { code: 'unauthenticated' },
+    });
     await expect(module.list(admin)).resolves.toMatchObject({
       ok: true,
       value: [{ email: 'alex@example.com' }],
@@ -128,6 +132,81 @@ describe('WhitelistModule', () => {
     await expect(module.accept(admin, 'application-1')).resolves.toMatchObject({
       ok: false,
       error: { code: 'partial_failure' },
+    });
+  });
+
+  it('covers deny authorization, missing records, and adapter failures', async () => {
+    await expect(buildModule().module.deny(undefined, 'missing')).resolves.toMatchObject({
+      ok: false,
+      error: { code: 'unauthenticated' },
+    });
+    await expect(buildModule().module.deny(member, 'missing')).resolves.toMatchObject({
+      ok: false,
+      error: { code: 'forbidden' },
+    });
+    await expect(buildModule().module.deny(admin, 'missing')).resolves.toMatchObject({
+      ok: false,
+      error: { code: 'not_found' },
+    });
+
+    const failed = buildModule();
+    await failed.module.submit(draft);
+    failed.documents.failNext('remove', new Error('offline'));
+    await expect(failed.module.deny(admin, 'application-1')).resolves.toMatchObject({
+      ok: false,
+      error: { code: 'dependency_failure' },
+    });
+  });
+
+  it('covers accept authorization, missing records, and provision failures', async () => {
+    await expect(buildModule().module.accept(undefined, 'missing')).resolves.toMatchObject({
+      ok: false,
+      error: { code: 'unauthenticated' },
+    });
+    await expect(buildModule().module.accept(member, 'missing')).resolves.toMatchObject({
+      ok: false,
+      error: { code: 'forbidden' },
+    });
+    await expect(buildModule().module.accept(admin, 'missing')).resolves.toMatchObject({
+      ok: false,
+      error: { code: 'not_found' },
+    });
+
+    const provisionFailure = buildModule();
+    await provisionFailure.module.submit(draft);
+    provisionFailure.effects.failNext('provisionWhitelistUser', new Error('offline'));
+    await expect(
+      provisionFailure.module.accept(admin, 'application-1'),
+    ).resolves.toMatchObject({ ok: false, error: { code: 'dependency_failure' } });
+
+    const finalRemoveFailure = buildModule();
+    await finalRemoveFailure.module.submit(draft);
+    finalRemoveFailure.documents.failNext('remove', new Error('offline'));
+    await expect(
+      finalRemoveFailure.module.accept(admin, 'application-1'),
+    ).resolves.toMatchObject({ ok: false, error: { code: 'partial_failure' } });
+  });
+
+  it('maps submission, listing, and record lookup failures', async () => {
+    const submitFailure = buildModule();
+    submitFailure.documents.failNext('list', new Error('offline'));
+    await expect(submitFailure.module.submit(draft)).resolves.toMatchObject({
+      ok: false,
+      error: { code: 'dependency_failure' },
+    });
+
+    const listFailure = buildModule();
+    listFailure.documents.failNext('list', new Error('offline'));
+    await expect(listFailure.module.list(admin)).resolves.toMatchObject({
+      ok: false,
+      error: { code: 'dependency_failure' },
+    });
+
+    const getFailure = buildModule();
+    getFailure.documents.failNext('get', new Error('offline'));
+    await expect(getFailure.module.accept(admin, 'application-1')).resolves.toMatchObject({
+      ok: false,
+      error: { code: 'dependency_failure' },
     });
   });
 });

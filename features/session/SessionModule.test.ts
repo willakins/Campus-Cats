@@ -95,4 +95,35 @@ describe('SessionModule', () => {
       error: { code: 'dependency_failure' },
     });
   });
+
+  it('validates account creation and push tokens', async () => {
+    const module = new SessionModule({ session: new InMemorySession() });
+    await expect(module.createAccount('bad', '')).resolves.toMatchObject({
+      ok: false,
+      error: { code: 'validation' },
+    });
+    await expect(module.registerPushToken('   ')).resolves.toMatchObject({
+      ok: false,
+      error: { code: 'validation' },
+    });
+  });
+
+  it.each([
+    ['signInWithEmail', 'authentication_failed'],
+    ['createAccount', 'authentication_failed'],
+    ['signOut', 'dependency_failure'],
+    ['registerPushToken', 'dependency_failure'],
+  ] as const)('maps %s adapter failures to typed outcomes', async (operation, code) => {
+    const session = new InMemorySession(member);
+    const module = new SessionModule({ session });
+    session.failNext(operation, new Error('offline'));
+    const result = operation === 'signInWithEmail'
+      ? module.signInWithEmail('member@example.com', 'password')
+      : operation === 'createAccount'
+        ? module.createAccount('new@example.com', 'password')
+        : operation === 'signOut'
+          ? module.signOut()
+          : module.registerPushToken('ExponentPushToken[test]');
+    await expect(result).resolves.toMatchObject({ ok: false, error: { code } });
+  });
 });

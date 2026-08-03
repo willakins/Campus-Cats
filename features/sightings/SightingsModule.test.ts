@@ -143,7 +143,7 @@ describe('SightingsModule', () => {
   });
 
   it('returns not-found and dependency failures without throwing', async () => {
-    const { module, documents } = buildModule();
+    const { module, documents, media } = buildModule();
 
     await expect(module.get('missing')).resolves.toEqual({
       ok: false,
@@ -151,6 +151,16 @@ describe('SightingsModule', () => {
     });
     documents.failNext('list', new Error('offline'));
     await expect(module.list()).resolves.toMatchObject({
+      ok: false,
+      error: { code: 'dependency_failure' },
+    });
+    documents.failNext('get', new Error('offline'));
+    await expect(module.get('missing')).resolves.toMatchObject({
+      ok: false,
+      error: { code: 'dependency_failure' },
+    });
+    media.failNext('list', new Error('offline'));
+    await expect(module.media('missing')).resolves.toMatchObject({
       ok: false,
       error: { code: 'dependency_failure' },
     });
@@ -170,6 +180,78 @@ describe('SightingsModule', () => {
     await expect(module.media('sighting-1')).resolves.toMatchObject({
       ok: true,
       value: [],
+    });
+  });
+
+  it('covers update authentication, not-found, validation, and media failures', async () => {
+    const update = {
+      ...validDraft,
+      profile: storedMedia('cat-sightings/sighting-1/profile-profile-1.jpg'),
+      gallery: [],
+    };
+    await expect(buildModule().module.update(undefined, 'missing', update)).resolves.toMatchObject({
+      ok: false,
+      error: { code: 'unauthenticated' },
+    });
+    await expect(buildModule().module.update(member, 'missing', update)).resolves.toMatchObject({
+      ok: false,
+      error: { code: 'not_found' },
+    });
+
+    const invalid = buildModule();
+    await invalid.module.create(member, validDraft);
+    await expect(
+      invalid.module.update(member, 'sighting-1', { ...update, name: '' }),
+    ).resolves.toMatchObject({ ok: false, error: { code: 'validation' } });
+
+    const failed = buildModule();
+    await failed.module.create(member, validDraft);
+    failed.media.failNext('list', new Error('offline'));
+    await expect(failed.module.update(member, 'sighting-1', update)).resolves.toMatchObject({
+      ok: false,
+      error: { code: 'dependency_failure' },
+    });
+  });
+
+  it('maps create and delete adapter failures to typed outcomes', async () => {
+    const createFailure = buildModule();
+    createFailure.media.failNext('list', new Error('offline'));
+    await expect(createFailure.module.create(member, validDraft)).resolves.toMatchObject({
+      ok: false,
+      error: { code: 'dependency_failure' },
+    });
+
+    await expect(buildModule().module.remove(undefined, 'missing')).resolves.toMatchObject({
+      ok: false,
+      error: { code: 'unauthenticated' },
+    });
+    await expect(buildModule().module.remove(member, 'missing')).resolves.toMatchObject({
+      ok: false,
+      error: { code: 'not_found' },
+    });
+
+    const mediaDeleteFailure = buildModule();
+    await mediaDeleteFailure.module.create(member, validDraft);
+    mediaDeleteFailure.media.failNext('remove', new Error('offline'));
+    await expect(mediaDeleteFailure.module.remove(member, 'sighting-1')).resolves.toMatchObject({
+      ok: false,
+      error: { code: 'partial_failure' },
+    });
+
+    const mediaListFailure = buildModule();
+    await mediaListFailure.module.create(member, validDraft);
+    mediaListFailure.media.failNext('list', new Error('offline'));
+    await expect(mediaListFailure.module.remove(member, 'sighting-1')).resolves.toMatchObject({
+      ok: false,
+      error: { code: 'dependency_failure' },
+    });
+
+    const documentFailure = buildModule();
+    await documentFailure.module.create(member, validDraft);
+    documentFailure.documents.failNext('remove', new Error('offline'));
+    await expect(documentFailure.module.remove(member, 'sighting-1')).resolves.toMatchObject({
+      ok: false,
+      error: { code: 'partial_failure' },
     });
   });
 });

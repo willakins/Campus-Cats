@@ -66,6 +66,9 @@ describe('ContactsModule', () => {
       module.create(member, { name: 'Officer', email: 'officer@gatech.edu' }),
     ).resolves.toMatchObject({ ok: false, error: { code: 'forbidden' } });
     await expect(
+      module.create(undefined, { name: 'Officer', email: 'officer@gatech.edu' }),
+    ).resolves.toMatchObject({ ok: false, error: { code: 'unauthenticated' } });
+    await expect(
       module.create(admin, { name: ' ', email: 'not-an-email' }),
     ).resolves.toMatchObject({ ok: false, error: { code: 'validation' } });
   });
@@ -80,6 +83,57 @@ describe('ContactsModule', () => {
     ).resolves.toMatchObject({ ok: false, error: { code: 'not_found' } });
     documents.failNext('list', new Error('offline'));
     await expect(module.list(member)).resolves.toMatchObject({
+      ok: false,
+      error: { code: 'dependency_failure' },
+    });
+  });
+
+  it('covers update and delete authorization and validation', async () => {
+    const draft = { name: 'Officer', email: 'officer@gatech.edu' };
+    const { module } = buildModule();
+    await expect(module.update(undefined, 'missing', draft)).resolves.toMatchObject({
+      ok: false,
+      error: { code: 'unauthenticated' },
+    });
+    await expect(module.update(member, 'missing', draft)).resolves.toMatchObject({
+      ok: false,
+      error: { code: 'forbidden' },
+    });
+    await expect(module.remove(undefined, 'missing')).resolves.toMatchObject({
+      ok: false,
+      error: { code: 'unauthenticated' },
+    });
+    await expect(module.remove(member, 'missing')).resolves.toMatchObject({
+      ok: false,
+      error: { code: 'forbidden' },
+    });
+    await expect(module.remove(admin, 'missing')).resolves.toMatchObject({
+      ok: false,
+      error: { code: 'not_found' },
+    });
+
+    await module.create(admin, draft);
+    await expect(
+      module.update(admin, 'contact-1', { name: '', email: 'bad' }),
+    ).resolves.toMatchObject({ ok: false, error: { code: 'validation' } });
+  });
+
+  it.each([
+    ['create', 'put'],
+    ['update', 'put'],
+    ['update', 'get'],
+    ['remove', 'remove'],
+  ] as const)('maps %s adapter failures to dependency outcomes', async (method, operation) => {
+    const { module, documents } = buildModule();
+    const draft = { name: 'Officer', email: 'officer@gatech.edu' };
+    if (method !== 'create') await module.create(admin, draft);
+    documents.failNext(operation, new Error('offline'));
+    const result = method === 'create'
+      ? module.create(admin, draft)
+      : method === 'update'
+        ? module.update(admin, 'contact-1', draft)
+        : module.remove(admin, 'contact-1');
+    await expect(result).resolves.toMatchObject({
       ok: false,
       error: { code: 'dependency_failure' },
     });

@@ -64,6 +64,10 @@ describe('StationsModule', () => {
 
   it('rejects non-admin mutations and invalid station input', async () => {
     const { module } = buildModule();
+    await expect(module.create(undefined, draft)).resolves.toMatchObject({
+      ok: false,
+      error: { code: 'unauthenticated' },
+    });
     await expect(module.create(member, draft)).resolves.toMatchObject({
       ok: false,
       error: { code: 'forbidden' },
@@ -81,6 +85,16 @@ describe('StationsModule', () => {
         message: 'Stocking Frequency must be a positive number',
       },
     });
+    await expect(
+      module.create(admin, { ...draft, lastStocked: new Date('invalid') }),
+    ).resolves.toMatchObject({ ok: false, error: { code: 'validation' } });
+    await expect(module.create(admin, { ...draft, photos: [] })).resolves.toMatchObject({
+      ok: false,
+      error: { code: 'validation' },
+    });
+    await expect(
+      module.create(admin, { ...draft, location: { latitude: 0, longitude: 0 } }),
+    ).resolves.toMatchObject({ ok: false, error: { code: 'validation' } });
   });
 
   it('updates station fields and the current editor attribution', async () => {
@@ -117,7 +131,7 @@ describe('StationsModule', () => {
   });
 
   it('returns not-found and dependency failures', async () => {
-    const { module, documents } = buildModule();
+    const { module, documents, media } = buildModule();
     await expect(module.get('missing')).resolves.toMatchObject({
       ok: false,
       error: { code: 'not_found' },
@@ -127,5 +141,101 @@ describe('StationsModule', () => {
       ok: false,
       error: { code: 'dependency_failure' },
     });
+    documents.failNext('get', new Error('offline'));
+    await expect(module.get('missing')).resolves.toMatchObject({
+      ok: false,
+      error: { code: 'dependency_failure' },
+    });
+    media.failNext('list', new Error('offline'));
+    await expect(module.media('missing')).resolves.toMatchObject({
+      ok: false,
+      error: { code: 'dependency_failure' },
+    });
+  });
+
+  it('covers create, update, and restock failure paths', async () => {
+    const createFailure = buildModule();
+    createFailure.media.failNext('list', new Error('offline'));
+    await expect(createFailure.module.create(admin, draft)).resolves.toMatchObject({
+      ok: false,
+      error: { code: 'dependency_failure' },
+    });
+
+    const update = {
+      ...draft,
+      profile: storedMedia('stations/station-1/profile-profile-1.jpg'),
+      gallery: [],
+    };
+    await expect(buildModule().module.update(member, 'missing', update)).resolves.toMatchObject({
+      ok: false,
+      error: { code: 'forbidden' },
+    });
+    await expect(buildModule().module.update(admin, 'missing', update)).resolves.toMatchObject({
+      ok: false,
+      error: { code: 'not_found' },
+    });
+
+    const invalid = buildModule();
+    await invalid.module.create(admin, draft);
+    await expect(
+      invalid.module.update(admin, 'station-1', { ...update, name: '' }),
+    ).resolves.toMatchObject({ ok: false, error: { code: 'validation' } });
+
+    const mediaFailure = buildModule();
+    await mediaFailure.module.create(admin, draft);
+    mediaFailure.media.failNext('list', new Error('offline'));
+    await expect(mediaFailure.module.update(admin, 'station-1', update)).resolves.toMatchObject({
+      ok: false,
+      error: { code: 'dependency_failure' },
+    });
+
+    await expect(buildModule().module.restock(member, 'missing')).resolves.toMatchObject({
+      ok: false,
+      error: { code: 'forbidden' },
+    });
+    await expect(buildModule().module.restock(admin, 'missing')).resolves.toMatchObject({
+      ok: false,
+      error: { code: 'not_found' },
+    });
+    const restockFailure = buildModule();
+    await restockFailure.module.create(admin, draft);
+    restockFailure.documents.failNext('put', new Error('offline'));
+    await expect(restockFailure.module.restock(admin, 'station-1')).resolves.toMatchObject({
+      ok: false,
+      error: { code: 'dependency_failure' },
+    });
+  });
+
+  it('covers delete authorization, dependency, and cleanup outcomes', async () => {
+    await expect(buildModule().module.remove(undefined, 'missing')).resolves.toMatchObject({
+      ok: false,
+      error: { code: 'unauthenticated' },
+    });
+    await expect(buildModule().module.remove(member, 'missing')).resolves.toMatchObject({
+      ok: false,
+      error: { code: 'forbidden' },
+    });
+    await expect(buildModule().module.remove(admin, 'missing')).resolves.toMatchObject({
+      ok: false,
+      error: { code: 'not_found' },
+    });
+
+    const documentFailure = buildModule();
+    await documentFailure.module.create(admin, draft);
+    documentFailure.documents.failNext('remove', new Error('offline'));
+    await expect(documentFailure.module.remove(admin, 'station-1')).resolves.toMatchObject({
+      ok: false,
+      error: { code: 'dependency_failure' },
+    });
+
+    for (const operation of ['list', 'remove'] as const) {
+      const cleanupFailure = buildModule();
+      await cleanupFailure.module.create(admin, draft);
+      cleanupFailure.media.failNext(operation, new Error('offline'));
+      await expect(cleanupFailure.module.remove(admin, 'station-1')).resolves.toMatchObject({
+        ok: true,
+        warnings: [{ code: 'cleanup_failed' }],
+      });
+    }
   });
 });
