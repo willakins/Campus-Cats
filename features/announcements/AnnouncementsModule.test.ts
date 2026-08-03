@@ -35,6 +35,8 @@ function buildModule(effects?: Partial<CallableEffects>) {
     provisionWhitelistUser: jest.fn(),
     emailWhitelistCredentials: jest.fn(),
     removeProvisionedUser: jest.fn(),
+    updateUserRole: jest.fn(),
+    removeUser: jest.fn(),
     ...effects,
   };
   const ids = new SequenceIdGenerator([

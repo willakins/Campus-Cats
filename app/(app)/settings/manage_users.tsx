@@ -1,37 +1,43 @@
-import { SafeAreaView, ScrollView, Text } from 'react-native';
+import { useCallback, useState } from 'react';
+import { Alert, SafeAreaView, ScrollView, Text } from 'react-native';
+
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
-import { useEffect, useState } from 'react';
-import { globalStyles, buttonStyles, textStyles, containerStyles } from '@/styles';
+import { useFocusEffect, useRouter } from 'expo-router';
+
 import { Button, UserItem } from '@/components';
-import DatabaseService from '@/services/DatabaseService';
-import { User } from '@/types';
+import { appModules } from '@/composition/appModules';
+import { User, parseUser } from '@/core/domain';
 import { useAuth } from '@/providers';
+import { buttonStyles, containerStyles, textStyles } from '@/styles';
 
 const ManageUsers = () => {
   const router = useRouter();
   const { user } = useAuth();
-  const [users, setUsers] = useState<User[]>([]);
-  const database = DatabaseService.getInstance();
+  const actor = parseUser(user);
+  const [users, setUsers] = useState<readonly User[]>([]);
 
-  useEffect(() => {
-    if (user?.id) {
-      database.fetchUsers(setUsers, user.id);
-    }
-  }, [user?.id]);
-  
+  const load = useCallback(() => {
+    void appModules.users.list(actor).then((result) => {
+      if (result.ok) setUsers(result.value);
+      else Alert.alert('Could not load users', result.error.message);
+    });
+  }, [actor.id]);
+  useFocusEffect(load);
 
   return (
     <SafeAreaView style={containerStyles.wrapper}>
       <Button style={buttonStyles.smallButtonTopLeft} onPress={() => router.back()}>
         <Ionicons name="arrow-back-outline" size={25} color="#fff" />
       </Button>
-
       <Text style={textStyles.pageTitle}>Manage Users</Text>
-
       <ScrollView contentContainerStyle={containerStyles.scrollView}>
-        {users.map((user) => (
-          <UserItem key={user.id} user={user} setUsers={setUsers} />
+        {users.map((managedUser) => (
+          <UserItem
+            key={managedUser.id}
+            actor={actor}
+            user={managedUser}
+            onChanged={load}
+          />
         ))}
       </ScrollView>
     </SafeAreaView>

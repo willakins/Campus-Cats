@@ -1,37 +1,53 @@
-import { SafeAreaView, ScrollView, Text } from 'react-native';
+import { useCallback, useState } from 'react';
+import { Alert, SafeAreaView, ScrollView, Text } from 'react-native';
+
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
-import { useEffect, useState } from 'react';
-import { globalStyles, buttonStyles, textStyles, containerStyles } from '@/styles';
+import { useFocusEffect, useRouter } from 'expo-router';
+
 import { Button, SnackbarMessage } from '@/components';
-import DatabaseService from '@/services/DatabaseService';
-import { WhitelistApp } from '@/types';
 import { WhitelistItem } from '@/components/items/WhitelistItem';
+import { appModules } from '@/composition/appModules';
+import { WhitelistApplication, parseUser } from '@/core/domain';
+import { useAuth } from '@/providers';
+import { buttonStyles, containerStyles, textStyles } from '@/styles';
 
 const ManageWhitelist = () => {
   const router = useRouter();
-  const database = DatabaseService.getInstance();
-  const [visible, setVisible] = useState<boolean>(false);
-  const [applicants, setApplicants] = useState<WhitelistApp[]>([]);
+  const { user } = useAuth();
+  const actor = parseUser(user);
+  const [visible, setVisible] = useState(false);
+  const [applications, setApplications] = useState<
+    readonly WhitelistApplication[]
+  >([]);
 
-  useEffect(() => {
-    database.fetchWhitelist(setApplicants);
-  }, []);
+  const load = useCallback(() => {
+    void appModules.whitelist.list(actor).then((result) => {
+      if (result.ok) setApplications(result.value);
+      else Alert.alert('Could not load applications', result.error.message);
+    });
+  }, [actor.id]);
+  useFocusEffect(load);
 
   return (
     <SafeAreaView style={containerStyles.wrapper}>
       <Button style={buttonStyles.smallButtonTopLeft} onPress={() => router.back()}>
         <Ionicons name="arrow-back-outline" size={25} color="#fff" />
       </Button>
-      <SnackbarMessage text="Saving Whitelist..." visible={visible} setVisible={setVisible} />
+      <SnackbarMessage
+        text="Saving Whitelist..."
+        visible={visible}
+        setVisible={setVisible}
+      />
       <Text style={textStyles.pageTitle}>View Whitelist Applications</Text>
       <ScrollView contentContainerStyle={containerStyles.scrollView}>
-        {applicants.map((app) => (
-          <WhitelistItem 
-            key={app.id} 
-            app={app}
-            setApps={setApplicants}
-            setVisible={setVisible}/>
+        {applications.map((application) => (
+          <WhitelistItem
+            key={application.id}
+            actor={actor}
+            application={application}
+            onChanged={load}
+            setBusy={setVisible}
+          />
         ))}
       </ScrollView>
     </SafeAreaView>

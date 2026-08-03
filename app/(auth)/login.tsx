@@ -2,13 +2,11 @@ import React, { useState } from 'react';
 import { Text, Image, View, SafeAreaView, ScrollView, TextInput, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
 
-import { firebaseConfig } from '@/config/firebase';
-import { auth as firebaseAuth } from '@/config/firebase'; // Get Firebase auth reference
-
 import { Button, SnackbarMessage } from '@/components';
-import { buttonStyles, containerStyles, globalStyles, textStyles } from '@/styles';
+import { appModules } from '@/composition/appModules';
+import { buttonStyles, containerStyles, textStyles } from '@/styles';
 import { useAuth } from '@/providers';
-import { registerForPushNotificationsAsync, savePushTokenToFirestore } from '@/utils/notifications';
+import { registerForPushNotificationsAsync } from '@/utils/notifications';
 
 const LoginScreen = () => {
   const router = useRouter();
@@ -16,9 +14,9 @@ const LoginScreen = () => {
   const [visible, setVisible] = useState<boolean>(false);
   const [imageLoaded, setImageLoaded] = useState<boolean>(false);
 
-  const [formData, setFormData] = useState<{email: string; password: string;}>({email:"", password:""});
-  const handleChange = (field: string, val: any) => {
-    setFormData((prev: any) => ({ ...prev, [field]: val }));
+  const [formData, setFormData] = useState({ email: '', password: '' });
+  const handleChange = (field: 'email' | 'password', value: string) => {
+    setFormData((current) => ({ ...current, [field]: value }));
   };
 
   const loginWhitelistUser = async () => {
@@ -27,15 +25,14 @@ const LoginScreen = () => {
       await login(formData.email, formData.password);
   
       const token = await registerForPushNotificationsAsync();
-      const currentUser = firebaseAuth.currentUser;
-  
-      if (token && currentUser?.uid) {
-        await savePushTokenToFirestore(currentUser.uid, token);
-      }
+      if (token) await appModules.session.registerPushToken(token);
   
       router.replace('/(app)/(tabs)');
-    } catch {
-      alert('Failed login. Consider using SSO.');
+    } catch (error) {
+      Alert.alert(
+        'Sign-in failed',
+        error instanceof Error ? error.message : 'Consider using SSO.',
+      );
     } finally {
       setVisible(false);
     }
@@ -79,22 +76,10 @@ const LoginScreen = () => {
           <Button style={buttonStyles.mediumButton}onPress={loginWhitelistUser}>
             <Text style={textStyles.bigButtonText}>Sign in using Email</Text>
           </Button>
-          <Button style={buttonStyles.mediumButton} onPress={() => 
-            Alert.alert(
-                    'Select Option',
-                    'Using SSO for the first time currently causes an error. Make sure to click retry sign-on for it to work correctly.',
-                    [
-                      {
-                        text: 'I understand',
-                        onPress: () => router.navigate('/saml-sign-in'),
-                      },
-                      {
-                        text: 'Cancel',
-                        style: 'cancel',
-                      },
-                    ],
-                    { cancelable: true }
-                  )}>
+          <Button
+            style={buttonStyles.mediumButton}
+            onPress={() => router.navigate('/saml-sign-in')}
+          >
             <Text style={textStyles.bigButtonText}>Sign in using SSO</Text>
           </Button>
           <Button

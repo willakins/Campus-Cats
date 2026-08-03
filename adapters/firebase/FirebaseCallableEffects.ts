@@ -40,4 +40,12 @@ export class FirebaseCallableEffects implements CallableEffects {
   async removeProvisionedUser(userId: string): Promise<void> {
     await httpsCallable(this.functions, 'removeWhitelistUser')({ userId });
   }
+
+  async updateUserRole(userId: string, role: number): Promise<void> {
+    await httpsCallable(this.functions, 'updateUserRole')({ userId, role });
+  }
+
+  async removeUser(userId: string): Promise<void> {
+    await httpsCallable(this.functions, 'removeManagedUser')({ userId });
+  }
 }

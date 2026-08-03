@@ -1,5 +1,4 @@
-import { getAnalytics } from 'firebase/analytics';
-import { deleteApp, getApps, initializeApp } from 'firebase/app';
+import { getApp, getApps, initializeApp } from 'firebase/app';
 import { getAuth, initializeAuth } from 'firebase/auth';
 import { getReactNativePersistence } from '@firebase/auth/dist/rn/index.js';
 import { getFirestore } from 'firebase/firestore';
@@ -15,17 +14,17 @@ const firebaseConfig = {
   appId: process.env.EXPO_PUBLIC_APP_ID,
 };
 
-// Check for existing apps and delete them
-if (getApps().length > 0) {
-  getApps().forEach(app => deleteApp(app));
-}
-
-// Initialize Firebase
-const app = initializeApp(firebaseConfig);
+const app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
 const storage = getStorage(app);
 const db = getFirestore(app);
-const auth = initializeAuth(app, {
-  persistence: getReactNativePersistence(ReactNativeAsyncStorage)
-});
+const auth = (() => {
+  try {
+    return initializeAuth(app, {
+      persistence: getReactNativePersistence(ReactNativeAsyncStorage),
+    });
+  } catch {
+    return getAuth(app);
+  }
+})();
 
 export { app, auth, firebaseConfig, storage, db };

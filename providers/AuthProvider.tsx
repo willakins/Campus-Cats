@@ -1,80 +1,89 @@
-import { createContext, ReactNode, useContext, useEffect, useState } from 'react';
+import { ReactNode, createContext, useContext, useEffect, useState } from 'react';
 
-import { createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut as signOutAuthUser, onAuthStateChanged, User as AuthUser } from 'firebase/auth';
-
-import { auth } from '@/config/firebase';
-import { User, fetchUser, mutateUser } from '@/models';
-import { Router } from 'expo-router';
+import { appModules } from '@/composition/appModules';
+import { Role, User, parseUser } from '@/core/domain';
+import { ExternalSignInResult } from '@/core/ports';
 
 type AuthContextType = {
-  login: (email: string, password: string) => Promise<void>;
-  createAccount: (email: string, password: string) => Promise<void>;
-  signOut: (router:Router) => Promise<void>;
-  currentUser: AuthUser | null,
+  login: (email: string, password: string) => Promise<User>;
+  createAccount: (email: string, password: string) => Promise<User>;
+  samlSignIn: () => Promise<ExternalSignInResult>;
+  signOut: () => Promise<void>;
+  currentUser: User | undefined;
   user: User;
   loading: boolean;
 };
 
+const guest = parseUser({
+  id: 'guest',
+  email: 'guest@campus-cats.invalid',
+  role: Role.Member,
+});
 const AuthContext = createContext<AuthContextType>({} as AuthContextType);
 
 const AuthProvider = ({ children }: { children: ReactNode }) => {
-  const [currentUser, setCurrentUser] = useState<AuthUser | null>(null);
-  const [user, setUser] = useState<User>({} as User);
-  const [loading, setLoading] = useState<boolean>(true);
+  const [currentUser, setCurrentUser] = useState<User>();
+  const [user, setUser] = useState<User>(guest);
+  const [loading, setLoading] = useState(true);
+
+  const storeAuthenticatedUser = (authenticated: User) => {
+    setCurrentUser(authenticated);
+    setUser(authenticated);
+    return authenticated;
+  };
 
   const login = async (email: string, password: string) => {
-    await signInWithEmailAndPassword(auth, email, password);
+    const result = await appModules.session.signInWithEmail(email, password);
+    if (!result.ok) throw new Error(result.error.message);
+    return storeAuthenticatedUser(result.value);
   };
 
   const createAccount = async (email: string, password: string) => {
-    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-    const authUser = userCredential.user;
-    // Create a default user
-    mutateUser({
-      id: authUser.uid,
-      email: email,
-      role: 0,
-    });
+    const result = await appModules.session.createAccount(email, password);
+    if (!result.ok) throw new Error(result.error.message);
+    return storeAuthenticatedUser(result.value);
   };
 
-  const signOut = async (router:Router) => {
-    await signOutAuthUser(auth);
-    router.push('/login');
+  const samlSignIn = async () => {
+    const result = await appModules.session.signInWithSaml();
+    if (!result.ok) throw new Error(result.error.message);
+    if (result.value.status === 'authenticated') {
+      storeAuthenticatedUser(result.value.user);
+    }
+    return result.value;
+  };
+
+  const signOut = async () => {
+    const result = await appModules.session.signOut();
+    if (!result.ok) throw new Error(result.error.message);
+    setCurrentUser(undefined);
+    setUser(guest);
   };
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (authUser) => {
-      try {
-        if (authUser?.uid && authUser?.email) {
-          // Get user doc on start
-          const data = await fetchUser(authUser?.uid, authUser?.email);
-          setUser(data);
-        }
-        setCurrentUser(authUser);
-      } catch (error: unknown) {
-        console.log(error);
-      }
+    void appModules.session.restore().then((result) => {
+      if (result.ok && result.value) storeAuthenticatedUser(result.value);
       setLoading(false);
     });
-
-    return unsubscribe;
   }, []);
 
-  const value = {
-    login, createAccount, signOut,
-    currentUser, user, loading,
-  }
-
   return (
-    <AuthContext.Provider value={value}>
+    <AuthContext.Provider
+      value={{
+        login,
+        createAccount,
+        samlSignIn,
+        signOut,
+        currentUser,
+        user,
+        loading,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );
 };
 
-// This hook can be used to access the user info.
-const useAuth = () => {
-  return useContext(AuthContext);
-};
+const useAuth = () => useContext(AuthContext);
 
 export { AuthProvider, useAuth };
