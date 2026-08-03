@@ -7,6 +7,7 @@ export type ExternalSignInResult =
 export interface SessionPort {
   currentUser(): Promise<User | undefined>;
   signInWithEmail(email: string, password: string): Promise<User>;
+  createAccount(email: string, password: string): Promise<User>;
   signInWithSaml(): Promise<ExternalSignInResult>;
   signOut(): Promise<void>;
   registerPushToken(token: string): Promise<void>;

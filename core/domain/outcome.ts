@@ -1,5 +1,6 @@
 export type OutcomeErrorCode =
   | 'validation'
+  | 'authentication_failed'
   | 'unauthenticated'
   | 'forbidden'
   | 'not_found'

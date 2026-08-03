@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
-import { StyleProp, Text, TextStyle, TouchableOpacity, TouchableOpacityProps, View, ViewStyle } from 'react-native';
-import { PhotoHandler } from '../../image_handlers/PhotoHandler';
+import { Alert, StyleProp, Text, TextStyle, TouchableOpacity, TouchableOpacityProps, View, ViewStyle } from 'react-native';
+import { appModules } from '@/composition/appModules';
 import { globalStyles, buttonStyles, textStyles, containerStyles } from '@/styles';
 
 type IoniconsName = React.ComponentProps<typeof Ionicons>['name'];
@@ -92,12 +92,35 @@ export const ImageButton: React.FC<ButtonProps> = ({
 }
 
 export const CameraButton: React.FC<CameraButtonProps> = ({ onPhotoSelected, style }) => {
-  const style_: StyleProp<ViewStyle> = [buttonStyles.imageButton, style];
-  const photoHandler = new PhotoHandler(onPhotoSelected);
-  
+  const select = async (camera: boolean) => {
+    const result = camera
+      ? await appModules.imageSelection.takePhoto()
+      : await appModules.imageSelection.pickFromLibrary();
+    if (!result.ok) {
+      Alert.alert('Could not select image', result.error.message);
+      return;
+    }
+    if (result.value) onPhotoSelected(result.value.localUri);
+  };
+
+  const promptForSource = () =>
+    Alert.alert(
+      'Select Option',
+      'Would you like to take a photo or select from your library?',
+      [
+        { text: 'Take Photo', onPress: () => void select(true) },
+        { text: 'Choose from Library', onPress: () => void select(false) },
+        { text: 'Cancel', style: 'cancel' },
+      ],
+      { cancelable: true },
+    );
+
   return (
     <View style={containerStyles.cameraContainer}>
-      <Button style={buttonStyles.cameraButton} onPress={() => photoHandler.promptForImageSource()}>
+      <Button
+        style={[buttonStyles.cameraButton, style]}
+        onPress={promptForSource}
+      >
         <Ionicons name="camera-outline" size={29} color="#fff" />
       </Button>
     </View>

@@ -1,7 +1,5 @@
 import * as Device from 'expo-device';
 import * as Notifications from 'expo-notifications';
-import { doc, setDoc } from 'firebase/firestore';
-import { db } from '@/config/firebase';
 
 export const registerForPushNotificationsAsync = async (): Promise<string | null> => {
   if (!Device.isDevice) { //Might break stuff oopsy but just to make sure
@@ -23,16 +21,5 @@ export const registerForPushNotificationsAsync = async (): Promise<string | null
   }
 
   const tokenData = await Notifications.getExpoPushTokenAsync();
-  console.log('Expo Push Token:', tokenData.data);
   return tokenData.data;
-};
-
-export const savePushTokenToFirestore = async (uid: string, token: string) => {
-  try {
-    const userRef = doc(db, 'users', uid);
-    await setDoc(userRef, { expoPushToken: token }, { merge: true }); //Yippee!!
-    console.log('Push token saved to Firestore');
-  } catch (error) {
-    console.error('Error saving push token:', error);
-  }
 };

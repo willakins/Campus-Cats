@@ -1,45 +1,66 @@
-import React  from 'react';
-import { Text, View } from 'react-native';
+import React from 'react';
+import { Alert, Text, View } from 'react-native';
 
-import { useRouter } from 'expo-router';
-import { Button } from '../ui/Buttons';
-import { User } from '@/types';
-import DatabaseService from '../../services/DatabaseService';
-import { globalStyles, buttonStyles, textStyles, containerStyles } from '@/styles';
-import { useAuth } from '@/providers';
+import { Button } from '@/components/ui/Buttons';
+import { appModules } from '@/composition/appModules';
+import { User, canManageUser } from '@/core/domain';
+import { buttonStyles, containerStyles, textStyles } from '@/styles';
 
-export const UserItem: React.FC<{ user: User; setUsers: React.Dispatch<React.SetStateAction<User[]>> }> = ({ user, setUsers }) => {
-  const router = useRouter();
-  const database = DatabaseService.getInstance();
-  const { user: currentUser } = useAuth();
-  const isHigher = currentUser.role == 2 || currentUser.role > user.role;
+interface UserItemProps {
+  readonly actor: User;
+  readonly user: User;
+  readonly onChanged: () => void;
+}
 
-  const handleUserUpdate = async (action: () => Promise<void>) => {
-    await action();
-    database.fetchUsers(setUsers, currentUser.id);
+export const UserItem: React.FC<UserItemProps> = ({ actor, user, onChanged }) => {
+  const canManage = canManageUser(actor, user);
+  const run = async (action: () => ReturnType<typeof appModules.users.promote>) => {
+    const result = await action();
+    if (result.ok) onChanged();
+    else Alert.alert('Could not update user', result.error.message);
   };
+  const confirmRemove = () =>
+    Alert.alert('Block User', `Remove ${user.email}?`, [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Block User',
+        style: 'destructive',
+        onPress: () =>
+          void appModules.users.remove(actor, user.id).then((result) => {
+            if (result.ok) onChanged();
+            else Alert.alert('Could not remove user', result.error.message);
+          }),
+      },
+    ]);
 
   return (
     <View style={containerStyles.card}>
-      <Text style={[textStyles.listTitle, {textAlign: 'center'}]}>{user.email}</Text>
-      <Text style={[textStyles.detail, {alignSelf: 'center'}]}>Role: {user.role}</Text>
-      <View style={containerStyles.buttonGroup2}>
-        {currentUser.role > user.role? (
-          <Button style={[buttonStyles.rowButton, {backgroundColor:'red'}]} onPress={() => handleUserUpdate(() => database.handleDeleteUser(user, router))}>
+      <Text style={[textStyles.listTitle, { textAlign: 'center' }]}>
+        {user.email}
+      </Text>
+      <Text style={[textStyles.detail, { alignSelf: 'center' }]}>Role: {user.role}</Text>
+      {canManage ? (
+        <View style={containerStyles.buttonGroup2}>
+          <Button
+            style={[buttonStyles.rowButton, { backgroundColor: 'red' }]}
+            onPress={confirmRemove}
+          >
             <Text style={textStyles.smallButtonText}>Block User</Text>
           </Button>
-        ) : null}
-        {isHigher ? (
-          <Button style={[buttonStyles.rowButton, {backgroundColor:'green'}]} onPress={() => handleUserUpdate(() => database.handlePromoteUser(user))}>
+          <Button
+            style={[buttonStyles.rowButton, { backgroundColor: 'green' }]}
+            onPress={() => void run(() => appModules.users.promote(actor, user.id))}
+          >
             <Text style={textStyles.smallButtonText}>Promote User</Text>
           </Button>
-        ) : null}
-        {isHigher ? (
-          <Button style={[buttonStyles.rowButton, {backgroundColor:'blue'}]} onPress={() => handleUserUpdate(() => database.handleDemoteUser(user))}>
+          <Button
+            style={[buttonStyles.rowButton, { backgroundColor: 'blue' }]}
+            onPress={() => void run(() => appModules.users.demote(actor, user.id))}
+          >
             <Text style={textStyles.smallButtonText}>Demote User</Text>
           </Button>
-        ) : null}
-      </View>
+        </View>
+      ) : null}
     </View>
   );
 };
