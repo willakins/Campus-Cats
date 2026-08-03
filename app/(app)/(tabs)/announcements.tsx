@@ -1,50 +1,48 @@
 import React, { useCallback, useState } from 'react';
 import { SafeAreaView, ScrollView, Text } from 'react-native';
 
-import { globalStyles, buttonStyles, textStyles, containerStyles } from '@/styles';
-
-import { AnnouncementItem, Button, LoadingIndicator } from '@/components';
-import { useAuth } from '@/providers';
 import { router, useFocusEffect } from 'expo-router';
-import DatabaseService from '@/services/DatabaseService';
-import { Announcement } from '@/types';
+
+import { AnnouncementItem, Button, Errorbar } from '@/components';
+import { appModules } from '@/composition/appModules';
+import { Announcement } from '@/core/domain';
+import { useAuth } from '@/providers';
+import { buttonStyles, containerStyles, textStyles } from '@/styles';
 
 const Announcements = () => {
-  const { user, loading } = useAuth();
+  const { user } = useAuth();
   const isAdmin = user.role === 1 || user.role === 2;
-  const database = DatabaseService.getInstance();
-  const [anns, setAnns] = useState<Announcement[]>([]);
-
-  if (loading) {
-    return <LoadingIndicator />;
-  }
+  const [announcements, setAnnouncements] = useState<readonly Announcement[]>([]);
+  const [error, setError] = useState('');
 
   useFocusEffect(
     useCallback(() => {
-      database.fetchAnnouncementData(setAnns);
-    }, [])
+      void appModules.announcements.list().then((result) => {
+        if (result.ok) setAnnouncements(result.value);
+        else setError(result.error.message);
+      });
+    }, []),
   );
 
   return (
     <SafeAreaView style={containerStyles.wrapper}>
+      <Errorbar error={error} onDismiss={() => setError('')} />
       <Text style={textStyles.pageTitle}>Announcements</Text>
       <ScrollView contentContainerStyle={containerStyles.scrollView}>
-        {anns.map((ann) => (
-          <AnnouncementItem
-            key={ann.id}
-            id={ann.id}
-            title={ann.title}
-            info={ann.info}
-            createdAt={ann.createdAt}
-            createdBy={ann.createdBy}
-            authorAlias={ann.authorAlias}
-          />
+        {announcements.map((announcement) => (
+          <AnnouncementItem key={announcement.id} {...announcement} />
         ))}
       </ScrollView>
-      {isAdmin ? <Button style={buttonStyles.bigButton} onPress={() => router.push('/announcements/create-ann')}>
-        <Text style ={textStyles.bigButtonText}> Create Announcement</Text>
-      </Button> : null}
+      {isAdmin ? (
+        <Button
+          style={buttonStyles.bigButton}
+          onPress={() => router.push('/announcements/create-ann')}
+        >
+          <Text style={textStyles.bigButtonText}>Create Announcement</Text>
+        </Button>
+      ) : null}
     </SafeAreaView>
   );
 };
+
 export default Announcements;

@@ -1,17 +1,15 @@
 import { getDownloadURL, ref } from 'firebase/storage';
 import { getDocs, getDoc, updateDoc, doc, collection, query, where, DocumentData, getFirestore } from 'firebase/firestore';
 import { auth, db, storage } from '@/config/firebase';
-import { Announcement, ContactInfo, User, WhitelistApp } from '@/types';
+import { ContactInfo, User, WhitelistApp } from '@/types';
 import { Dispatch, SetStateAction } from 'react';
 import { Alert } from 'react-native';
-import AnnouncementsService from './AnnouncementsService';
 import { Router } from 'expo-router';
 import SettingsService from './SettingsService';
 
 //Singleton class
 class DatabaseService {
   private static instance: DatabaseService;
-  private static announcementsService: AnnouncementsService = new AnnouncementsService();
   private static settingsService: SettingsService = new SettingsService();
 
   private constructor() {
@@ -93,48 +91,6 @@ class DatabaseService {
         setPhoto(url); // Update the state with the image URL
       }
     }
-  }
-
-  /**
-   * Effect: pulls announcement data from firestore
-   */
-  public async fetchAnnouncementData(setAnns:Dispatch<SetStateAction<Announcement[]>>) {
-    await DatabaseService.announcementsService.fetchAnnouncementData(setAnns);
-  }
-
-  /**
-   * Effect: pulls announcement images from storage
-   */
-  public async fetchAnnouncementImages(id:string, setImageUrls:Dispatch<SetStateAction<string[]>>) {
-    await DatabaseService.announcementsService.fetchAnnouncementImages(id, setImageUrls);
-  }
-
-  /**
-   * Effect: creates an announcement and stores it in firestore
-   */
-  public async handleAnnouncementCreate(
-    photos:string[], 
-    setVisible:Dispatch<SetStateAction<boolean>>,
-    router: Router) {
-    await DatabaseService.announcementsService.handleAnnouncementCreate(photos, setVisible, router);
-  }
-
-  /**
-   * Effect: updates an existing announcement in firestore
-   */
-  public async handleAnnouncementSave(
-    photos: string[], 
-    isPicsChanged: boolean, 
-    setVisible: Dispatch<SetStateAction<boolean>>, 
-    router: Router) {
-    await DatabaseService.announcementsService.handleAnnouncementSave(photos, isPicsChanged, setVisible, router);
-  }
-
-  /**
-   * Effect: Deletes an announcement from database
-   */
-  public async deleteAnnouncement(id:string, router:Router, setVisible: Dispatch<SetStateAction<boolean>>) {
-    await DatabaseService.announcementsService.deleteAnnouncement(id, router, setVisible);
   }
 
   /**
