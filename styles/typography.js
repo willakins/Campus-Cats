@@ -4,6 +4,11 @@ import { StyleSheet, Dimensions } from 'react-native';
 const { width, height } = Dimensions.get('window');
 
 const textStyles = StyleSheet.create({
+  errorText: {
+    color: '#B00020',
+    fontSize: width * 0.035,
+    marginBottom: height * 0.01,
+  },
   pageTitle: {
     fontSize: width * 0.08,
     fontWeight: 'bold',
