@@ -1,99 +1,98 @@
-# Campus Cats – Installation Guide
+# Campus Cats installation guide
 
-This guide walks you through setting up and running the Campus Cats mobile application on your local machine or test device.
+This guide covers local setup for the Campus Cats Expo application. For a project overview, start with the [main README](README.md).
 
----
+## Prerequisites
 
-## Pre-requisites
+- [Node.js](https://nodejs.org/) (an active LTS release) and npm
+- [Git](https://git-scm.com/)
+- One of the following development targets:
+  - a physical iOS or Android device;
+  - an Android emulator;
+  - the iOS Simulator on macOS; or
+  - a supported web browser.
 
-Before installing and running the Campus Cats app, ensure your system meets the following requirements:
+Expo's local CLI is invoked through `npx`, so a global `expo-cli` installation is not required.
 
-### 1. Node.js and npm
-Required for running JavaScript tools and installing dependencies.  
-[Install Node.js (LTS version recommended)](https://nodejs.org/)
+## Install
 
-### 2. Expo CLI
-Required to run the React Native project.
+Clone the repository and install the locked dependency versions:
 
 ```bash
-npm install -g expo-cli
+git clone https://github.com/willakins/Campus-Cats.git
+cd Campus-Cats
+npm ci
 ```
 
-### 3. Git
-Required to clone the repository.  
-[Install Git](https://git-scm.com)
+If you intentionally need to update the dependency lockfile, use `npm install` instead of `npm ci`.
 
-### 4. Expo Go App (for mobile testing)
-Allows you to run the app on your iOS or Android device.  
-[Download for iOS and Android](https://expo.dev/go)
+## Start the app
 
-## Dependent Libraries
-These third-party libraries must be installed when you install the app's dependencies. You do not need to install them manually — they're handled by running 
+Start the Expo development server from the repository root:
+
 ```bash
-npm install
+npx expo start --clear
 ```
-in a terminal inside of the project directory.
 
-Some key dependencies include:
+From the Expo terminal interface, press:
 
-firebase: Firebase backend integration
+- `a` for a configured Android emulator;
+- `i` for the iOS Simulator on macOS; or
+- `w` for the web client.
 
-react-navigation: Navigation between screens
+For a physical device, follow the QR-code instructions shown by Expo. Depending on the locally installed Expo Go version and this project's Expo SDK version, a development build may be required.
 
-expo-image-picker: Image upload
+If LAN discovery is unavailable, retry with Expo's tunnel transport:
 
-react-native-elements, react-native-vector-icons: UI elements
-
-@react-native-community/datetimepicker: Date/time selection
-
-The full list is available in the package.json file.
-
-## Download Instructions
-Clone the repository:
-````bash
-git clone https://github.com/willakins/JIC-4331-ScrapCats.git
-cd JIC-4331-ScrapCats
-````
-
-Install dependencies:
-````bash
-npm install
-````
-
-## Build Instructions
-No manual build process is needed thanks to Expo. Expo handles compiling and bundling automatically when you run the app.
-
-Installation of Actual Application
-After installing the dependencies, follow these steps:
-
-Start the Expo development server:
-````bash
+```bash
 npx expo start --clear --tunnel
-````
-A QR code will appear in your terminal or browser.
-Open the Expo Go app on your physical device and scan the QR code to run the app instantly.
-
-## Run Instructions
-From the root project directory, start the app with:
-````bash
-npx expo start --clear --tunnel
-````
- - Press a to open in Android Emulator (if configured)
- - Press i to open in iOS Simulator (if configured)
-Or scan the QR code with Expo Go on a physical device
-
-- If you're experiencing trouble, maybe try:  
-```bash
-EXPO_TUNNEL_SUBDOMAIN=gatechCampusCats npx expo start --tunnel
 ```
+
+The package scripts provide equivalent platform-specific entry points:
+
+```bash
+npm run android
+npm run ios
+npm run web
+```
+
+## Service configuration
+
+The UI can start without every production integration, but complete functionality relies on services configured for the original Campus Cats deployment:
+
+| Capability | Service dependency |
+| --- | --- |
+| Accounts and Georgia Tech SSO | Firebase Authentication and the configured SAML provider |
+| Sightings, cats, stations, announcements, and users | Cloud Firestore |
+| Uploaded photos | Firebase Storage |
+| Maps | Platform-specific Google Maps configuration |
+| Announcement notifications | Expo Notifications and deployed Cloud Functions |
+| Whitelist emails | Deployed Cloud Functions and a SendGrid secret |
+
+External contributors may not have access to the original Firebase project, SAML provider, or messaging credentials. Use a separate development Firebase project when extending the application, and never commit service-account files or private API secrets.
+
+## Verification
+
+Run the configured linter with:
+
+```bash
+npm run lint
+```
+
+Jest Expo is configured in `package.json` for adding and running automated tests.
 
 ## Troubleshooting
 
-| Issue | Solution |
-|-------|----------|
-| `expo command not found` | Run `npm install -g expo-cli` to install Expo CLI globally. |
-| QR Code not scanning | Ensure your computer and phone are on the same Wi-Fi network. |
-| Firebase errors | Check that you haven't exceeded the allowed number of firebase accesses for your billing plan. |
-| Dependency version mismatch errors | Run `npm install` again. If issues persist, delete `node_modules` and `package-lock.json`, then run `npm install` again. |
-| Permissions errors (camera, etc.) | Ensure you’ve granted camera and media access permissions in your device settings. Expo will also prompt for these on first use. |
+| Problem | Suggested action |
+| --- | --- |
+| `expo` cannot be found | Run commands through `npx expo ...` from the repository root after `npm ci`. |
+| The QR code cannot connect | Confirm the device and computer share a network, or use `--tunnel`. |
+| Expo Go reports an SDK mismatch | Use a compatible Expo Go client or create an Expo development build. |
+| Firebase requests fail | Confirm the selected Firebase project, enabled products, security rules, access permissions, and quotas. |
+| Native maps do not load | Confirm the relevant maps SDK and platform key are enabled for the development app. |
+| Push notifications do not register | Use a physical device, grant notification permission, and verify the Expo/Firebase configuration. |
+| Dependencies are inconsistent | Restore the committed lockfile and rerun `npm ci`. |
 
+## Backend operations
+
+Authorized maintainers can find the repository's rule-deployment notes in [FIREBASE.md](FIREBASE.md). Treat deployments as production-affecting operations and confirm the active Firebase project before running them.

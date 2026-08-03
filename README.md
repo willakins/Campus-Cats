@@ -1,47 +1,110 @@
-# Campus Cats
+<p align="center">
+  <img src="assets/images/campus_cats_logo.png" alt="Campus Cats logo" width="180" />
+</p>
 
-**Campus Cats** is a mobile app for Georgia Tech’s Campus Cats club, enabling users to report cat sightings, upload photos, chat with members, and access information about campus cats. The app aims to foster communication and engagement within the Campus Cats community while helping track and care for stray cats on campus.
+<h1 align="center">Campus Cats</h1>
 
-# Release Notes
+<p align="center">
+  A cross-platform operations hub for the community caring for Georgia Tech's campus cats.
+</p>
 
-## Version 1.0.0
+<p align="center">
+  <img alt="Expo 52" src="https://img.shields.io/badge/Expo-52-000020?logo=expo&logoColor=white" />
+  <img alt="React Native 0.76" src="https://img.shields.io/badge/React_Native-0.76-61DAFB?logo=react&logoColor=111827" />
+  <img alt="TypeScript" src="https://img.shields.io/badge/TypeScript-5.8-3178C6?logo=typescript&logoColor=white" />
+  <img alt="Firebase" src="https://img.shields.io/badge/Firebase-Cloud_Backend-FFCA28?logo=firebase&logoColor=111827" />
+  <a href="LICENSE"><img alt="Apache 2.0 license" src="https://img.shields.io/badge/License-Apache_2.0-blue.svg" /></a>
+</p>
 
-# New Software Features
+> [!NOTE]
+> Campus Cats was created by a five-person Georgia Tech Computer Science capstone team for the Campus Cats client. This repository represents the team's collective work; contributors are credited below.
 
-## Primary Features
-- **Cat Reporting Capabilities:** Users can now upload pictures in a cat sighting report, marking their name, condition, and location!
-- **Cat Sighting Map:** Created a map with pins representing the location of sightings, and provided a filtering option based on time.
-- **Announcements:** Integrated a new announcements page that allows admin users to create announcements that are then displayed to all users!
-- **Announcement Notifications:** Improved announcement functionality by enabling push notifications when announcements are sent out.
-- **Station Information Display:** Implemented a view page to display all stored station information.
-- **Station Management:** Introduced a page for adding new stations, integrated with Firestore.
-- **Enhanced Station Details:** Added restocking data to station details, along with filters and sorting options for improved navigation.
-- **Catalog:** Users can now view a list of stray cats that the club has tracked. Cat name, recent sightings, and small cat details are all displayed.
-- **Catalog Management:** Admin users are able to create new catalog entries, with an extensive number of input boxes for fine-grain descriptions.
-- **Admin Management Throughout:** In almost every screen, admin users are able to edit and create items, allowing for proper management of the app's content
+## The project
 
-## Extra Features
-- **GT-SSO:** For secure app access, Georgia Tech Single-Sign-On has been utilized for account creation and login.
-- **Whitelist:** A form has been included to allow GT-alum to apply for app access. Admins can accept/deny whitelist applications from the settings page
-- **Settings Page:** A Club Contact Information card has been added so that club members know how to contact people in charge.
-- **User Management:** A list of all users with options to promote them to admin, demote them to general user, and block the user from the app have been added.
-- **Responsive Styling:** Screen styling based on screen dimensions, allowing for the same user experience on all devices.
+Georgia Tech's Campus Cats volunteers care for a population of stray and feral cats across campus. Without a shared system, sightings, cat histories, feeding-station status, and time-sensitive updates can become fragmented across people and channels.
 
-## Bug Fixes
+Campus Cats brings those workflows into one mobile experience. Members can record photo-backed sightings on a live map, learn about known cats, and receive club announcements. Administrators can maintain the shared data, coordinate station restocking, and manage community access.
 
-- **Android Login Accessibility:** Ensured the login button remains accessible on Android devices, even when the keyboard is active.
-- **Android Date Picker Display:** Resolved display issues with the date picker on Android devices.
-- **Report Button Alignment:** Corrected the alignment of the report button across all devices.
-- **Photo Permissions Issue:** Occurred when the user tries to select a photo for the report. Previously, this caused the selection to fail silently.
-- **Disable back navigation from the home screen:** Previously, this allowed android and web users to return to the login screen without logging out.
-- **Show status bar on Android:** Due to rendering differences between platforms, different stylings are required.
-- **Duplicate Entry Creation:** Addressed a bug that caused duplicate entries in the Cat-alog for some uploads.
-- **Unclickable Buttons:** Resolved an issue where the button was only clickable on the text, making the entire button area clickable.
+## What we built
 
-## Known Issues
+| Experience | What it enables |
+| --- | --- |
+| **Live sighting map** | Report a cat's location, condition, date, and photos; explore sightings with 7-day through all-time filters. |
+| **Cat-alog** | Maintain a visual directory of known campus cats with profiles, identifying details, and recent sightings. |
+| **Feeding stations** | Track station locations and restocking information, with stocked/unstocked filtering for faster coordination. |
+| **Announcements** | Give administrators a central place to publish updates and send push notifications to members. |
+| **Community access** | Support Georgia Tech SSO, an alumni whitelist workflow, and Firebase-backed authentication. |
+| **Role-aware administration** | Separate member, admin, and super-admin capabilities for content and user management. |
 
-- **GT-SSO Errors on first try:** Likely due to browser issues, a user's first attempt to create an account using GT-SSO will cause an error message. However, when retrying the user will succesfully log in to their new account.
-- **User Blocking:** After the integration of GT-SSO, the block user functionality no longer works as intended, allowing blocked users to log in still.
-- **Styling Issues for Wider Devices:** Because styling is based on screen dimensions, devices with more square shapes like iPads have less than ideal screen styling compared to devices with more rectangular shapes like iPhones.
-- **Lack of Flexibility:** Though an extensive amount of options are given to all "create screens" like creating a catalog entry, there is no way to add another input if the club decides they want to track a new detail about a cat, station, etc.
-- **Homepage Map Optimization:** The homepage map currently makes more database queries than necessary; however, performance is not noticeably impacted.
+## Why it stands out
+
+- **Built for a real community partner:** the team translated Campus Cats' caregiving and coordination needs into a working product.
+- **End-to-end mobile engineering:** one codebase connects maps, geolocation, image uploads, authentication, cloud data, notifications, and email workflows.
+- **Thoughtful permission design:** navigation and editing controls adapt to user roles, while report owners retain control over their own submissions.
+- **Cross-platform delivery:** Expo and React Native provide a shared foundation for iOS, Android, and web targets.
+- **Collaborative execution:** five developers worked through iterative sprints on a layered, service-oriented application.
+
+## Architecture
+
+```mermaid
+flowchart LR
+    A[Expo / React Native client] --> B[Expo Router and role-aware UI]
+    B --> C[Typed forms and service layer]
+    B --> D[Firebase Authentication and GT SAML]
+    C --> E[(Cloud Firestore)]
+    C --> F[(Firebase Storage)]
+    C --> G[Cloud Functions]
+    G --> H[Expo Push API]
+    G --> I[SendGrid]
+```
+
+The client uses typed domain models and reusable service modules to keep presentation, business logic, and persistence concerns distinct. Firebase supplies authentication, document storage, media storage, and serverless functions; external integrations deliver push notifications and whitelist emails.
+
+### Technology
+
+| Area | Tools |
+| --- | --- |
+| Client | React Native, Expo, Expo Router, React Navigation |
+| Language and validation | TypeScript, React Hook Form, Zod |
+| Location and media | React Native Maps, Expo Location, Expo Image Picker |
+| Backend | Firebase Authentication, Cloud Firestore, Cloud Storage, Cloud Functions |
+| Communication | Expo Notifications, Expo Push API, SendGrid |
+| Tooling | ESLint, Jest Expo |
+
+## Run it locally
+
+```bash
+git clone https://github.com/willakins/Campus-Cats.git
+cd Campus-Cats
+npm ci
+npx expo start
+```
+
+The interface can be explored locally, but authentication, maps, notifications, email, and data-backed features depend on their corresponding service configuration and access. See the [installation guide](Installation-Guide.md) for platform options, configuration notes, and troubleshooting.
+
+## Project documentation
+
+- [Installation guide](Installation-Guide.md)
+- [Release notes](CHANGELOG.md)
+- [Detailed design document](Detailed%20Design%20Document.pdf) — the team's original capstone design artifact; it includes planned ideas beyond the final v1 scope
+- [Firebase operations](FIREBASE.md)
+
+## Team
+
+Developed collaboratively by the following Georgia Tech students (listed alphabetically):
+
+- [Amulya Panakam](https://github.com/apanakam7)
+- [Dragos Lup](https://github.com/Dragos-Lup)
+- [Matthew Pendarvis](https://github.com/mattpendarvis)
+- [Robert Zhu](https://github.com/ArchWand)
+- [William Akins](https://github.com/willakins)
+
+The repository's [contributor history](https://github.com/willakins/Campus-Cats/graphs/contributors) provides an additional view of the team's work. Git author aliases may cause one person to appear more than once.
+
+## Project status
+
+The repository contains the team's completed capstone release. Review the [release notes](CHANGELOG.md) for shipped functionality and known limitations. Service-backed features may require credentials or organization-level access that are not available to external evaluators.
+
+## License
+
+Licensed under the [Apache License 2.0](LICENSE).
