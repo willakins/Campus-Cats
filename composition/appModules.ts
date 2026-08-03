@@ -7,11 +7,13 @@ import { createFirestoreCodecs } from '../core/domain';
 import { MediaCoordinator } from '../core/media';
 import { SightingsModule } from '../features/sightings';
 import { CatalogModule } from '../features/catalog';
+import { StationsModule } from '../features/stations';
 import { db, storage } from '../config/firebase';
 
 export interface AppModules {
   readonly catalog: CatalogModule;
   readonly sightings: SightingsModule;
+  readonly stations: StationsModule;
 }
 
 const documents = new FirebaseDocumentStore(db);
@@ -33,6 +35,14 @@ export const appModules: AppModules = Object.freeze({
     media,
     mediaCoordinator: new MediaCoordinator(media, ids),
     ids,
+    codecs,
+  }),
+  stations: new StationsModule({
+    documents,
+    media,
+    mediaCoordinator: new MediaCoordinator(media, ids),
+    ids,
+    clock: { now: () => new Date() },
     codecs,
   }),
 });

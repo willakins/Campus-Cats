@@ -1,11 +1,10 @@
 import { getDownloadURL, ref } from 'firebase/storage';
 import { getDocs, getDoc, updateDoc, doc, collection, query, where, DocumentData, getFirestore } from 'firebase/firestore';
 import { auth, db, storage } from '@/config/firebase';
-import { Announcement, ContactInfo, Station, User, WhitelistApp } from '@/types';
+import { Announcement, ContactInfo, User, WhitelistApp } from '@/types';
 import { Dispatch, SetStateAction } from 'react';
 import { Alert } from 'react-native';
 import AnnouncementsService from './AnnouncementsService';
-import StationsService from './StationsService';
 import { Router } from 'expo-router';
 import SettingsService from './SettingsService';
 
@@ -13,7 +12,6 @@ import SettingsService from './SettingsService';
 class DatabaseService {
   private static instance: DatabaseService;
   private static announcementsService: AnnouncementsService = new AnnouncementsService();
-  private static stationsService: StationsService = new StationsService();
   private static settingsService: SettingsService = new SettingsService();
 
   private constructor() {
@@ -98,30 +96,6 @@ class DatabaseService {
   }
 
   /**
-   * Effect: Swaps the profile picture for a catalog entry
-   */
-  public async swapProfilePicture(
-    type:string,
-    id:string, 
-    picUrl:string, 
-    picName:string, 
-    profilePicUrl?:string) {
-      if (type == 'stations') {
-        await DatabaseService.stationsService.swapProfilePicture(id, picUrl, picName, profilePicUrl);
-      }
-    
-  }
-
-  /**
-    * Effect: deletes a picture from a catalog entry
-    */
-  public async deleteStationPicture(
-    id:string, 
-    picName: string, ) {
-      await DatabaseService.stationsService.deleteSightingPicture(id, picName);
-  }
-
-  /**
    * Effect: pulls announcement data from firestore
    */
   public async fetchAnnouncementData(setAnns:Dispatch<SetStateAction<Announcement[]>>) {
@@ -161,45 +135,6 @@ class DatabaseService {
    */
   public async deleteAnnouncement(id:string, router:Router, setVisible: Dispatch<SetStateAction<boolean>>) {
     await DatabaseService.announcementsService.deleteAnnouncement(id, router, setVisible);
-  }
-
-  /**
-   * Effect: Gets all stations from firebase
-   */
-  public async fetchStations(setStationEntries:Dispatch<SetStateAction<Station[]>>) {
-    await DatabaseService.stationsService.fetchStations(setStationEntries);
-  }
-
-  /**
-   * Effect: Adds a new station to firebase
-   */
-  public async createStation(photos:string[], setVisible: Dispatch<SetStateAction<boolean>>, router:Router) {
-    await DatabaseService.stationsService.createStation(photos, setVisible, router);
-  }
-
-  /**
-   * Effect: Stocks a station
-   */
-  public async stockStation(setVisible: Dispatch<SetStateAction<boolean>>, router:Router) {
-    await DatabaseService.stationsService.stockStation(setVisible, router);
-  }
-
-  /**
-   * TODO
-   */
-  public async saveStation(profile:string, photos:string[], isPicsChanged: boolean, setVisible: Dispatch<SetStateAction<boolean>>, 
-    router: Router) {
-    await DatabaseService.stationsService.saveStation(profile, photos, isPicsChanged, setVisible, router);
-  }
-
-  /**
-   * TODO
-   */
-  public async deleteStation(
-    setVisible: Dispatch<SetStateAction<boolean>>, 
-    router: Router
-  ) {
-    await DatabaseService.stationsService.deleteStation(setVisible, router);
   }
 
   /**
@@ -280,17 +215,6 @@ class DatabaseService {
    */
   public async fetchUsers(setUsers:Dispatch<SetStateAction<User[]>>, id:string) {
     await DatabaseService.settingsService.fetchUsers(setUsers, id);
-  }
-
-  /**
-   * Effect: Loads station images from firestore storage
-   */
-  public async fetchStationImages(
-    id: string,
-    setProfile: Dispatch<SetStateAction<string>>,
-    setPhotos: Dispatch<SetStateAction<string[]>>
-  ) {
-    await DatabaseService.stationsService.fetchStationImages(id, setProfile, setPhotos);
   }
 
 

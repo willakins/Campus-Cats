@@ -1,49 +1,110 @@
-import { SafeAreaView, ScrollView, Text } from 'react-native';
 import React, { useEffect, useState } from 'react';
+import { Alert, SafeAreaView, ScrollView, Text } from 'react-native';
 
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 
-import { globalStyles, buttonStyles, textStyles, containerStyles } from '@/styles';
-import { getSelectedStation, setSelectedStation } from '@/stores/stationStores';
-import { CatalogImageHandler } from '@/image_handlers/CatalogImageHandler';
-import { Button, SnackbarMessage } from '@/components';
-import DatabaseService from '@/services/DatabaseService';
-import { useAuth } from '@/providers';
-import { Station} from '@/types';
+import { Button, LoadingIndicator, SnackbarMessage } from '@/components';
+import { appModules } from '@/composition/appModules';
+import { Station, parseUser } from '@/core/domain';
+import { localMedia, storedMedia } from '@/core/media';
+import { StoredMediaAsset } from '@/core/ports';
 import { StationForm } from '@/forms';
+import { useAuth } from '@/providers';
+import { buttonStyles, containerStyles, textStyles } from '@/styles';
 
-const edit_station = () => {
+const EditStation = () => {
   const router = useRouter();
+  const { id } = useLocalSearchParams<{ id?: string }>();
   const { user } = useAuth();
-  const database = DatabaseService.getInstance();
-  const [visible, setVisible] = useState<boolean>(false);
-  const station = getSelectedStation();
-
-  const [profile, setProfile] = useState<string>('');
+  const [station, setStation] = useState<Station>();
+  const [storedAssets, setStoredAssets] = useState<readonly StoredMediaAsset[]>([]);
+  const [profile, setProfile] = useState('');
   const [photos, setPhotos] = useState<string[]>([]);
-  const [isPicsChanged, setPicsChanged] = useState<boolean>(false);
-  const [formData, setFormData] = useState({name: station.name, location:station.location, lastStocked:station.lastStocked, 
-    stockingFreq: station.stockingFreq, knownCats: station.knownCats});
-  const imageHandler = new CatalogImageHandler({ type:'stations', id:station.id, photos, profile, setPhotos, setProfile, setPicsChanged, setVisible});
-  
+  const [visible, setVisible] = useState(false);
+  const [formData, setFormData] = useState({
+    name: '',
+    location: { latitude: 0, longitude: 0 },
+    lastStocked: new Date(),
+    stockingFreq: 7,
+    knownCats: '',
+  });
+
   useEffect(() => {
-    database.fetchStationImages(station.id, setProfile, setPhotos);
-  }, []);
+    if (!id) return;
+    void Promise.all([appModules.stations.get(id), appModules.stations.media(id)]).then(
+      ([stationResult, mediaResult]) => {
+        if (!stationResult.ok) {
+          Alert.alert('Could not load station', stationResult.error.message);
+          return;
+        }
+        const loaded = stationResult.value;
+        setStation(loaded);
+        setFormData({
+          name: loaded.name,
+          location: loaded.location,
+          lastStocked: loaded.lastStocked,
+          stockingFreq: loaded.stockingFreq,
+          knownCats: loaded.knownCats,
+        });
+        if (mediaResult.ok) {
+          setStoredAssets(mediaResult.value);
+          setProfile(
+            mediaResult.value.find(({ role }) => role === 'profile')?.url ?? '',
+          );
+          setPhotos(
+            mediaResult.value
+              .filter(({ role }) => role === 'gallery')
+              .map(({ url }) => url),
+          );
+        }
+      },
+    );
+  }, [id]);
 
-  const createObj = () => {
-    const newStation = new Station({
-      id:station.id, 
-      name:formData.name,
-      location:formData.location, 
-      lastStocked:formData.lastStocked, 
-      stockingFreq:formData.stockingFreq, 
-      knownCats:formData.knownCats,
-      isStocked:Station.calculateStocked(formData.lastStocked, formData.stockingFreq),
-      createdBy:user});
-    setSelectedStation(newStation);
-  }
+  const selectionFor = (uri: string) => {
+    const stored = storedAssets.find((asset) => asset.url === uri);
+    return stored ? storedMedia(stored.id) : localMedia(uri);
+  };
+  const promotePhoto = (uri: string) => {
+    setPhotos((current) => [profile, ...current.filter((photo) => photo !== uri)].filter(Boolean));
+    setProfile(uri);
+  };
+  const save = async () => {
+    if (!station || !profile) {
+      Alert.alert('Could not save station', 'Please select a profile photo.');
+      return;
+    }
+    setVisible(true);
+    const result = await appModules.stations.update(parseUser(user), station.id, {
+      ...formData,
+      profile: selectionFor(profile),
+      gallery: photos.map(selectionFor),
+    });
+    setVisible(false);
+    if (!result.ok) {
+      Alert.alert('Could not save station', result.error.message);
+      return;
+    }
+    router.replace({ pathname: '/stations/view-station', params: { id: station.id } });
+  };
+  const confirmDelete = () => {
+    if (!station) return;
+    Alert.alert('Delete Station', 'Delete this station forever?', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Delete Forever',
+        style: 'destructive',
+        onPress: () =>
+          void appModules.stations.remove(parseUser(user), station.id).then((result) => {
+            if (result.ok) router.replace('/stations');
+            else Alert.alert('Could not delete station', result.error.message);
+          }),
+      },
+    ]);
+  };
 
+  if (!station) return <LoadingIndicator />;
   return (
     <SafeAreaView style={containerStyles.wrapper}>
       <Button style={buttonStyles.smallButtonTopLeft} onPress={router.back}>
@@ -58,22 +119,21 @@ const edit_station = () => {
           photos={photos}
           profile={profile}
           setPhotos={setPhotos}
-          setPicsChanged={setPicsChanged}
-          imageHandler={imageHandler}
+          onPromotePhoto={promotePhoto}
+          onDeletePhoto={(uri) =>
+            setPhotos((current) => current.filter((photo) => photo !== uri))
+          }
           isCreate={false}
         />
       </ScrollView>
-      <Button style={buttonStyles.bigButton} 
-        onPress={() => {
-          createObj();
-          database.saveStation(profile, photos, isPicsChanged, setVisible, router)
-        }}>
-        <Text style ={textStyles.bigButtonText}> Save Station</Text>
+      <Button style={buttonStyles.bigButton} onPress={() => void save()}>
+        <Text style={textStyles.bigButtonText}>Save Station</Text>
       </Button>
-      <Button style={buttonStyles.bigDeleteButton}onPress={() => database.deleteStation(setVisible, router)}>
-        <Text style={textStyles.bigButtonText}>Delete Station</Text> 
+      <Button style={buttonStyles.bigDeleteButton} onPress={confirmDelete}>
+        <Text style={textStyles.bigButtonText}>Delete Station</Text>
       </Button>
     </SafeAreaView>
   );
-}
-export default edit_station;
+};
+
+export default EditStation;
