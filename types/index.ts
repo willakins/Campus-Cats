@@ -1,8 +1,4 @@
 import { Control, FieldValues, Path, RegisterOptions } from 'react-hook-form';
-import { z } from 'zod';
-
-// useState setter function type
-export type SetState<T> = React.Dispatch<React.SetStateAction<T>>;
 
 // React hook form types
 type TRule<T extends FieldValues> = Omit<
@@ -17,15 +13,5 @@ export type InputControllerType<T extends FieldValues> = {
   rules?: RuleType<T>;
 };
 
-export const LatLngSchema = z.object({
-  latitude: z.number()
-    .min(-90, "Latitude must be between -90 and 90 degrees")
-    .max(90, "Latitude must be between -90 and 90 degrees"),
-  longitude: z.number()
-    .min(-180, "Longitude must be between -180 and 180 degrees")
-    .max(180, "Longitude must be between -180 and 180 degrees"),
-});
-
 // File exports
 export { PickerConfig } from './PickerConfig';
-export { firestoreDocRefSchema } from './firestore';

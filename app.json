@@ -42,8 +42,7 @@
         }
       },
       "permissions": [
-        "android.permission.CAMERA",
-        "android.permission.RECORD_AUDIO"
+        "android.permission.CAMERA"
       ],
       "package": "com.gatech.CampusCats"
     },
@@ -55,11 +54,11 @@
     "plugins": [
       "expo-router",
       [
-        "expo-camera",
+        "expo-image-picker",
         {
-          "cameraPermission": "Allow $(PRODUCT_NAME) to access your camera",
-          "microphonePermission": "Allow $(PRODUCT_NAME) to access your microphone",
-          "recordAudioAndroid": true
+          "photosPermission": "Allow $(PRODUCT_NAME) to select cat photos.",
+          "cameraPermission": "Allow $(PRODUCT_NAME) to take cat photos.",
+          "microphonePermission": false
         }
       ]
     ],
