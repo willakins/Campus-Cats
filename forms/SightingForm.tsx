@@ -21,11 +21,14 @@ interface SightingFormProps {
   setPicsChanged?: Dispatch<React.SetStateAction<boolean>>;
   imageHandler?: CatalogImageHandler;
   isCreate: boolean;
+  onPromotePhoto?: (uri: string) => void;
+  onDeletePhoto?: (uri: string) => void;
 }
 
 const SightingForm: React.FC<SightingFormProps> = ({
   formData, setFormData, value, setValue,
-  open, setOpen, items, setItems, photos, profile, setPhotos, setPicsChanged, imageHandler, isCreate
+  open, setOpen, items, setItems, photos, profile, setPhotos, setPicsChanged, imageHandler, isCreate,
+  onPromotePhoto, onDeletePhoto,
 }) => {
   const handleChange = (field: string, val: any) => {
     setFormData((prev: any) => ({ ...prev, [field]: val }));
@@ -111,6 +114,8 @@ const SightingForm: React.FC<SightingFormProps> = ({
         setPhotos={setPhotos}
         setPicsChanged={setPicsChanged}
         imageHandler={imageHandler}
+        onPromotePhoto={onPromotePhoto}
+        onDeletePhoto={onDeletePhoto}
         isCreate={isCreate}/>
     </View>
   );

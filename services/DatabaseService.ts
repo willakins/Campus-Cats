@@ -1,11 +1,10 @@
 import { getDownloadURL, ref } from 'firebase/storage';
 import { getDocs, getDoc, updateDoc, doc, collection, query, where, DocumentData, getFirestore } from 'firebase/firestore';
 import { auth, db, storage } from '@/config/firebase';
-import { Announcement, CatalogEntry, ContactInfo, Sighting, Station, User, WhitelistApp } from '@/types';
+import { Announcement, CatalogEntry, ContactInfo, Station, User, WhitelistApp } from '@/types';
 import { Dispatch, SetStateAction } from 'react';
 import { Alert } from 'react-native';
 import CatalogService from './CatalogService';
-import SightingsService from './SightingsService';
 import AnnouncementsService from './AnnouncementsService';
 import StationsService from './StationsService';
 import { Router } from 'expo-router';
@@ -16,7 +15,6 @@ class DatabaseService {
   private static instance: DatabaseService;
   private static catalogService: CatalogService = new CatalogService();
   private static announcementsService: AnnouncementsService = new AnnouncementsService();
-  private static sightingsService: SightingsService = new SightingsService();
   private static stationsService: StationsService = new StationsService();
   private static settingsService: SettingsService = new SettingsService();
 
@@ -87,59 +85,6 @@ class DatabaseService {
     } else {
       Alert.alert('No user is logged in.');
     }
-  }
-
-  /**
-   * Effect: Pulls cat sightings from firestore and stores them in Marker friendly format
-   */
-  public async fetchPins(setPins:Dispatch<SetStateAction<Sighting[]>>, setMapKey:Dispatch<SetStateAction<number>>) {
-    await DatabaseService.sightingsService.fetchPins(setPins, setMapKey);
-  }
-
-  /**
-   * Effect: pulls cat sightings from firestore
-   */
-  public async getSightings(
-    name: string, 
-    setSightings:Dispatch<SetStateAction<Sighting[]>>) {
-    await DatabaseService.sightingsService.getSightings(name, setSightings);
-  }
-
-  /**
-   * Effect: updates firestore when editing a cat sighting
-   */
-  public async saveSighting(
-   photos: string[],
-   profile: string,
-   isPicsChanged:boolean,
-   setVisible: Dispatch<SetStateAction<boolean>>,
-   router:Router
-   ) {
-    await DatabaseService.sightingsService.saveSighting(photos, profile, isPicsChanged, setVisible, router);
-  }
-
-  /**
-   * Effect: pulls sighting images from storage
-   */
-  public async fetchSightingImages(id:string,  setProfile:Dispatch<SetStateAction<string>>, setPhotos:Dispatch<SetStateAction<string[]>>) {
-    await DatabaseService.sightingsService.fetchSightingImages(id, setProfile, setPhotos)
-  }
-
-  /**
-   * Effect: Submits a new cat sighting to firestore
-   */
-  public async createSighting(
-    photos: string[],
-    setVisible: Dispatch<SetStateAction<boolean>>,
-    router:Router) {
-    await DatabaseService.sightingsService.createSighting(photos, setVisible, router);
-  }
-
-  /**
-   * Effect: updates firestore when deleting a cat sighting
-   */
-  public async deleteSighting(id:string, setVisible:Dispatch<SetStateAction<boolean>>, router:Router) {
-    await DatabaseService.sightingsService.deleteSighting(id, setVisible, router);
   }
 
   /**
@@ -233,8 +178,6 @@ class DatabaseService {
     profilePicUrl?:string) {
       if (type == 'catalog') {
         await DatabaseService.catalogService.swapProfilePicture(id, picUrl, picName, profilePicUrl);
-      } else if (type == 'sightings') {
-        await DatabaseService.sightingsService.swapProfilePicture(id, picUrl, picName, profilePicUrl);
       } else if (type == 'stations') {
         await DatabaseService.stationsService.swapProfilePicture(id, picUrl, picName, profilePicUrl);
       }
@@ -248,15 +191,6 @@ class DatabaseService {
     id:string, 
     picName: string, ) {
     await DatabaseService.catalogService.deleteCatalogPicture(id, picName);
-  }
-
-  /**
-    * Effect: deletes a picture from a catalog entry
-    */
-  public async deleteSightingPicture(
-    id:string, 
-    picName: string, ) {
-      await DatabaseService.sightingsService.deleteSightingPicture(id, picName);
   }
 
   /**
