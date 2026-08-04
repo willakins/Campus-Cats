@@ -20,7 +20,10 @@
     "format:check": "prettier --check \"docs/**/*.md\"",
     "ui:check": "node scripts/check-ui-colors.js",
     "platform:check": "node scripts/check-platform-compat.js",
-    "quality": "npm run typecheck && npm run lint && npm run format:check && npm run ui:check && npm run platform:check"
+    "hosting:check": "node scripts/check-hosting.js",
+    "hosting:build": "expo export --platform web && npm run hosting:check",
+    "hosting:serve": "npm run hosting:build && firebase emulators:start --only hosting --project demo-campus-cats-test",
+    "quality": "npm run typecheck && npm run lint && npm run format:check && npm run ui:check && npm run platform:check && npm run hosting:check"
   },
   "dependencies": {
     "@expo/vector-icons": "^14.0.4",
