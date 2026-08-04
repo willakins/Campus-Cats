@@ -2,6 +2,11 @@ import { StoredDocument } from './documents';
 
 export type InaturalistRecordKind = 'observation' | 'catalog';
 
+export interface InaturalistSyncRunResult {
+  readonly status: 'success' | 'partial' | 'failed' | 'skipped';
+  readonly runId: string;
+}
+
 export interface InaturalistReader {
   listObservations(includeHidden: boolean): Promise<readonly StoredDocument[]>;
   getObservation(id: number): Promise<StoredDocument | undefined>;
@@ -11,7 +16,7 @@ export interface InaturalistReader {
 }
 
 export interface InaturalistEffects {
-  runSync(): Promise<unknown>;
+  runSync(): Promise<InaturalistSyncRunResult>;
   moderate(
     kind: InaturalistRecordKind,
     id: number,

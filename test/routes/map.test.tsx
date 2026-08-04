@@ -3,7 +3,12 @@ import React from 'react';
 import { render, screen, userEvent, waitFor } from '@testing-library/react-native';
 
 import HomeScreen from '../../app/(app)/(tabs)/index';
-import { Role, parseSighting, parseUser } from '../../core/domain';
+import {
+  InaturalistSightingRecord,
+  Role,
+  parseSighting,
+  parseUser,
+} from '../../core/domain';
 import { AppThemeProvider } from '../../theme';
 
 const mockList = jest.fn();
@@ -66,6 +71,31 @@ const old = parseSighting({
   name: 'Einstein',
   date: new Date('2020-01-01T12:00:00.000Z'),
 });
+const imported: InaturalistSightingRecord = {
+  source: 'inaturalist',
+  id: 'inat-observation-1001',
+  sourceId: 1001,
+  name: 'Mimi',
+  info: '',
+  date: new Date(),
+  observedOn: '2026-08-04',
+  observedTimePrecision: 'date',
+  location: { latitude: 33.775, longitude: -84.397 },
+  qualityGrade: 'casual',
+  observer: { id: 42, login: 'observer' },
+  sourceUrl: 'https://www.inaturalist.org/observations/1001',
+  positionalAccuracy: null,
+  sourceActive: true,
+  visible: true,
+};
+const importedWithoutCoordinates: InaturalistSightingRecord = {
+  ...imported,
+  id: 'inat-observation-1002',
+  sourceId: 1002,
+  name: 'Private location',
+  sourceUrl: 'https://www.inaturalist.org/observations/1002',
+  location: null,
+};
 
 const renderMap = () =>
   render(
@@ -106,6 +136,24 @@ describe('sightings map route', () => {
     expect(await screen.findByRole('alert', { name: 'Could not load sightings' })).toBeOnTheScreen();
     await user.press(screen.getByRole('button', { name: 'Report a sighting' }));
     expect(mockPush).toHaveBeenCalledWith('/sighting/create-sighting');
+  });
+
+  it('shows imported markers by stable ID and omits non-public coordinates', async () => {
+    mockList.mockResolvedValue({
+      ok: true,
+      value: [recent, imported, importedWithoutCoordinates],
+      warnings: [],
+    });
+    const user = userEvent.setup();
+    renderMap();
+
+    expect(await screen.findByText('2 sightings')).toBeOnTheScreen();
+    expect(screen.queryByText('Private location')).not.toBeOnTheScreen();
+    await user.press(screen.getByRole('button', { name: 'View sighting: Mimi' }));
+    expect(mockPush).toHaveBeenCalledWith({
+      pathname: '/sighting/view-sighting',
+      params: { id: 'inat-observation-1001' },
+    });
   });
 
   it('shows loading status without removing the map geometry', async () => {

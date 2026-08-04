@@ -195,6 +195,7 @@ export interface InaturalistCatalogRecord {
   readonly localContribution?: Readonly<{
     createdAt: Date;
     createdBy: User;
+    credits: string;
   }>;
 }
 

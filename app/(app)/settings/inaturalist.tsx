@@ -56,6 +56,10 @@ const InaturalistAdministration = () => {
   const [status, setStatus] = useState<InaturalistSyncStatus>();
   const [observations, setObservations] = useState<readonly ImportedObservation[]>([]);
   const [catalog, setCatalog] = useState<readonly ImportedCatalogProfile[]>([]);
+  const [localCatalog, setLocalCatalog] = useState<
+    readonly { readonly id: string; readonly name: string }[]
+  >([]);
+  const [linkTargets, setLinkTargets] = useState<Readonly<Record<number, string>>>({});
   const [reason, setReason] = useState('');
   const [loading, setLoading] = useState(authorized);
   const [syncing, setSyncing] = useState(false);
@@ -70,7 +74,8 @@ const InaturalistAdministration = () => {
     void Promise.all([
       appModules.inaturalist.status(actor),
       appModules.inaturalist.records(actor),
-    ]).then(([statusResult, recordsResult]) => {
+      appModules.catalog.list(),
+    ]).then(([statusResult, recordsResult, catalogResult]) => {
       setLoading(false);
       if (!statusResult.ok) {
         setError(statusResult.error.message);
@@ -83,6 +88,24 @@ const InaturalistAdministration = () => {
       setStatus(statusResult.value);
       setObservations(recordsResult.value.observations);
       setCatalog(recordsResult.value.catalog);
+      setLinkTargets(
+        Object.fromEntries(
+          recordsResult.value.catalog.flatMap((profile) =>
+            profile.linkedLocalCatalogId
+              ? [[profile.id, profile.linkedLocalCatalogId]]
+              : [],
+          ),
+        ),
+      );
+      if (catalogResult.ok) {
+        setLocalCatalog(
+          catalogResult.value.flatMap((record) =>
+            record.source === 'campus-cats'
+              ? [{ id: record.id, name: record.cat.name }]
+              : [],
+          ),
+        );
+      }
     });
   }, [actor.id, authorized]);
 
@@ -98,7 +121,13 @@ const InaturalistAdministration = () => {
       setError(result.error.message);
       return;
     }
-    setFeedback('iNaturalist synchronization completed.');
+    setFeedback(
+      result.value.status === 'success'
+        ? 'iNaturalist synchronization completed.'
+        : result.value.status === 'skipped'
+          ? 'Another synchronization is already running. Try again after it finishes.'
+          : `iNaturalist synchronization finished with status ${result.value.status}. Review the source errors below and retry.`,
+    );
     load();
   };
 
@@ -126,6 +155,33 @@ const InaturalistAdministration = () => {
     }
     setReason('');
     setFeedback(hidden ? 'Imported record restored.' : 'Imported record hidden.');
+    load();
+  };
+
+  const changeCatalogLink = async (profile: ImportedCatalogProfile) => {
+    if (busyRecord) return;
+    const unlinking = Boolean(profile.linkedLocalCatalogId);
+    const localCatalogId = unlinking
+      ? undefined
+      : linkTargets[profile.id]?.trim();
+    if (!unlinking && !localCatalogId) {
+      setFeedback('Enter a local catalog ID before linking this profile.');
+      return;
+    }
+    const key = `link-catalog-${profile.id}`;
+    setBusyRecord(key);
+    setFeedback(undefined);
+    const result = await appModules.inaturalist.linkCatalog(
+      actor,
+      profile.id,
+      localCatalogId,
+    );
+    setBusyRecord(undefined);
+    if (!result.ok) {
+      setError(result.error.message);
+      return;
+    }
+    setFeedback(unlinking ? 'Catalog profile unlinked.' : 'Catalog profile linked.');
     load();
   };
 
@@ -179,11 +235,24 @@ const InaturalistAdministration = () => {
                   <AppText color="muted">
                     Guide profiles: {status?.catalog.fetched ?? 0} fetched, {status?.catalog.deactivated ?? 0} deactivated
                   </AppText>
+                  {status?.observations.errors.map((message, index) => (
+                    <FeedbackBanner
+                      key={`observation-error-${index}`}
+                      message={`Observation import: ${message}`}
+                      tone="warning"
+                    />
+                  ))}
+                  {status?.catalog.errors.map((message, index) => (
+                    <FeedbackBanner
+                      key={`catalog-error-${index}`}
+                      message={`Guide import: ${message}`}
+                      tone="warning"
+                    />
+                  ))}
                   <Button
                     label="Sync with iNaturalist now"
                     icon="sync"
                     loading={syncing}
-                    disabled={status?.running}
                     onPress={() => void runSync()}
                   />
                 </View>
@@ -234,6 +303,35 @@ const InaturalistAdministration = () => {
                   <AppText color="muted">{subtitle}</AppText>
                   {imported.moderation.reason ? (
                     <AppText variant="caption" color="muted">Reason: {imported.moderation.reason}</AppText>
+                  ) : null}
+                  {item.kind === 'catalog' ? (
+                    <>
+                      <FormTextInput
+                        label={`Local catalog ID for ${title}`}
+                        helper={
+                          localCatalog.length > 0
+                            ? `Available: ${localCatalog.map(({ id, name }) => `${name} (${id})`).join(', ')}`
+                            : 'No unlinked local catalog entries are currently available.'
+                        }
+                        value={linkTargets[item.value.id] ?? ''}
+                        editable={!item.value.linkedLocalCatalogId}
+                        autoCapitalize="none"
+                        onChangeText={(value) =>
+                          setLinkTargets((current) => ({
+                            ...current,
+                            [item.value.id]: value,
+                          }))
+                        }
+                      />
+                      <Button
+                        label={item.value.linkedLocalCatalogId ? `Unlink ${title}` : `Link ${title}`}
+                        variant="secondary"
+                        icon={item.value.linkedLocalCatalogId ? 'unlink-outline' : 'link-outline'}
+                        loading={busyRecord === `link-catalog-${item.value.id}`}
+                        disabled={Boolean(busyRecord) || (!item.value.linkedLocalCatalogId && !linkTargets[item.value.id]?.trim())}
+                        onPress={() => void changeCatalogLink(item.value)}
+                      />
+                    </>
                   ) : null}
                   <Button
                     label="View on iNaturalist"

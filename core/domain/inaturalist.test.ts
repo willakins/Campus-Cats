@@ -4,6 +4,7 @@ import {
   externalMediaAssetSchema,
   importedCatalogProfileSchema,
   importedObservationSchema,
+  importedCatalogMedia,
   normalizeCatName,
   parseImportedCatalogProfile,
   parseImportedObservation,
@@ -132,6 +133,41 @@ describe('iNaturalist domain contracts', () => {
     expect(Object.isFrozen(profile.metadata)).toBe(true);
   });
 
+  it('promotes an officer-selected licensed guide cover without changing identity', () => {
+    const secondPhoto = {
+      ...licensedPhoto,
+      id: mediaAssetId('inat-photo-2'),
+      url: 'https://inaturalist-open-data.s3.amazonaws.com/photos/2/large.jpg',
+      thumbnailUrl:
+        'https://inaturalist-open-data.s3.amazonaws.com/photos/2/small.jpg',
+    };
+    const profile = parseImportedCatalogProfile({
+      id: 2113386,
+      guideId: 18800,
+      sourceUrl: 'https://www.inaturalist.org/guide_taxa/2113386',
+      sourceUpdatedAt: timestamp,
+      displayName: 'Mimi',
+      shortDescription: 'Black-and-white male with chin-spot',
+      metadata: { yearsRecorded: [], areasOfResidence: [], furPatterns: [] },
+      photos: [licensedPhoto, secondPhoto],
+      sourceActive: true,
+      visible: true,
+      importedAt: timestamp,
+      syncedAt: timestamp,
+      lastSeenRunId: 'run-1',
+      moderation: { hidden: false },
+      overrides: { coverPhotoId: 'inat-photo-2' },
+      matchStatus: 'unlinked',
+    });
+
+    const media = importedCatalogMedia(profile);
+    expect(media.map(({ id }) => id)).toEqual([
+      'inat-photo-2',
+      'inat-photo-1',
+    ]);
+    expect(media.map(({ role }) => role)).toEqual(['profile', 'gallery']);
+  });
+
   it('rejects malformed external URLs, locations, and visibility state', () => {
     expect(() =>
       externalMediaAssetSchema.parse({
@@ -201,6 +237,35 @@ describe('iNaturalist domain contracts', () => {
         updatedBy: 'admin-1',
         updatedAt: { iso: timestamp.toISOString() },
       },
+    });
+  });
+
+  it('decodes the first running lease before source summaries exist', () => {
+    const codecs = createFirestoreCodecs({ fromDate: (date: Date) => date });
+    const status = codecs.inaturalistStatus.decode('inaturalist', {
+      running: true,
+      runId: 'run-1',
+      startedAt: { toDate: () => timestamp },
+    });
+
+    expect(status).toMatchObject({
+      running: true,
+      runId: 'run-1',
+      observations: {
+        fetched: 0,
+        created: 0,
+        updated: 0,
+        deactivated: 0,
+        errors: [],
+      },
+      catalog: {
+        fetched: 0,
+        created: 0,
+        updated: 0,
+        deactivated: 0,
+        errors: [],
+      },
+      ambiguousCatalogMatches: [],
     });
   });
 });

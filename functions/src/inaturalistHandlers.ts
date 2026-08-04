@@ -1,9 +1,12 @@
 import { HandlerError, ManagedUser } from './handlers';
 import { ImportedRecordKind } from './firebaseInaturalist';
+import { SyncRunSummary } from './inaturalist';
+
+type SyncRunResult = Pick<SyncRunSummary, 'status' | 'runId'>;
 
 export interface InaturalistHandlerDependencies {
   getUser(id: string): Promise<ManagedUser | undefined>;
-  runSync(): Promise<unknown>;
+  runSync(): Promise<SyncRunResult>;
   moderate(
     kind: ImportedRecordKind,
     id: number,
@@ -26,9 +29,10 @@ interface HandlerRequest<T> {
 export async function handleRunInaturalistSync(
   request: HandlerRequest<Record<string, never>>,
   dependencies: InaturalistHandlerDependencies,
-): Promise<unknown> {
+): Promise<SyncRunResult> {
   await requireAdmin(request.authUid, dependencies);
-  return dependencies.runSync();
+  const result = await dependencies.runSync();
+  return { status: result.status, runId: result.runId };
 }
 
 export async function handleModerateInaturalistRecord(

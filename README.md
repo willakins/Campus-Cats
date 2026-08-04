@@ -35,6 +35,7 @@ Campus Cats brings those workflows into one mobile experience. Members can recor
 | **Announcements** | Give administrators a central place to publish updates and send push notifications to members. |
 | **Community access** | Support Georgia Tech SSO, an alumni whitelist workflow, and Firebase-backed authentication. |
 | **Role-aware administration** | Separate member, admin, and super-admin capabilities for content and user management. |
+| **iNaturalist integration** | Bring public Georgia Tech project sightings and guide profiles into the existing map and catalog through a daily, attributed, read-only import. |
 
 ## Why it stands out
 
@@ -60,7 +61,8 @@ flowchart LR
 ```
 
 The client is organized as behavior-first vertical modules for sightings, catalog,
-stations, announcements, contacts, users, whitelist, session, and image selection.
+stations, announcements, contacts, users, whitelist, session, image selection, and
+iNaturalist integration workflows.
 Screens own presentation and navigation; modules return typed outcomes; narrow ports
 isolate Firebase and Expo. Deterministic in-memory adapters and Firebase Emulator
 contracts protect behavior during refactors. See the
@@ -98,6 +100,7 @@ The interface can be explored locally, but authentication, maps, notifications, 
 - [Architecture](docs/architecture/0001-feature-modules.md)
 - [Authorization matrix](docs/architecture/behavior-matrix.md)
 - [Campus Field Guide design system](docs/design-system.md)
+- [iNaturalist import and operations](docs/inaturalist-import.md)
 - [Testing guide](docs/testing.md)
 - [Contributing](CONTRIBUTING.md)
 

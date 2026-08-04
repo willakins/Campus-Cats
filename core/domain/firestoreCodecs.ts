@@ -241,8 +241,10 @@ export function createFirestoreCodecs<EncodedDate>(
   const inaturalistStatus: FirestoreCodec<InaturalistSyncStatus> = {
     decode: (_id, value) => {
       const data = record(value);
-      const observations = record(data.observations);
-      const catalogStatus = record(data.catalog);
+      const observations =
+        data.observations === undefined ? {} : record(data.observations);
+      const catalogStatus =
+        data.catalog === undefined ? {} : record(data.catalog);
       const decodeOptional = (date: unknown) =>
         date === undefined || date === null ? undefined : decodeDate(date);
       return parseInaturalistSyncStatus({
@@ -251,14 +253,25 @@ export function createFirestoreCodecs<EncodedDate>(
         completedAt: decodeOptional(data.completedAt),
         observations: {
           ...observations,
+          fetched: observations.fetched ?? 0,
+          created: observations.created ?? 0,
+          updated: observations.updated ?? 0,
+          deactivated: observations.deactivated ?? 0,
+          errors: observations.errors ?? [],
           lastAttemptAt: decodeOptional(observations.lastAttemptAt),
           lastSuccessAt: decodeOptional(observations.lastSuccessAt),
         },
         catalog: {
           ...catalogStatus,
+          fetched: catalogStatus.fetched ?? 0,
+          created: catalogStatus.created ?? 0,
+          updated: catalogStatus.updated ?? 0,
+          deactivated: catalogStatus.deactivated ?? 0,
+          errors: catalogStatus.errors ?? [],
           lastAttemptAt: decodeOptional(catalogStatus.lastAttemptAt),
           lastSuccessAt: decodeOptional(catalogStatus.lastSuccessAt),
         },
+        ambiguousCatalogMatches: data.ambiguousCatalogMatches ?? [],
       });
     },
     encode: (value) => ({

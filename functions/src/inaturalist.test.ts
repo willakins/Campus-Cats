@@ -11,6 +11,7 @@ import {
   SyncRunSummary,
   mapGuideTaxon,
   mapObservation,
+  normalizeCatName,
   runInaturalistSync,
 } from './inaturalist';
 
@@ -99,14 +100,22 @@ const observation = {
 
 describe('iNaturalist mappers', () => {
   it('maps every quality grade while filtering unlicensed media', () => {
-    const result = mapObservation(
-      observation,
-      new Map([['mimi', 2113386]]),
-      now,
-      'run-1',
+    const results = (['casual', 'needs_id', 'research'] as const).map(
+      (qualityGrade) =>
+        mapObservation(
+          { ...observation, quality_grade: qualityGrade },
+          new Map([['mimi', 2113386]]),
+          now,
+          'run-1',
+        ),
     );
+    const result = results[0];
 
-    assert.equal(result.qualityGrade, 'casual');
+    assert.deepEqual(results.map(({ qualityGrade }) => qualityGrade), [
+      'casual',
+      'needs_id',
+      'research',
+    ]);
     assert.deepEqual(result.location, {
       latitude: 33.776,
       longitude: -84.396,
@@ -116,6 +125,36 @@ describe('iNaturalist mappers', () => {
     assert.equal(result.photos[0].role, 'profile');
     assert.match(result.photos[0].url, /\/large\.jpg$/);
     assert.match(result.photos[0].thumbnailUrl, /\/small\.jpg$/);
+  });
+
+  it('retains every supported Creative Commons photo license', () => {
+    const licenses = [
+      'cc0',
+      'cc-by',
+      'cc-by-nc',
+      'cc-by-sa',
+      'cc-by-nd',
+      'cc-by-nc-sa',
+      'cc-by-nc-nd',
+    ];
+    const result = mapObservation(
+      {
+        ...observation,
+        photos: licenses.map((licenseCode, index) => ({
+          ...observation.photos[0],
+          id: index + 1,
+          license_code: licenseCode,
+        })),
+      },
+      new Map(),
+      now,
+      'run-1',
+    );
+
+    assert.deepEqual(
+      result.photos.map(({ licenseCode }) => licenseCode),
+      licenses.map((license) => license.toUpperCase()),
+    );
   });
 
   it('does not copy unlicensed descriptions and preserves date-only precision', () => {
@@ -140,6 +179,28 @@ describe('iNaturalist mappers', () => {
     assert.equal(result.location, null);
   });
 
+  it('never links generic observation field values to catalog profiles', () => {
+    for (const [index, fieldValue] of ['Ginger', 'Multiple individuals'].entries()) {
+      const result = mapObservation(
+        {
+          ...observation,
+          id: 500 + index,
+          uuid: `a1d112b8-954b-4a65-a574-d73092f1cd3${index}`,
+          ofvs: [{ field_id: 16302, value: fieldValue }],
+        },
+        new Map([
+          ['ginger', 2100],
+          ['multiple individuals', 2101],
+        ]),
+        now,
+        'run-1',
+      );
+
+      assert.equal(result.guideTaxonId, undefined);
+      assert.equal(result.observationFieldValue, fieldValue);
+    }
+  });
+
   it('maps structured guide tags and excludes copyright-only photos', () => {
     const result = mapGuideTaxon(guideTaxon, now, 'run-1');
 
@@ -150,6 +211,54 @@ describe('iNaturalist mappers', () => {
     assert.equal(result.metadata.sex, 'Male');
     assert.equal(result.photos.length, 1);
     assert.equal(result.photos[0].licenseCode, 'CC-BY-NC');
+  });
+
+  it('skips malformed licensed media without dropping its source record', () => {
+    const catalog = mapGuideTaxon(
+      {
+        ...guideTaxon,
+        guide_photos: [
+          guideTaxon.guide_photos[0],
+          {
+            ...guideTaxon.guide_photos[0],
+            id: 99,
+            large_url: '/relative/large.png',
+          },
+        ],
+      },
+      now,
+      'run-1',
+    );
+    const sighting = mapObservation(
+      {
+        ...observation,
+        photos: [
+          observation.photos[0],
+          { ...observation.photos[0], id: 99, url: '/relative/square.jpg' },
+        ],
+      },
+      new Map(),
+      now,
+      'run-1',
+    );
+
+    assert.equal(catalog.photos.length, 1);
+    assert.equal(sighting.photos.length, 1);
+  });
+
+  it('retains unnamed guide profiles without inventing a source identity', () => {
+    const result = mapGuideTaxon(
+      { ...guideTaxon, id: 2269479, display_name: '' },
+      now,
+      'run-1',
+    );
+
+    assert.equal(result.displayName, 'Unnamed cat #2269479');
+    assert.equal(
+      result.shortDescription,
+      'Black-and-white male with chin-spot',
+    );
+    assert.equal(result.matchStatus, 'unlinked');
   });
 });
 
@@ -199,6 +308,27 @@ describe('iNaturalist HTTP gateway', () => {
     );
     assert.ok(delays.includes(2000));
   });
+
+  it('does not retry client errors that cannot succeed unchanged', async () => {
+    let attempts = 0;
+    const http = new InaturalistHttpGateway({
+      async fetch() {
+        attempts += 1;
+        return {
+          ok: false,
+          status: 400,
+          headers: { get: () => null },
+          async json() {
+            return {};
+          },
+        };
+      },
+      sleep: async () => undefined,
+    });
+
+    await assert.rejects(() => http.listObservations(), /HTTP 400/);
+    assert.equal(attempts, 1);
+  });
 });
 
 class MemoryRepository implements ImportRepository {
@@ -207,15 +337,22 @@ class MemoryRepository implements ImportRepository {
   readonly localCatalog = new Map<string, string>();
   summaries: SyncRunSummary[] = [];
   leaseAvailable = true;
+  leaseUntil?: Date;
+  failObservationBatch = false;
+  failCatalogBatch = false;
 
-  async acquireLease(): Promise<boolean> {
-    if (!this.leaseAvailable) return false;
+  async acquireLease(_runId: string, current: Date, leaseUntil: Date): Promise<boolean> {
+    if (!this.leaseAvailable && this.leaseUntil && this.leaseUntil > current) {
+      return false;
+    }
     this.leaseAvailable = false;
+    this.leaseUntil = leaseUntil;
     return true;
   }
 
   async releaseLease(): Promise<void> {
     this.leaseAvailable = true;
+    this.leaseUntil = undefined;
   }
 
   async listGuideNames() {
@@ -230,23 +367,52 @@ class MemoryRepository implements ImportRepository {
   }
 
   async upsertObservations(values: readonly ObservationImport[]) {
+    if (this.failObservationBatch) throw new Error('observation batch failed');
     let created = 0;
     let updated = 0;
     for (const value of values) {
-      if (this.observations.has(value.id)) updated += 1;
+      const previous = this.observations.get(value.id);
+      if (previous) updated += 1;
       else created += 1;
-      this.observations.set(value.id, value);
+      this.observations.set(value.id, {
+        ...value,
+        importedAt: previous?.importedAt ?? value.importedAt,
+        moderation: previous?.moderation ?? value.moderation,
+        visible: value.sourceActive && !(previous?.moderation.hidden ?? false),
+        guideTaxonId:
+          value.guideTaxonId ??
+          (previous?.guideTaxonId &&
+          previous.observationFieldValue &&
+          value.observationFieldValue &&
+          normalizeCatName(previous.observationFieldValue) ===
+            normalizeCatName(value.observationFieldValue)
+            ? previous.guideTaxonId
+            : undefined),
+      });
     }
     return { created, updated };
   }
 
   async upsertCatalog(values: readonly CatalogImport[]) {
+    if (this.failCatalogBatch) throw new Error('catalog batch failed');
     let created = 0;
     let updated = 0;
     for (const value of values) {
-      if (this.catalog.has(value.id)) updated += 1;
+      const previous = this.catalog.get(value.id);
+      if (previous) updated += 1;
       else created += 1;
-      this.catalog.set(value.id, value);
+      this.catalog.set(value.id, {
+        ...value,
+        importedAt: previous?.importedAt ?? value.importedAt,
+        moderation: previous?.moderation ?? value.moderation,
+        overrides: previous?.overrides ?? value.overrides,
+        linkedLocalCatalogId:
+          previous?.linkedLocalCatalogId ?? value.linkedLocalCatalogId,
+        matchStatus: previous?.linkedLocalCatalogId
+          ? 'linked'
+          : value.matchStatus,
+        visible: value.sourceActive && !(previous?.moderation.hidden ?? false),
+      });
     }
     return { created, updated };
   }
@@ -330,6 +496,43 @@ describe('daily iNaturalist synchronization', () => {
     assert.equal(repository.observations.size, 1);
   });
 
+  it('reports ambiguous exact local names and keeps an established link persistent', async () => {
+    const ambiguousRepository = new MemoryRepository();
+    ambiguousRepository.localCatalog.set('local-mimi-1', 'Mimi');
+    ambiguousRepository.localCatalog.set('local-mimi-2', 'Mimi (alias)');
+    const ambiguous = await runInaturalistSync({
+      gateway: gateway(),
+      repository: ambiguousRepository,
+      clock,
+      runId: () => 'run-ambiguous',
+    });
+    assert.deepEqual(ambiguous.ambiguousCatalogMatches, [2113386]);
+    assert.equal(
+      ambiguousRepository.catalog.get(2113386)?.matchStatus,
+      'ambiguous',
+    );
+
+    const linkedRepository = new MemoryRepository();
+    linkedRepository.localCatalog.set('local-mimi-1', 'Mimi');
+    await runInaturalistSync({
+      gateway: gateway(),
+      repository: linkedRepository,
+      clock,
+      runId: () => 'run-linked',
+    });
+    linkedRepository.localCatalog.set('local-mimi-2', 'Mimi (alias)');
+    await runInaturalistSync({
+      gateway: gateway(),
+      repository: linkedRepository,
+      clock,
+      runId: () => 'run-linked-again',
+    });
+    assert.equal(
+      linkedRepository.catalog.get(2113386)?.linkedLocalCatalogId,
+      'local-mimi-1',
+    );
+  });
+
   it('deactivates missing records only after a complete successful source scan', async () => {
     const repository = new MemoryRepository();
     await runInaturalistSync({
@@ -371,9 +574,176 @@ describe('daily iNaturalist synchronization', () => {
     assert.equal(repository.observations.get(321)?.visible, true);
   });
 
+  it('reactivates returned records while preserving moderation, overrides, and links', async () => {
+    const repository = new MemoryRepository();
+    await runInaturalistSync({
+      gateway: gateway(),
+      repository,
+      clock,
+      runId: () => 'run-1',
+    });
+    const originalObservation = repository.observations.get(321)!;
+    const originalCatalog = repository.catalog.get(2113386)!;
+    repository.observations.set(321, {
+      ...originalObservation,
+      sourceActive: false,
+      visible: false,
+      moderation: { hidden: true, reason: 'Officer review' },
+    });
+    repository.catalog.set(2113386, {
+      ...originalCatalog,
+      sourceActive: false,
+      visible: false,
+      moderation: { hidden: true, reason: 'Duplicate profile' },
+      overrides: { descLong: 'Officer-maintained notes' },
+      linkedLocalCatalogId: 'local-mimi',
+      matchStatus: 'linked',
+    });
+
+    await runInaturalistSync({
+      gateway: gateway(),
+      repository,
+      clock,
+      runId: () => 'run-2',
+    });
+
+    const observationResult = repository.observations.get(321)!;
+    const catalogResult = repository.catalog.get(2113386)!;
+    assert.equal(observationResult.sourceActive, true);
+    assert.equal(observationResult.visible, false);
+    assert.equal(observationResult.moderation.reason, 'Officer review');
+    assert.equal(catalogResult.sourceActive, true);
+    assert.equal(catalogResult.visible, false);
+    assert.deepEqual(catalogResult.overrides, {
+      descLong: 'Officer-maintained notes',
+    });
+    assert.equal(catalogResult.linkedLocalCatalogId, 'local-mimi');
+  });
+
+  it('replaces edited source fields and revoked media deterministically', async () => {
+    const repository = new MemoryRepository();
+    await runInaturalistSync({
+      gateway: gateway(),
+      repository,
+      clock,
+      runId: () => 'run-1',
+    });
+
+    await runInaturalistSync({
+      gateway: gateway({
+        async listObservations() {
+          return {
+            results: [
+              {
+                ...observation,
+                description: 'Updated at the source',
+                photos: [],
+              },
+            ],
+            hasMore: false,
+          };
+        },
+      }),
+      repository,
+      clock,
+      runId: () => 'run-2',
+    });
+
+    assert.equal(
+      repository.observations.get(321)?.description,
+      'Updated at the source',
+    );
+    assert.deepEqual(repository.observations.get(321)?.photos, []);
+    assert.equal(repository.observations.size, 1);
+  });
+
+  it('keeps an imported catalog association stable across guide name edits', async () => {
+    const repository = new MemoryRepository();
+    await runInaturalistSync({
+      gateway: gateway(),
+      repository,
+      clock,
+      runId: () => 'run-1',
+    });
+    assert.equal(repository.observations.get(321)?.guideTaxonId, 2113386);
+
+    await runInaturalistSync({
+      gateway: gateway({
+        async listGuideTaxa() {
+          return [{ ...guideTaxon, display_name: 'Mimi Renamed' }];
+        },
+      }),
+      repository,
+      clock,
+      runId: () => 'run-2',
+    });
+
+    assert.equal(repository.observations.get(321)?.guideTaxonId, 2113386);
+  });
+
+  it('isolates source and batch failures without deactivating unseen records', async () => {
+    const repository = new MemoryRepository();
+    await runInaturalistSync({
+      gateway: gateway(),
+      repository,
+      clock,
+      runId: () => 'run-1',
+    });
+    repository.failObservationBatch = true;
+
+    const observationBatchFailure = await runInaturalistSync({
+      gateway: gateway(),
+      repository,
+      clock,
+      runId: () => 'run-2',
+    });
+    assert.equal(observationBatchFailure.status, 'partial');
+    assert.equal(repository.observations.get(321)?.sourceActive, true);
+
+    repository.failObservationBatch = false;
+    const guideFailure = await runInaturalistSync({
+      gateway: gateway({
+        async listGuideTaxa() {
+          throw new Error('guide unavailable');
+        },
+      }),
+      repository,
+      clock,
+      runId: () => 'run-3',
+    });
+    assert.equal(guideFailure.status, 'partial');
+    assert.equal(guideFailure.observations.updated, 1);
+    assert.equal(repository.catalog.get(2113386)?.sourceActive, true);
+  });
+
+  it('takes over an expired lease but skips an active overlapping lease', async () => {
+    const repository = new MemoryRepository();
+    repository.leaseAvailable = false;
+    repository.leaseUntil = new Date(now.getTime() - 1);
+
+    const expired = await runInaturalistSync({
+      gateway: gateway(),
+      repository,
+      clock,
+      runId: () => 'run-expired',
+    });
+    assert.equal(expired.status, 'success');
+
+    repository.leaseAvailable = false;
+    repository.leaseUntil = new Date(now.getTime() + 60_000);
+    const overlapping = await runInaturalistSync({
+      gateway: gateway(),
+      repository,
+      clock,
+      runId: () => 'run-overlap',
+    });
+    assert.equal(overlapping.status, 'skipped');
+  });
+
   it('reports an overlapping invocation without touching either source', async () => {
     const repository = new MemoryRepository();
     repository.leaseAvailable = false;
+    repository.leaseUntil = new Date(now.getTime() + 60_000);
 
     const result = await runInaturalistSync({
       gateway: gateway({

@@ -37,7 +37,8 @@ describe('Campus Cats design primitives', () => {
       <Button label="Save cat" onPress={onPress} />,
     );
 
-    await user.press(screen.getByRole('button', { name: 'Save cat' }));
+    const saveButton = screen.getByRole('button', { name: 'Save cat' });
+    await user.press(saveButton);
     expect(onPress).toHaveBeenCalledTimes(1);
 
     rerender(

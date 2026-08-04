@@ -2,7 +2,12 @@ import React from 'react';
 
 import { render, screen, userEvent } from '@testing-library/react-native';
 
-import { Role, localSightingRecord, parseSighting } from '../../core/domain';
+import {
+  InaturalistSightingRecord,
+  Role,
+  localSightingRecord,
+  parseSighting,
+} from '../../core/domain';
 import ViewSighting from '../../app/(app)/sighting/view-sighting';
 import { AppThemeProvider } from '../../theme';
 
@@ -69,6 +74,23 @@ const sighting = localSightingRecord(parseSighting({
   },
   timeOfDay: 'Afternoon',
 }));
+const importedSighting: InaturalistSightingRecord = {
+  source: 'inaturalist',
+  id: 'inat-observation-1001',
+  sourceId: 1001,
+  name: 'Mimi',
+  info: '',
+  date: new Date('2025-04-10T12:00:00.000Z'),
+  observedOn: '2025-04-10',
+  observedTimePrecision: 'exact',
+  location: { latitude: 33.772, longitude: -84.394 },
+  qualityGrade: 'research',
+  observer: { id: 42, login: 'observer' },
+  sourceUrl: 'https://www.inaturalist.org/observations/1001',
+  positionalAccuracy: null,
+  sourceActive: true,
+  visible: true,
+};
 
 describe('view sighting route', () => {
   beforeEach(() => {
@@ -96,6 +118,18 @@ describe('view sighting route', () => {
     renderSighting();
 
     expect(await screen.findByText('Goldie')).toBeOnTheScreen();
+    expect(screen.queryByRole('button', { name: 'Edit sighting' })).not.toBeOnTheScreen();
+  });
+
+  it('never offers Campus Cats editing for imported sightings', async () => {
+    mockGet.mockResolvedValue({
+      ok: true,
+      value: importedSighting,
+      warnings: [],
+    });
+    renderSighting();
+
+    expect(await screen.findByText('Mimi')).toBeOnTheScreen();
     expect(screen.queryByRole('button', { name: 'Edit sighting' })).not.toBeOnTheScreen();
   });
 

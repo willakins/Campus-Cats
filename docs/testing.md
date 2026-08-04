@@ -38,6 +38,17 @@ Expo without watch mode.
 - Emulator contracts run against Firestore and Storage adapters and verify security
   rules. The project-ID guard permits only IDs beginning with `demo-`.
 
+iNaturalist parser and synchronization tests use recorded fixtures and injected
+gateways; CI never depends on the live provider. Maintainers may separately run the
+opt-in, unauthenticated, read-only endpoint check:
+
+```bash
+npm run contract:inaturalist:live --prefix functions
+```
+
+See the [iNaturalist operations guide](inaturalist-import.md) for its scope and the
+post-merge import checklist.
+
 Tests must not assert component state or use snapshots as their only evidence. Prefer
 what a user can find, press, or observe and what a caller receives from a public
 module.

@@ -29,6 +29,8 @@ const mockInaturalistStatus = jest.fn();
 const mockInaturalistRecords = jest.fn();
 const mockRunInaturalist = jest.fn();
 const mockSetInaturalistVisibility = jest.fn();
+const mockLinkInaturalistCatalog = jest.fn();
+const mockCatalogList = jest.fn();
 
 jest.mock('expo-router', () => {
   const mockReact = require('react');
@@ -69,7 +71,9 @@ jest.mock('../../composition/appModules', () => ({
       records: (...args: unknown[]) => mockInaturalistRecords(...args),
       runNow: (...args: unknown[]) => mockRunInaturalist(...args),
       setVisibility: (...args: unknown[]) => mockSetInaturalistVisibility(...args),
+      linkCatalog: (...args: unknown[]) => mockLinkInaturalistCatalog(...args),
     },
+    catalog: { list: (...args: unknown[]) => mockCatalogList(...args) },
   },
 }));
 
@@ -128,8 +132,24 @@ describe('settings and administration routes', () => {
       value: { observations: [], catalog: [importedProfile] },
       warnings: [],
     });
-    mockRunInaturalist.mockResolvedValue({ ok: true, value: { status: 'success' }, warnings: [] });
+    mockRunInaturalist.mockResolvedValue({
+      ok: true,
+      value: { status: 'success', runId: 'run-1' },
+      warnings: [],
+    });
     mockSetInaturalistVisibility.mockResolvedValue({ ok: true, value: undefined, warnings: [] });
+    mockLinkInaturalistCatalog.mockResolvedValue({ ok: true, value: undefined, warnings: [] });
+    mockCatalogList.mockResolvedValue({
+      ok: true,
+      value: [
+        {
+          source: 'campus-cats',
+          id: 'catalog-1',
+          cat: { name: 'Goldie' },
+        },
+      ],
+      warnings: [],
+    });
   });
 
   it('organizes More for members and signs out from an explicit account action', async () => {
@@ -216,6 +236,7 @@ describe('settings and administration routes', () => {
     expect(screen.getByText('Ambiguous local match')).toBeOnTheScreen();
     await user.press(screen.getByRole('button', { name: 'Sync with iNaturalist now' }));
     await waitFor(() => expect(mockRunInaturalist).toHaveBeenCalled());
+    expect(screen.getByText('iNaturalist synchronization completed.')).toBeOnTheScreen();
 
     fireEvent.changeText(
       screen.getByLabelText('Reason for hiding a record'),
@@ -229,6 +250,48 @@ describe('settings and administration routes', () => {
         2001,
         false,
         'Duplicate profile confirmed by an officer',
+      ),
+    );
+  });
+
+  it('explains overlapping manual synchronization instead of reporting success', async () => {
+    mockRole = Role.Admin;
+    mockRunInaturalist.mockResolvedValue({
+      ok: true,
+      value: { status: 'skipped', runId: 'run-overlap' },
+      warnings: [],
+    });
+    const user = userEvent.setup();
+    renderThemed(<InaturalistAdministration />);
+
+    await screen.findByText('Goldie');
+    await user.press(
+      screen.getByRole('button', { name: 'Sync with iNaturalist now' }),
+    );
+
+    expect(
+      await screen.findByText(
+        'Another synchronization is already running. Try again after it finishes.',
+      ),
+    ).toBeOnTheScreen();
+  });
+
+  it('lets administrators resolve ambiguous catalog links explicitly', async () => {
+    mockRole = Role.Admin;
+    const user = userEvent.setup();
+    renderThemed(<InaturalistAdministration />);
+
+    await screen.findByText('Goldie');
+    fireEvent.changeText(
+      screen.getByLabelText('Local catalog ID for Goldie'),
+      'catalog-1',
+    );
+    await user.press(screen.getByRole('button', { name: 'Link Goldie' }));
+    await waitFor(() =>
+      expect(mockLinkInaturalistCatalog).toHaveBeenCalledWith(
+        expect.objectContaining({ id: 'actor-1' }),
+        2001,
+        'catalog-1',
       ),
     );
   });

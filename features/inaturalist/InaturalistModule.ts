@@ -14,6 +14,7 @@ import {
   InaturalistEffects,
   InaturalistReader,
   InaturalistRecordKind,
+  InaturalistSyncRunResult,
 } from '../../core/ports';
 
 interface InaturalistDependencies {
@@ -80,11 +81,24 @@ export class InaturalistModule {
     }
   }
 
-  async runNow(actor: User | undefined): Promise<Outcome<unknown>> {
+  async runNow(
+    actor: User | undefined,
+  ): Promise<Outcome<InaturalistSyncRunResult>> {
     const denied = adminDenied(actor);
     if (denied) return denied;
     try {
-      return success(await this.dependencies.effects.runSync());
+      const result = await this.dependencies.effects.runSync();
+      return success(
+        result,
+        result.status === 'partial' || result.status === 'failed'
+          ? [
+              {
+                code: 'partial_completion',
+                message: `iNaturalist synchronization finished with status ${result.status}`,
+              },
+            ]
+          : [],
+      );
     } catch {
       return failure(
         'dependency_failure',

@@ -25,6 +25,12 @@ npm ci --prefix functions
 npm run test:ci --prefix functions
 ```
 
+The iNaturalist scheduler, imported collections, callable controls, and safe recovery
+sequence are documented in the
+[iNaturalist operations guide](docs/inaturalist-import.md). Deploy the backend and
+rules before a client that reads imported records, then inspect the initial manual
+import before releasing that client.
+
 Do not run a deploy command from a refactor or contributor branch.
 
 ## Before deploying

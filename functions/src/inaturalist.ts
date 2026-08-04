@@ -90,7 +90,7 @@ export interface CatalogImport {
   readonly syncedAt: Date;
   readonly lastSeenRunId: string;
   readonly moderation: ImportModeration;
-  readonly overrides: Readonly<Record<string, never>>;
+  readonly overrides: Readonly<Record<string, unknown>>;
   readonly linkedLocalCatalogId?: string;
   readonly matchStatus: 'unlinked' | 'linked' | 'ambiguous';
 }
@@ -120,6 +120,8 @@ interface HttpRequestInit {
   readonly headers: Record<string, string>;
   readonly signal?: AbortSignal;
 }
+
+class NonRetryableRequestError extends Error {}
 
 export interface InaturalistHttpGatewayOptions {
   readonly fetch: (url: string, init: HttpRequestInit) => Promise<HttpResponse>;
@@ -200,10 +202,11 @@ export class InaturalistHttpGateway implements InaturalistGateway {
           );
           continue;
         }
-        throw lastFailure;
+        throw new NonRetryableRequestError(lastFailure.message);
       } catch (error) {
         lastFailure =
           error instanceof Error ? error : new Error('iNaturalist request failed');
+        if (error instanceof NonRetryableRequestError) throw error;
         if (attempt >= 2) throw lastFailure;
         await this.options.sleep(1000 * 2 ** attempt);
       } finally {
@@ -512,7 +515,7 @@ export function mapObservation(
   const normalizedField = observationFieldValue
     ? normalizeCatName(observationFieldValue)
     : undefined;
-  const guideTaxonId = normalizedField
+  const guideTaxonId = normalizedField && !isGenericCatField(normalizedField)
     ? guideByName.get(normalizedField)
     : undefined;
   const displayName = observationFieldValue
@@ -584,7 +587,8 @@ export function mapGuideTaxon(
     guideId,
     sourceUrl: `https://www.inaturalist.org/guide_taxa/${id}`,
     sourceUpdatedAt: validDate(data.updated_at, 'guide_taxon.updated_at'),
-    displayName: requiredString(data.display_name, 'guide_taxon.display_name'),
+    displayName:
+      optionalString(data.display_name)?.trim() || `Unnamed cat #${id}`,
     shortDescription: requiredString(data.name, 'guide_taxon.name'),
     metadata: tags,
     photos,
@@ -622,42 +626,50 @@ function parseGuideTags(values: readonly unknown[]): CatalogMetadataImport {
 }
 
 function mapObservationPhoto(value: unknown): ExternalMediaImport | undefined {
-  const data = record(value, 'observation photo');
-  const licenseCode = normalizedLicense(data.license_code);
-  if (!isReusableLicense(licenseCode)) return undefined;
-  const id = positiveInteger(data.id, 'observation photo.id');
-  const squareUrl = requiredUrl(data.url, 'observation photo.url');
-  return {
-    kind: 'external',
-    id: `inat-photo-${id}`,
-    url: resizePhotoUrl(squareUrl, 'large'),
-    thumbnailUrl: resizePhotoUrl(squareUrl, 'small'),
-    role: 'gallery',
-    sourceUrl: `https://www.inaturalist.org/photos/${id}`,
-    attribution: requiredString(data.attribution, 'observation photo.attribution'),
-    licenseCode,
-    licenseUrl: licenseUrl(licenseCode),
-  };
+  try {
+    const data = record(value, 'observation photo');
+    const licenseCode = normalizedLicense(data.license_code);
+    if (!isReusableLicense(licenseCode)) return undefined;
+    const id = positiveInteger(data.id, 'observation photo.id');
+    const squareUrl = requiredUrl(data.url, 'observation photo.url');
+    return {
+      kind: 'external',
+      id: `inat-photo-${id}`,
+      url: resizePhotoUrl(squareUrl, 'large'),
+      thumbnailUrl: resizePhotoUrl(squareUrl, 'small'),
+      role: 'gallery',
+      sourceUrl: `https://www.inaturalist.org/photos/${id}`,
+      attribution: requiredString(data.attribution, 'observation photo.attribution'),
+      licenseCode,
+      licenseUrl: licenseUrl(licenseCode),
+    };
+  } catch {
+    return undefined;
+  }
 }
 
 function mapGuidePhoto(value: unknown): ExternalMediaImport | undefined {
-  const data = record(value, 'guide photo');
-  const photo = record(data.photo, 'guide photo.photo');
-  const licenseCode = normalizedLicense(photo.license_code);
-  if (!isReusableLicense(licenseCode)) return undefined;
-  const id = positiveInteger(photo.id ?? data.photo_id, 'guide photo.photo.id');
-  return {
-    kind: 'external',
-    id: `inat-photo-${id}`,
-    url: requiredUrl(data.large_url, 'guide photo.large_url'),
-    thumbnailUrl: requiredUrl(data.small_url, 'guide photo.small_url'),
-    role: 'gallery',
-    sourceUrl: `https://www.inaturalist.org/photos/${id}`,
-    attribution: requiredString(photo.attribution, 'guide photo.photo.attribution'),
-    licenseCode,
-    licenseUrl:
-      optionalUrl(photo.license_url) ?? licenseUrl(licenseCode),
-  };
+  try {
+    const data = record(value, 'guide photo');
+    const photo = record(data.photo, 'guide photo.photo');
+    const licenseCode = normalizedLicense(photo.license_code);
+    if (!isReusableLicense(licenseCode)) return undefined;
+    const id = positiveInteger(photo.id ?? data.photo_id, 'guide photo.photo.id');
+    return {
+      kind: 'external',
+      id: `inat-photo-${id}`,
+      url: requiredUrl(data.large_url, 'guide photo.large_url'),
+      thumbnailUrl: requiredUrl(data.small_url, 'guide photo.small_url'),
+      role: 'gallery',
+      sourceUrl: `https://www.inaturalist.org/photos/${id}`,
+      attribution: requiredString(photo.attribution, 'guide photo.photo.attribution'),
+      licenseCode,
+      licenseUrl:
+        optionalUrl(photo.license_url) ?? licenseUrl(licenseCode),
+    };
+  } catch {
+    return undefined;
+  }
 }
 
 function guidePhotoPosition(value: unknown): number {
@@ -698,6 +710,17 @@ export function normalizeCatName(value: string): string {
     .replace(/[^a-z0-9]+/g, ' ')
     .trim()
     .replace(/\s+/g, ' ');
+}
+
+const GENERIC_CAT_FIELDS = new Set([
+  'ginger',
+  'multiple individuals',
+  'unknown',
+  'unidentified',
+]);
+
+function isGenericCatField(value: string): boolean {
+  return GENERIC_CAT_FIELDS.has(value);
 }
 
 function normalizedLicense(value: unknown): string | undefined {

@@ -20,7 +20,7 @@ migration.
 
 The application will expose an immutable `AppModules` composition root. It contains
 explicit modules for sightings, catalog, stations, announcements, contacts, users,
-whitelist, session, and image selection.
+whitelist, session, image selection, and read-only iNaturalist integration workflows.
 
 Each module presents typed query and mutation methods and returns `Outcome<T>` values.
 Module interfaces never accept React setters, routers, alerts, or Firebase SDK types.

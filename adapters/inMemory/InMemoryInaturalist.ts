@@ -3,6 +3,7 @@ import {
   InaturalistEffects,
   InaturalistReader,
   InaturalistRecordKind,
+  InaturalistSyncRunResult,
   StoredDocument,
 } from '../../core/ports';
 
@@ -82,7 +83,10 @@ export class InMemoryInaturalistReader implements InaturalistReader {
 export class InMemoryInaturalistEffects implements InaturalistEffects {
   readonly #mutableOperations: string[] = [];
   readonly #failures = new Map<EffectOperation, Error>();
-  syncResult: unknown = { status: 'success', runId: 'run-1' };
+  syncResult: InaturalistSyncRunResult = {
+    status: 'success',
+    runId: 'run-1',
+  };
 
   get operations(): readonly string[] {
     return [...this.#mutableOperations];
@@ -92,7 +96,7 @@ export class InMemoryInaturalistEffects implements InaturalistEffects {
     this.#failures.set(operation, error);
   }
 
-  async runSync(): Promise<unknown> {
+  async runSync(): Promise<InaturalistSyncRunResult> {
     this.maybeFail('runSync');
     this.#mutableOperations.push('sync');
     return this.syncResult;
