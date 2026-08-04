@@ -22,6 +22,15 @@ ready.
 
 ## Native and manual — required before ready for review
 
+- [ ] Verify automatic light and dark appearance on iOS, Android, and web; confirm no
+      illegible status, map overlay, dialog, keyboard, or native input state.
+- [ ] Verify 200-percent text reflow on a narrow phone and a tablet/web-width viewport.
+- [ ] Enable Reduce Motion and confirm navigation and press feedback remain usable
+      without nonessential transforms.
+- [ ] With VoiceOver or TalkBack, verify initial screen focus, labeled tabs, icon-only
+      actions, form errors, busy states, galleries, and confirmations.
+- [ ] With a keyboard on web, verify visible focus, logical focus order, and activation
+      for tabs, controls, cards, forms, and administration actions.
 - [ ] On one physical device, verify email login and logout.
 - [ ] On one physical device, verify SAML success, cancellation, offline failure, and
       retry.
@@ -31,7 +40,7 @@ ready.
 - [ ] On one physical device, verify notification permission, push-token registration,
       and announcement delivery.
 - [ ] On the other platform's simulator/emulator, verify core navigation and map
-      rendering.
+      rendering in both appearances and at its largest accessibility text setting.
 - [ ] Confirm the PR remains free of production Firebase deployments and mobile build
       publication.
 

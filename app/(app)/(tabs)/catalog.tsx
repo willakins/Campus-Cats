@@ -4,6 +4,7 @@ import { FlatList, useWindowDimensions, View } from 'react-native';
 import { useFocusEffect, useRouter } from 'expo-router';
 
 import { AppHeader, Button, EmptyState, ErrorState, Screen, Skeleton } from '@/components/design';
+import { catalogColumnCount } from '@/components/collections/catalogLayout';
 import { CatalogItem } from '@/components/items/CatalogItem';
 import { appModules } from '@/composition/appModules';
 import { canManageFeature, CatalogEntry } from '@/core/domain';
@@ -16,7 +17,7 @@ const Catalog = () => {
   const theme = useAppTheme();
   const { width, fontScale } = useWindowDimensions();
   const isAdmin = canManageFeature(user.role);
-  const columns = fontScale >= 1.5 || width < 360 ? 1 : width >= 768 ? 3 : 2;
+  const columns = catalogColumnCount(width, fontScale);
   const [entries, setEntries] = useState<readonly CatalogEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string>();

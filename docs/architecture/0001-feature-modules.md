@@ -80,3 +80,17 @@ Records cross routes only as IDs. Screens reload records through their feature m
 which prevents stale module-global selections. Firestore codecs preserve the existing
 collections and field names, and media adapters preserve the existing Storage folder
 layout; this refactor therefore requires no production-data migration.
+
+## Presentation boundary
+
+The presentation layer uses a typed semantic theme and shared accessible primitives.
+Routes compose those primitives and own loading, responsive layout, error feedback,
+confirmation, and navigation. Form controls receive ordinary values and callbacks;
+they do not receive module instances, Firebase types, React setters from application
+modules, or routers. Feature modules remain unaware of light/dark appearance, layout,
+and native interaction details.
+
+The responsive shell follows safe-area and system appearance settings. Collections use
+virtualized lists, record routes still pass IDs, and all feature actions continue to
+call the same module interfaces. The visual modernization therefore changes neither
+the dependency direction nor persisted data contracts described above.

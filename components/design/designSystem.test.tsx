@@ -192,6 +192,21 @@ describe('Campus Cats design primitives', () => {
     expect(screen.getByRole('button', { name: 'Save changes' })).toBeOnTheScreen();
   });
 
+  it('keeps text scalable and interactive targets at least 44 points', () => {
+    renderThemed(
+      <>
+        <AppText>Scalable field note</AppText>
+        <Button label="Accessible target" />
+      </>,
+    );
+
+    expect(screen.getByText('Scalable field note')).toHaveProp('maxFontSizeMultiplier', 2);
+    expect(screen.getByRole('button', { name: 'Accessible target' })).toHaveStyle({
+      minHeight: 44,
+      minWidth: 44,
+    });
+  });
+
   it('renders static and interactive cards and list rows', async () => {
     const openCard = jest.fn();
     const openRow = jest.fn();

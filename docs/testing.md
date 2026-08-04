@@ -16,7 +16,8 @@ npm run emulator:exec
 ```
 
 `npm run quality` performs a non-mutating TypeScript check, ESLint check, and Markdown
-format check. `npm run test:ci` runs Jest Expo without watch mode.
+format check, plus the presentation-layer raw-color guard. `npm run test:ci` runs Jest
+Expo without watch mode.
 
 ## Test layers
 
@@ -28,6 +29,10 @@ format check. `npm run test:ci` runs Jest Expo without watch mode.
 - Media tests name reconciliation, promotion, cleanup, and compensation outcomes.
 - Route tests use accessible queries and realistic presses to cover loading, empty,
   error, role, confirmation, and successful-mutation behavior.
+- Theme and primitive tests cover light/dark resolution, WCAG AA pairs, Reduce Motion,
+  44-point targets, live feedback, form labels, segmented state, and named media
+  actions. Responsive layout tests cover narrow phones, 200-percent text, normal
+  phones, and tablet/web widths.
 - Function tests call dependency-injected handlers to cover authorization, validation,
   notification batching, provider failures, and whitelist compensation.
 - Emulator contracts run against Firestore and Storage adapters and verify security

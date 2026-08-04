@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
+  Animated,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -12,9 +13,10 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Ionicons } from '@expo/vector-icons';
 
-import { useAppTheme } from '../../theme';
+import { useAppTheme, useReducedMotion } from '../../theme';
 import { IconButton } from './Actions';
 import { AppText } from './Typography';
+import { focusRingStyle } from './focus';
 
 interface ScreenProps {
   readonly children: React.ReactNode;
@@ -36,6 +38,23 @@ export const Screen = ({
   testID,
 }: ScreenProps) => {
   const theme = useAppTheme();
+  const reducedMotion = useReducedMotion();
+  const animationsEnabled = process.env.NODE_ENV !== 'test' && !reducedMotion;
+  const opacity = useRef(new Animated.Value(animationsEnabled ? 0 : 1)).current;
+
+  useEffect(() => {
+    if (!animationsEnabled) {
+      opacity.setValue(1);
+      return undefined;
+    }
+    const animation = Animated.timing(opacity, {
+      toValue: 1,
+      duration: theme.motion.content,
+      useNativeDriver: true,
+    });
+    animation.start();
+    return () => animation.stop();
+  }, [animationsEnabled, opacity, theme.motion.content]);
   const content = [
     {
       flexGrow: scroll ? 1 : undefined,
@@ -65,29 +84,31 @@ export const Screen = ({
       edges={['top', 'left', 'right']}
       style={{ flex: 1, backgroundColor: theme.colors.background }}
     >
-      <KeyboardAvoidingView
-        enabled={keyboardAware}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        style={{ flex: 1 }}
-      >
-        {body}
-        {footer ? (
-          <View
-            style={{
-              paddingHorizontal: theme.layout.screenGutter,
-              paddingTop: theme.spacing.sm,
-              paddingBottom: theme.spacing.md,
-              backgroundColor: theme.colors.surface,
-              borderTopWidth: 1,
-              borderTopColor: theme.colors.border,
-            }}
-          >
-            <View style={{ width: '100%', maxWidth: theme.layout.maxContentWidth, alignSelf: 'center' }}>
-              {footer}
+      <Animated.View style={{ flex: 1, opacity }}>
+        <KeyboardAvoidingView
+          enabled={keyboardAware}
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+          style={{ flex: 1 }}
+        >
+          {body}
+          {footer ? (
+            <View
+              style={{
+                paddingHorizontal: theme.layout.screenGutter,
+                paddingTop: theme.spacing.sm,
+                paddingBottom: theme.spacing.md,
+                backgroundColor: theme.colors.surface,
+                borderTopWidth: 1,
+                borderTopColor: theme.colors.border,
+              }}
+            >
+              <View style={{ width: '100%', maxWidth: theme.layout.maxContentWidth, alignSelf: 'center' }}>
+                {footer}
+              </View>
             </View>
-          </View>
-        ) : null}
-      </KeyboardAvoidingView>
+          ) : null}
+        </KeyboardAvoidingView>
+      </Animated.View>
     </SafeAreaView>
   );
 };
@@ -140,6 +161,7 @@ interface CardProps {
 
 export const Card = ({ children, onPress, accessibilityLabel, accent, style }: CardProps) => {
   const theme = useAppTheme();
+  const [focused, setFocused] = useState(false);
   const cardStyle: StyleProp<ViewStyle> = [
     theme.elevation.card,
     {
@@ -157,7 +179,13 @@ export const Card = ({ children, onPress, accessibilityLabel, accent, style }: C
       accessibilityRole="button"
       accessibilityLabel={accessibilityLabel}
       onPress={onPress}
-      style={({ pressed }) => [cardStyle, { opacity: pressed ? 0.86 : 1 }]}
+      onFocus={() => setFocused(true)}
+      onBlur={() => setFocused(false)}
+      style={({ pressed }) => [
+        cardStyle,
+        { opacity: pressed ? 0.86 : 1 },
+        focusRingStyle(focused, theme.colors.info),
+      ]}
     >
       {children}
     </Pressable>
@@ -176,20 +204,26 @@ interface ListRowProps {
 
 export const ListRow = ({ title, subtitle, icon, onPress, trailing }: ListRowProps) => {
   const theme = useAppTheme();
+  const [focused, setFocused] = useState(false);
   return (
     <Pressable
       accessibilityRole={onPress ? 'button' : undefined}
       accessibilityLabel={onPress ? title : undefined}
       onPress={onPress}
       disabled={!onPress}
-      style={({ pressed }) => ({
-        minHeight: 64,
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: theme.spacing.sm,
-        paddingVertical: theme.spacing.sm,
-        opacity: pressed ? 0.8 : 1,
-      })}
+      onFocus={() => setFocused(true)}
+      onBlur={() => setFocused(false)}
+      style={({ pressed }) => [
+        {
+          minHeight: 64,
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: theme.spacing.sm,
+          paddingVertical: theme.spacing.sm,
+          opacity: pressed ? 0.8 : 1,
+        },
+        focusRingStyle(focused, theme.colors.info),
+      ]}
     >
       {icon ? <Ionicons name={icon} size={24} color={theme.colors.primary} /> : null}
       <View style={{ flex: 1 }}>

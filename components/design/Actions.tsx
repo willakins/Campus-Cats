@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   ActivityIndicator,
   Pressable,
@@ -10,7 +10,8 @@ import {
 
 import { Ionicons } from '@expo/vector-icons';
 
-import { useAppTheme } from '../../theme';
+import { useAppTheme, useReducedMotion } from '../../theme';
+import { focusRingStyle } from './focus';
 import { AppText } from './Typography';
 
 type IconName = React.ComponentProps<typeof Ionicons>['name'];
@@ -41,9 +42,13 @@ export const Button = ({
   disabled,
   style,
   textStyle,
+  onFocus,
+  onBlur,
   ...props
 }: ButtonProps) => {
   const theme = useAppTheme();
+  const reducedMotion = useReducedMotion();
+  const [focused, setFocused] = useState(false);
   const isDisabled = disabled || loading;
   const palette = {
     primary: {
@@ -73,6 +78,14 @@ export const Button = ({
       accessibilityLabel={label}
       accessibilityState={{ disabled: isDisabled, busy: loading }}
       disabled={isDisabled}
+      onFocus={(event) => {
+        setFocused(true);
+        onFocus?.(event);
+      }}
+      onBlur={(event) => {
+        setFocused(false);
+        onBlur?.(event);
+      }}
       {...props}
       style={({ pressed }) => [
         {
@@ -90,8 +103,11 @@ export const Button = ({
           flexDirection: 'row',
           gap: theme.spacing.xs,
           opacity: isDisabled ? 0.55 : pressed ? 0.82 : 1,
-          transform: [{ scale: pressed && !isDisabled ? 0.98 : 1 }],
+          transform: reducedMotion
+            ? undefined
+            : [{ scale: pressed && !isDisabled ? 0.98 : 1 }],
         },
+        focusRingStyle(focused, theme.colors.info),
         style,
       ]}
     >
@@ -124,9 +140,12 @@ export const IconButton = ({
   variant = 'surface',
   style,
   disabled,
+  onFocus,
+  onBlur,
   ...props
 }: IconButtonProps) => {
   const theme = useAppTheme();
+  const [focused, setFocused] = useState(false);
   const palette = {
     surface: [theme.colors.surface, theme.colors.text, theme.colors.border],
     primary: [theme.colors.primary, theme.colors.onPrimary, theme.colors.primary],
@@ -138,6 +157,14 @@ export const IconButton = ({
       accessibilityLabel={accessibilityLabel}
       accessibilityState={{ disabled: Boolean(disabled) }}
       disabled={disabled}
+      onFocus={(event) => {
+        setFocused(true);
+        onFocus?.(event);
+      }}
+      onBlur={(event) => {
+        setFocused(false);
+        onBlur?.(event);
+      }}
       {...props}
       style={({ pressed }) => [
         {
@@ -151,6 +178,7 @@ export const IconButton = ({
           borderColor: palette[2],
           opacity: disabled ? 0.55 : pressed ? 0.8 : 1,
         },
+        focusRingStyle(focused, theme.colors.info),
         style,
       ]}
     >
