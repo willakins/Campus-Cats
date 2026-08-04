@@ -7,6 +7,20 @@ export interface StoredMediaAsset {
   readonly role: MediaRole;
 }
 
+export interface ExternalMediaAsset {
+  readonly kind: 'external';
+  readonly id: MediaAssetId;
+  readonly url: string;
+  readonly thumbnailUrl: string;
+  readonly role: MediaRole;
+  readonly sourceUrl: string;
+  readonly attribution: string;
+  readonly licenseCode: string;
+  readonly licenseUrl: string;
+}
+
+export type DisplayMediaAsset = StoredMediaAsset | ExternalMediaAsset;
+
 export interface MediaUpload {
   readonly id: MediaAssetId;
   readonly localUri: string;
