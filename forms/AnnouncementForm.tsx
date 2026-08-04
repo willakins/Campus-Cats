@@ -1,8 +1,7 @@
 import React from 'react';
-import { Image, Text, TextInput, View } from 'react-native';
 
-import { Button, CameraButton } from '@/components';
-import { buttonStyles, containerStyles, textStyles } from '@/styles';
+import { FormSection } from '@/components/design';
+import { FormTextInput, PhotoField } from '@/components/forms';
 
 export interface AnnouncementFormData {
   readonly title: string;
@@ -26,66 +25,49 @@ const AnnouncementForm: React.FC<AnnouncementFormProps> = ({
   const handleChange = (field: keyof AnnouncementFormData, value: string) => {
     setFormData((current) => ({ ...current, [field]: value }));
   };
+  const promote = (uri: string) =>
+    setPhotos((current) => [uri, ...current.filter((photo) => photo !== uri)]);
 
   return (
-    <View style={[containerStyles.card, { paddingBottom: '10%' }]}>
-      <Text style={textStyles.label}>Title</Text>
-      <View style={containerStyles.inputContainer}>
-        <TextInput
+    <>
+      <FormSection title="Basics">
+        <FormTextInput
+          label="Title"
+          required
           value={formData.title}
-          placeholder="title"
-          placeholderTextColor="#888"
+          placeholder="Announcement title"
           onChangeText={(text) => handleChange('title', text)}
-          style={textStyles.input}
         />
-      </View>
-      <Text style={textStyles.label}>Description</Text>
-      <View style={[containerStyles.descInputContainer, { height: '30%' }]}>
-        <TextInput
+        <FormTextInput
+          label="Description"
+          required
           value={formData.info}
-          placeholder="Type a description about the announcement."
-          placeholderTextColor="#888"
-          onChangeText={(text) => handleChange('info', text)}
-          style={textStyles.input}
+          placeholder="Share the announcement details."
           multiline
+          onChangeText={(text) => handleChange('info', text)}
         />
-      </View>
-      <Text style={textStyles.label}>Alias (optional)</Text>
-      <View style={containerStyles.inputContainer}>
-        <TextInput
+      </FormSection>
+      <FormSection title="Photos">
+        <PhotoField
+          photos={photos}
+          coverUri={photos[0]}
+          onAddPhoto={(uri) => setPhotos((current) => [...current, uri])}
+          onPromotePhoto={promote}
+          onRemovePhoto={(uri) =>
+            setPhotos((current) => current.filter((photo) => photo !== uri))
+          }
+        />
+      </FormSection>
+      <FormSection title="Credits">
+        <FormTextInput
+          label="Author alias"
+          helper="Optional—when blank, the contributor ID remains visible."
           value={formData.authorAlias}
-          placeholder="Choose an author alias to replace id"
-          placeholderTextColor="#888"
+          placeholder="Campus Cats Team"
           onChangeText={(text) => handleChange('authorAlias', text)}
-          style={textStyles.descInput}
         />
-      </View>
-      <Text style={[textStyles.sectionTitle, { textAlign: 'center' }]}>
-        Add Photos (optional)
-      </Text>
-      <CameraButton
-        onPhotoSelected={(newPhotoUri) =>
-          setPhotos((current) => [...current, newPhotoUri])
-        }
-      />
-      <View style={containerStyles.extraPicsContainer}>
-        {photos.map((photo) => (
-          <View key={photo} style={containerStyles.imageWrapper}>
-            <Image source={{ uri: photo }} style={containerStyles.extraPic} />
-            <Button
-              style={buttonStyles.imageDeleteButton}
-              onPress={() =>
-                setPhotos((current) =>
-                  current.filter((candidate) => candidate !== photo),
-                )
-              }
-            >
-              <Text style={textStyles.smallButtonText}>Delete</Text>
-            </Button>
-          </View>
-        ))}
-      </View>
-    </View>
+      </FormSection>
+    </>
   );
 };
 

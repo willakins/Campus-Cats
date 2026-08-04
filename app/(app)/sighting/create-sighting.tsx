@@ -1,29 +1,29 @@
 import React, { useState } from 'react';
-import { Alert, FlatList, SafeAreaView, Text } from 'react-native';
 
-import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 
-import { Button, SnackbarMessage } from '@/components';
+import { FormScreen } from '@/components/forms';
 import { appModules } from '@/composition/appModules';
 import { parseUser } from '@/core/domain';
-import { SightingForm } from '@/forms';
+import { SightingForm, SightingFormData } from '@/forms/SightingForm';
 import { useAuth } from '@/providers';
-import { buttonStyles, containerStyles, textStyles } from '@/styles';
+
+const timeItems = [
+  { label: 'Morning', value: 'Morning' },
+  { label: 'Afternoon', value: 'Afternoon' },
+  { label: 'Night', value: 'Night' },
+];
 
 const SightingCreateScreen = () => {
   const router = useRouter();
   const { user } = useAuth();
-  const [visible, setVisible] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string>();
   const [value, setValue] = useState('');
   const [open, setOpen] = useState(false);
-  const [items, setItems] = useState([
-    { label: 'Morning', value: 'Morning' },
-    { label: 'Afternoon', value: 'Afternoon' },
-    { label: 'Night', value: 'Night' },
-  ]);
+  const [items, setItems] = useState(timeItems);
   const [photos, setPhotos] = useState<string[]>([]);
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<SightingFormData>({
     name: '',
     info: '',
     fed: false,
@@ -33,15 +33,17 @@ const SightingCreateScreen = () => {
   });
 
   const createSighting = async () => {
-    setVisible(true);
+    if (busy) return;
+    setBusy(true);
+    setError(undefined);
     const result = await appModules.sightings.create(parseUser(user), {
       ...formData,
       timeOfDay: value,
       photos,
     });
-    setVisible(false);
+    setBusy(false);
     if (!result.ok) {
-      Alert.alert('Could not create report', result.error.message);
+      setError(result.error.message);
       return;
     }
     router.replace({
@@ -51,43 +53,30 @@ const SightingCreateScreen = () => {
   };
 
   return (
-    <SafeAreaView style={containerStyles.wrapper}>
-      <Button
-        style={buttonStyles.smallButtonTopLeft}
-        onPress={() => router.push('/(app)/(tabs)')}
-      >
-        <Ionicons name="arrow-back-outline" size={25} color="#fff" />
-      </Button>
-      <SnackbarMessage
-        text="Creating Report..."
-        visible={visible}
-        setVisible={setVisible}
+    <FormScreen
+      title="Report a sighting"
+      eyebrow="New field report"
+      saveLabel="Create Report"
+      savingLabel="Creating report…"
+      busy={busy}
+      error={error}
+      onBack={() => router.push('/(app)/(tabs)')}
+      onSave={() => void createSighting()}
+    >
+      <SightingForm
+        formData={formData}
+        setFormData={setFormData}
+        value={value}
+        setValue={setValue}
+        open={open}
+        setOpen={setOpen}
+        items={items}
+        setItems={setItems}
+        photos={photos}
+        setPhotos={setPhotos}
+        isCreate
       />
-      <Text style={textStyles.pageTitle}>Create A Report</Text>
-      <FlatList
-        data={[1]}
-        keyExtractor={() => 'sighting-form'}
-        contentContainerStyle={containerStyles.scrollView}
-        renderItem={() => (
-          <SightingForm
-            formData={formData}
-            setFormData={setFormData}
-            value={value}
-            setValue={setValue}
-            open={open}
-            setOpen={setOpen}
-            items={items}
-            setItems={setItems}
-            photos={photos}
-            setPhotos={setPhotos}
-            isCreate
-          />
-        )}
-      />
-      <Button style={buttonStyles.bigButton} onPress={() => void createSighting()}>
-        <Text style={textStyles.bigButtonText}>Create Report</Text>
-      </Button>
-    </SafeAreaView>
+    </FormScreen>
   );
 };
 

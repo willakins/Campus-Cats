@@ -13,6 +13,7 @@ module.exports = {
     'theme/**/*.{ts,tsx}',
     'components/design/**/*.{ts,tsx}',
     'components/details/**/*.{ts,tsx}',
+    'components/forms/**/*.{ts,tsx}',
     'components/auth/**/*.{ts,tsx}',
     'components/ui/LoadingIndicator.tsx',
     '!**/*.test.{ts,tsx}',
