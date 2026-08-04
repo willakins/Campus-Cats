@@ -1,5 +1,5 @@
 import React from 'react';
-import { Text } from 'react-native';
+import { AccessibilityInfo, Text } from 'react-native';
 
 import { render, screen } from '@testing-library/react-native';
 
@@ -9,6 +9,7 @@ import {
   lightTheme,
   resolveAppTheme,
   useAppTheme,
+  useReducedMotion,
 } from './index';
 
 const relativeLuminance = (hex: string): number => {
@@ -32,6 +33,11 @@ const contrastRatio = (foreground: string, background: string): number => {
 const ThemeProbe = () => {
   const theme = useAppTheme();
   return <Text>{theme.dark ? 'dark theme' : 'light theme'}</Text>;
+};
+
+const MotionProbe = () => {
+  const reducedMotion = useReducedMotion();
+  return <Text>{reducedMotion ? 'reduced motion' : 'standard motion'}</Text>;
 };
 
 describe('Campus Cats themes', () => {
@@ -81,5 +87,16 @@ describe('Campus Cats themes', () => {
       </AppThemeProvider>,
     );
     expect(screen.getByText('dark theme')).toBeOnTheScreen();
+  });
+
+  it('follows the platform Reduce Motion preference', async () => {
+    jest.spyOn(AccessibilityInfo, 'isReduceMotionEnabled').mockResolvedValue(true);
+    render(
+      <AppThemeProvider colorScheme="light">
+        <MotionProbe />
+      </AppThemeProvider>,
+    );
+
+    expect(await screen.findByText('reduced motion')).toBeOnTheScreen();
   });
 });

@@ -16,6 +16,7 @@ module.exports = {
     'components/forms/**/*.{ts,tsx}',
     'components/auth/**/*.{ts,tsx}',
     'components/administration/**/*.{ts,tsx}',
+    'components/collections/**/*.{ts,tsx}',
     'components/items/**/*.{ts,tsx}',
     'components/ui/LoadingIndicator.tsx',
     '!**/*.test.{ts,tsx}',

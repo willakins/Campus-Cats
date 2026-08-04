@@ -3,7 +3,7 @@ import React, { useEffect } from 'react';
 import { Redirect } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 
-import { LoadingIndicator } from '@/components';
+import { LoadingIndicator } from '@/components/ui/LoadingIndicator';
 import { useAuth } from '@/providers';
 
 // Instruct SplashScreen not to hide yet, we want to do this manually
@@ -19,7 +19,7 @@ SplashScreen.setOptions({
 
 const App = () => {
   const { currentUser, loading } = useAuth();
-  
+
   // Use useEffect to handle splash screen hiding
   useEffect(() => {
     if (!loading) {

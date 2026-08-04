@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Pressable, View, ViewProps } from 'react-native';
 
 import { Ionicons } from '@expo/vector-icons';
@@ -6,6 +6,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { AppColors, useAppTheme } from '../../theme';
 import { Button } from './Actions';
 import { AppText } from './Typography';
+import { focusRingStyle } from './focus';
 
 type Tone = 'neutral' | 'primary' | 'success' | 'warning' | 'danger' | 'info';
 
@@ -29,6 +30,7 @@ interface ChipProps {
 
 export const Chip = ({ label, selected = false, onPress }: ChipProps) => {
   const theme = useAppTheme();
+  const [focused, setFocused] = useState(false);
   const content = (
     <AppText
       variant="label"
@@ -53,7 +55,13 @@ export const Chip = ({ label, selected = false, onPress }: ChipProps) => {
       accessibilityLabel={label}
       accessibilityState={{ selected }}
       onPress={onPress}
-      style={({ pressed }) => [style, { opacity: pressed ? 0.8 : 1 }]}
+      onFocus={() => setFocused(true)}
+      onBlur={() => setFocused(false)}
+      style={({ pressed }) => [
+        style,
+        { opacity: pressed ? 0.8 : 1 },
+        focusRingStyle(focused, theme.colors.info),
+      ]}
     >
       {content}
     </Pressable>

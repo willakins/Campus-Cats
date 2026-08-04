@@ -1,7 +1,7 @@
 import { Redirect, Stack } from 'expo-router';
 
 import { useAuth } from '@/providers';
-import { LoadingIndicator } from '@/components';
+import { LoadingIndicator } from '@/components/ui/LoadingIndicator';
 import { useAppTheme } from '@/theme';
 
 const AuthLayout = () => {

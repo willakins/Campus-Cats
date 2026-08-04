@@ -97,6 +97,7 @@ The interface can be explored locally, but authentication, maps, notifications, 
 - [Firebase operations](FIREBASE.md)
 - [Architecture](docs/architecture/0001-feature-modules.md)
 - [Authorization matrix](docs/architecture/behavior-matrix.md)
+- [Campus Field Guide design system](docs/design-system.md)
 - [Testing guide](docs/testing.md)
 - [Contributing](CONTRIBUTING.md)
 

@@ -1,9 +1,10 @@
-import React, { createContext, useContext, useMemo } from 'react';
-import { ColorSchemeName, useColorScheme } from 'react-native';
+import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
+import { AccessibilityInfo, ColorSchemeName, useColorScheme } from 'react-native';
 
 import { AppTheme, resolveAppTheme } from './tokens';
 
 const ThemeContext = createContext<AppTheme | undefined>(undefined);
+const ReducedMotionContext = createContext(false);
 
 interface AppThemeProviderProps {
   readonly children: React.ReactNode;
@@ -16,7 +17,32 @@ export const AppThemeProvider = ({
 }: AppThemeProviderProps) => {
   const systemScheme = useColorScheme();
   const theme = resolveAppTheme(colorScheme ?? systemScheme);
-  return <ThemeContext.Provider value={theme}>{children}</ThemeContext.Provider>;
+  const [reducedMotion, setReducedMotion] = useState(false);
+
+  useEffect(() => {
+    let mounted = true;
+    void AccessibilityInfo.isReduceMotionEnabled()
+      .then((enabled) => {
+        if (mounted) setReducedMotion(enabled);
+      })
+      .catch(() => undefined);
+    const subscription = AccessibilityInfo.addEventListener(
+      'reduceMotionChanged',
+      setReducedMotion,
+    );
+    return () => {
+      mounted = false;
+      subscription.remove();
+    };
+  }, []);
+
+  return (
+    <ThemeContext.Provider value={theme}>
+      <ReducedMotionContext.Provider value={reducedMotion}>
+        {children}
+      </ReducedMotionContext.Provider>
+    </ThemeContext.Provider>
+  );
 };
 
 export const useAppTheme = (): AppTheme => {
@@ -31,3 +57,5 @@ export const useThemedStyles = <Styles,>(
   const theme = useAppTheme();
   return useMemo(() => factory(theme), [factory, theme]);
 };
+
+export const useReducedMotion = (): boolean => useContext(ReducedMotionContext);
