@@ -8,7 +8,16 @@ import {
   initializeTestEnvironment,
 } from '@firebase/rules-unit-testing';
 import { deleteObject, getMetadata, ref, uploadBytes } from 'firebase/storage';
-import { doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
+import {
+  collection,
+  doc,
+  getDoc,
+  getDocs,
+  query,
+  setDoc,
+  updateDoc,
+  where,
+} from 'firebase/firestore';
 
 import {
   FIREBASE_TEST_PROJECT_ID,
@@ -58,6 +67,30 @@ describe('Firebase authorization matrix', () => {
         }),
         setDoc(doc(firestore, 'announcements', 'announcement-1'), {
           title: 'Update',
+        }),
+        setDoc(doc(firestore, 'inaturalist-observations', '1001'), {
+          displayName: 'Goldie',
+          visible: true,
+          sourceActive: true,
+        }),
+        setDoc(doc(firestore, 'inaturalist-observations', '1002'), {
+          displayName: 'Hidden cat',
+          visible: false,
+          sourceActive: true,
+        }),
+        setDoc(doc(firestore, 'inaturalist-guide-profiles', '2001'), {
+          displayName: 'Goldie',
+          visible: true,
+          sourceActive: true,
+        }),
+        setDoc(doc(firestore, 'inaturalist-guide-profiles', '2002'), {
+          displayName: 'Retired profile',
+          visible: false,
+          sourceActive: false,
+        }),
+        setDoc(doc(firestore, 'integration-state', 'inaturalist'), {
+          running: false,
+          lastStatus: 'success',
         }),
       ]);
     });
@@ -143,6 +176,53 @@ describe('Firebase authorization matrix', () => {
       setDoc(doc(admin, 'contact-info', 'contact-1'), {
         name: 'Officer',
         email: 'officer@gatech.edu',
+      }),
+    );
+  });
+
+  it('exposes only visible imports to members and keeps all imported writes callable-only', async () => {
+    const member = environment.authenticatedContext('member-1', {
+      email: 'member@gatech.edu',
+    }).firestore();
+    const admin = environment.authenticatedContext('admin-1', {
+      email: 'admin@gatech.edu',
+    }).firestore();
+
+    await assertSucceeds(
+      getDoc(doc(member, 'inaturalist-observations', '1001')),
+    );
+    await assertFails(
+      getDoc(doc(member, 'inaturalist-observations', '1002')),
+    );
+    await assertSucceeds(
+      getDocs(
+        query(
+          collection(member, 'inaturalist-guide-profiles'),
+          where('visible', '==', true),
+        ),
+      ),
+    );
+    await assertFails(
+      getDocs(collection(member, 'inaturalist-guide-profiles')),
+    );
+    await assertSucceeds(
+      getDoc(doc(admin, 'inaturalist-guide-profiles', '2002')),
+    );
+    await assertSucceeds(
+      getDoc(doc(admin, 'integration-state', 'inaturalist')),
+    );
+    await assertFails(
+      getDoc(doc(member, 'integration-state', 'inaturalist')),
+    );
+    await assertFails(
+      updateDoc(doc(admin, 'inaturalist-observations', '1001'), {
+        visible: false,
+      }),
+    );
+    await assertFails(
+      setDoc(doc(admin, 'inaturalist-guide-profiles', 'new'), {
+        displayName: 'Client-created profile',
+        visible: true,
       }),
     );
   });
