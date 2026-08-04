@@ -1,88 +1,129 @@
 import React, { useCallback, useState } from 'react';
-import { Alert, SafeAreaView, ScrollView, Text } from 'react-native';
+import { View } from 'react-native';
 
-import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 
-import { Button, LoadingIndicator, SnackbarMessage, StationEntry } from '@/components';
+import {
+  AccessDeniedState,
+  AppHeader,
+  Button,
+  ErrorState,
+  FeedbackBanner,
+  Screen,
+} from '@/components/design';
+import { StationEntry } from '@/components/entries/StationEntry';
+import { LoadingIndicator } from '@/components/ui/LoadingIndicator';
 import { appModules } from '@/composition/appModules';
-import { Station, parseUser } from '@/core/domain';
+import { canManageFeature, parseUser, Station } from '@/core/domain';
 import { StoredMediaAsset } from '@/core/ports';
 import { useAuth } from '@/providers';
-import { buttonStyles, containerStyles, textStyles } from '@/styles';
+import { useAppTheme } from '@/theme';
 
 const ViewStation = () => {
   const { user } = useAuth();
   const router = useRouter();
+  const theme = useAppTheme();
   const { id } = useLocalSearchParams<{ id?: string }>();
   const [station, setStation] = useState<Station>();
   const [media, setMedia] = useState<readonly StoredMediaAsset[]>([]);
-  const [visible, setVisible] = useState(false);
-  const [error, setError] = useState('');
-  const isAdmin = user.role === 1 || user.role === 2;
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string>();
+  const [feedback, setFeedback] = useState<string>();
+  const isAdmin = canManageFeature(user.role);
 
-  const load = useCallback(() => {
+  const load = useCallback(async () => {
+    if (!isAdmin) return;
+    setError(undefined);
+    setFeedback(undefined);
     if (!id) {
       setError('Missing station ID');
       return;
     }
-    void Promise.all([appModules.stations.get(id), appModules.stations.media(id)]).then(
-      ([stationResult, mediaResult]) => {
-        if (stationResult.ok) setStation(stationResult.value);
-        else setError(stationResult.error.message);
-        if (mediaResult.ok) setMedia(mediaResult.value);
-      },
-    );
-  }, [id]);
-  useFocusEffect(load);
+    const [stationResult, mediaResult] = await Promise.all([
+      appModules.stations.get(id),
+      appModules.stations.media(id),
+    ]);
+    if (stationResult.ok) setStation(stationResult.value);
+    else setError(stationResult.error.message);
+    if (mediaResult.ok) setMedia(mediaResult.value);
+    else setFeedback(mediaResult.error.message);
+  }, [id, isAdmin]);
+
+  useFocusEffect(
+    useCallback(() => {
+      void load();
+    }, [load]),
+  );
 
   const restock = async () => {
-    if (!station) return;
-    setVisible(true);
+    if (!station || busy) return;
+    setBusy(true);
+    setFeedback(undefined);
     const result = await appModules.stations.restock(parseUser(user), station.id);
-    setVisible(false);
-    if (result.ok) setStation(result.value);
-    else Alert.alert('Could not refill station', result.error.message);
+    if (result.ok) {
+      setStation(result.value);
+      setFeedback('Station marked as restocked.');
+    } else setFeedback(result.error.message);
+    setBusy(false);
   };
 
-  if (!station && !error) return <LoadingIndicator />;
+  if (!isAdmin) {
+    return (
+      <Screen>
+        <AppHeader title="Station details" eyebrow="Officer operations" onBack={() => router.back()} />
+        <AccessDeniedState message="Officer access is required to view feeding-station operations." />
+      </Screen>
+    );
+  }
+
+  if (!station && !error) return <LoadingIndicator label="Loading feeding station" />;
 
   return (
-    <SafeAreaView style={containerStyles.wrapper}>
-      <Button style={buttonStyles.smallButtonTopLeft} onPress={() => router.back()}>
-        <Ionicons name="arrow-back-outline" size={25} color="#fff" />
-      </Button>
-      <SnackbarMessage text="Refilling..." visible={visible} setVisible={setVisible} />
+    <Screen
+      scroll
+      footer={station ? (
+        <View style={{ gap: theme.spacing.xs }}>
+          <Button
+            label="Mark station restocked"
+            icon="checkmark-circle-outline"
+            fullWidth
+            loading={busy}
+            loadingLabel="Restocking…"
+            onPress={() => void restock()}
+          />
+          <Button
+            label="Edit station"
+            icon="create-outline"
+            variant="secondary"
+            fullWidth
+            disabled={busy}
+            onPress={() =>
+              router.push({
+                pathname: '/stations/edit-station',
+                params: { id: station.id },
+              })
+            }
+          />
+        </View>
+      ) : undefined}
+    >
+      <AppHeader title="Station details" eyebrow="Officer operations" onBack={() => router.back()} />
+      {feedback ? (
+        <FeedbackBanner
+          message={feedback}
+          tone={feedback === 'Station marked as restocked.' ? 'success' : 'danger'}
+        />
+      ) : null}
       {station ? (
-        <>
-          <ScrollView contentContainerStyle={containerStyles.scrollView}>
-            <StationEntry
-              station={station}
-              status={appModules.stations.stockStatus(station)}
-              media={media}
-            />
-          </ScrollView>
-          <Button style={buttonStyles.bigButton} onPress={() => void restock()}>
-            <Text style={textStyles.bigButtonText}>Refill Station</Text>
-          </Button>
-          {isAdmin ? (
-            <Button
-              style={buttonStyles.bigButton}
-              onPress={() =>
-                router.push({
-                  pathname: '/stations/edit-station',
-                  params: { id: station.id },
-                })
-              }
-            >
-              <Text style={textStyles.bigButtonText}>Edit Station</Text>
-            </Button>
-          ) : null}
-        </>
+        <StationEntry
+          station={station}
+          status={appModules.stations.stockStatus(station)}
+          media={media}
+        />
       ) : (
-        <Text style={textStyles.pageTitle}>{error}</Text>
+        <ErrorState title="Station unavailable" message={error || 'Feeding station not found'} onRetry={() => void load()} />
       )}
-    </SafeAreaView>
+    </Screen>
   );
 };
 

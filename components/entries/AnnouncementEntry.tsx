@@ -1,44 +1,41 @@
 import React from 'react';
-import { Image, Text, View } from 'react-native';
+import { View } from 'react-native';
 
 import { Announcement } from '@/core/domain';
 import { StoredMediaAsset } from '@/core/ports';
-import { containerStyles, textStyles } from '@/styles';
+import { useAppTheme } from '@/theme';
+import { AppText } from '../design';
+import { DetailHero, FieldNoteSection, MetadataRow } from '../details';
 
 interface AnnouncementEntryProps {
   readonly announcement: Announcement;
   readonly media: readonly StoredMediaAsset[];
 }
 
-export const AnnouncementEntry: React.FC<AnnouncementEntryProps> = ({
-  announcement,
-  media,
-}) => (
-  <View style={containerStyles.card}>
-    <Text style={textStyles.cardTitle}>{announcement.title}</Text>
-    <Text style={textStyles.detail}>{announcement.info}</Text>
-
-    {media.length > 0 ? <Text style={textStyles.label}>Photos</Text> : null}
-    {media.map((asset) => (
-      <Image
-        key={asset.id}
-        source={{ uri: asset.url }}
-        style={containerStyles.imageMain}
-      />
-    ))}
-
-    <View style={containerStyles.footer}>
-      <Text style={textStyles.footerText}>
-        Author: {announcement.authorAlias || announcement.createdBy.id}
-      </Text>
-      <Text style={textStyles.footerText}>
-        Posted on{' '}
-        {announcement.createdAt.toLocaleDateString('en-US', {
-          month: 'long',
-          day: 'numeric',
-          year: 'numeric',
-        })}
-      </Text>
+export const AnnouncementEntry: React.FC<AnnouncementEntryProps> = ({ announcement, media }) => {
+  const theme = useAppTheme();
+  return (
+    <View style={{ gap: theme.spacing.lg }}>
+      {media.length > 0 ? <DetailHero title={announcement.title} media={media} /> : null}
+      <View style={{ gap: theme.spacing.xs }}>
+        <AppText variant="pageTitle">{announcement.title}</AppText>
+        <AppText color="muted">
+          {announcement.createdAt.toLocaleDateString('en-US', {
+            month: 'long',
+            day: 'numeric',
+            year: 'numeric',
+          })}
+        </AppText>
+      </View>
+      <FieldNoteSection title="Update" icon="megaphone-outline">
+        <AppText>{announcement.info}</AppText>
+      </FieldNoteSection>
+      <FieldNoteSection title="Attribution" icon="person-outline">
+        <MetadataRow
+          label="Author"
+          value={announcement.authorAlias || announcement.createdBy.id}
+        />
+      </FieldNoteSection>
     </View>
-  </View>
-);
+  );
+};

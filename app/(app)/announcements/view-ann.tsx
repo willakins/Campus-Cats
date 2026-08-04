@@ -1,76 +1,79 @@
 import { useCallback, useState } from 'react';
-import { SafeAreaView, ScrollView, Text } from 'react-native';
 
-import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 
-import { AnnouncementEntry, Button, LoadingIndicator } from '@/components';
+import { AppHeader, Button, ErrorState, FeedbackBanner, Screen } from '@/components/design';
+import { AnnouncementEntry } from '@/components/entries/AnnouncementEntry';
+import { LoadingIndicator } from '@/components/ui/LoadingIndicator';
 import { appModules } from '@/composition/appModules';
-import { Announcement } from '@/core/domain';
+import { Announcement, canManageFeature } from '@/core/domain';
 import { StoredMediaAsset } from '@/core/ports';
 import { useAuth } from '@/providers';
-import { buttonStyles, containerStyles, textStyles } from '@/styles';
 
 const ViewAnnouncement = () => {
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id?: string }>();
   const { user } = useAuth();
-  const isAdmin = user.role === 1 || user.role === 2;
+  const isAdmin = canManageFeature(user.role);
   const [announcement, setAnnouncement] = useState<Announcement>();
   const [media, setMedia] = useState<readonly StoredMediaAsset[]>([]);
-  const [error, setError] = useState('');
+  const [error, setError] = useState<string>();
+  const [mediaError, setMediaError] = useState<string>();
+  const [loading, setLoading] = useState(true);
 
   useFocusEffect(
     useCallback(() => {
+      let active = true;
+      setLoading(true);
+      setError(undefined);
+      setMediaError(undefined);
       if (!id) {
         setError('Missing announcement ID');
-        return;
+        setLoading(false);
+        return () => { active = false; };
       }
       void Promise.all([
         appModules.announcements.get(id),
         appModules.announcements.media(id),
       ]).then(([announcementResult, mediaResult]) => {
+        if (!active) return;
         if (announcementResult.ok) setAnnouncement(announcementResult.value);
         else setError(announcementResult.error.message);
         if (mediaResult.ok) setMedia(mediaResult.value);
+        else setMediaError(mediaResult.error.message);
+        setLoading(false);
       });
+      return () => { active = false; };
     }, [id]),
   );
 
-  if (!announcement && !error) return <LoadingIndicator />;
+  if (loading) return <LoadingIndicator label="Loading announcement" />;
+
   return (
-    <SafeAreaView style={containerStyles.wrapper}>
-      <Button style={buttonStyles.smallButtonTopLeft} onPress={() => router.back()}>
-        <Ionicons name="arrow-back-outline" size={25} color="#fff" />
-      </Button>
+    <Screen
+      scroll
+      footer={announcement && isAdmin ? (
+        <Button
+          label="Edit announcement"
+          icon="create-outline"
+          fullWidth
+          onPress={() =>
+            router.push({
+              pathname: '/announcements/edit-ann',
+              params: { id: announcement.id },
+            })
+          }
+        />
+      ) : undefined}
+    >
+      <AppHeader title="Announcement" eyebrow="Campus Cats update" onBack={() => router.back()} />
+      {mediaError ? <FeedbackBanner message={mediaError} tone="warning" /> : null}
       {announcement ? (
-        <>
-          <ScrollView
-            contentContainerStyle={[
-              containerStyles.scrollView,
-              { paddingTop: '10%' },
-            ]}
-          >
-            <AnnouncementEntry announcement={announcement} media={media} />
-          </ScrollView>
-          {isAdmin ? (
-            <Button
-              style={buttonStyles.bigButton}
-              onPress={() =>
-                router.push({
-                  pathname: '/announcements/edit-ann',
-                  params: { id: announcement.id },
-                })
-              }
-            >
-              <Text style={textStyles.bigButtonText}>Edit Announcement</Text>
-            </Button>
-          ) : null}
-        </>
+        <AnnouncementEntry announcement={announcement} media={media} />
       ) : (
-        <Text style={textStyles.pageTitle}>{error}</Text>
+        <ErrorState title="Announcement unavailable" message={error || 'Announcement not found'} />
       )}
-    </SafeAreaView>
+    </Screen>
   );
 };
 
