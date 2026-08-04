@@ -1,44 +1,58 @@
 import React, { useCallback, useState } from 'react';
-import { SafeAreaView, ScrollView, Text, View } from 'react-native';
+import { FlatList, View } from 'react-native';
 
-import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect, useRouter } from 'expo-router';
 
-import { Button, Errorbar, StationItem } from '@/components';
+import {
+  AccessDeniedState,
+  AppHeader,
+  Button,
+  EmptyState,
+  ErrorState,
+  Screen,
+  SegmentedControl,
+  Skeleton,
+} from '@/components/design';
+import { StationItem } from '@/components/items/StationItem';
 import { appModules } from '@/composition/appModules';
-import { Station } from '@/core/domain';
+import { canManageFeature, Station } from '@/core/domain';
 import { useAuth } from '@/providers';
-import { buttonStyles, containerStyles, textStyles } from '@/styles';
+import { useAppTheme } from '@/theme';
+
+type StationFilter = 'All' | 'Stocked' | 'Unstocked';
 
 const Stations = () => {
   const { user } = useAuth();
   const router = useRouter();
-  const isAdmin = user.role === 1 || user.role === 2;
+  const theme = useAppTheme();
+  const isAdmin = canManageFeature(user.role);
   const [stations, setStations] = useState<readonly Station[]>([]);
-  const [filter, setFilter] = useState<'All' | 'Stocked' | 'Unstocked'>('All');
-  const [error, setError] = useState('');
+  const [filter, setFilter] = useState<StationFilter>('All');
+  const [loading, setLoading] = useState(isAdmin);
+  const [error, setError] = useState<string>();
+
+  const load = useCallback(async () => {
+    if (!isAdmin) return;
+    setLoading(true);
+    setError(undefined);
+    const result = await appModules.stations.list();
+    if (result.ok) setStations(result.value);
+    else setError(result.error.message);
+    setLoading(false);
+  }, [isAdmin]);
 
   useFocusEffect(
     useCallback(() => {
-      if (!isAdmin) return;
-      void appModules.stations.list().then((result) => {
-        if (result.ok) setStations(result.value);
-        else setError(result.error.message);
-      });
-    }, [isAdmin]),
+      void load();
+    }, [load]),
   );
 
   if (!isAdmin) {
     return (
-      <SafeAreaView style={containerStyles.wrapper}>
-        <Text style={textStyles.pageTitle}>You should not be here!</Text>
-        <Button
-          style={buttonStyles.smallButtonTopLeft}
-          onPress={() => router.push('/(app)/(tabs)')}
-        >
-          <Ionicons name="arrow-back-outline" size={25} color="#fff" />
-        </Button>
-      </SafeAreaView>
+      <Screen>
+        <AppHeader title="Feeding stations" eyebrow="Officer tools" />
+        <AccessDeniedState message="Officer access is required to view feeding-station operations." />
+      </Screen>
     );
   }
 
@@ -50,43 +64,53 @@ const Stations = () => {
   });
 
   return (
-    <SafeAreaView style={containerStyles.wrapper}>
-      <Errorbar error={error} onDismiss={() => setError('')} />
-      <View style={containerStyles.buttonGroup}>
-        {['Stocked', 'Unstocked', 'All'].map((label) => (
-          <Button
-            key={label}
-            style={[
-              buttonStyles.rowButton2,
-              filter === label && buttonStyles.activeButton,
-            ]}
-            onPress={() => setFilter(label as typeof filter)}
-            textStyle={[
-              textStyles.buttonText,
-              filter === label && textStyles.activeText,
-            ]}
-          >
-            {label}
-          </Button>
-        ))}
-      </View>
-      <Text style={textStyles.pageTitle}>Feeding Stations</Text>
-      <ScrollView contentContainerStyle={containerStyles.scrollView}>
-        {filteredStations.map((station) => (
-          <StationItem
-            key={station.id}
-            station={station}
-            status={appModules.stations.stockStatus(station)}
+    <Screen
+      footer={(
+        <Button
+          label="Create station"
+          icon="add"
+          fullWidth
+          onPress={() => router.push('/stations/create-station')}
+        />
+      )}
+    >
+      <AppHeader title="Feeding stations" eyebrow="Officer operations" />
+      <View style={{ gap: theme.spacing.md, flex: 1 }}>
+        <SegmentedControl
+          label="Station stock filter"
+          value={filter}
+          options={[
+            { value: 'Stocked', label: 'Stocked' },
+            { value: 'Unstocked', label: 'Unstocked' },
+            { value: 'All', label: 'All' },
+          ]}
+          onChange={setFilter}
+        />
+        {loading ? (
+          <View style={{ gap: theme.spacing.md }}>
+            <Skeleton label="Loading feeding stations" />
+            <Skeleton label="Loading another feeding station" />
+          </View>
+        ) : (
+          <FlatList
+            data={error ? [] : filteredStations}
+            keyExtractor={(station) => station.id}
+            contentContainerStyle={{ flexGrow: 1, gap: theme.spacing.md, paddingBottom: theme.spacing.md }}
+            renderItem={({ item }) => (
+              <StationItem station={item} status={appModules.stations.stockStatus(item)} />
+            )}
+            ListEmptyComponent={error ? (
+              <ErrorState title="Stations are unavailable" message={error} onRetry={() => void load()} />
+            ) : (
+              <EmptyState
+                title={filter === 'All' ? 'No stations yet' : `No ${filter.toLowerCase()} stations`}
+                message="Try another filter or add a feeding station."
+              />
+            )}
           />
-        ))}
-      </ScrollView>
-      <Button
-        style={buttonStyles.bigButton}
-        onPress={() => router.push('/stations/create-station')}
-      >
-        <Text style={textStyles.bigButtonText}>Create Station</Text>
-      </Button>
-    </SafeAreaView>
+        )}
+      </View>
+    </Screen>
   );
 };
 

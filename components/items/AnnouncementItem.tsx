@@ -1,19 +1,20 @@
 import React from 'react';
-import { Text, View } from 'react-native';
+import { View } from 'react-native';
 
 import { useRouter } from 'expo-router';
 
 import { Announcement } from '@/core/domain';
-import { containerStyles, textStyles } from '@/styles';
-
-import { Button } from '../ui/Buttons';
+import { useAppTheme } from '@/theme';
+import { AppText, Card } from '../design';
 
 export const AnnouncementItem: React.FC<Announcement> = (announcement) => {
   const router = useRouter();
+  const theme = useAppTheme();
 
   return (
-    <Button
-      style={containerStyles.card}
+    <Card
+      accessibilityLabel={`Read announcement: ${announcement.title}`}
+      accent={theme.colors.gold}
       onPress={() =>
         router.push({
           pathname: '/announcements/view-ann',
@@ -21,11 +22,21 @@ export const AnnouncementItem: React.FC<Announcement> = (announcement) => {
         })
       }
     >
-      <View style={containerStyles.verticalCard}>
-        <Text style={textStyles.listTitle}>{announcement.title}</Text>
-        <Text style={textStyles.detail}>{announcement.info}</Text>
+      <View style={{ gap: theme.spacing.xs }}>
+        <AppText variant="caption" color="primary">
+          {announcement.createdAt.toLocaleDateString(undefined, {
+            month: 'short',
+            day: 'numeric',
+            year: 'numeric',
+          })}
+        </AppText>
+        <AppText variant="cardTitle">{announcement.title}</AppText>
+        <AppText color="muted" numberOfLines={3}>{announcement.info}</AppText>
+        {announcement.authorAlias ? (
+          <AppText variant="caption" color="muted">By {announcement.authorAlias}</AppText>
+        ) : null}
       </View>
-    </Button>
+    </Card>
   );
 };
 

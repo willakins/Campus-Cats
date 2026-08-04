@@ -44,7 +44,7 @@ export const Screen = ({
       maxWidth: fullBleed ? undefined : theme.layout.maxContentWidth,
       alignSelf: 'center' as const,
       paddingHorizontal: fullBleed ? 0 : theme.layout.screenGutter,
-      paddingBottom: footer ? theme.spacing.md : theme.spacing.xl,
+      paddingBottom: fullBleed ? 0 : footer ? theme.spacing.md : theme.spacing.xl,
     },
     contentStyle,
   ];

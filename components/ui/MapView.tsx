@@ -3,12 +3,15 @@ import RNMapView, { MapViewProps, PROVIDER_GOOGLE } from 'react-native-maps';
 
 export const MapView: React.FC<MapViewProps> = ({
   children,
+  provider,
   ...props
 }) => {
-  // Web only supports google maps
-  if (Platform.OS === 'web') {
-    props.provider = PROVIDER_GOOGLE;
-  }
-
-  return <RNMapView {...props}>{children}</RNMapView>;
+  return (
+    <RNMapView
+      provider={Platform.OS === 'web' ? PROVIDER_GOOGLE : provider}
+      {...props}
+    >
+      {children}
+    </RNMapView>
+  );
 };

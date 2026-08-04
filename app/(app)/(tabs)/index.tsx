@@ -3,32 +3,37 @@ import { View } from 'react-native';
 
 import { useFocusEffect, useRouter } from 'expo-router';
 
-import { Button, Errorbar, SightingMapView } from '@/components';
+import { SightingMapView } from '@/components/SightingMapView';
+import { Button, FeedbackBanner, SegmentedControl, StatusPill, Screen } from '@/components/design';
+import { campusMapDarkStyle } from '@/components/mapStyles';
 import { appModules } from '@/composition/appModules';
 import { Sighting, SystemClock } from '@/core/domain';
 import { filterSightingsByAge } from '@/features/sightings';
-import { buttonStyles, containerStyles, globalStyles, textStyles } from '@/styles';
+import { useAppTheme } from '@/theme';
 
 const clock = new SystemClock();
 
 const HomeScreen = () => {
   const router = useRouter();
-  const [filter, setFilter] = useState('all');
-  const [mapKey, setMapKey] = useState(0);
+  const theme = useAppTheme();
+  const [filter, setFilter] = useState<'7' | '30' | '90' | '365' | 'all'>('all');
   const [pins, setPins] = useState<readonly Sighting[]>([]);
-  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string>();
 
   useFocusEffect(
     useCallback(() => {
       let active = true;
+      setLoading(true);
+      setError(undefined);
       void appModules.sightings.list().then((result) => {
         if (!active) return;
         if (result.ok) {
           setPins(result.value);
-          setMapKey((value) => value + 1);
         } else {
           setError(result.error.message);
         }
+        setLoading(false);
       });
       return () => {
         active = false;
@@ -43,53 +48,90 @@ const HomeScreen = () => {
   );
 
   return (
-    <View style={globalStyles.screen}>
-      <Errorbar error={error} onDismiss={() => setError('')} />
-      <View style={containerStyles.buttonGroup}>
-        {['7', '30', '90', '365', 'all'].map((range) => (
-          <Button
-            key={range}
+    <Screen fullBleed>
+      <View style={{ flex: 1 }}>
+        <SightingMapView
+          list={visiblePins}
+          filter={() => true}
+          style={{ flex: 1 }}
+          userInterfaceStyle={theme.dark ? 'dark' : 'light'}
+          customMapStyle={theme.dark ? [...campusMapDarkStyle] : undefined}
+          initialRegion={{
+            latitude: 33.776077,
+            longitude: -84.396199,
+            latitudeDelta: 0.01,
+            longitudeDelta: 0.01,
+          }}
+          onPerMarkerPress={(pin) =>
+            router.push({
+              pathname: '/sighting/view-sighting',
+              params: { id: pin.id },
+            })
+          }
+        />
+        <View
+          pointerEvents="box-none"
+          style={{
+            position: 'absolute',
+            top: theme.spacing.sm,
+            left: theme.spacing.sm,
+            right: theme.spacing.sm,
+            gap: theme.spacing.xs,
+          }}
+        >
+          <View
             style={[
-              buttonStyles.rowButton2,
-              filter === range && buttonStyles.activeButton,
-            ]}
-            onPress={() => setFilter(range)}
-            textStyle={[
-              textStyles.buttonText,
-              filter === range && textStyles.activeText,
+              theme.elevation.floating,
+              {
+                padding: theme.spacing.xs,
+                borderRadius: theme.radii.card,
+                backgroundColor: theme.colors.surface,
+              },
             ]}
           >
-            {range === '365' ? '1Y' : range === 'all' ? 'All' : `${range}D`}
-          </Button>
-        ))}
+            <SegmentedControl
+              label="Sighting age"
+              value={filter}
+              options={[
+                { value: '7', label: '7D' },
+                { value: '30', label: '30D' },
+                { value: '90', label: '90D' },
+                { value: '365', label: '1Y' },
+                { value: 'all', label: 'All' },
+              ]}
+              onChange={setFilter}
+            />
+          </View>
+          <StatusPill
+            label={loading ? 'Loading sightings' : `${visiblePins.length} ${visiblePins.length === 1 ? 'sighting' : 'sightings'}`}
+            tone="neutral"
+            icon="paw"
+          />
+          {error ? <FeedbackBanner message={error} tone="danger" /> : null}
+        </View>
+        <View
+          style={{
+            position: 'absolute',
+            left: theme.spacing.lg,
+            right: theme.spacing.lg,
+            bottom: theme.spacing.lg,
+            alignItems: 'center',
+          }}
+        >
+          <Button
+            label="Report a sighting"
+            icon="add"
+            fullWidth
+            style={{
+              maxWidth: theme.layout.maxAuthWidth,
+              backgroundColor: theme.colors.coral,
+              borderColor: theme.colors.coral,
+            }}
+            onPress={() => router.push('/sighting/create-sighting')}
+          />
+        </View>
       </View>
-
-      <SightingMapView
-        list={visiblePins}
-        filter={() => true}
-        key={mapKey}
-        style={{ flex: 1 }}
-        initialRegion={{
-          latitude: 33.776077,
-          longitude: -84.396199,
-          latitudeDelta: 0.01,
-          longitudeDelta: 0.01,
-        }}
-        onPerMarkerPress={(pin) =>
-          router.push({
-            pathname: '/sighting/view-sighting',
-            params: { id: pin.id },
-          })
-        }
-      />
-      <Button
-        style={buttonStyles.reportButton}
-        onPress={() => router.push('/sighting/create-sighting')}
-        textStyle={textStyles.buttonText}
-      >
-        Report
-      </Button>
-    </View>
+    </Screen>
   );
 };
 

@@ -3,12 +3,21 @@ const path = require('node:path');
 
 const targets = [
   'app/(app)/(tabs)/_layout.tsx',
+  'app/(app)/(tabs)/announcements.tsx',
+  'app/(app)/(tabs)/catalog.tsx',
+  'app/(app)/(tabs)/index.tsx',
+  'app/(app)/(tabs)/stations.tsx',
   'app/(app)/_layout.tsx',
   'app/(auth)',
   'app/index.tsx',
   'components/auth',
   'components/design',
+  'components/items/AnnouncementItem.tsx',
+  'components/items/CatalogItem.tsx',
+  'components/items/StationItem.tsx',
+  'components/SightingMapView.tsx',
   'components/ui/LoadingIndicator.tsx',
+  'components/ui/MapView.tsx',
   'forms/Login.tsx',
 ];
 const colorPattern = /#[0-9a-f]{3,8}\b|(['"])(?:red|green|black|white|gray|grey|tomato)\1/gi;
