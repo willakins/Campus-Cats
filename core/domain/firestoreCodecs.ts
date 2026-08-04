@@ -17,8 +17,10 @@ import {
 import {
   ImportedCatalogProfile,
   ImportedObservation,
+  InaturalistSyncStatus,
   parseImportedCatalogProfile,
   parseImportedObservation,
+  parseInaturalistSyncStatus,
 } from './inaturalist';
 
 export const COLLECTIONS = {
@@ -236,6 +238,58 @@ export function createFirestoreCodecs<EncodedDate>(
     }),
   };
 
+  const inaturalistStatus: FirestoreCodec<InaturalistSyncStatus> = {
+    decode: (_id, value) => {
+      const data = record(value);
+      const observations = record(data.observations);
+      const catalogStatus = record(data.catalog);
+      const decodeOptional = (date: unknown) =>
+        date === undefined || date === null ? undefined : decodeDate(date);
+      return parseInaturalistSyncStatus({
+        ...data,
+        startedAt: decodeOptional(data.startedAt),
+        completedAt: decodeOptional(data.completedAt),
+        observations: {
+          ...observations,
+          lastAttemptAt: decodeOptional(observations.lastAttemptAt),
+          lastSuccessAt: decodeOptional(observations.lastSuccessAt),
+        },
+        catalog: {
+          ...catalogStatus,
+          lastAttemptAt: decodeOptional(catalogStatus.lastAttemptAt),
+          lastSuccessAt: decodeOptional(catalogStatus.lastSuccessAt),
+        },
+      });
+    },
+    encode: (value) => ({
+      ...value,
+      startedAt: value.startedAt
+        ? timestamps.fromDate(value.startedAt)
+        : undefined,
+      completedAt: value.completedAt
+        ? timestamps.fromDate(value.completedAt)
+        : undefined,
+      observations: {
+        ...value.observations,
+        lastAttemptAt: value.observations.lastAttemptAt
+          ? timestamps.fromDate(value.observations.lastAttemptAt)
+          : undefined,
+        lastSuccessAt: value.observations.lastSuccessAt
+          ? timestamps.fromDate(value.observations.lastSuccessAt)
+          : undefined,
+      },
+      catalog: {
+        ...value.catalog,
+        lastAttemptAt: value.catalog.lastAttemptAt
+          ? timestamps.fromDate(value.catalog.lastAttemptAt)
+          : undefined,
+        lastSuccessAt: value.catalog.lastSuccessAt
+          ? timestamps.fromDate(value.catalog.lastSuccessAt)
+          : undefined,
+      },
+    }),
+  };
+
   return {
     user,
     sighting,
@@ -246,5 +300,6 @@ export function createFirestoreCodecs<EncodedDate>(
     contact,
     inaturalistObservation,
     inaturalistCatalog,
+    inaturalistStatus,
   } as const;
 }

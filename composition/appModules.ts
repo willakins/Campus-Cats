@@ -5,6 +5,8 @@ import { ExpoImageSelection } from '../adapters/expo/ExpoImageSelection';
 import { ExpoSamlCredentialProvider } from '../adapters/firebase/ExpoSamlCredentialProvider';
 import { FirebaseCallableEffects } from '../adapters/firebase/FirebaseCallableEffects';
 import { FirebaseDocumentStore } from '../adapters/firebase/FirebaseDocumentStore';
+import { FirebaseInaturalistEffects } from '../adapters/firebase/FirebaseInaturalistEffects';
+import { FirebaseInaturalistReader } from '../adapters/firebase/FirebaseInaturalistReader';
 import { FirebaseMediaStore } from '../adapters/firebase/FirebaseMediaStore';
 import { FirebaseSession } from '../adapters/firebase/FirebaseSession';
 import { FirebaseWhitelistSubmission } from '../adapters/firebase/FirebaseWhitelistSubmission';
@@ -16,6 +18,7 @@ import { AnnouncementsModule } from '../features/announcements';
 import { CatalogModule } from '../features/catalog';
 import { ContactsModule } from '../features/contacts';
 import { ImageSelectionModule } from '../features/imageSelection';
+import { InaturalistModule } from '../features/inaturalist';
 import { SessionModule } from '../features/session';
 import { SightingsModule } from '../features/sightings';
 import { StationsModule } from '../features/stations';
@@ -34,6 +37,7 @@ export interface AppModules {
   readonly catalog: CatalogModule;
   readonly contacts: ContactsModule;
   readonly imageSelection: ImageSelectionModule;
+  readonly inaturalist: InaturalistModule;
   readonly session: SessionModule;
   readonly sightings: SightingsModule;
   readonly stations: StationsModule;
@@ -43,7 +47,10 @@ export interface AppModules {
 
 const documents = new FirebaseDocumentStore(db);
 const media = new FirebaseMediaStore(storage);
-const effects = new FirebaseCallableEffects(getFunctions(app));
+const functions = getFunctions(app);
+const effects = new FirebaseCallableEffects(functions);
+const inaturalistReader = new FirebaseInaturalistReader(db);
+const inaturalistEffects = new FirebaseInaturalistEffects(functions);
 const ids = new UuidGenerator();
 const clock = new SystemClock();
 const codecs = createFirestoreCodecs({ fromDate: Timestamp.fromDate });
@@ -70,9 +77,22 @@ export const appModules: AppModules = Object.freeze({
     ids,
     clock,
     codecs,
+    imports: {
+      reader: inaturalistReader,
+      codec: codecs.inaturalistCatalog,
+    },
   }),
   contacts: new ContactsModule({ documents, ids, codecs }),
   imageSelection: new ImageSelectionModule({ images: new ExpoImageSelection() }),
+  inaturalist: new InaturalistModule({
+    reader: inaturalistReader,
+    effects: inaturalistEffects,
+    codecs: {
+      observation: codecs.inaturalistObservation,
+      catalog: codecs.inaturalistCatalog,
+      status: codecs.inaturalistStatus,
+    },
+  }),
   session: new SessionModule({ session }),
   sightings: new SightingsModule({
     documents,
@@ -80,6 +100,10 @@ export const appModules: AppModules = Object.freeze({
     mediaCoordinator: new MediaCoordinator(media, ids),
     ids,
     codecs,
+    imports: {
+      reader: inaturalistReader,
+      codec: codecs.inaturalistObservation,
+    },
   }),
   stations: new StationsModule({
     documents,

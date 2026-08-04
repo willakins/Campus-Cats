@@ -4,6 +4,7 @@ import { render, screen, userEvent, waitFor } from '@testing-library/react-nativ
 
 import {
   Role,
+  localCatalogRecord,
   parseAnnouncement,
   parseCatalogEntry,
   parseStation,
@@ -36,7 +37,7 @@ const announcement = parseAnnouncement({
   createdBy: actor,
   authorAlias: 'Campus Cats Team',
 });
-const catalogEntry = parseCatalogEntry({
+const catalogEntry = localCatalogRecord(parseCatalogEntry({
   id: 'catalog-1',
   cat: {
     name: 'Goldie',
@@ -55,7 +56,7 @@ const catalogEntry = parseCatalogEntry({
   credits: 'Campus Cats volunteers',
   createdAt: new Date('2026-06-01T12:00:00.000Z'),
   createdBy: actor,
-});
+}));
 const station = parseStation({
   id: 'station-1',
   name: 'Library station',

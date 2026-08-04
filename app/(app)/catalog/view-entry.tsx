@@ -6,17 +6,17 @@ import { AppHeader, Button, ErrorState, FeedbackBanner, Screen } from '@/compone
 import { CatalogEntryElement } from '@/components/entries/CatalogEntryElement';
 import { LoadingIndicator } from '@/components/ui/LoadingIndicator';
 import { appModules } from '@/composition/appModules';
-import { canManageFeature, CatalogEntry, Sighting } from '@/core/domain';
-import { StoredMediaAsset } from '@/core/ports';
+import { canManageFeature, CatalogRecord, SightingRecord } from '@/core/domain';
+import { DisplayMediaAsset } from '@/core/ports';
 import { useAuth } from '@/providers';
 
 const ViewEntry = () => {
   const { user } = useAuth();
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id?: string }>();
-  const [entry, setEntry] = useState<CatalogEntry>();
-  const [media, setMedia] = useState<readonly StoredMediaAsset[]>([]);
-  const [sightings, setSightings] = useState<readonly Sighting[]>([]);
+  const [entry, setEntry] = useState<CatalogRecord>();
+  const [media, setMedia] = useState<readonly DisplayMediaAsset[]>([]);
+  const [sightings, setSightings] = useState<readonly SightingRecord[]>([]);
   const [error, setError] = useState<string>();
   const [warning, setWarning] = useState<string>();
   const [loading, setLoading] = useState(true);
@@ -41,7 +41,13 @@ const ViewEntry = () => {
         if (entryResult.ok) {
           setEntry(entryResult.value);
           if (sightingsResult.ok) {
-            setSightings(sightingsResult.value.filter(({ name }) => name === entryResult.value.cat.name));
+            const loadedEntry = entryResult.value;
+            setSightings(sightingsResult.value.filter((sighting) =>
+              loadedEntry.source === 'inaturalist'
+                ? sighting.source === 'inaturalist' &&
+                  sighting.guideTaxonId === loadedEntry.sourceId
+                : sighting.name === loadedEntry.cat.name,
+            ));
           } else setWarning(sightingsResult.error.message);
         } else setError(entryResult.error.message);
         if (mediaResult.ok) setMedia(mediaResult.value);

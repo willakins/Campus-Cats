@@ -212,6 +212,7 @@ export interface InaturalistSyncSourceStatus {
 
 export interface InaturalistSyncStatus {
   readonly running: boolean;
+  readonly lastStatus?: 'success' | 'partial' | 'failed' | 'skipped';
   readonly runId?: string;
   readonly startedAt?: Date;
   readonly completedAt?: Date;
@@ -219,6 +220,27 @@ export interface InaturalistSyncStatus {
   readonly catalog: InaturalistSyncSourceStatus;
   readonly ambiguousCatalogMatches: readonly number[];
 }
+
+const syncSourceStatusSchema = z.object({
+  lastAttemptAt: validDate.optional(),
+  lastSuccessAt: validDate.optional(),
+  fetched: z.number().int().nonnegative(),
+  created: z.number().int().nonnegative(),
+  updated: z.number().int().nonnegative(),
+  deactivated: z.number().int().nonnegative(),
+  errors: z.array(z.string()),
+});
+
+export const inaturalistSyncStatusSchema = z.object({
+  running: z.boolean(),
+  lastStatus: z.enum(['success', 'partial', 'failed', 'skipped']).optional(),
+  runId: optionalText,
+  startedAt: validDate.optional(),
+  completedAt: validDate.optional(),
+  observations: syncSourceStatusSchema,
+  catalog: syncSourceStatusSchema,
+  ambiguousCatalogMatches: z.array(z.number().int().positive()),
+});
 
 export function parseImportedObservation(value: unknown): ImportedObservation {
   return deepFreeze(importedObservationSchema.parse(value));
@@ -228,6 +250,12 @@ export function parseImportedCatalogProfile(
   value: unknown,
 ): ImportedCatalogProfile {
   return deepFreeze(importedCatalogProfileSchema.parse(value));
+}
+
+export function parseInaturalistSyncStatus(
+  value: unknown,
+): InaturalistSyncStatus {
+  return deepFreeze(inaturalistSyncStatusSchema.parse(value));
 }
 
 export function normalizeCatName(value: string): string {

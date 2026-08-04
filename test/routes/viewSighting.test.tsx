@@ -2,7 +2,7 @@ import React from 'react';
 
 import { render, screen, userEvent } from '@testing-library/react-native';
 
-import { Role, parseSighting } from '../../core/domain';
+import { Role, localSightingRecord, parseSighting } from '../../core/domain';
 import ViewSighting from '../../app/(app)/sighting/view-sighting';
 import { AppThemeProvider } from '../../theme';
 
@@ -54,7 +54,7 @@ const renderSighting = () =>
     </AppThemeProvider>,
   );
 
-const sighting = parseSighting({
+const sighting = localSightingRecord(parseSighting({
   id: 'sighting-1',
   name: 'Goldie',
   info: 'Near Tech Tower',
@@ -68,7 +68,7 @@ const sighting = parseSighting({
     role: Role.Member,
   },
   timeOfDay: 'Afternoon',
-});
+}));
 
 describe('view sighting route', () => {
   beforeEach(() => {

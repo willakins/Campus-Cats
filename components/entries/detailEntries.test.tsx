@@ -4,12 +4,17 @@ import { render, screen, userEvent } from '@testing-library/react-native';
 
 import {
   Role,
+  InaturalistCatalogRecord,
+  InaturalistSightingRecord,
+  localCatalogRecord,
+  localSightingRecord,
   parseAnnouncement,
   parseCatalogEntry,
   parseSighting,
   parseStation,
   parseUser,
 } from '../../core/domain';
+import { ExternalMediaAsset, mediaAssetId } from '../../core/ports';
 import { AppThemeProvider } from '../../theme';
 import { AnnouncementEntry } from './AnnouncementEntry';
 import { CatalogEntryElement } from './CatalogEntryElement';
@@ -29,7 +34,7 @@ jest.mock('react-native-maps', () => {
 });
 
 const actor = parseUser({ id: 'member-1', email: 'member@gatech.edu', role: Role.Member });
-const sighting = parseSighting({
+const sighting = localSightingRecord(parseSighting({
   id: 'sighting-1',
   name: 'Goldie',
   info: 'Resting near Tech Tower.',
@@ -39,8 +44,8 @@ const sighting = parseSighting({
   location: { latitude: 33.776, longitude: -84.396 },
   createdBy: actor,
   timeOfDay: 'Afternoon',
-});
-const catalogEntry = parseCatalogEntry({
+}));
+const catalogEntry = localCatalogRecord(parseCatalogEntry({
   id: 'catalog-1',
   cat: {
     name: 'Goldie',
@@ -59,7 +64,7 @@ const catalogEntry = parseCatalogEntry({
   credits: 'Campus Cats volunteers',
   createdAt: new Date('2026-06-01T12:00:00.000Z'),
   createdBy: actor,
-});
+}));
 const station = parseStation({
   id: 'station-1',
   name: 'Library station',
@@ -77,6 +82,49 @@ const announcement = parseAnnouncement({
   createdBy: actor,
   authorAlias: 'Campus Cats Team',
 });
+const importedSighting: InaturalistSightingRecord = {
+  source: 'inaturalist',
+  id: 'inat-observation-1001',
+  sourceId: 1001,
+  name: 'Goldie',
+  info: 'Resting near Tech Tower.',
+  date: new Date('2026-08-01T12:30:00.000Z'),
+  observedOn: '2026-08-01',
+  observedTimePrecision: 'exact',
+  location: null,
+  qualityGrade: 'needs_id',
+  observer: { id: 42, login: 'cat_watcher', displayName: 'Cat Watcher' },
+  sourceUrl: 'https://www.inaturalist.org/observations/1001',
+  observationFieldValue: 'Goldie',
+  guideTaxonId: 2001,
+  positionalAccuracy: null,
+  sourceActive: true,
+  visible: true,
+};
+const importedCatalog: InaturalistCatalogRecord = {
+  source: 'inaturalist',
+  id: 'inat-guide-2001',
+  sourceId: 2001,
+  cat: { name: 'Goldie', descShort: 'A friendly orange cat.' },
+  credits: 'iNaturalist Georgia Tech Cats guide',
+  sourceUrl: 'https://www.inaturalist.org/guide_taxa/2001',
+  sourceUpdatedAt: new Date('2026-08-01T12:00:00.000Z'),
+  matchStatus: 'unlinked',
+  sourceActive: true,
+  visible: true,
+  moderation: { hidden: false, reason: '' },
+};
+const licensedPhoto: ExternalMediaAsset = {
+  kind: 'external',
+  id: mediaAssetId('inat-photo-1'),
+  url: 'https://static.inaturalist.org/photo.jpg',
+  thumbnailUrl: 'https://static.inaturalist.org/photo-small.jpg',
+  role: 'profile',
+  sourceUrl: 'https://www.inaturalist.org/photos/1',
+  attribution: 'Photo by Cat Watcher, CC BY 4.0',
+  licenseCode: 'CC-BY',
+  licenseUrl: 'https://creativecommons.org/licenses/by/4.0/',
+};
 
 const renderThemed = (content: React.ReactElement) =>
   render(<AppThemeProvider colorScheme="light">{content}</AppThemeProvider>);
@@ -97,6 +145,32 @@ describe('detail entries', () => {
     await user.press(screen.getByRole('button', { name: 'Show all field notes' }));
     expect(screen.getByText('Orange tabby')).toBeOnTheScreen();
     expect(screen.getByText('Campus Cats volunteers')).toBeOnTheScreen();
+  });
+
+  it('renders imported sightings as attributed read-only source records', () => {
+    renderThemed(
+      <SightingEntry sighting={importedSighting} media={[licensedPhoto]} />,
+    );
+
+    expect(screen.getByText('iNaturalist')).toBeOnTheScreen();
+    expect(screen.getByText('Needs ID')).toBeOnTheScreen();
+    expect(screen.getByText('Cat Watcher')).toBeOnTheScreen();
+    expect(screen.getByText('Photo by Cat Watcher, CC BY 4.0')).toBeOnTheScreen();
+    expect(screen.getByRole('link', { name: 'View on iNaturalist' })).toBeOnTheScreen();
+    expect(screen.queryByText('Was fed')).not.toBeOnTheScreen();
+    expect(screen.getByText('Public coordinates are not available for this observation.')).toBeOnTheScreen();
+  });
+
+  it('keeps unavailable imported catalog facts visibly unknown', async () => {
+    const user = userEvent.setup();
+    renderThemed(
+      <CatalogEntryElement entry={importedCatalog} media={[]} sightings={[]} />,
+    );
+
+    expect(screen.getByText('iNaturalist guide')).toBeOnTheScreen();
+    await user.press(screen.getByRole('button', { name: 'Show all field notes' }));
+    expect(screen.getAllByText('Unknown').length).toBeGreaterThan(0);
+    expect(screen.getByRole('link', { name: 'View in the Georgia Tech Cats guide' })).toBeOnTheScreen();
   });
 
   it('renders explicit station status and announcement attribution', () => {

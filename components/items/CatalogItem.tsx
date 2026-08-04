@@ -5,15 +5,15 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 
 import { appModules } from '@/composition/appModules';
-import { CatalogEntry } from '@/core/domain';
-import { StoredMediaAsset } from '@/core/ports';
+import { CatalogRecord } from '@/core/domain';
+import { DisplayMediaAsset } from '@/core/ports';
 import { useAppTheme } from '@/theme';
 import { AppText, Card } from '../design';
 
-export const CatalogItem: React.FC<CatalogEntry> = (entry) => {
+export const CatalogItem: React.FC<CatalogRecord> = (entry) => {
   const router = useRouter();
   const theme = useAppTheme();
-  const [profile, setProfile] = useState<StoredMediaAsset>();
+  const [profile, setProfile] = useState<DisplayMediaAsset>();
 
   useEffect(() => {
     void appModules.catalog.media(entry.id).then((result) => {
@@ -55,6 +55,9 @@ export const CatalogItem: React.FC<CatalogEntry> = (entry) => {
         </View>
       )}
       <View style={{ padding: theme.spacing.md, gap: theme.spacing.xxs }}>
+        {entry.source === 'inaturalist' ? (
+          <AppText variant="caption" color="primary">iNaturalist profile</AppText>
+        ) : null}
         <AppText variant="cardTitle">{entry.cat.name}</AppText>
         <AppText color="muted" numberOfLines={2}>{entry.cat.descShort}</AppText>
       </View>

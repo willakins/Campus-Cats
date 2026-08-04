@@ -56,6 +56,10 @@ const SightingEditScreen = () => {
         return;
       }
       const loaded = sightingResult.value;
+      if (loaded.source === 'inaturalist') {
+        setLoadError('iNaturalist sightings are read-only in Campus Cats.');
+        return;
+      }
       setSighting(loaded);
       setValue(loaded.timeOfDay);
       setFormData({
@@ -67,9 +71,12 @@ const SightingEditScreen = () => {
         date: loaded.date,
       });
       if (mediaResult.ok) {
-        setStoredAssets(mediaResult.value);
-        setProfile(mediaResult.value.find(({ role }) => role === 'profile')?.url ?? '');
-        setPhotos(mediaResult.value.filter(({ role }) => role === 'gallery').map(({ url }) => url));
+        const stored = mediaResult.value.filter(
+          (asset): asset is StoredMediaAsset => !('kind' in asset),
+        );
+        setStoredAssets(stored);
+        setProfile(stored.find(({ role }) => role === 'profile')?.url ?? '');
+        setPhotos(stored.filter(({ role }) => role === 'gallery').map(({ url }) => url));
       } else setError(mediaResult.error.message);
     });
   }, [id]);

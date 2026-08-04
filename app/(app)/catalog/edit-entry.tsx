@@ -7,9 +7,18 @@ import { AppHeader, ErrorState, Screen } from '@/components/design';
 import { FormScreen } from '@/components/forms';
 import { LoadingIndicator } from '@/components/ui/LoadingIndicator';
 import { appModules } from '@/composition/appModules';
-import { Cat, CatalogEntry, CatStatus, Fur, parseUser, Sex, TNRStatus } from '@/core/domain';
+import {
+  Cat,
+  CatalogOverride,
+  CatalogRecord,
+  CatStatus,
+  Fur,
+  parseUser,
+  Sex,
+  TNRStatus,
+} from '@/core/domain';
 import { localMedia, storedMedia } from '@/core/media';
-import { StoredMediaAsset } from '@/core/ports';
+import { DisplayMediaAsset, StoredMediaAsset, isExternalMediaAsset } from '@/core/ports';
 import { CatalogForm, CatalogFormData } from '@/forms/CatalogForm';
 import { useAuth } from '@/providers';
 import { PickerConfig } from '@/types';
@@ -23,8 +32,9 @@ const EditEntry = () => {
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id?: string }>();
   const { user } = useAuth();
-  const [entry, setEntry] = useState<CatalogEntry>();
+  const [entry, setEntry] = useState<CatalogRecord>();
   const [storedAssets, setStoredAssets] = useState<readonly StoredMediaAsset[]>([]);
+  const [displayAssets, setDisplayAssets] = useState<readonly DisplayMediaAsset[]>([]);
   const [photos, setPhotos] = useState<string[]>([]);
   const [profile, setProfile] = useState('');
   const [busy, setBusy] = useState(false);
@@ -69,20 +79,25 @@ const EditEntry = () => {
         setFormData({
           name: loaded.cat.name,
           descShort: loaded.cat.descShort,
-          descLong: loaded.cat.descLong,
-          colorPattern: loaded.cat.colorPattern,
-          behavior: loaded.cat.behavior,
-          yearsRecorded: loaded.cat.yearsRecorded,
-          AoR: loaded.cat.AoR,
-          furPattern: loaded.cat.furPattern,
+          descLong: loaded.cat.descLong ?? '',
+          colorPattern: loaded.cat.colorPattern ?? '',
+          behavior: loaded.cat.behavior ?? '',
+          yearsRecorded: loaded.cat.yearsRecorded ?? '',
+          AoR: loaded.cat.AoR ?? '',
+          furPattern: loaded.cat.furPattern ?? '',
           credits: loaded.credits,
         });
-        setStatusValue(loaded.cat.currentStatus);
-        setTnrValue(loaded.cat.tnr);
-        setSexValue(loaded.cat.sex);
-        setFurValue(loaded.cat.furLength);
+        setStatusValue(loaded.cat.currentStatus ?? 'Unknown');
+        setTnrValue(loaded.cat.tnr ?? 'Unknown');
+        setSexValue(loaded.cat.sex ?? 'Unknown');
+        setFurValue(loaded.cat.furLength ?? 'Unknown');
         if (mediaResult.ok) {
-          setStoredAssets(mediaResult.value);
+          setDisplayAssets(mediaResult.value);
+          setStoredAssets(
+            mediaResult.value.filter(
+              (asset): asset is StoredMediaAsset => !isExternalMediaAsset(asset),
+            ),
+          );
           setProfile(mediaResult.value.find(({ role }) => role === 'profile')?.url ?? '');
           setPhotos(mediaResult.value.filter(({ role }) => role === 'gallery').map(({ url }) => url));
         } else setError(mediaResult.error.message);
@@ -104,15 +119,40 @@ const EditEntry = () => {
   };
   const save = async () => {
     if (!entry || busy) return;
-    if (!profile) {
+    if (entry.source === 'campus-cats' && !profile) {
       setError('Please select a profile photo.');
       return;
     }
     setBusy(true);
     setError(undefined);
-    const result = await appModules.catalog.update(parseUser(user), entry.id, {
-      cat: cat(), credits: formData.credits, profile: selectionFor(profile), gallery: photos.map(selectionFor),
-    });
+    const actor = parseUser(user);
+    const selectedCover = displayAssets.find(({ url }) => url === profile);
+    const overrides: CatalogOverride = {
+      name: formData.name.trim() || undefined,
+      descShort: formData.descShort.trim() || undefined,
+      descLong: formData.descLong.trim() || undefined,
+      colorPattern: formData.colorPattern.trim() || undefined,
+      behavior: formData.behavior.trim() || undefined,
+      yearsRecorded: formData.yearsRecorded.trim() || undefined,
+      AoR: formData.AoR.trim() || undefined,
+      currentStatus: statusValue,
+      furLength: furValue,
+      furPattern: formData.furPattern.trim() || undefined,
+      tnr: tnrValue,
+      sex: sexValue,
+      coverPhotoId:
+        selectedCover && isExternalMediaAsset(selectedCover)
+          ? selectedCover.id
+          : undefined,
+    };
+    const result = entry.source === 'inaturalist'
+      ? await appModules.inaturalist.updateCatalog(actor, entry.sourceId, overrides)
+      : await appModules.catalog.update(actor, entry.id, {
+          cat: cat(),
+          credits: formData.credits,
+          profile: selectionFor(profile),
+          gallery: photos.map(selectionFor),
+        });
     setBusy(false);
     if (!result.ok) {
       setError(result.error.message);
@@ -122,19 +162,35 @@ const EditEntry = () => {
   };
   const confirmDelete = () => {
     if (!entry || busy) return;
-    Alert.alert('Delete Catalog Entry', 'Delete this entry forever?', [
+    const imported = entry.source === 'inaturalist';
+    Alert.alert(
+      imported ? 'Hide Imported Profile' : 'Delete Catalog Entry',
+      imported
+        ? 'Hide this iNaturalist profile from members? The source record will be retained.'
+        : 'Delete this entry forever?',
+      [
       { text: 'Cancel', style: 'cancel' },
       {
-        text: 'Delete Forever', style: 'destructive', onPress: () => {
+        text: imported ? 'Hide Profile' : 'Delete Forever', style: 'destructive', onPress: () => {
           setBusy(true);
-          void appModules.catalog.remove(parseUser(user), entry.id).then((result) => {
+          const operation = imported
+            ? appModules.inaturalist.setVisibility(
+                parseUser(user),
+                'catalog',
+                entry.sourceId,
+                false,
+                'Hidden by an officer from the catalog editor',
+              )
+            : appModules.catalog.remove(parseUser(user), entry.id);
+          void operation.then((result) => {
             setBusy(false);
             if (result.ok) router.replace('/catalog');
             else setError(result.error.message);
           });
         },
       },
-    ]);
+      ],
+    );
   };
 
   if (!entry && !loadError) return <LoadingIndicator label="Loading catalog form" />;
@@ -157,7 +213,7 @@ const EditEntry = () => {
       onBack={() => router.back()}
       onSave={() => void save()}
       onDelete={confirmDelete}
-      deleteLabel="Delete Catalog Entry"
+      deleteLabel={entry.source === 'inaturalist' ? 'Hide Imported Profile' : 'Delete Catalog Entry'}
     >
       <CatalogForm
         formData={formData}
@@ -169,6 +225,7 @@ const EditEntry = () => {
         onPromotePhoto={promotePhoto}
         onDeletePhoto={removePhoto}
         isCreate={false}
+        sourceManaged={entry.source === 'inaturalist'}
       />
     </FormScreen>
   );

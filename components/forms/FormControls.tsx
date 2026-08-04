@@ -214,9 +214,9 @@ export const LocationField = ({
 interface PhotoFieldProps {
   readonly photos: readonly string[];
   readonly coverUri?: string;
-  readonly onAddPhoto: (uri: string) => void;
+  readonly onAddPhoto?: (uri: string) => void;
   readonly onPromotePhoto?: (uri: string) => void;
-  readonly onRemovePhoto: (uri: string) => void;
+  readonly onRemovePhoto?: (uri: string) => void;
 }
 
 export const PhotoField = ({
@@ -235,7 +235,7 @@ export const PhotoField = ({
       setError(result.error.message);
       return;
     }
-    if (result.value) onAddPhoto(result.value.localUri);
+    if (result.value) onAddPhoto?.(result.value.localUri);
   };
   const prompt = () =>
     Alert.alert('Add a photo', 'Choose a photo source.', [
@@ -249,7 +249,7 @@ export const PhotoField = ({
       <MediaPicker
         photos={photos}
         coverUri={coverUri}
-        onAdd={prompt}
+        onAdd={onAddPhoto ? prompt : undefined}
         onPromote={onPromotePhoto}
         onRemove={onRemovePhoto}
       />

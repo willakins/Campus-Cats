@@ -1,6 +1,6 @@
 import React from 'react';
 
-import { FormSection } from '@/components/design';
+import { AppText, FormSection } from '@/components/design';
 import { FormTextInput, PhotoField, SelectField } from '@/components/forms';
 import { CatStatus, Fur, Sex, TNRStatus } from '@/core/domain';
 import { PickerConfig } from '@/types';
@@ -32,6 +32,7 @@ interface CatalogFormProps {
   isCreate: boolean;
   onPromotePhoto?: (uri: string) => void;
   onDeletePhoto?: (uri: string) => void;
+  sourceManaged?: boolean;
 }
 
 const CatalogForm: React.FC<CatalogFormProps> = ({
@@ -43,6 +44,7 @@ const CatalogForm: React.FC<CatalogFormProps> = ({
   setPhotos,
   onPromotePhoto,
   onDeletePhoto,
+  sourceManaged = false,
 }) => {
   const handleChange = (field: keyof CatalogFormData, value: string) =>
     setFormData((current) => ({ ...current, [field]: value }));
@@ -55,9 +57,9 @@ const CatalogForm: React.FC<CatalogFormProps> = ({
   return (
     <>
       <FormSection title="Basics">
-        <FormTextInput label="Cat name" required value={formData.name} placeholder="Name" onChangeText={(text) => handleChange('name', text)} />
-        <FormTextInput label="Short description" required value={formData.descShort} placeholder="A short descriptive phrase" onChangeText={(text) => handleChange('descShort', text)} />
-        <FormTextInput label="Long description" required value={formData.descLong} placeholder="Describe this cat" multiline onChangeText={(text) => handleChange('descLong', text)} />
+        <FormTextInput label="Cat name" required={!sourceManaged} value={formData.name} placeholder="Name" onChangeText={(text) => handleChange('name', text)} />
+        <FormTextInput label="Short description" required={!sourceManaged} value={formData.descShort} placeholder="A short descriptive phrase" onChangeText={(text) => handleChange('descShort', text)} />
+        <FormTextInput label="Long description" required={!sourceManaged} value={formData.descLong} placeholder="Describe this cat" multiline onChangeText={(text) => handleChange('descLong', text)} />
       </FormSection>
       <FormSection title="Status">
         <SelectField label="Current status" required picker={pickers.statusPicker} placeholder="Select a current status" zIndex={4000} />
@@ -76,10 +78,15 @@ const CatalogForm: React.FC<CatalogFormProps> = ({
         <PhotoField
           photos={displayedPhotos}
           coverUri={profile || photos[0]}
-          onAddPhoto={(uri) => setPhotos((current) => [...current, uri])}
+          onAddPhoto={sourceManaged ? undefined : (uri) => setPhotos((current) => [...current, uri])}
           onPromotePhoto={promote}
-          onRemovePhoto={remove}
+          onRemovePhoto={sourceManaged ? undefined : remove}
         />
+        {sourceManaged ? (
+          <AppText color="muted">
+            Licensed iNaturalist photos remain hosted by their source. Choose which one appears as the cover.
+          </AppText>
+        ) : null}
       </FormSection>
       <FormSection title="Credits">
         <FormTextInput
@@ -87,6 +94,8 @@ const CatalogForm: React.FC<CatalogFormProps> = ({
           value={formData.credits}
           placeholder="Photo sources and writing credits"
           multiline
+          editable={!sourceManaged}
+          helper={sourceManaged ? 'Attribution and licensing come from iNaturalist.' : undefined}
           onChangeText={(text) => handleChange('credits', text)}
         />
       </FormSection>
