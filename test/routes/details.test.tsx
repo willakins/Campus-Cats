@@ -2,9 +2,20 @@ import React from 'react';
 
 import { render, screen, userEvent, waitFor } from '@testing-library/react-native';
 
-import ViewCatalogEntry from '../../app/(app)/catalog/view-entry';
+import ViewCatalogEntry, {
+  sightingsForCatalogEntry,
+} from '../../app/(app)/catalog/view-entry';
 import ViewStation from '../../app/(app)/stations/view-station';
-import { Role, parseCatalogEntry, parseStation, parseUser } from '../../core/domain';
+import {
+  CatalogRecord,
+  Role,
+  SightingRecord,
+  localSightingRecord,
+  parseCatalogEntry,
+  parseSighting,
+  parseStation,
+  parseUser,
+} from '../../core/domain';
 import { AppThemeProvider } from '../../theme';
 
 const mockPush = jest.fn();
@@ -144,6 +155,61 @@ describe('catalog detail route', () => {
 
     expect(await screen.findByText('Goldie')).toBeOnTheScreen();
     expect(screen.queryByRole('button', { name: 'Edit catalog entry' })).not.toBeOnTheScreen();
+  });
+
+  it('keeps local sightings in a linked imported catalog profile', () => {
+    const linkedEntry: CatalogRecord = {
+      source: 'inaturalist',
+      id: 'inat-guide-2001',
+      sourceId: 2001,
+      cat: catalogEntry.cat,
+      credits: catalogEntry.credits,
+      sourceUrl: 'https://www.inaturalist.org/guide_taxa/2001',
+      sourceUpdatedAt: new Date('2026-08-01T12:00:00.000Z'),
+      linkedLocalCatalogId: catalogEntry.id,
+      matchStatus: 'linked',
+      sourceActive: true,
+      visible: true,
+      moderation: { hidden: false, reason: '' },
+    };
+    const localSighting = (id: string, name: string) =>
+      localSightingRecord(parseSighting({
+        id,
+        name,
+        info: '',
+        fed: false,
+        health: true,
+        date: new Date('2026-08-01T12:00:00.000Z'),
+        location: station.location,
+        createdBy: actor,
+        timeOfDay: 'Afternoon',
+      }));
+    const sightings: readonly SightingRecord[] = [
+      localSighting('local-sighting', 'Goldie'),
+      {
+        source: 'inaturalist',
+        id: 'inat-observation-1',
+        sourceId: 1,
+        name: 'Goldie',
+        info: '',
+        date: new Date('2026-08-02T12:00:00.000Z'),
+        observedOn: '2026-08-02',
+        observedTimePrecision: 'date',
+        location: station.location,
+        qualityGrade: 'casual',
+        observer: { id: 1, login: 'observer' },
+        sourceUrl: 'https://www.inaturalist.org/observations/1',
+        guideTaxonId: 2001,
+        positionalAccuracy: null,
+        sourceActive: true,
+        visible: true,
+      },
+      localSighting('other-sighting', 'Mimi'),
+    ];
+
+    expect(
+      sightingsForCatalogEntry(linkedEntry, sightings).map(({ id }) => id),
+    ).toEqual(['local-sighting', 'inat-observation-1']);
   });
 });
 

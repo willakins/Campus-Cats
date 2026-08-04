@@ -10,6 +10,24 @@ import { canManageFeature, CatalogRecord, SightingRecord } from '@/core/domain';
 import { DisplayMediaAsset } from '@/core/ports';
 import { useAuth } from '@/providers';
 
+export const sightingsForCatalogEntry = (
+  entry: CatalogRecord,
+  sightings: readonly SightingRecord[],
+): readonly SightingRecord[] =>
+  sightings.filter((sighting) => {
+    if (entry.source === 'campus-cats') {
+      return sighting.source === 'campus-cats' &&
+        sighting.name === entry.cat.name;
+    }
+    return (
+      (sighting.source === 'inaturalist' &&
+        sighting.guideTaxonId === entry.sourceId) ||
+      (Boolean(entry.linkedLocalCatalogId) &&
+        sighting.source === 'campus-cats' &&
+        sighting.name === entry.cat.name)
+    );
+  });
+
 const ViewEntry = () => {
   const { user } = useAuth();
   const router = useRouter();
@@ -41,13 +59,12 @@ const ViewEntry = () => {
         if (entryResult.ok) {
           setEntry(entryResult.value);
           if (sightingsResult.ok) {
-            const loadedEntry = entryResult.value;
-            setSightings(sightingsResult.value.filter((sighting) =>
-              loadedEntry.source === 'inaturalist'
-                ? sighting.source === 'inaturalist' &&
-                  sighting.guideTaxonId === loadedEntry.sourceId
-                : sighting.name === loadedEntry.cat.name,
-            ));
+            setSightings(
+              sightingsForCatalogEntry(
+                entryResult.value,
+                sightingsResult.value,
+              ),
+            );
           } else setWarning(sightingsResult.error.message);
         } else setError(entryResult.error.message);
         if (mediaResult.ok) setMedia(mediaResult.value);
