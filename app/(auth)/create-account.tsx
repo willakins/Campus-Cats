@@ -1,11 +1,10 @@
 import React from 'react';
-import { Image, KeyboardAvoidingView } from 'react-native';
 
 import { useRouter } from 'expo-router';
 
-import { LoginForm } from '@/forms'
+import { AuthScaffold } from '@/components/auth';
+import { LoginForm } from '@/forms';
 import { useAuth } from '@/providers';
-import { containerStyles, globalStyles } from '@/styles';
 
 const CreateAccount = () => {
   const { createAccount } = useAuth();
@@ -17,17 +16,17 @@ const CreateAccount = () => {
   };
 
   return (
-    <KeyboardAvoidingView style={globalStyles.screen} behavior="padding">
-      <Image
-        source={require('@/assets/images/campus_cats_logo.png')}
-        style={containerStyles.logo}
-      />
+    <AuthScaffold
+      title="Create your account"
+      subtitle="Finish setting up the community account approved by a Campus Cats officer."
+      onBack={() => router.back()}
+    >
       <LoginForm
         onSubmit={createNewUser}
-        type='createAccount'
+        type="createAccount"
         onSwitchType={router.back}
       />
-    </KeyboardAvoidingView>
+    </AuthScaffold>
   );
 };
 
