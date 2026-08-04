@@ -5,6 +5,7 @@ import { render, screen } from '@testing-library/react-native';
 
 import {
   AppThemeProvider,
+  createElevation,
   darkTheme,
   lightTheme,
   resolveAppTheme,
@@ -78,6 +79,13 @@ describe('Campus Cats themes', () => {
     expect(resolveAppTheme('dark')).toBe(darkTheme);
     expect(resolveAppTheme('light')).toBe(lightTheme);
     expect(resolveAppTheme(null)).toBe(lightTheme);
+  });
+
+  it('uses web-native box shadows without deprecated React Native shadow props', () => {
+    expect(createElevation(false, lightTheme.colors, 'web')).toEqual({
+      card: { boxShadow: '0 4px 14px #18314F1A' },
+      floating: { boxShadow: '0 8px 24px #18314F2E' },
+    });
   });
 
   it('makes the resolved theme available to rendered children', () => {
