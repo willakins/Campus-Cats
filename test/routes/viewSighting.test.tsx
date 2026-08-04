@@ -4,6 +4,7 @@ import { render, screen, userEvent } from '@testing-library/react-native';
 
 import { Role, parseSighting } from '../../core/domain';
 import ViewSighting from '../../app/(app)/sighting/view-sighting';
+import { AppThemeProvider } from '../../theme';
 
 const mockPush = jest.fn();
 const mockGet = jest.fn();
@@ -16,7 +17,7 @@ jest.mock('expo-router', () => {
     useFocusEffect: (effect: () => void | (() => void)) =>
       mockReact.useEffect(effect, [effect]),
     useLocalSearchParams: () => ({ id: 'sighting-1' }),
-    useRouter: () => ({ push: mockPush }),
+    useRouter: () => ({ push: mockPush, back: jest.fn() }),
   };
 });
 
@@ -37,18 +38,21 @@ jest.mock('@expo/vector-icons', () => ({
   Ionicons: () => null,
 }));
 
-jest.mock('../../components', () => {
+jest.mock('../../components/entries/SightingEntry', () => {
   const mockReact = require('react');
-  const { Pressable: MockPressable, Text: MockText } = require('react-native');
+  const { Text: MockText } = require('react-native');
   return {
-    Button: ({ children, onPress }: React.PropsWithChildren<{ onPress: () => void }>) =>
-      mockReact.createElement(MockPressable, { onPress }, children),
-    LoadingIndicator: () =>
-      mockReact.createElement(MockText, null, 'Loading sighting'),
     SightingEntry: ({ sighting }: { sighting: { name: string } }) =>
       mockReact.createElement(MockText, null, sighting.name),
   };
 });
+
+const renderSighting = () =>
+  render(
+    <AppThemeProvider colorScheme="light">
+      <ViewSighting />
+    </AppThemeProvider>,
+  );
 
 const sighting = parseSighting({
   id: 'sighting-1',
@@ -76,10 +80,10 @@ describe('view sighting route', () => {
 
   it('loads by route ID and lets the creator open the editor', async () => {
     const user = userEvent.setup();
-    render(<ViewSighting />);
+    renderSighting();
 
     expect(await screen.findByText('Goldie')).toBeOnTheScreen();
-    await user.press(screen.getByText('Edit'));
+    await user.press(screen.getByRole('button', { name: 'Edit sighting' }));
     expect(mockGet).toHaveBeenCalledWith('sighting-1');
     expect(mockPush).toHaveBeenCalledWith({
       pathname: '/sighting/edit-sighting',
@@ -89,10 +93,10 @@ describe('view sighting route', () => {
 
   it('does not offer editing to a different user', async () => {
     mockUserId = 'member-2';
-    render(<ViewSighting />);
+    renderSighting();
 
     expect(await screen.findByText('Goldie')).toBeOnTheScreen();
-    expect(screen.queryByText('Edit')).not.toBeOnTheScreen();
+    expect(screen.queryByRole('button', { name: 'Edit sighting' })).not.toBeOnTheScreen();
   });
 
   it('renders a module error instead of a dummy record', async () => {
@@ -100,7 +104,7 @@ describe('view sighting route', () => {
       ok: false,
       error: { code: 'not_found', message: 'Sighting not found' },
     });
-    render(<ViewSighting />);
+    renderSighting();
 
     expect(await screen.findByText('Sighting not found')).toBeOnTheScreen();
   });

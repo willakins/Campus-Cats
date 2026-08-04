@@ -1,12 +1,11 @@
 import React, { useState } from 'react';
-import { Image, Text, View } from 'react-native';
-import MapView, { Marker } from 'react-native-maps';
+import { View } from 'react-native';
 
 import { CatalogEntry, Sighting } from '@/core/domain';
 import { StoredMediaAsset } from '@/core/ports';
-import { buttonStyles, containerStyles, textStyles } from '@/styles';
-
-import { Button } from '../ui/Buttons';
+import { useAppTheme } from '@/theme';
+import { AppText, Button, StatusPill } from '../design';
+import { DetailHero, FieldNoteSection, MapInset, MetadataRow } from '../details';
 
 interface CatalogEntryElementProps {
   readonly entry: CatalogEntry;
@@ -14,109 +13,64 @@ interface CatalogEntryElementProps {
   readonly sightings: readonly Sighting[];
 }
 
-const CatalogEntryElement: React.FC<CatalogEntryElementProps> = ({
-  entry,
-  media,
-  sightings,
-}) => {
+const CatalogEntryElement: React.FC<CatalogEntryElementProps> = ({ entry, media, sightings }) => {
+  const theme = useAppTheme();
   const [showDetails, setShowDetails] = useState(false);
-  const profile = media.find(({ role }) => role === 'profile');
-  const gallery = media.filter(({ role }) => role === 'gallery');
+  const cat = entry.cat;
 
   return (
-    <View style={containerStyles.card}>
-      <Text style={[textStyles.cardTitle, { textAlign: 'center' }]}>
-        {entry.cat.name}
-      </Text>
-      {profile ? (
-        <Image
-          source={{ uri: profile.url }}
-          style={containerStyles.imageMain}
-          resizeMode="cover"
-        />
-      ) : null}
-      <Text style={[textStyles.detail, { alignSelf: 'center' }]}>
-        {entry.cat.descShort}
-      </Text>
-      <Text style={textStyles.label}>Description</Text>
-      <Text style={textStyles.detail}>{entry.cat.descLong}</Text>
-      <Text style={textStyles.label}>Sightings</Text>
-      <MapView
-        style={containerStyles.mapContainer}
-        initialRegion={{
-          latitude: 33.7756,
-          longitude: -84.3963,
-          latitudeDelta: 0.01,
-          longitudeDelta: 0.01,
-        }}
-      >
-        {sightings.map((sighting) => (
-          <Marker
-            key={sighting.id}
-            coordinate={sighting.location}
-            title={sighting.name}
-            description={sighting.info}
+    <View style={{ gap: theme.spacing.lg }}>
+      <DetailHero title={cat.name} media={media} />
+      <View style={{ gap: theme.spacing.xs }}>
+        <AppText variant="pageTitle">{cat.name}</AppText>
+        <AppText color="muted">{cat.descShort}</AppText>
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: theme.spacing.xs }}>
+          <StatusPill label={cat.currentStatus} tone="info" icon="paw" />
+          <StatusPill
+            label={cat.tnr === 'Yes' ? 'TNR complete' : `TNR: ${cat.tnr}`}
+            tone={cat.tnr === 'Yes' ? 'success' : 'neutral'}
+            icon="shield-checkmark-outline"
           />
-        ))}
-      </MapView>
-      <Button
-        style={buttonStyles.bigButton}
-        onPress={() => setShowDetails((visible) => !visible)}
-      >
-        <Text style={textStyles.bigButtonText}>
-          {showDetails ? 'Show less details' : 'Show more details'}
-        </Text>
-      </Button>
-      {showDetails ? (
-        <>
-          <Text style={textStyles.label}>Detailed Color Pattern</Text>
-          <Text style={textStyles.detail}>{entry.cat.colorPattern}</Text>
-          {entry.cat.behavior ? (
-            <>
-              <Text style={textStyles.label}>Behavior</Text>
-              <Text style={textStyles.detail}>{entry.cat.behavior}</Text>
-            </>
-          ) : null}
-          <Text style={textStyles.label}>Years Recorded</Text>
-          <Text style={textStyles.detail}>{entry.cat.yearsRecorded}</Text>
-          <Text style={textStyles.label}>Area of Residence</Text>
-          <Text style={textStyles.detail}>{entry.cat.AoR}</Text>
-          <Text style={textStyles.label}>Current Status</Text>
-          <Text style={textStyles.detail}>{entry.cat.currentStatus}</Text>
-          <Text style={textStyles.label}>Fur Length</Text>
-          <Text style={textStyles.detail}>{entry.cat.furLength}</Text>
-          <Text style={textStyles.label}>Fur Pattern</Text>
-          <Text style={textStyles.detail}>{entry.cat.furPattern}</Text>
-          <Text style={textStyles.label}>TNR</Text>
-          <Text style={textStyles.detail}>{entry.cat.tnr}</Text>
-          <Text style={textStyles.label}>Sex</Text>
-          <Text style={textStyles.detail}>{entry.cat.sex}</Text>
-          {entry.credits ? (
-            <>
-              <Text style={textStyles.label}>Sources and Credits</Text>
-              <Text style={textStyles.detail}>{entry.credits}</Text>
-            </>
-          ) : null}
-        </>
-      ) : null}
-      {gallery.length > 0 ? (
-        <>
-          <Text style={textStyles.label}>Extra Photos</Text>
-          {gallery.map((asset) => (
-            <Image
-              key={asset.id}
-              source={{ uri: asset.url }}
-              style={containerStyles.imageMain}
-            />
-          ))}
-        </>
-      ) : null}
-      <View style={containerStyles.footer}>
-        <Text style={textStyles.footerText}>Author: {entry.createdBy.id}</Text>
-        <Text style={textStyles.footerText}>
-          Posted on {entry.createdAt.toLocaleDateString()}
-        </Text>
+        </View>
       </View>
+      <FieldNoteSection title="Profile" icon="book-outline">
+        <AppText>{cat.descLong}</AppText>
+      </FieldNoteSection>
+      <FieldNoteSection title="Recent sightings" icon="location-outline">
+        <MapInset
+          label={`Map showing sightings of ${cat.name}`}
+          markers={sightings.map((sighting) => ({
+            id: sighting.id,
+            location: sighting.location,
+            title: sighting.name,
+            description: sighting.info,
+          }))}
+        />
+      </FieldNoteSection>
+      <Button
+        label={showDetails ? 'Show fewer field notes' : 'Show all field notes'}
+        variant="secondary"
+        fullWidth
+        onPress={() => setShowDetails((visible) => !visible)}
+      />
+      {showDetails ? (
+        <FieldNoteSection title="Field notes" icon="document-text-outline">
+          <MetadataRow label="Detailed color pattern" value={cat.colorPattern} />
+          {cat.behavior ? <MetadataRow label="Behavior" value={cat.behavior} /> : null}
+          <MetadataRow label="Years recorded" value={cat.yearsRecorded} />
+          <MetadataRow label="Area of residence" value={cat.AoR} />
+          <MetadataRow label="Current status" value={cat.currentStatus} />
+          <MetadataRow label="Fur length" value={cat.furLength} />
+          <MetadataRow label="Fur pattern" value={cat.furPattern} />
+          <MetadataRow label="TNR" value={cat.tnr} />
+          <MetadataRow label="Sex" value={cat.sex} />
+          {entry.credits ? <MetadataRow label="Sources and credits" value={entry.credits} /> : null}
+        </FieldNoteSection>
+      ) : null}
+      <FieldNoteSection title="Contribution" icon="person-outline">
+        <MetadataRow label="Author" value={entry.createdBy.id} />
+        <MetadataRow label="Posted" value={entry.createdAt.toLocaleDateString()} />
+      </FieldNoteSection>
     </View>
   );
 };

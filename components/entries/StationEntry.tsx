@@ -1,10 +1,11 @@
 import React from 'react';
-import { Image, Text, View } from 'react-native';
-import MapView, { Marker } from 'react-native-maps';
+import { View } from 'react-native';
 
 import { Station, StationStockStatus } from '@/core/domain';
 import { StoredMediaAsset } from '@/core/ports';
-import { containerStyles, textStyles } from '@/styles';
+import { useAppTheme } from '@/theme';
+import { AppText, StatusPill } from '../design';
+import { DetailHero, FieldNoteSection, MapInset, MetadataRow } from '../details';
 
 interface StationEntryProps {
   readonly station: Station;
@@ -13,55 +14,37 @@ interface StationEntryProps {
 }
 
 export const StationEntry: React.FC<StationEntryProps> = ({ station, status, media }) => {
-  const profile = media.find(({ role }) => role === 'profile');
-  const gallery = media.filter(({ role }) => role === 'gallery');
+  const theme = useAppTheme();
   return (
-    <View style={containerStyles.card}>
-      <Text style={[textStyles.cardTitle, { textAlign: 'center' }]}>{station.name}</Text>
-      {profile ? (
-        <Image
-          source={{ uri: profile.url }}
-          style={containerStyles.imageMain}
-          resizeMode="cover"
+    <View style={{ gap: theme.spacing.lg }}>
+      <DetailHero title={station.name} media={media} />
+      <View style={{ gap: theme.spacing.xs }}>
+        <AppText variant="pageTitle">{station.name}</AppText>
+        <StatusPill
+          label={status.isStocked ? 'Stocked' : 'Needs food'}
+          tone={status.isStocked ? 'success' : 'warning'}
+          icon={status.isStocked ? 'checkmark-circle' : 'alert-circle'}
         />
-      ) : null}
-      <Text style={textStyles.label}>Location</Text>
-      <MapView
-        style={containerStyles.mapContainer}
-        initialRegion={{ ...station.location, latitudeDelta: 0.01, longitudeDelta: 0.01 }}
-      >
-        <Marker coordinate={station.location} />
-      </MapView>
-      {station.knownCats ? (
-        <>
-          <Text style={textStyles.label}>Cats That Frequent This Station</Text>
-          <Text style={textStyles.detail}>{station.knownCats}</Text>
-        </>
-      ) : null}
-      {status.isStocked ? (
-        <Text style={[textStyles.label, { textAlign: 'center', color: 'green' }]}>
-          This station will need to be restocked in {status.daysRemaining} days.
-        </Text>
-      ) : (
-        <Text style={[textStyles.label, { textAlign: 'center', color: 'red' }]}>
-          This station needs to be restocked!
-        </Text>
-      )}
-      {gallery.length > 0 ? (
-        <>
-          <Text style={textStyles.label}>Extra Photos</Text>
-          {gallery.map((asset) => (
-            <Image
-              key={asset.id}
-              source={{ uri: asset.url }}
-              style={containerStyles.imageMain}
-            />
-          ))}
-        </>
-      ) : null}
-      <View style={containerStyles.footer}>
-        <Text style={textStyles.footerText}>Author: {station.createdBy.id}</Text>
+        <AppText color="muted">
+          {status.isStocked
+            ? `Restock due in ${status.daysRemaining} ${status.daysRemaining === 1 ? 'day' : 'days'}.`
+            : 'This station needs to be restocked.'}
+        </AppText>
       </View>
+      <FieldNoteSection title="Location" icon="location-outline">
+        <MapInset
+          label={`Map showing ${station.name}`}
+          center={station.location}
+          markers={[{ id: station.id, location: station.location, title: station.name }]}
+        />
+      </FieldNoteSection>
+      <FieldNoteSection title="Station notes" icon="paw-outline">
+        <MetadataRow label="Known cats" value={station.knownCats || 'None listed'} />
+        <MetadataRow label="Stocking frequency" value={`Every ${station.stockingFreq} days`} />
+      </FieldNoteSection>
+      <FieldNoteSection title="Contribution" icon="person-outline">
+        <MetadataRow label="Author" value={station.createdBy.id} />
+      </FieldNoteSection>
     </View>
   );
 };

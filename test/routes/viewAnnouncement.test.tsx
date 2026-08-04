@@ -4,6 +4,7 @@ import { render, screen, userEvent } from '@testing-library/react-native';
 
 import ViewAnnouncement from '../../app/(app)/announcements/view-ann';
 import { Role, parseAnnouncement, parseUser } from '../../core/domain';
+import { AppThemeProvider } from '../../theme';
 
 const mockPush = jest.fn();
 const mockGet = jest.fn();
@@ -37,17 +38,21 @@ jest.mock('../../providers', () => ({
 
 jest.mock('@expo/vector-icons', () => ({ Ionicons: () => null }));
 
-jest.mock('../../components', () => {
+jest.mock('../../components/entries/AnnouncementEntry', () => {
   const mockReact = require('react');
-  const { Pressable: MockPressable, Text: MockText } = require('react-native');
+  const { Text: MockText } = require('react-native');
   return {
     AnnouncementEntry: ({ announcement }: { announcement: { title: string } }) =>
       mockReact.createElement(MockText, null, announcement.title),
-    Button: ({ children, onPress }: React.PropsWithChildren<{ onPress: () => void }>) =>
-      mockReact.createElement(MockPressable, { onPress }, children),
-    LoadingIndicator: () => mockReact.createElement(MockText, null, 'Loading'),
   };
 });
+
+const renderAnnouncement = () =>
+  render(
+    <AppThemeProvider colorScheme="light">
+      <ViewAnnouncement />
+    </AppThemeProvider>,
+  );
 
 const announcement = parseAnnouncement({
   id: 'announcement-1',
@@ -72,10 +77,10 @@ describe('view announcement route', () => {
 
   it('loads by route ID and passes that ID to the editor', async () => {
     const user = userEvent.setup();
-    render(<ViewAnnouncement />);
+    renderAnnouncement();
 
     expect(await screen.findByText('Feeding station workday')).toBeOnTheScreen();
-    await user.press(screen.getByText('Edit Announcement'));
+    await user.press(screen.getByRole('button', { name: 'Edit announcement' }));
     expect(mockGet).toHaveBeenCalledWith('announcement-1');
     expect(mockPush).toHaveBeenCalledWith({
       pathname: '/announcements/edit-ann',
@@ -85,10 +90,10 @@ describe('view announcement route', () => {
 
   it('does not offer editing to members', async () => {
     mockRole = Role.Member;
-    render(<ViewAnnouncement />);
+    renderAnnouncement();
 
     expect(await screen.findByText('Feeding station workday')).toBeOnTheScreen();
-    expect(screen.queryByText('Edit Announcement')).not.toBeOnTheScreen();
+    expect(screen.queryByRole('button', { name: 'Edit announcement' })).not.toBeOnTheScreen();
   });
 
   it('renders a module error instead of a selected global record', async () => {
@@ -96,7 +101,7 @@ describe('view announcement route', () => {
       ok: false,
       error: { code: 'not_found', message: 'Announcement not found' },
     });
-    render(<ViewAnnouncement />);
+    renderAnnouncement();
 
     expect(await screen.findByText('Announcement not found')).toBeOnTheScreen();
   });

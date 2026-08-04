@@ -1,11 +1,11 @@
 import React from 'react';
-import { Image, Text, View } from 'react-native';
-import MapView, { Marker } from 'react-native-maps';
-import { Checkbox } from 'react-native-paper';
+import { View } from 'react-native';
 
 import { Sighting } from '@/core/domain';
 import { StoredMediaAsset } from '@/core/ports';
-import { containerStyles, textStyles } from '@/styles';
+import { useAppTheme } from '@/theme';
+import { AppText, StatusPill } from '../design';
+import { DetailHero, FieldNoteSection, MapInset, MetadataRow } from '../details';
 
 interface SightingEntryProps {
   readonly sighting: Sighting;
@@ -20,87 +20,46 @@ const formatSightingDate = (sighting: Sighting): string =>
   })}`;
 
 const SightingEntry: React.FC<SightingEntryProps> = ({ sighting, media }) => {
-  const profile = media.find(({ role }) => role === 'profile');
-  const gallery = media.filter(({ role }) => role === 'gallery');
-
+  const theme = useAppTheme();
   return (
-    <View style={containerStyles.card}>
-      {profile ? (
-        <Image source={{ uri: profile.url }} style={containerStyles.imageMain} />
-      ) : (
-        <View style={containerStyles.imageMain}>
-          <Text style={textStyles.listTitle}>No profile photo</Text>
+    <View style={{ gap: theme.spacing.lg }}>
+      <DetailHero title={sighting.name} media={media} />
+      <View style={{ gap: theme.spacing.xs }}>
+        <AppText variant="pageTitle">{sighting.name}</AppText>
+        <AppText color="muted">{formatSightingDate(sighting)}</AppText>
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: theme.spacing.xs }}>
+          <StatusPill
+            label={sighting.fed ? 'Was fed' : 'Not fed'}
+            tone={sighting.fed ? 'success' : 'warning'}
+            icon={sighting.fed ? 'checkmark-circle' : 'alert-circle'}
+          />
+          <StatusPill
+            label={sighting.health ? 'Appeared healthy' : 'Health concern'}
+            tone={sighting.health ? 'success' : 'danger'}
+            icon={sighting.health ? 'heart' : 'medkit'}
+          />
         </View>
-      )}
-      <Text style={textStyles.label}>Location</Text>
-      <MapView
-        style={containerStyles.mapContainer}
-        initialRegion={{
-          ...sighting.location,
-          latitudeDelta: 0.01,
-          longitudeDelta: 0.01,
-        }}
-      >
-        <Marker coordinate={sighting.location} />
-      </MapView>
-
-      <Text style={textStyles.label}>Cat&apos;s Name</Text>
-      <Text style={textStyles.detail}>{sighting.name}</Text>
-      <Text style={textStyles.label}>Time of Sighting</Text>
-      <Text style={textStyles.detail}>{formatSightingDate(sighting)}</Text>
-
+      </View>
+      <FieldNoteSection title="Location" icon="location-outline">
+        <MapInset
+          label={`Map showing ${sighting.name}'s sighting location`}
+          center={sighting.location}
+          markers={[{
+            id: sighting.id,
+            location: sighting.location,
+            title: sighting.name,
+            description: sighting.info,
+          }]}
+        />
+      </FieldNoteSection>
       {sighting.info ? (
-        <>
-          <Text style={textStyles.label}>Additional Notes</Text>
-          <Text style={textStyles.detail}>{sighting.info}</Text>
-        </>
+        <FieldNoteSection title="Field notes" icon="document-text-outline">
+          <AppText>{sighting.info}</AppText>
+        </FieldNoteSection>
       ) : null}
-
-      <View style={containerStyles.sectionCard}>
-        <View style={containerStyles.rowStack}>
-          <View style={containerStyles.rowContainer}>
-            <Text
-              style={[
-                textStyles.detail,
-                { color: sighting.fed ? 'green' : 'red' },
-              ]}
-            >
-              {sighting.fed ? 'Was fed' : 'Not fed'}
-            </Text>
-            <Checkbox status={sighting.fed ? 'checked' : 'unchecked'} color="green" />
-          </View>
-          <View style={containerStyles.rowContainer}>
-            <Text
-              style={[
-                textStyles.detail,
-                { color: sighting.health ? 'green' : 'red' },
-              ]}
-            >
-              {sighting.health ? 'Was healthy' : 'Not healthy'}
-            </Text>
-            <Checkbox
-              status={sighting.health ? 'checked' : 'unchecked'}
-              color="green"
-            />
-          </View>
-        </View>
-      </View>
-
-      {gallery.length > 0 ? (
-        <>
-          <Text style={textStyles.label}>Extra Photos</Text>
-          {gallery.map((asset) => (
-            <Image
-              key={asset.id}
-              source={{ uri: asset.url }}
-              style={containerStyles.imageMain}
-            />
-          ))}
-        </>
-      ) : null}
-      <View style={containerStyles.footer}>
-        <Text style={textStyles.footerText}>Author: {sighting.createdBy.id}</Text>
-      </View>
+      <FieldNoteSection title="Contribution" icon="person-outline">
+        <MetadataRow label="Author" value={sighting.createdBy.id} />
+      </FieldNoteSection>
     </View>
   );
 };
