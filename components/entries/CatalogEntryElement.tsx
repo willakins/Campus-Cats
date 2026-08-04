@@ -1,16 +1,16 @@
 import React, { useState } from 'react';
-import { View } from 'react-native';
+import { Linking, View } from 'react-native';
 
-import { CatalogEntry, Sighting } from '@/core/domain';
-import { StoredMediaAsset } from '@/core/ports';
+import { CatalogRecord, SightingRecord } from '@/core/domain';
+import { DisplayMediaAsset } from '@/core/ports';
 import { useAppTheme } from '@/theme';
 import { AppText, Button, StatusPill } from '../design';
 import { DetailHero, FieldNoteSection, MapInset, MetadataRow } from '../details';
 
 interface CatalogEntryElementProps {
-  readonly entry: CatalogEntry;
-  readonly media: readonly StoredMediaAsset[];
-  readonly sightings: readonly Sighting[];
+  readonly entry: CatalogRecord;
+  readonly media: readonly DisplayMediaAsset[];
+  readonly sightings: readonly SightingRecord[];
 }
 
 const CatalogEntryElement: React.FC<CatalogEntryElementProps> = ({ entry, media, sightings }) => {
@@ -25,7 +25,10 @@ const CatalogEntryElement: React.FC<CatalogEntryElementProps> = ({ entry, media,
         <AppText variant="pageTitle">{cat.name}</AppText>
         <AppText color="muted">{cat.descShort}</AppText>
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: theme.spacing.xs }}>
-          <StatusPill label={cat.currentStatus} tone="info" icon="paw" />
+          {entry.source === 'inaturalist' ? (
+            <StatusPill label="iNaturalist guide" tone="info" icon="leaf-outline" />
+          ) : null}
+          <StatusPill label={cat.currentStatus ?? 'Status unknown'} tone="info" icon="paw" />
           <StatusPill
             label={cat.tnr === 'Yes' ? 'TNR complete' : `TNR: ${cat.tnr}`}
             tone={cat.tnr === 'Yes' ? 'success' : 'neutral'}
@@ -34,17 +37,17 @@ const CatalogEntryElement: React.FC<CatalogEntryElementProps> = ({ entry, media,
         </View>
       </View>
       <FieldNoteSection title="Profile" icon="book-outline">
-        <AppText>{cat.descLong}</AppText>
+        <AppText>{cat.descLong || cat.descShort}</AppText>
       </FieldNoteSection>
       <FieldNoteSection title="Recent sightings" icon="location-outline">
         <MapInset
           label={`Map showing sightings of ${cat.name}`}
-          markers={sightings.map((sighting) => ({
+          markers={sightings.flatMap((sighting) => sighting.location ? [{
             id: sighting.id,
             location: sighting.location,
             title: sighting.name,
             description: sighting.info,
-          }))}
+          }] : [])}
         />
       </FieldNoteSection>
       <Button
@@ -55,22 +58,38 @@ const CatalogEntryElement: React.FC<CatalogEntryElementProps> = ({ entry, media,
       />
       {showDetails ? (
         <FieldNoteSection title="Field notes" icon="document-text-outline">
-          <MetadataRow label="Detailed color pattern" value={cat.colorPattern} />
+          <MetadataRow label="Detailed color pattern" value={cat.colorPattern || 'Unknown'} />
           {cat.behavior ? <MetadataRow label="Behavior" value={cat.behavior} /> : null}
-          <MetadataRow label="Years recorded" value={cat.yearsRecorded} />
-          <MetadataRow label="Area of residence" value={cat.AoR} />
-          <MetadataRow label="Current status" value={cat.currentStatus} />
-          <MetadataRow label="Fur length" value={cat.furLength} />
-          <MetadataRow label="Fur pattern" value={cat.furPattern} />
-          <MetadataRow label="TNR" value={cat.tnr} />
-          <MetadataRow label="Sex" value={cat.sex} />
+          <MetadataRow label="Years recorded" value={cat.yearsRecorded || 'Unknown'} />
+          <MetadataRow label="Area of residence" value={cat.AoR || 'Unknown'} />
+          <MetadataRow label="Current status" value={cat.currentStatus || 'Unknown'} />
+          <MetadataRow label="Fur length" value={cat.furLength || 'Unknown'} />
+          <MetadataRow label="Fur pattern" value={cat.furPattern || 'Unknown'} />
+          <MetadataRow label="TNR" value={cat.tnr || 'Unknown'} />
+          <MetadataRow label="Sex" value={cat.sex || 'Unknown'} />
           {entry.credits ? <MetadataRow label="Sources and credits" value={entry.credits} /> : null}
         </FieldNoteSection>
       ) : null}
-      <FieldNoteSection title="Contribution" icon="person-outline">
-        <MetadataRow label="Author" value={entry.createdBy.id} />
-        <MetadataRow label="Posted" value={entry.createdAt.toLocaleDateString()} />
-      </FieldNoteSection>
+      {entry.source === 'inaturalist' ? (
+        <FieldNoteSection title="iNaturalist source" icon="leaf-outline">
+          <AppText
+            color="primary"
+            accessibilityRole="link"
+            accessibilityHint="Opens this profile on iNaturalist"
+            onPress={() => void Linking.openURL(entry.sourceUrl)}
+          >
+            View in the Georgia Tech Cats guide
+          </AppText>
+          {entry.localContribution ? (
+            <MetadataRow label="Campus Cats contributor" value={entry.localContribution.createdBy.id} />
+          ) : null}
+        </FieldNoteSection>
+      ) : (
+        <FieldNoteSection title="Contribution" icon="person-outline">
+          <MetadataRow label="Author" value={entry.createdBy.id} />
+          <MetadataRow label="Posted" value={entry.createdAt.toLocaleDateString()} />
+        </FieldNoteSection>
+      )}
     </View>
   );
 };

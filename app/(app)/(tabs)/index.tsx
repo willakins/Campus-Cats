@@ -7,7 +7,7 @@ import { SightingMapView } from '@/components/SightingMapView';
 import { Button, FeedbackBanner, SegmentedControl, StatusPill, Screen } from '@/components/design';
 import { campusMapDarkStyle } from '@/components/mapStyles';
 import { appModules } from '@/composition/appModules';
-import { Sighting, SystemClock } from '@/core/domain';
+import { SightingRecord, SystemClock } from '@/core/domain';
 import { filterSightingsByAge } from '@/features/sightings';
 import { useAppTheme } from '@/theme';
 
@@ -17,7 +17,7 @@ const HomeScreen = () => {
   const router = useRouter();
   const theme = useAppTheme();
   const [filter, setFilter] = useState<'7' | '30' | '90' | '365' | 'all'>('all');
-  const [pins, setPins] = useState<readonly Sighting[]>([]);
+  const [pins, setPins] = useState<readonly SightingRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string>();
 

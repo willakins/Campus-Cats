@@ -21,6 +21,10 @@ export interface ExternalMediaAsset {
 
 export type DisplayMediaAsset = StoredMediaAsset | ExternalMediaAsset;
 
+export const isExternalMediaAsset = (
+  asset: DisplayMediaAsset,
+): asset is ExternalMediaAsset => 'kind' in asset && asset.kind === 'external';
+
 export interface MediaUpload {
   readonly id: MediaAssetId;
   readonly localUri: string;

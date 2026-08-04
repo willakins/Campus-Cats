@@ -8,16 +8,18 @@ import { StatusPill } from './Status';
 interface MediaPickerProps {
   readonly photos: readonly string[];
   readonly coverUri?: string;
-  readonly onAdd: () => void;
+  readonly onAdd?: () => void;
   readonly onPromote?: (uri: string) => void;
-  readonly onRemove: (uri: string) => void;
+  readonly onRemove?: (uri: string) => void;
 }
 
 export const MediaPicker = ({ photos, coverUri, onAdd, onPromote, onRemove }: MediaPickerProps) => {
   const theme = useAppTheme();
   return (
     <View style={{ gap: theme.spacing.md }}>
-      <Button label="Add photos" icon="camera-outline" variant="secondary" onPress={onAdd} />
+      {onAdd ? (
+        <Button label="Add photos" icon="camera-outline" variant="secondary" onPress={onAdd} />
+      ) : null}
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: theme.spacing.sm }}>
         {photos.map((uri, index) => {
           const isCover = uri === coverUri || (!coverUri && index === 0);
@@ -45,12 +47,14 @@ export const MediaPicker = ({ photos, coverUri, onAdd, onPromote, onRemove }: Me
                   onPress={() => onPromote(uri)}
                 />
               ) : null}
-              <Button
-                label={`Remove photo ${index + 1}`}
-                size="small"
-                variant="danger"
-                onPress={() => onRemove(uri)}
-              />
+              {onRemove ? (
+                <Button
+                  label={`Remove photo ${index + 1}`}
+                  size="small"
+                  variant="danger"
+                  onPress={() => onRemove(uri)}
+                />
+              ) : null}
             </View>
           );
         })}

@@ -1,11 +1,11 @@
 import React, { useMemo, useState } from 'react';
-import { Image, Pressable, ScrollView, View } from 'react-native';
+import { Image, Linking, Pressable, ScrollView, View } from 'react-native';
 
 import { Ionicons } from '@expo/vector-icons';
 import { Marker } from 'react-native-maps';
 
 import { Coordinates } from '../../core/domain';
-import { StoredMediaAsset } from '../../core/ports';
+import { DisplayMediaAsset, isExternalMediaAsset } from '../../core/ports';
 import { useAppTheme } from '../../theme';
 import { campusMapDarkStyle } from '../mapStyles';
 import { MapView } from '../ui/MapView';
@@ -13,7 +13,7 @@ import { AppText, Card } from '../design';
 
 interface DetailHeroProps {
   readonly title: string;
-  readonly media: readonly StoredMediaAsset[];
+  readonly media: readonly DisplayMediaAsset[];
 }
 
 export const DetailHero = ({ title, media }: DetailHeroProps) => {
@@ -79,13 +79,31 @@ export const DetailHero = ({ title, media }: DetailHeroProps) => {
               })}
             >
               <Image
-                source={{ uri: asset.url }}
+                source={{
+                  uri: isExternalMediaAsset(asset) ? asset.thumbnailUrl : asset.url,
+                }}
                 resizeMode="cover"
                 style={{ width: '100%', height: '100%', borderRadius: theme.radii.field - 4 }}
               />
             </Pressable>
           ))}
         </ScrollView>
+      ) : null}
+      {selected && isExternalMediaAsset(selected) ? (
+        <View style={{ gap: theme.spacing.xxs }}>
+          <AppText variant="caption" color="muted" selectable>
+            {selected.attribution}
+          </AppText>
+          <AppText
+            variant="caption"
+            color="primary"
+            accessibilityRole="link"
+            accessibilityHint="Opens the photo license"
+            onPress={() => void Linking.openURL(selected.licenseUrl)}
+          >
+            {selected.licenseCode} license
+          </AppText>
+        </View>
       ) : null}
     </View>
   );

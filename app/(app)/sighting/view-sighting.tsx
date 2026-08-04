@@ -6,16 +6,16 @@ import { AppHeader, Button, ErrorState, FeedbackBanner, Screen } from '@/compone
 import { SightingEntry } from '@/components/entries/SightingEntry';
 import { LoadingIndicator } from '@/components/ui/LoadingIndicator';
 import { appModules } from '@/composition/appModules';
-import { Sighting } from '@/core/domain';
-import { StoredMediaAsset } from '@/core/ports';
+import { SightingRecord } from '@/core/domain';
+import { DisplayMediaAsset } from '@/core/ports';
 import { useAuth } from '@/providers';
 
 const SightingScreen = () => {
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id?: string }>();
   const { user } = useAuth();
-  const [sighting, setSighting] = useState<Sighting>();
-  const [media, setMedia] = useState<readonly StoredMediaAsset[]>([]);
+  const [sighting, setSighting] = useState<SightingRecord>();
+  const [media, setMedia] = useState<readonly DisplayMediaAsset[]>([]);
   const [error, setError] = useState<string>();
   const [mediaError, setMediaError] = useState<string>();
   const [loading, setLoading] = useState(true);
@@ -51,7 +51,7 @@ const SightingScreen = () => {
   return (
     <Screen
       scroll
-      footer={sighting && user.id === sighting.createdBy.id ? (
+      footer={sighting?.source === 'campus-cats' && user.id === sighting.createdBy.id ? (
         <Button
           label="Edit sighting"
           icon="create-outline"

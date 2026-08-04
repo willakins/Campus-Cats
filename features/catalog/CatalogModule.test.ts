@@ -1,5 +1,6 @@
 import { InMemoryDocumentStore } from '../../adapters/inMemory/InMemoryDocumentStore';
 import { InMemoryMediaStore } from '../../adapters/inMemory/InMemoryMediaStore';
+import { InMemoryInaturalistReader } from '../../adapters/inMemory/InMemoryInaturalist';
 import {
   FixedClock,
   Role,
@@ -35,6 +36,8 @@ function buildModule() {
   const documents = new InMemoryDocumentStore();
   const media = new InMemoryMediaStore();
   const ids = new SequenceIdGenerator(['cat-1', 'profile-1']);
+  const imports = new InMemoryInaturalistReader();
+  const codecs = createFirestoreCodecs({ fromDate: (date) => date });
   return {
     module: new CatalogModule({
       documents,
@@ -42,10 +45,13 @@ function buildModule() {
       mediaCoordinator: new MediaCoordinator(media, ids),
       ids,
       clock: new FixedClock(new Date('2025-04-10T12:00:00.000Z')),
-      codecs: createFirestoreCodecs({ fromDate: (date) => date }),
+      codecs,
+      imports: { reader: imports, codec: codecs.inaturalistCatalog },
     }),
     documents,
     media,
+    imports,
+    codecs,
   };
 }
 
@@ -63,8 +69,135 @@ describe('CatalogModule', () => {
       value: { id: 'cat-1', cat: { name: 'Goldie' }, createdBy: { id: 'admin-1' } },
     });
     await expect(module.list()).resolves.toMatchObject({ ok: true, value: [{ id: 'cat-1' }] });
-    await expect(module.get('cat-1')).resolves.toEqual(created);
+    await expect(module.get('cat-1')).resolves.toMatchObject({
+      ok: true,
+      value: { id: 'cat-1', source: 'campus-cats' },
+    });
     await expect(module.remove(admin, 'cat-1')).resolves.toMatchObject({ ok: true });
+  });
+
+  it('populates the catalog from guide profiles and applies local overrides', async () => {
+    const { module, imports, codecs } = buildModule();
+    const imported = codecs.inaturalistCatalog.decode('2113386', {
+      guideId: 18800,
+      sourceUrl: 'https://www.inaturalist.org/guide_taxa/2113386',
+      sourceUpdatedAt: new Date('2025-05-20T01:14:20.435Z'),
+      displayName: 'Mimi',
+      shortDescription: 'Black-and-white male with chin-spot',
+      metadata: {
+        yearsRecorded: ['2023', '2024', '2025'],
+        areasOfResidence: ['Central Campus', 'Tech Parkway'],
+        currentStatus: 'Feral',
+        furLength: 'Short',
+        furPatterns: ['Black and White'],
+        tnr: 'Yes',
+        sex: 'Male',
+      },
+      photos: [
+        {
+          kind: 'external',
+          id: 'inat-photo-1',
+          url: 'https://example.com/large.jpg',
+          thumbnailUrl: 'https://example.com/small.jpg',
+          role: 'profile',
+          sourceUrl: 'https://www.inaturalist.org/photos/1',
+          attribution: 'Observer (CC BY-NC)',
+          licenseCode: 'CC-BY-NC',
+          licenseUrl: 'https://creativecommons.org/licenses/by-nc/4.0/',
+        },
+      ],
+      sourceActive: true,
+      visible: true,
+      importedAt: new Date('2026-08-04T07:17:00.000Z'),
+      syncedAt: new Date('2026-08-04T07:17:00.000Z'),
+      lastSeenRunId: 'run-1',
+      moderation: { hidden: false, reason: '' },
+      overrides: { behavior: 'Keeps a cautious distance.' },
+      matchStatus: 'unlinked',
+    });
+    imports.catalog.set('2113386', codecs.inaturalistCatalog.encode(imported));
+
+    await expect(module.list()).resolves.toMatchObject({
+      ok: true,
+      value: [
+        {
+          source: 'inaturalist',
+          id: 'inat-guide-2113386',
+          cat: {
+            name: 'Mimi',
+            behavior: 'Keeps a cautious distance.',
+            yearsRecorded: '2023, 2024, 2025',
+          },
+        },
+      ],
+    });
+    await expect(module.media('inat-guide-2113386')).resolves.toMatchObject({
+      ok: true,
+      value: [{ kind: 'external', role: 'profile' }],
+    });
+  });
+
+  it('renders one composite profile when an imported cat links to a local entry', async () => {
+    const { module, imports, codecs, media } = buildModule();
+    await module.create(admin, {
+      cat: { ...cat, name: 'Mimi' },
+      credits: 'Campus Cats team',
+      photos: ['file://profile.jpg'],
+    });
+    const imported = codecs.inaturalistCatalog.decode('2113386', {
+      guideId: 18800,
+      sourceUrl: 'https://www.inaturalist.org/guide_taxa/2113386',
+      sourceUpdatedAt: new Date('2025-05-20T01:14:20.435Z'),
+      displayName: 'Mimi',
+      shortDescription: 'Source description',
+      metadata: {
+        yearsRecorded: [],
+        areasOfResidence: [],
+        furPatterns: [],
+      },
+      photos: [],
+      sourceActive: true,
+      visible: true,
+      importedAt: new Date('2026-08-04T07:17:00.000Z'),
+      syncedAt: new Date('2026-08-04T07:17:00.000Z'),
+      lastSeenRunId: 'run-1',
+      moderation: { hidden: false, reason: '' },
+      overrides: {},
+      linkedLocalCatalogId: 'cat-1',
+      matchStatus: 'linked',
+    });
+    imports.catalog.set('2113386', codecs.inaturalistCatalog.encode(imported));
+
+    const result = await module.list();
+    expect(result).toMatchObject({
+      ok: true,
+      value: [
+        {
+          source: 'inaturalist',
+          cat: { name: 'Mimi', descShort: cat.descShort },
+          linkedLocalCatalogId: 'cat-1',
+        },
+      ],
+    });
+    await expect(module.media('inat-guide-2113386')).resolves.toMatchObject({
+      ok: true,
+      value: [{ id: media.ids()[0] }],
+    });
+  });
+
+  it('rejects destructive mutations against imported guide profiles', async () => {
+    const { module } = buildModule();
+    await expect(
+      module.update(admin, 'inat-guide-2113386', {
+        cat,
+        credits: '',
+        profile: storedMedia('unused'),
+        gallery: [],
+      }),
+    ).resolves.toMatchObject({ ok: false, error: { code: 'forbidden' } });
+    await expect(
+      module.remove(admin, 'inat-guide-2113386'),
+    ).resolves.toMatchObject({ ok: false, error: { code: 'forbidden' } });
   });
 
   it('rejects non-admin mutations', async () => {

@@ -2,22 +2,30 @@ import {
   Clock,
   COLLECTIONS,
   FirestoreCodec,
+  ImportedObservation,
   IdGenerator,
   Outcome,
   Sighting,
+  SightingRecord,
   User,
   canModifySighting,
   failure,
+  importedSightingRecord,
+  localSightingRecord,
   parseSighting,
   success,
 } from '../../core/domain';
 import {
   MediaCoordinator,
   MediaSelection,
-  ReconciledMedia,
   localMedia,
 } from '../../core/media';
-import { DocumentStore, MediaStore } from '../../core/ports';
+import {
+  DisplayMediaAsset,
+  DocumentStore,
+  InaturalistReader,
+  MediaStore,
+} from '../../core/ports';
 
 export interface SightingDraft {
   readonly name: string;
@@ -42,27 +50,77 @@ interface SightingsDependencies {
   readonly mediaCoordinator: MediaCoordinator;
   readonly ids: IdGenerator;
   readonly codecs: { readonly sighting: FirestoreCodec<Sighting> };
+  readonly imports?: {
+    readonly reader: InaturalistReader;
+    readonly codec: FirestoreCodec<ImportedObservation>;
+  };
 }
 
 export class SightingsModule {
   constructor(private readonly dependencies: SightingsDependencies) {}
 
-  async list(): Promise<Outcome<readonly Sighting[]>> {
+  async list(): Promise<Outcome<readonly SightingRecord[]>> {
+    let local: readonly SightingRecord[];
     try {
       const documents = await this.dependencies.documents.list(
         COLLECTIONS.sightings,
       );
-      return success(
-        documents.map(({ id, data }) =>
+      local = documents.map(({ id, data }) =>
+        localSightingRecord(
           this.dependencies.codecs.sighting.decode(id, data),
         ),
       );
     } catch {
       return failure('dependency_failure', 'Could not load sightings');
     }
+
+    if (!this.dependencies.imports) return success(local);
+    try {
+      const imported = await this.dependencies.imports.reader.listObservations(
+        false,
+      );
+      return success([
+        ...local,
+        ...imported.map(({ id, data }) =>
+          importedSightingRecord(
+            this.dependencies.imports!.codec.decode(id, data),
+          ),
+        ),
+      ]);
+    } catch {
+      return success(local, [
+        {
+          code: 'partial_completion',
+          message:
+            'Campus Cats reports loaded, but iNaturalist sightings are unavailable',
+        },
+      ]);
+    }
   }
 
-  async get(id: string): Promise<Outcome<Sighting>> {
+  async get(id: string): Promise<Outcome<SightingRecord>> {
+    const importedId = importedObservationId(id);
+    if (importedId !== undefined) {
+      if (!this.dependencies.imports) {
+        return failure('not_found', 'Sighting not found');
+      }
+      try {
+        const document =
+          await this.dependencies.imports.reader.getObservation(importedId);
+        return document
+          ? success(
+              importedSightingRecord(
+                this.dependencies.imports.codec.decode(
+                  document.id,
+                  document.data,
+                ),
+              ),
+            )
+          : failure('not_found', 'Sighting not found');
+      } catch {
+        return failure('dependency_failure', 'Could not load the sighting');
+      }
+    }
     try {
       const document = await this.dependencies.documents.get(
         COLLECTIONS.sightings,
@@ -70,9 +128,11 @@ export class SightingsModule {
       );
       return document
         ? success(
-            this.dependencies.codecs.sighting.decode(
-              document.id,
-              document.data,
+            localSightingRecord(
+              this.dependencies.codecs.sighting.decode(
+                document.id,
+                document.data,
+              ),
             ),
           )
         : failure('not_found', 'Sighting not found');
@@ -81,7 +141,25 @@ export class SightingsModule {
     }
   }
 
-  async media(id: string): Promise<Outcome<readonly ReconciledMedia['gallery'][number][]>> {
+  async media(id: string): Promise<Outcome<readonly DisplayMediaAsset[]>> {
+    const importedId = importedObservationId(id);
+    if (importedId !== undefined) {
+      if (!this.dependencies.imports) return success([]);
+      try {
+        const document =
+          await this.dependencies.imports.reader.getObservation(importedId);
+        return document
+          ? success(
+              this.dependencies.imports.codec.decode(
+                document.id,
+                document.data,
+              ).photos,
+            )
+          : failure('not_found', 'Sighting not found');
+      } catch {
+        return failure('dependency_failure', 'Could not load sighting media');
+      }
+    }
     try {
       return success(
         await this.dependencies.media.list(`${COLLECTIONS.sightings}/${id}`),
@@ -130,9 +208,21 @@ export class SightingsModule {
     if (!actor) {
       return failure('unauthenticated', 'Sign in to update a sighting');
     }
+    if (importedObservationId(id) !== undefined) {
+      return failure(
+        'forbidden',
+        'iNaturalist sightings are read-only in Campus Cats',
+      );
+    }
     const existingResult = await this.get(id);
     if (!existingResult.ok) {
       return existingResult;
+    }
+    if (existingResult.value.source !== 'campus-cats') {
+      return failure(
+        'forbidden',
+        'iNaturalist sightings are read-only in Campus Cats',
+      );
     }
     if (!canModifySighting(actor.id, existingResult.value.createdBy.id)) {
       return failure('forbidden', 'Only the creator may update this sighting');
@@ -171,9 +261,21 @@ export class SightingsModule {
     if (!actor) {
       return failure('unauthenticated', 'Sign in to delete a sighting');
     }
+    if (importedObservationId(id) !== undefined) {
+      return failure(
+        'forbidden',
+        'iNaturalist sightings cannot be deleted from Campus Cats',
+      );
+    }
     const existingResult = await this.get(id);
     if (!existingResult.ok) {
       return existingResult;
+    }
+    if (existingResult.value.source !== 'campus-cats') {
+      return failure(
+        'forbidden',
+        'iNaturalist sightings cannot be deleted from Campus Cats',
+      );
     }
     if (!canModifySighting(actor.id, existingResult.value.createdBy.id)) {
       return failure('forbidden', 'Only the creator may delete this sighting');
@@ -210,6 +312,13 @@ export class SightingsModule {
       );
     }
   }
+}
+
+function importedObservationId(id: string): number | undefined {
+  const match = /^inat-observation-(\d+)$/.exec(id);
+  if (!match) return undefined;
+  const parsed = Number(match[1]);
+  return Number.isSafeInteger(parsed) && parsed > 0 ? parsed : undefined;
 }
 
 function validateDraft(

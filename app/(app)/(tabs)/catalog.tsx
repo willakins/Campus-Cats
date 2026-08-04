@@ -7,7 +7,7 @@ import { AppHeader, Button, EmptyState, ErrorState, Screen, Skeleton } from '@/c
 import { catalogColumnCount } from '@/components/collections/catalogLayout';
 import { CatalogItem } from '@/components/items/CatalogItem';
 import { appModules } from '@/composition/appModules';
-import { canManageFeature, CatalogEntry } from '@/core/domain';
+import { canManageFeature, CatalogRecord } from '@/core/domain';
 import { useAuth } from '@/providers';
 import { useAppTheme } from '@/theme';
 
@@ -18,7 +18,7 @@ const Catalog = () => {
   const { width, fontScale } = useWindowDimensions();
   const isAdmin = canManageFeature(user.role);
   const columns = catalogColumnCount(width, fontScale);
-  const [entries, setEntries] = useState<readonly CatalogEntry[]>([]);
+  const [entries, setEntries] = useState<readonly CatalogRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string>();
 
