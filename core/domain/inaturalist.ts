@@ -54,6 +54,8 @@ export const importedObservationSchema = z.object({
   sourceUrl: z.string().url(),
   sourceUpdatedAt: validDate,
   observedAt: validDate,
+  observedOn: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  observedTimePrecision: z.enum(['exact', 'date']),
   displayName: requiredText,
   description: z.string(),
   qualityGrade: z.enum(['casual', 'needs_id', 'research']),
@@ -153,6 +155,8 @@ export interface InaturalistSightingRecord {
   readonly name: string;
   readonly info: string;
   readonly date: Date;
+  readonly observedOn: string;
+  readonly observedTimePrecision: ImportedObservation['observedTimePrecision'];
   readonly location: Coordinates | null;
   readonly qualityGrade: ImportedObservation['qualityGrade'];
   readonly observer: ImportedObservation['observer'];
@@ -251,6 +255,8 @@ export function importedSightingRecord(
     name: value.displayName,
     info: value.description,
     date: value.observedAt,
+    observedOn: value.observedOn,
+    observedTimePrecision: value.observedTimePrecision,
     location: value.location,
     qualityGrade: value.qualityGrade,
     observer: value.observer,
