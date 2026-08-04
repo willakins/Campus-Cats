@@ -10,6 +10,7 @@ module.exports = {
     'core/**/*.{ts,tsx}',
     'features/**/*.{ts,tsx}',
     'adapters/**/*.{ts,tsx}',
+    'theme/**/*.{ts,tsx}',
     '!**/*.test.{ts,tsx}',
     '!**/index.ts',
   ],
