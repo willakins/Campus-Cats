@@ -2,7 +2,7 @@
   "name": "functions",
   "scripts": {
     "build": "tsc",
-    "test": "node --test lib/handlers.test.js",
+    "test": "node --test lib/**/*.test.js",
     "test:ci": "npm run build && npm test",
     "build:watch": "tsc --watch",
     "serve": "npm run build && firebase emulators:start --only functions",

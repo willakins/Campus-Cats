@@ -1,4 +1,4 @@
-import { createHash } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
 
 import sgMail from '@sendgrid/mail';
 import * as admin from 'firebase-admin';
@@ -9,6 +9,7 @@ import {
   HttpsError,
   onCall,
 } from 'firebase-functions/v2/https';
+import { onSchedule } from 'firebase-functions/v2/scheduler';
 
 import {
   HandlerDependencies,
@@ -22,12 +23,26 @@ import {
   handleSubmitWhitelistApplication,
   handleUpdateUserRole,
 } from './handlers';
+import { FirebaseInaturalistRepository } from './firebaseInaturalist';
+import {
+  InaturalistHttpGateway,
+  runInaturalistSync as executeInaturalistSync,
+} from './inaturalist';
+import {
+  InaturalistHandlerDependencies,
+  handleLinkInaturalistCatalog,
+  handleModerateInaturalistRecord,
+  handleRunInaturalistSync,
+  handleUpdateInaturalistCatalog,
+} from './inaturalistHandlers';
 
 if (admin.apps.length === 0) admin.initializeApp();
 
 const SENDGRID_API_KEY = defineSecret('SENDGRID_API_KEY');
 const firestore = admin.firestore();
 const auth = admin.auth();
+const inaturalistRepository = new FirebaseInaturalistRepository(firestore);
+const inaturalistGateway = new InaturalistHttpGateway();
 
 const dependencies: HandlerDependencies = {
   async getUser(id): Promise<ManagedUser | undefined> {
@@ -128,6 +143,32 @@ const dependencies: HandlerDependencies = {
   },
 };
 
+const synchronizeInaturalist = () =>
+  executeInaturalistSync({
+    gateway: inaturalistGateway,
+    repository: inaturalistRepository,
+    clock: { now: () => new Date() },
+    runId: randomUUID,
+  });
+
+const inaturalistDependencies: InaturalistHandlerDependencies = {
+  getUser: dependencies.getUser,
+  runSync: synchronizeInaturalist,
+  moderate: (kind, id, hidden, reason, actorId) =>
+    inaturalistRepository.moderate(
+      kind,
+      id,
+      hidden,
+      reason,
+      actorId,
+      new Date(),
+    ),
+  updateCatalogOverrides: (id, overrides) =>
+    inaturalistRepository.updateCatalogOverrides(id, overrides),
+  linkCatalog: (id, localCatalogId) =>
+    inaturalistRepository.linkCatalog(id, localCatalogId),
+};
+
 async function execute<T>(operation: () => Promise<T>): Promise<T> {
   try {
     return await operation();
@@ -177,4 +218,56 @@ export const submitWhitelistApplication = onCall((request) =>
   execute(() =>
     handleSubmitWhitelistApplication(requestFor(request), dependencies),
   ),
+);
+
+export const runInaturalistSync = onCall((request) =>
+  execute(() =>
+    handleRunInaturalistSync(requestFor(request), inaturalistDependencies),
+  ),
+);
+
+export const moderateInaturalistRecord = onCall((request) =>
+  execute(() =>
+    handleModerateInaturalistRecord(
+      requestFor(request),
+      inaturalistDependencies,
+    ),
+  ),
+);
+
+export const updateInaturalistCatalog = onCall((request) =>
+  execute(() =>
+    handleUpdateInaturalistCatalog(
+      requestFor(request),
+      inaturalistDependencies,
+    ),
+  ),
+);
+
+export const linkInaturalistCatalog = onCall((request) =>
+  execute(() =>
+    handleLinkInaturalistCatalog(
+      requestFor(request),
+      inaturalistDependencies,
+    ),
+  ),
+);
+
+export const syncInaturalistDaily = onSchedule(
+  {
+    schedule: '17 3 * * *',
+    timeZone: 'America/New_York',
+    retryCount: 3,
+    maxInstances: 1,
+    timeoutSeconds: 540,
+  },
+  async () => {
+    const summary = await synchronizeInaturalist();
+    logger.info('iNaturalist synchronization completed', summary);
+    if (summary.status === 'partial' || summary.status === 'failed') {
+      throw new Error(
+        `iNaturalist synchronization completed with status ${summary.status}`,
+      );
+    }
+  },
 );
