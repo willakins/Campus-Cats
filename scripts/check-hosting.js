@@ -45,6 +45,7 @@ const outputPath = path.join(projectRoot, 'dist');
 if (fs.existsSync(outputPath)) {
   const outputEntryPath = path.join(outputPath, 'index.html');
   const samlBridgePath = path.join(outputPath, 'firebase-wrapper-app.html');
+  const samlBridgeScriptPath = path.join(outputPath, 'firebase-wrapper-app.js');
 
   if (!fs.existsSync(outputEntryPath)) {
     violations.push('The Hosting output is missing dist/index.html.');
@@ -57,6 +58,25 @@ if (fs.existsSync(outputPath)) {
 
   if (!fs.existsSync(samlBridgePath)) {
     violations.push('The Hosting output is missing the Firebase SAML bridge.');
+  }
+
+  if (!fs.existsSync(samlBridgeScriptPath)) {
+    violations.push('The Hosting output is missing the Firebase SAML bridge script.');
+  }
+
+  const bundleDirectory = path.join(outputPath, '_expo', 'static', 'js', 'web');
+  if (fs.existsSync(bundleDirectory)) {
+    const bundle = fs
+      .readdirSync(bundleDirectory)
+      .filter((file) => file.endsWith('.js'))
+      .map((file) => fs.readFileSync(path.join(bundleDirectory, file), 'utf8'))
+      .join('\n');
+    for (const variable of ['EXPO_PUBLIC_WEB_API_KEY', 'EXPO_PUBLIC_WEB_APP_ID']) {
+      const value = process.env[variable];
+      if (value && !bundle.includes(value)) {
+        violations.push(`Expo did not inline ${variable} into the web bundle.`);
+      }
+    }
   }
 }
 

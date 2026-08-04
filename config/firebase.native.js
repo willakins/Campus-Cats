@@ -2,6 +2,7 @@ import ReactNativeAsyncStorage from '@react-native-async-storage/async-storage';
 import { getAuth, getReactNativePersistence, initializeAuth } from 'firebase/auth';
 
 import { app, db, firebaseConfig, storage } from './firebaseApp';
+import { samlConfiguration } from './firebaseConfig';
 
 const auth = (() => {
   try {
@@ -13,4 +14,4 @@ const auth = (() => {
   }
 })();
 
-export { app, auth, db, firebaseConfig, storage };
+export { app, auth, db, firebaseConfig, samlConfiguration, storage };
