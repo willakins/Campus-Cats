@@ -11,6 +11,7 @@ module.exports = {
     'features/**/*.{ts,tsx}',
     'adapters/**/*.{ts,tsx}',
     'theme/**/*.{ts,tsx}',
+    'components/design/**/*.{ts,tsx}',
     '!**/*.test.{ts,tsx}',
     '!**/index.ts',
   ],

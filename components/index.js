@@ -18,3 +18,4 @@ export { CatalogItem } from './items/CatalogItem';
 export { AnnouncementItem } from './items/AnnouncementItem';
 export { StationItem } from './items/StationItem';
 export { UserItem } from './items/UserItem';
+export * from './design';
