@@ -30,7 +30,7 @@ const CatalogEntryElement: React.FC<CatalogEntryElementProps> = ({ entry, media,
           ) : null}
           <StatusPill label={cat.currentStatus ?? 'Status unknown'} tone="info" icon="paw" />
           <StatusPill
-            label={cat.tnr === 'Yes' ? 'TNR complete' : `TNR: ${cat.tnr}`}
+            label={cat.tnr === 'Yes' ? 'TNR complete' : `TNR: ${cat.tnr ?? 'Unknown'}`}
             tone={cat.tnr === 'Yes' ? 'success' : 'neutral'}
             icon="shield-checkmark-outline"
           />

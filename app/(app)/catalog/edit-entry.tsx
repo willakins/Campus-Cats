@@ -85,7 +85,10 @@ const EditEntry = () => {
           yearsRecorded: loaded.cat.yearsRecorded ?? '',
           AoR: loaded.cat.AoR ?? '',
           furPattern: loaded.cat.furPattern ?? '',
-          credits: loaded.credits,
+          credits:
+            loaded.source === 'inaturalist' && loaded.localContribution
+              ? loaded.localContribution.credits
+              : loaded.credits,
         });
         setStatusValue(loaded.cat.currentStatus ?? 'Unknown');
         setTnrValue(loaded.cat.tnr ?? 'Unknown');
@@ -119,7 +122,10 @@ const EditEntry = () => {
   };
   const save = async () => {
     if (!entry || busy) return;
-    if (entry.source === 'campus-cats' && !profile) {
+    if (
+      (entry.source === 'campus-cats' || entry.linkedLocalCatalogId) &&
+      !profile
+    ) {
       setError('Please select a profile photo.');
       return;
     }
@@ -145,14 +151,26 @@ const EditEntry = () => {
           ? selectedCover.id
           : undefined,
     };
-    const result = entry.source === 'inaturalist'
-      ? await appModules.inaturalist.updateCatalog(actor, entry.sourceId, overrides)
-      : await appModules.catalog.update(actor, entry.id, {
-          cat: cat(),
-          credits: formData.credits,
-          profile: selectionFor(profile),
-          gallery: photos.map(selectionFor),
-        });
+    const localUpdate = {
+      cat: cat(),
+      credits: formData.credits,
+      profile: selectionFor(profile),
+      gallery: photos.map(selectionFor),
+    };
+    const result =
+      entry.source === 'campus-cats'
+        ? await appModules.catalog.update(actor, entry.id, localUpdate)
+        : entry.linkedLocalCatalogId
+          ? await appModules.catalog.update(
+              actor,
+              entry.linkedLocalCatalogId,
+              localUpdate,
+            )
+          : await appModules.inaturalist.updateCatalog(
+              actor,
+              entry.sourceId,
+              overrides,
+            );
     setBusy(false);
     if (!result.ok) {
       setError(result.error.message);

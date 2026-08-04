@@ -4,6 +4,7 @@
     "build": "tsc",
     "test": "node --test lib/**/*.test.js",
     "test:ci": "npm run build && npm test",
+    "contract:inaturalist:live": "npm run build && node lib/inaturalistContract.js",
     "build:watch": "tsc --watch",
     "serve": "npm run build && firebase emulators:start --only functions",
     "shell": "npm run build && firebase functions:shell",

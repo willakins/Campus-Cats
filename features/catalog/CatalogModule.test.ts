@@ -176,6 +176,7 @@ describe('CatalogModule', () => {
           source: 'inaturalist',
           cat: { name: 'Mimi', descShort: cat.descShort },
           linkedLocalCatalogId: 'cat-1',
+          localContribution: { credits: 'Campus Cats team' },
         },
       ],
     });

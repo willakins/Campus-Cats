@@ -46,12 +46,13 @@ const HomeScreen = () => {
     filter === 'all' ? undefined : Number(filter),
     clock,
   );
+  const mappablePins = visiblePins.filter(({ location }) => location !== null);
 
   return (
     <Screen fullBleed>
       <View style={{ flex: 1 }}>
         <SightingMapView
-          list={visiblePins}
+          list={mappablePins}
           filter={() => true}
           style={{ flex: 1 }}
           userInterfaceStyle={theme.dark ? 'dark' : 'light'}
@@ -103,7 +104,7 @@ const HomeScreen = () => {
             />
           </View>
           <StatusPill
-            label={loading ? 'Loading sightings' : `${visiblePins.length} ${visiblePins.length === 1 ? 'sighting' : 'sightings'}`}
+            label={loading ? 'Loading sightings' : `${mappablePins.length} ${mappablePins.length === 1 ? 'sighting' : 'sightings'}`}
             tone="neutral"
             icon="paw"
           />

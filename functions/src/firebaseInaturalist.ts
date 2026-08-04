@@ -10,6 +10,7 @@ import {
   ObservationImport,
   SyncRunSummary,
   UpsertCounts,
+  normalizeCatName,
 } from './inaturalist';
 
 const OBSERVATIONS = 'inaturalist-observations';
@@ -111,23 +112,42 @@ export class FirebaseInaturalistRepository implements ImportRepository {
       const references = valuesChunk.map(({ id }) =>
         this.firestore.collection(OBSERVATIONS).doc(String(id)),
       );
-      const existing = await this.firestore.getAll(...references);
-      const batch = this.firestore.batch();
-      valuesChunk.forEach((value, index) => {
-        const prior = existing[index];
-        if (prior.exists) updated += 1;
-        else created += 1;
-        const priorData = prior.data();
-        const moderation = moderationValue(priorData?.moderation);
-        batch.set(references[index], {
-          ...serializeObservation(value),
-          importedAt:
-            priorData?.importedAt ?? Timestamp.fromDate(value.importedAt),
-          moderation: serializeModeration(moderation),
-          visible: value.sourceActive && !moderation.hidden,
+      const counts = await this.firestore.runTransaction(async (transaction) => {
+        const existing = await transaction.getAll(...references);
+        let chunkCreated = 0;
+        let chunkUpdated = 0;
+        valuesChunk.forEach((value, index) => {
+          const prior = existing[index];
+          if (prior.exists) chunkUpdated += 1;
+          else chunkCreated += 1;
+          const priorData = prior.data();
+          const moderation = moderationValue(priorData?.moderation);
+          const serialized = serializeObservation(value);
+          const priorGuideTaxonId = positiveIntegerValue(
+            priorData?.guideTaxonId,
+          );
+          if (
+            value.guideTaxonId === undefined &&
+            priorGuideTaxonId !== undefined &&
+            sameNormalizedName(
+              stringValue(priorData?.observationFieldValue),
+              value.observationFieldValue,
+            )
+          ) {
+            serialized.guideTaxonId = priorGuideTaxonId;
+          }
+          transaction.set(references[index], {
+            ...serialized,
+            importedAt:
+              priorData?.importedAt ?? Timestamp.fromDate(value.importedAt),
+            moderation: serializeModeration(moderation),
+            visible: value.sourceActive && !moderation.hidden,
+          });
         });
+        return { created: chunkCreated, updated: chunkUpdated };
       });
-      await batch.commit();
+      created += counts.created;
+      updated += counts.updated;
     }
     return { created, updated };
   }
@@ -139,32 +159,37 @@ export class FirebaseInaturalistRepository implements ImportRepository {
       const references = valuesChunk.map(({ id }) =>
         this.firestore.collection(CATALOG).doc(String(id)),
       );
-      const existing = await this.firestore.getAll(...references);
-      const batch = this.firestore.batch();
-      valuesChunk.forEach((value, index) => {
-        const prior = existing[index];
-        if (prior.exists) updated += 1;
-        else created += 1;
-        const priorData = prior.data();
-        const moderation = moderationValue(priorData?.moderation);
-        const linkedLocalCatalogId =
-          stringValue(priorData?.linkedLocalCatalogId) ??
-          value.linkedLocalCatalogId;
-        const document: Record<string, unknown> = {
-          ...serializeCatalog(value),
-          importedAt:
-            priorData?.importedAt ?? Timestamp.fromDate(value.importedAt),
-          moderation: serializeModeration(moderation),
-          overrides: objectValue(priorData?.overrides) ?? {},
-          matchStatus: linkedLocalCatalogId ? 'linked' : value.matchStatus,
-          visible: value.sourceActive && !moderation.hidden,
-        };
-        if (linkedLocalCatalogId) {
-          document.linkedLocalCatalogId = linkedLocalCatalogId;
-        }
-        batch.set(references[index], document);
+      const counts = await this.firestore.runTransaction(async (transaction) => {
+        const existing = await transaction.getAll(...references);
+        let chunkCreated = 0;
+        let chunkUpdated = 0;
+        valuesChunk.forEach((value, index) => {
+          const prior = existing[index];
+          if (prior.exists) chunkUpdated += 1;
+          else chunkCreated += 1;
+          const priorData = prior.data();
+          const moderation = moderationValue(priorData?.moderation);
+          const linkedLocalCatalogId =
+            stringValue(priorData?.linkedLocalCatalogId) ??
+            value.linkedLocalCatalogId;
+          const document: Record<string, unknown> = {
+            ...serializeCatalog(value),
+            importedAt:
+              priorData?.importedAt ?? Timestamp.fromDate(value.importedAt),
+            moderation: serializeModeration(moderation),
+            overrides: objectValue(priorData?.overrides) ?? {},
+            matchStatus: linkedLocalCatalogId ? 'linked' : value.matchStatus,
+            visible: value.sourceActive && !moderation.hidden,
+          };
+          if (linkedLocalCatalogId) {
+            document.linkedLocalCatalogId = linkedLocalCatalogId;
+          }
+          transaction.set(references[index], document);
+        });
+        return { created: chunkCreated, updated: chunkUpdated };
       });
-      await batch.commit();
+      created += counts.created;
+      updated += counts.updated;
     }
     return { created, updated };
   }
@@ -253,18 +278,31 @@ export class FirebaseInaturalistRepository implements ImportRepository {
 
   async linkCatalog(id: number, localCatalogId?: string): Promise<void> {
     const reference = this.firestore.collection(CATALOG).doc(String(id));
-    if (localCatalogId) {
-      const local = await this.firestore
-        .collection(LOCAL_CATALOG)
-        .doc(localCatalogId)
-        .get();
-      if (!local.exists) throw new Error('Local catalog profile not found');
-    }
-    const imported = await reference.get();
-    if (!imported.exists) throw new Error('Imported catalog profile not found');
-    await reference.update({
-      linkedLocalCatalogId: localCatalogId ?? FieldValue.delete(),
-      matchStatus: localCatalogId ? 'linked' : 'unlinked',
+    await this.firestore.runTransaction(async (transaction) => {
+      const imported = await transaction.get(reference);
+      if (!imported.exists) {
+        throw new Error('Imported catalog profile not found');
+      }
+      if (localCatalogId) {
+        const localReference = this.firestore
+          .collection(LOCAL_CATALOG)
+          .doc(localCatalogId);
+        const existingLinkQuery = this.firestore
+          .collection(CATALOG)
+          .where('linkedLocalCatalogId', '==', localCatalogId);
+        const [local, existingLinks] = await Promise.all([
+          transaction.get(localReference),
+          transaction.get(existingLinkQuery),
+        ]);
+        if (!local.exists) throw new Error('Local catalog profile not found');
+        if (existingLinks.docs.some((document) => document.id !== String(id))) {
+          throw new Error('Local catalog profile is already linked');
+        }
+      }
+      transaction.update(reference, {
+        linkedLocalCatalogId: localCatalogId ?? FieldValue.delete(),
+        matchStatus: localCatalogId ? 'linked' : 'unlinked',
+      });
     });
   }
 
@@ -295,27 +333,27 @@ export class FirebaseInaturalistRepository implements ImportRepository {
   }
 }
 
-function serializeObservation(value: ObservationImport) {
+function serializeObservation(value: ObservationImport): Record<string, unknown> {
   const { id: _id, ...stored } = value;
-  return {
+  return compactObject({
     ...stored,
     sourceUpdatedAt: Timestamp.fromDate(value.sourceUpdatedAt),
     observedAt: Timestamp.fromDate(value.observedAt),
     importedAt: Timestamp.fromDate(value.importedAt),
     syncedAt: Timestamp.fromDate(value.syncedAt),
     moderation: serializeModeration(value.moderation),
-  };
+  });
 }
 
-function serializeCatalog(value: CatalogImport) {
+function serializeCatalog(value: CatalogImport): Record<string, unknown> {
   const { id: _id, linkedLocalCatalogId: _linked, ...stored } = value;
-  return {
+  return compactObject({
     ...stored,
     sourceUpdatedAt: Timestamp.fromDate(value.sourceUpdatedAt),
     importedAt: Timestamp.fromDate(value.importedAt),
     syncedAt: Timestamp.fromDate(value.syncedAt),
     moderation: serializeModeration(value.moderation),
-  };
+  });
 }
 
 function serializeModeration(value: ImportModerationValue) {
@@ -378,6 +416,51 @@ function objectValue(value: unknown): Record<string, unknown> | undefined {
 
 function stringValue(value: unknown): string | undefined {
   return typeof value === 'string' && value ? value : undefined;
+}
+
+function positiveIntegerValue(value: unknown): number | undefined {
+  return typeof value === 'number' && Number.isInteger(value) && value > 0
+    ? value
+    : undefined;
+}
+
+function sameNormalizedName(
+  left: string | undefined,
+  right: string | undefined,
+): boolean {
+  return Boolean(
+    left &&
+      right &&
+      normalizeCatName(left) === normalizeCatName(right),
+  );
+}
+
+function compactObject(
+  value: Readonly<Record<string, unknown>>,
+): Record<string, unknown> {
+  return Object.fromEntries(
+    Object.entries(value).flatMap(([key, child]) => {
+      if (child === undefined) return [];
+      if (Array.isArray(child)) {
+        return [[
+          key,
+          child.map((item) =>
+            isPlainObject(item) ? compactObject(item) : item,
+          ),
+        ]];
+      }
+      return [[key, isPlainObject(child) ? compactObject(child) : child]];
+    }),
+  );
+}
+
+function isPlainObject(value: unknown): value is Record<string, unknown> {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    !Array.isArray(value) &&
+    Object.getPrototypeOf(value) === Object.prototype
+  );
 }
 
 function timestampDate(value: unknown): Date | undefined {

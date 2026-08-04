@@ -3,16 +3,17 @@ import { Functions, httpsCallable } from 'firebase/functions';
 import {
   InaturalistEffects,
   InaturalistRecordKind,
+  InaturalistSyncRunResult,
 } from '../../core/ports';
 
 export class FirebaseInaturalistEffects implements InaturalistEffects {
   constructor(private readonly functions: Functions) {}
 
-  async runSync(): Promise<unknown> {
+  async runSync(): Promise<InaturalistSyncRunResult> {
     const response = await httpsCallable(this.functions, 'runInaturalistSync')(
       {},
     );
-    return response.data;
+    return syncRunResult(response.data);
   }
 
   async moderate(
@@ -33,9 +34,12 @@ export class FirebaseInaturalistEffects implements InaturalistEffects {
     id: number,
     overrides: Readonly<Record<string, unknown>>,
   ): Promise<void> {
+    const definedOverrides = Object.fromEntries(
+      Object.entries(overrides).filter(([, value]) => value !== undefined),
+    );
     await httpsCallable(this.functions, 'updateInaturalistCatalog')({
       id,
-      overrides,
+      overrides: definedOverrides,
     });
   }
 
@@ -45,4 +49,22 @@ export class FirebaseInaturalistEffects implements InaturalistEffects {
       localCatalogId: localCatalogId ?? null,
     });
   }
+}
+
+function syncRunResult(value: unknown): InaturalistSyncRunResult {
+  if (typeof value !== 'object' || value === null) {
+    throw new Error('Invalid iNaturalist synchronization response');
+  }
+  const data = value as Record<string, unknown>;
+  if (
+    (data.status !== 'success' &&
+      data.status !== 'partial' &&
+      data.status !== 'failed' &&
+      data.status !== 'skipped') ||
+    typeof data.runId !== 'string' ||
+    !data.runId
+  ) {
+    throw new Error('Invalid iNaturalist synchronization response');
+  }
+  return { status: data.status, runId: data.runId };
 }

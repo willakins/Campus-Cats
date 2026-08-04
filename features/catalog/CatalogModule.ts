@@ -357,9 +357,10 @@ function importedCatalogRecord(
     visible: profile.visible,
     moderation: profile.moderation,
     localContribution: linkedLocal
-      ? {
+        ? {
           createdAt: linkedLocal.createdAt,
           createdBy: linkedLocal.createdBy,
+          credits: linkedLocal.credits,
         }
       : undefined,
   });

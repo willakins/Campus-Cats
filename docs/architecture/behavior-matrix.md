@@ -19,6 +19,9 @@ unless a later decision explicitly changes them.
 | Manage super-admins or equal/higher roles  | Deny            | Deny          | Deny                  | Deny                  |
 | Update a push token                        | Deny            | Own only      | Own only              | Own only              |
 | Update non-privileged profile fields       | Deny            | Own only      | Own only              | Own only              |
+| Read visible imported iNaturalist records  | Deny            | Allow         | Allow                 | Allow                 |
+| Inspect hidden/inactive imported records   | Deny            | Deny          | Allow                 | Allow                 |
+| Sync, moderate, link, or override imports  | Deny            | Deny          | Callable only         | Callable only         |
 
 ## Critical workflow ordering
 

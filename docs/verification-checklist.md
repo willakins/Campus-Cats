@@ -19,6 +19,10 @@ ready.
       handler reference remains.
 - [x] Existing Firestore collection names, document fields, and Storage folders remain
       codec/adapter compatibility contracts; no data migration is required.
+- [x] Recorded iNaturalist parser, synchronization, callable, client-module, UI, and
+      imported-data security-rule tests pass without live-provider access.
+- [x] The opt-in read-only endpoint contract validates all 62 current guide profiles
+      and the first 200-observation v2 page.
 
 ## Native and manual — required before ready for review
 
@@ -43,6 +47,9 @@ ready.
       rendering in both appearances and at its largest accessibility text setting.
 - [ ] Confirm the PR remains free of production Firebase deployments and mobile build
       publication.
+- [ ] After merge and backend deployment, inspect the initial iNaturalist import before
+      releasing a client build; record counts, errors, ambiguity, attribution, and
+      representative map/catalog results.
 
 Record the device model, OS versions, app build identifier, tester, date, and any
 follow-up issue links in the draft PR when completing the native section.
