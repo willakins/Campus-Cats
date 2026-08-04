@@ -1,63 +1,64 @@
-import { useEffect, useState } from 'react';
-import { Alert, SafeAreaView, ScrollView, Text } from 'react-native';
-
-import { Ionicons } from '@expo/vector-icons';
+import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'expo-router';
 
-import { Button, SnackbarMessage } from '@/components';
+import { AuthScaffold } from '@/components/auth';
+import { Button, FeedbackBanner } from '@/components/design';
 import { appModules } from '@/composition/appModules';
 import { useAuth } from '@/providers';
-import { buttonStyles, containerStyles, textStyles } from '@/styles';
 import { registerForPushNotificationsAsync } from '@/utils/notifications';
 
 const SamlSignIn = () => {
   const router = useRouter();
   const { samlSignIn } = useAuth();
-  const [visible, setVisible] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [feedback, setFeedback] = useState<{ message: string; tone: 'info' | 'danger' }>();
 
   const signIn = async () => {
+    if (busy) return;
     try {
-      setVisible(true);
+      setBusy(true);
+      setFeedback(undefined);
       const result = await samlSignIn();
-      if (result.status === 'cancelled') return;
+      if (result.status === 'cancelled') {
+        setFeedback({ message: 'Sign-in was cancelled. You can try again.', tone: 'info' });
+        return;
+      }
       const token = await registerForPushNotificationsAsync();
       if (token) await appModules.session.registerPushToken(token);
       router.replace('/(app)/(tabs)');
     } catch (error) {
-      Alert.alert(
-        'SSO sign-in failed',
-        error instanceof Error ? error.message : 'Please try again.',
-      );
+      setFeedback({
+        message: error instanceof Error ? error.message : 'Please try again.',
+        tone: 'danger',
+      });
     } finally {
-      setVisible(false);
+      setBusy(false);
     }
   };
 
+  const signInRef = useRef(signIn);
+  signInRef.current = signIn;
+
   useEffect(() => {
-    void signIn();
+    void signInRef.current();
   }, []);
 
   return (
-    <SafeAreaView style={containerStyles.wrapper}>
-      <Button style={buttonStyles.smallButtonTopLeft} onPress={() => router.back()}>
-        <Ionicons name="arrow-back-outline" size={25} color="#fff" />
-      </Button>
-      <SnackbarMessage text="Logging in..." visible={visible} setVisible={setVisible} />
-      <ScrollView
-        contentContainerStyle={containerStyles.scrollViewCenterPadded}
-        keyboardShouldPersistTaps="handled"
-      >
-        <Button
-          style={[
-            buttonStyles.mediumButton,
-            { marginTop: '100%', alignSelf: 'center' },
-          ]}
-          onPress={() => void signIn()}
-        >
-          <Text style={textStyles.bigButtonText}>Retry Sign In</Text>
-        </Button>
-      </ScrollView>
-    </SafeAreaView>
+    <AuthScaffold
+      title="Georgia Tech SSO"
+      subtitle="Sign in through Georgia Tech, then return here to continue."
+      onBack={() => router.back()}
+    >
+      {feedback ? <FeedbackBanner message={feedback.message} tone={feedback.tone} /> : null}
+      <Button
+        label="Retry Georgia Tech SSO"
+        icon="school-outline"
+        fullWidth
+        loading={busy}
+        loadingLabel="Opening SSO…"
+        onPress={() => void signIn()}
+      />
+    </AuthScaffold>
   );
 };
 

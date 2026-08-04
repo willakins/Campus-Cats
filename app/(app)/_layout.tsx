@@ -2,9 +2,11 @@ import { Redirect, Stack } from 'expo-router';
 
 import { useAuth } from '@/providers';
 import { LoadingIndicator } from '@/components';
+import { useAppTheme } from '@/theme';
 
 const AppLayout = () => {
   const { currentUser, loading } = useAuth();
+  const theme = useAppTheme();
 
   if (loading) {
     return <LoadingIndicator />;
@@ -15,11 +17,14 @@ const AppLayout = () => {
     return <Redirect href="/login" />;
   }
 
-  return <Stack
-    screenOptions={{
-      headerShown: false,
-    }}
-  />;
+  return (
+    <Stack
+      screenOptions={{
+        headerShown: false,
+        contentStyle: { backgroundColor: theme.colors.background },
+      }}
+    />
+  );
 };
 
 export default AppLayout;

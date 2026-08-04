@@ -1,7 +1,16 @@
 const fs = require('node:fs');
 const path = require('node:path');
 
-const roots = ['components/design'];
+const targets = [
+  'app/(app)/(tabs)/_layout.tsx',
+  'app/(app)/_layout.tsx',
+  'app/(auth)',
+  'app/index.tsx',
+  'components/auth',
+  'components/design',
+  'components/ui/LoadingIndicator.tsx',
+  'forms/Login.tsx',
+];
 const colorPattern = /#[0-9a-f]{3,8}\b|(['"])(?:red|green|black|white|gray|grey|tomato)\1/gi;
 const sourcePattern = /\.(?:js|jsx|ts|tsx)$/;
 
@@ -11,8 +20,8 @@ const filesUnder = (directory) =>
     return entry.isDirectory() ? filesUnder(filename) : sourcePattern.test(filename) ? [filename] : [];
   });
 
-const violations = roots
-  .flatMap(filesUnder)
+const violations = targets
+  .flatMap((target) => (fs.statSync(target).isDirectory() ? filesUnder(target) : [target]))
   .filter((filename) => !filename.endsWith('.test.tsx'))
   .flatMap((filename) => {
     const source = fs.readFileSync(filename, 'utf8');
