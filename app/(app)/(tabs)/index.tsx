@@ -71,8 +71,8 @@ const HomeScreen = () => {
           }
         />
         <View
-          pointerEvents="box-none"
           style={{
+            pointerEvents: 'box-none',
             position: 'absolute',
             top: theme.spacing.sm,
             left: theme.spacing.sm,

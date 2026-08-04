@@ -1,4 +1,4 @@
-import { TextStyle, ViewStyle } from 'react-native';
+import { Platform, TextStyle, ViewStyle } from 'react-native';
 import { MD3DarkTheme, MD3LightTheme, MD3Theme } from 'react-native-paper';
 
 export type AppColorScheme = 'light' | 'dark';
@@ -202,32 +202,50 @@ const paperTheme = (dark: boolean, colors: AppColors): MD3Theme => ({
   },
 });
 
+export const createElevation = (
+  dark: boolean,
+  colors: AppColors,
+  platform: string = Platform.OS,
+): AppTheme['elevation'] => {
+  if (dark) {
+    return {
+      card: { borderWidth: 1, borderColor: colors.border },
+      floating: { borderWidth: 1, borderColor: colors.border },
+    };
+  }
+
+  if (platform === 'web') {
+    return {
+      card: { boxShadow: `0 4px 14px ${colors.shadow}1A` },
+      floating: { boxShadow: `0 8px 24px ${colors.shadow}2E` },
+    };
+  }
+
+  return {
+    card: {
+      shadowColor: colors.shadow,
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.1,
+      shadowRadius: 14,
+      elevation: 2,
+    },
+    floating: {
+      shadowColor: colors.shadow,
+      shadowOffset: { width: 0, height: 8 },
+      shadowOpacity: 0.18,
+      shadowRadius: 24,
+      elevation: 5,
+    },
+  };
+};
+
 const createTheme = (dark: boolean, colors: AppColors): AppTheme => ({
   dark,
   colors,
   spacing,
   radii,
   typography,
-  elevation: {
-    card: dark
-      ? { borderWidth: 1, borderColor: colors.border }
-      : {
-          shadowColor: colors.shadow,
-          shadowOffset: { width: 0, height: 4 },
-          shadowOpacity: 0.1,
-          shadowRadius: 14,
-          elevation: 2,
-        },
-    floating: dark
-      ? { borderWidth: 1, borderColor: colors.border }
-      : {
-          shadowColor: colors.shadow,
-          shadowOffset: { width: 0, height: 8 },
-          shadowOpacity: 0.18,
-          shadowRadius: 24,
-          elevation: 5,
-        },
-  },
+  elevation: createElevation(dark, colors),
   layout,
   motion,
   paper: paperTheme(dark, colors),
