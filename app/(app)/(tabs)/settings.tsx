@@ -1,14 +1,27 @@
-import { useEffect, useState } from 'react';
-import { Alert, SafeAreaView, ScrollView, Text, TextInput, View } from 'react-native';
+import { useCallback, useEffect, useState } from 'react';
+import { Alert, View } from 'react-native';
 
-import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 
-import { Button } from '@/components';
+import { roleLabel } from '@/components/administration/rolePresentation';
+import {
+  AppHeader,
+  AppText,
+  Button,
+  Card,
+  EmptyState,
+  FeedbackBanner,
+  FormSection,
+  ListRow,
+  Screen,
+  StatusPill,
+} from '@/components/design';
+import { FormTextInput } from '@/components/forms';
+import { LoadingIndicator } from '@/components/ui/LoadingIndicator';
 import { appModules } from '@/composition/appModules';
-import { Contact, parseUser } from '@/core/domain';
+import { Role, canManageFeature, parseUser } from '@/core/domain';
 import { useAuth } from '@/providers';
-import { buttonStyles, containerStyles, globalStyles, textStyles } from '@/styles';
+import { useAppTheme } from '@/theme';
 
 interface EditableContact {
   readonly id: string;
@@ -20,26 +33,31 @@ interface EditableContact {
 const Settings = () => {
   const { signOut, user } = useAuth();
   const actor = parseUser(user);
-  const isAdmin = user.role === 1 || user.role === 2;
+  const isAdmin = canManageFeature(actor.role);
   const router = useRouter();
+  const theme = useAppTheme();
   const [isEditable, setIsEditable] = useState(false);
   const [contacts, setContacts] = useState<readonly EditableContact[]>([]);
   const [hasChanged, setHasChanged] = useState(false);
+  const [loadingContacts, setLoadingContacts] = useState(true);
+  const [savingContacts, setSavingContacts] = useState(false);
+  const [signingOut, setSigningOut] = useState(false);
+  const [error, setError] = useState<string>();
 
-  const loadContacts = async () => {
+  const loadContacts = useCallback(async () => {
+    setLoadingContacts(true);
+    setError(undefined);
     const result = await appModules.contacts.list(actor);
+    setLoadingContacts(false);
     if (result.ok) setContacts(result.value);
-    else Alert.alert('Could not load contacts', result.error.message);
-  };
+    else setError(result.error.message);
+  }, [actor.id]);
+
   useEffect(() => {
     void loadContacts();
-  }, []);
+  }, [loadContacts]);
 
-  const changeContact = (
-    id: string,
-    field: 'name' | 'email',
-    value: string,
-  ) => {
+  const changeContact = (id: string, field: 'name' | 'email', value: string) => {
     setContacts((current) =>
       current.map((contact) =>
         contact.id === id ? { ...contact, [field]: value } : contact,
@@ -47,11 +65,15 @@ const Settings = () => {
     );
     setHasChanged(true);
   };
+
   const saveContacts = async () => {
+    if (savingContacts) return;
     if (!hasChanged) {
       setIsEditable(false);
       return;
     }
+    setSavingContacts(true);
+    setError(undefined);
     const results = await Promise.all(
       contacts.map(({ id, isNew, name, email }) =>
         isNew
@@ -60,14 +82,16 @@ const Settings = () => {
       ),
     );
     const failed = results.find((result) => !result.ok);
+    setSavingContacts(false);
     if (failed && !failed.ok) {
-      Alert.alert('Could not save contacts', failed.error.message);
+      setError(failed.error.message);
       return;
     }
     setHasChanged(false);
     setIsEditable(false);
     await loadContacts();
   };
+
   const deleteContact = (contact: EditableContact) => {
     if (contact.isNew) {
       setContacts((current) => current.filter(({ id }) => id !== contact.id));
@@ -78,104 +102,120 @@ const Settings = () => {
       {
         text: 'Delete',
         style: 'destructive',
-        onPress: () =>
+        onPress: () => {
+          setSavingContacts(true);
           void appModules.contacts.remove(actor, contact.id).then((result) => {
+            setSavingContacts(false);
             if (result.ok) {
-              setContacts((current) =>
-                current.filter(({ id }) => id !== contact.id),
-              );
-            } else Alert.alert('Could not delete contact', result.error.message);
-          }),
+              setContacts((current) => current.filter(({ id }) => id !== contact.id));
+            } else setError(result.error.message);
+          });
+        },
       },
     ]);
   };
+
   const logout = async () => {
+    if (signingOut) return;
+    setSigningOut(true);
+    setError(undefined);
     try {
       await signOut();
       router.replace('/login');
-    } catch (error) {
-      Alert.alert(
-        'Could not sign out',
-        error instanceof Error ? error.message : 'Please try again.',
-      );
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : 'Please try again.');
+      setSigningOut(false);
     }
   };
 
   return (
-    <SafeAreaView style={containerStyles.wrapper}>
-      <Button style={buttonStyles.smallButtonTopLeft} onPress={() => void logout()}>
-        <Ionicons name="log-out-outline" size={25} color="#fff" />
-      </Button>
-      {isAdmin ? (
-        <Ionicons
-          name="lock-closed"
-          size={24}
-          color="black"
-          style={globalStyles.lockIcon}
-        />
-      ) : null}
-      <ScrollView contentContainerStyle={containerStyles.scrollView}>
-        <View style={[containerStyles.card, { marginTop: '10%' }]}>
-          <Text style={[textStyles.listTitle, { textAlign: 'center' }]}>
-            Club Contact Information
-          </Text>
+    <Screen scroll keyboardAware>
+      <AppHeader title="More" eyebrow="Campus Cats field guide" />
+      <View style={{ gap: theme.spacing.lg }}>
+        {error ? <FeedbackBanner message={error} tone="danger" /> : null}
+
+        <FormSection title="Account">
+          <Card accent={theme.colors.primary}>
+            <View style={{ gap: theme.spacing.sm }}>
+              <AppText variant="cardTitle" selectable>
+                {actor.email}
+              </AppText>
+              <StatusPill
+                label={roleLabel(actor.role)}
+                tone={actor.role === Role.Member ? 'neutral' : 'primary'}
+                icon={actor.role === Role.Member ? 'person-outline' : 'shield-checkmark-outline'}
+              />
+              <Button
+                label="Sign Out"
+                icon="log-out-outline"
+                variant="secondary"
+                loading={signingOut}
+                onPress={() => void logout()}
+              />
+            </View>
+          </Card>
+        </FormSection>
+
+        <FormSection title="Club contacts">
           {isAdmin ? (
             <Button
-              onPress={() =>
-                isEditable ? void saveContacts() : setIsEditable(true)
-              }
-              style={buttonStyles.smallButtonTopRight}
-            >
-              <Text style={textStyles.smallButtonText}>
-                {isEditable ? 'Save' : 'Edit'}
-              </Text>
-            </Button>
+              label={isEditable ? 'Save Contacts' : 'Edit Contacts'}
+              icon={isEditable ? 'checkmark' : 'create-outline'}
+              variant="secondary"
+              loading={savingContacts}
+              onPress={() => (isEditable ? void saveContacts() : setIsEditable(true))}
+            />
           ) : null}
-
-          {contacts.map((contact) => (
-            <View key={contact.id} style={containerStyles.closeRowStack}>
-              {isAdmin && isEditable ? (
-                <>
-                  <View style={containerStyles.inputContainer}>
-                    <TextInput
-                      style={textStyles.input}
+          {loadingContacts ? (
+            <LoadingIndicator label="Loading club contacts" />
+          ) : contacts.length === 0 ? (
+            <EmptyState
+              title="No contacts yet"
+              message="Officer contact information will appear here when available."
+            />
+          ) : (
+            contacts.map((contact) =>
+              isAdmin && isEditable ? (
+                <Card key={contact.id} accent={theme.colors.gold}>
+                  <View style={{ gap: theme.spacing.sm }}>
+                    <FormTextInput
+                      label="Contact name"
+                      required
                       value={contact.name}
-                      onChangeText={(text) =>
-                        changeContact(contact.id, 'name', text)
-                      }
-                      placeholder="Enter Name"
+                      onChangeText={(value) => changeContact(contact.id, 'name', value)}
                     />
-                  </View>
-                  <View style={containerStyles.inputContainer}>
-                    <TextInput
-                      style={textStyles.input}
+                    <FormTextInput
+                      label="Contact email"
+                      required
                       value={contact.email}
-                      onChangeText={(text) =>
-                        changeContact(contact.id, 'email', text)
-                      }
-                      placeholder="Enter Email"
+                      onChangeText={(value) => changeContact(contact.id, 'email', value)}
+                      autoCapitalize="none"
+                      keyboardType="email-address"
+                    />
+                    <Button
+                      label={`Remove ${contact.name || 'Contact'}`}
+                      variant="danger"
+                      disabled={savingContacts}
+                      onPress={() => deleteContact(contact)}
                     />
                   </View>
-                  <Button
-                    onPress={() => deleteContact(contact)}
-                    style={[buttonStyles.button, { backgroundColor: 'red' }]}
-                  >
-                    <Text style={textStyles.smallButtonText}>
-                      Delete Above Contact
-                    </Text>
-                  </Button>
-                </>
+                </Card>
               ) : (
-                <>
-                  <Text style={textStyles.detail}>{contact.name}</Text>
-                  <Text style={textStyles.detail}>{contact.email}</Text>
-                </>
-              )}
-            </View>
-          ))}
+                <Card key={contact.id} accent={theme.colors.gold}>
+                  <AppText variant="cardTitle">{contact.name}</AppText>
+                  <AppText color="muted" selectable>
+                    {contact.email}
+                  </AppText>
+                </Card>
+              ),
+            )
+          )}
           {isAdmin && isEditable ? (
             <Button
-              style={buttonStyles.button}
+              label="Add Contact"
+              icon="add-circle-outline"
+              variant="tertiary"
+              disabled={savingContacts}
               onPress={() => {
                 setContacts((current) => [
                   ...current,
@@ -188,29 +228,28 @@ const Settings = () => {
                 ]);
                 setHasChanged(true);
               }}
-            >
-              <Text style={textStyles.smallButtonText}>Add Contact</Text>
-            </Button>
+            />
           ) : null}
-        </View>
-      </ScrollView>
-      {isAdmin ? (
-        <>
-          <Button
-            style={buttonStyles.bigButton}
-            onPress={() => router.push('/settings/manage_users')}
-          >
-            <Text style={textStyles.bigButtonText}>Manage Users</Text>
-          </Button>
-          <Button
-            style={buttonStyles.bigButton}
-            onPress={() => router.push('/settings/manage_whitelist')}
-          >
-            <Text style={textStyles.bigButtonText}>Manage Whitelist</Text>
-          </Button>
-        </>
-      ) : null}
-    </SafeAreaView>
+        </FormSection>
+
+        {isAdmin ? (
+          <FormSection title="Officer tools">
+            <ListRow
+              title="Manage Users"
+              subtitle="Review roles and remove accounts"
+              icon="people-outline"
+              onPress={() => router.push('/settings/manage_users')}
+            />
+            <ListRow
+              title="Manage Whitelist"
+              subtitle="Review membership applications"
+              icon="clipboard-outline"
+              onPress={() => router.push('/settings/manage_whitelist')}
+            />
+          </FormSection>
+        ) : null}
+      </View>
+    </Screen>
   );
 };
 
