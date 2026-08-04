@@ -1,17 +1,23 @@
 import React, { useEffect, useState } from 'react';
-import { Alert, FlatList, SafeAreaView, Text } from 'react-native';
+import { Alert } from 'react-native';
 
-import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 
-import { Button, LoadingIndicator, SnackbarMessage } from '@/components';
+import { AppHeader, ErrorState, Screen } from '@/components/design';
+import { FormScreen } from '@/components/forms';
+import { LoadingIndicator } from '@/components/ui/LoadingIndicator';
 import { appModules } from '@/composition/appModules';
-import { Sighting, parseUser } from '@/core/domain';
+import { parseUser, Sighting } from '@/core/domain';
 import { localMedia, storedMedia } from '@/core/media';
 import { StoredMediaAsset } from '@/core/ports';
-import { SightingForm } from '@/forms';
+import { SightingForm, SightingFormData } from '@/forms/SightingForm';
 import { useAuth } from '@/providers';
-import { buttonStyles, containerStyles, textStyles } from '@/styles';
+
+const timeItems = [
+  { label: 'Morning', value: 'Morning' },
+  { label: 'Afternoon', value: 'Afternoon' },
+  { label: 'Night', value: 'Night' },
+];
 
 const SightingEditScreen = () => {
   const router = useRouter();
@@ -21,15 +27,13 @@ const SightingEditScreen = () => {
   const [storedAssets, setStoredAssets] = useState<readonly StoredMediaAsset[]>([]);
   const [photos, setPhotos] = useState<string[]>([]);
   const [profile, setProfile] = useState('');
-  const [visible, setVisible] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string>();
+  const [loadError, setLoadError] = useState<string>();
   const [value, setValue] = useState('');
   const [open, setOpen] = useState(false);
-  const [items, setItems] = useState([
-    { label: 'Morning', value: 'Morning' },
-    { label: 'Afternoon', value: 'Afternoon' },
-    { label: 'Night', value: 'Night' },
-  ]);
-  const [formData, setFormData] = useState({
+  const [items, setItems] = useState(timeItems);
+  const [formData, setFormData] = useState<SightingFormData>({
     name: '',
     info: '',
     fed: false,
@@ -39,13 +43,16 @@ const SightingEditScreen = () => {
   });
 
   useEffect(() => {
-    if (!id) return;
+    if (!id) {
+      setLoadError('Missing sighting ID');
+      return;
+    }
     void Promise.all([
       appModules.sightings.get(id),
       appModules.sightings.media(id),
     ]).then(([sightingResult, mediaResult]) => {
       if (!sightingResult.ok) {
-        Alert.alert('Could not load report', sightingResult.error.message);
+        setLoadError(sightingResult.error.message);
         return;
       }
       const loaded = sightingResult.value;
@@ -61,15 +68,9 @@ const SightingEditScreen = () => {
       });
       if (mediaResult.ok) {
         setStoredAssets(mediaResult.value);
-        setProfile(
-          mediaResult.value.find(({ role }) => role === 'profile')?.url ?? '',
-        );
-        setPhotos(
-          mediaResult.value
-            .filter(({ role }) => role === 'gallery')
-            .map(({ url }) => url),
-        );
-      }
+        setProfile(mediaResult.value.find(({ role }) => role === 'profile')?.url ?? '');
+        setPhotos(mediaResult.value.filter(({ role }) => role === 'gallery').map(({ url }) => url));
+      } else setError(mediaResult.error.message);
     });
   }, [id]);
 
@@ -77,27 +78,31 @@ const SightingEditScreen = () => {
     const stored = storedAssets.find((asset) => asset.url === uri);
     return stored ? storedMedia(stored.id) : localMedia(uri);
   };
-
   const promotePhoto = (uri: string) => {
     setPhotos((current) => [profile, ...current.filter((photo) => photo !== uri)].filter(Boolean));
     setProfile(uri);
   };
-
+  const removePhoto = (uri: string) => {
+    if (uri === profile) setProfile('');
+    else setPhotos((current) => current.filter((photo) => photo !== uri));
+  };
   const save = async () => {
-    if (!sighting || !profile) {
-      Alert.alert('Could not save report', 'Please select a profile photo.');
+    if (!sighting || busy) return;
+    if (!profile) {
+      setError('Please select a profile photo.');
       return;
     }
-    setVisible(true);
+    setBusy(true);
+    setError(undefined);
     const result = await appModules.sightings.update(parseUser(user), sighting.id, {
       ...formData,
       timeOfDay: value,
       profile: selectionFor(profile),
       gallery: photos.map(selectionFor),
     });
-    setVisible(false);
+    setBusy(false);
     if (!result.ok) {
-      Alert.alert('Could not save report', result.error.message);
+      setError(result.error.message);
       return;
     }
     router.replace({
@@ -105,71 +110,64 @@ const SightingEditScreen = () => {
       params: { id: result.value.id },
     });
   };
-
   const confirmDelete = () => {
-    if (!sighting) return;
+    if (!sighting || busy) return;
     Alert.alert('Delete Report', 'Delete this sighting forever?', [
       { text: 'Cancel', style: 'cancel' },
       {
         text: 'Delete Forever',
         style: 'destructive',
         onPress: () => {
-          setVisible(true);
+          setBusy(true);
           void appModules.sightings.remove(parseUser(user), sighting.id).then((result) => {
-            setVisible(false);
+            setBusy(false);
             if (result.ok) router.replace('/(app)/(tabs)');
-            else Alert.alert('Could not delete report', result.error.message);
+            else setError(result.error.message);
           });
         },
       },
     ]);
   };
 
-  if (!sighting) return <LoadingIndicator />;
-
+  if (!sighting && !loadError) return <LoadingIndicator label="Loading sighting form" />;
+  if (!sighting) {
+    return (
+      <Screen>
+        <AppHeader title="Edit sighting" onBack={() => router.back()} />
+        <ErrorState title="Could not load sighting" message={loadError || 'Sighting not found'} />
+      </Screen>
+    );
+  }
   return (
-    <SafeAreaView style={containerStyles.wrapper}>
-      <Button style={buttonStyles.smallButtonTopLeft} onPress={() => router.back()}>
-        <Ionicons name="arrow-back-outline" size={25} color="#fff" />
-      </Button>
-      <SnackbarMessage
-        text="Saving Report..."
-        visible={visible}
-        setVisible={setVisible}
+    <FormScreen
+      title="Edit sighting"
+      eyebrow="Field report"
+      saveLabel="Save Report"
+      savingLabel="Saving report…"
+      busy={busy}
+      error={error}
+      onBack={() => router.back()}
+      onSave={() => void save()}
+      onDelete={confirmDelete}
+      deleteLabel="Delete Report"
+    >
+      <SightingForm
+        formData={formData}
+        setFormData={setFormData}
+        value={value}
+        setValue={setValue}
+        open={open}
+        setOpen={setOpen}
+        items={items}
+        setItems={setItems}
+        photos={photos}
+        profile={profile}
+        setPhotos={setPhotos}
+        onPromotePhoto={promotePhoto}
+        onDeletePhoto={removePhoto}
+        isCreate={false}
       />
-      <Text style={textStyles.pageTitle}>Edit Report</Text>
-      <FlatList
-        data={[1]}
-        keyExtractor={() => 'sighting-form'}
-        contentContainerStyle={containerStyles.scrollView}
-        renderItem={() => (
-          <SightingForm
-            formData={formData}
-            setFormData={setFormData}
-            value={value}
-            setValue={setValue}
-            open={open}
-            setOpen={setOpen}
-            items={items}
-            setItems={setItems}
-            photos={photos}
-            profile={profile}
-            setPhotos={setPhotos}
-            onPromotePhoto={promotePhoto}
-            onDeletePhoto={(uri) =>
-              setPhotos((current) => current.filter((photo) => photo !== uri))
-            }
-            isCreate={false}
-          />
-        )}
-      />
-      <Button style={buttonStyles.bigButton} onPress={() => void save()}>
-        <Text style={textStyles.bigButtonText}>Save Report</Text>
-      </Button>
-      <Button style={buttonStyles.bigDeleteButton} onPress={confirmDelete}>
-        <Text style={textStyles.bigButtonText}>Delete Report</Text>
-      </Button>
-    </SafeAreaView>
+    </FormScreen>
   );
 };
 

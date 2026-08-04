@@ -1,20 +1,17 @@
 import { useEffect, useState } from 'react';
-import { Alert, SafeAreaView, ScrollView, Text } from 'react-native';
+import { Alert } from 'react-native';
 
-import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 
-import { Button, LoadingIndicator, SnackbarMessage } from '@/components';
+import { AppHeader, ErrorState, Screen } from '@/components/design';
+import { FormScreen } from '@/components/forms';
+import { LoadingIndicator } from '@/components/ui/LoadingIndicator';
 import { appModules } from '@/composition/appModules';
 import { Announcement, parseUser } from '@/core/domain';
 import { localMedia, storedMedia } from '@/core/media';
 import { StoredMediaAsset } from '@/core/ports';
-import {
-  AnnouncementForm,
-  AnnouncementFormData,
-} from '@/forms/AnnouncementForm';
+import { AnnouncementForm, AnnouncementFormData } from '@/forms/AnnouncementForm';
 import { useAuth } from '@/providers/AuthProvider';
-import { buttonStyles, containerStyles, textStyles } from '@/styles';
 
 const EditAnnouncement = () => {
   const router = useRouter();
@@ -23,7 +20,9 @@ const EditAnnouncement = () => {
   const [announcement, setAnnouncement] = useState<Announcement>();
   const [storedAssets, setStoredAssets] = useState<readonly StoredMediaAsset[]>([]);
   const [photos, setPhotos] = useState<string[]>([]);
-  const [visible, setVisible] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string>();
+  const [loadError, setLoadError] = useState<string>();
   const [formData, setFormData] = useState<AnnouncementFormData>({
     title: '',
     info: '',
@@ -31,16 +30,16 @@ const EditAnnouncement = () => {
   });
 
   useEffect(() => {
-    if (!id) return;
+    if (!id) {
+      setLoadError('Missing announcement ID');
+      return;
+    }
     void Promise.all([
       appModules.announcements.get(id),
       appModules.announcements.media(id),
     ]).then(([announcementResult, mediaResult]) => {
       if (!announcementResult.ok) {
-        Alert.alert(
-          'Could not load announcement',
-          announcementResult.error.message,
-        );
+        setLoadError(announcementResult.error.message);
         return;
       }
       setAnnouncement(announcementResult.value);
@@ -52,7 +51,7 @@ const EditAnnouncement = () => {
       if (mediaResult.ok) {
         setStoredAssets(mediaResult.value);
         setPhotos(mediaResult.value.map(({ url }) => url));
-      }
+      } else setError(mediaResult.error.message);
     });
   }, [id]);
 
@@ -61,16 +60,17 @@ const EditAnnouncement = () => {
     return stored ? storedMedia(stored.id) : localMedia(uri);
   };
   const save = async () => {
-    if (!announcement) return;
-    setVisible(true);
+    if (!announcement || busy) return;
+    setBusy(true);
+    setError(undefined);
     const result = await appModules.announcements.update(
       parseUser(user),
       announcement.id,
       { ...formData, photos: photos.map(selectionFor) },
     );
-    setVisible(false);
+    setBusy(false);
     if (!result.ok) {
-      Alert.alert('Could not save announcement', result.error.message);
+      setError(result.error.message);
       return;
     }
     router.replace({
@@ -79,60 +79,53 @@ const EditAnnouncement = () => {
     });
   };
   const confirmDelete = () => {
-    if (!announcement) return;
+    if (!announcement || busy) return;
     Alert.alert('Delete Announcement', 'Delete this announcement forever?', [
       { text: 'Cancel', style: 'cancel' },
       {
         text: 'Delete Forever',
         style: 'destructive',
-        onPress: () =>
-          void appModules.announcements
-            .remove(parseUser(user), announcement.id)
-            .then((result) => {
-              if (result.ok) router.replace('/announcements');
-              else {
-                Alert.alert(
-                  'Could not delete announcement',
-                  result.error.message,
-                );
-              }
-            }),
+        onPress: () => {
+          setBusy(true);
+          void appModules.announcements.remove(parseUser(user), announcement.id).then((result) => {
+            setBusy(false);
+            if (result.ok) router.replace('/announcements');
+            else setError(result.error.message);
+          });
+        },
       },
     ]);
   };
 
-  if (!announcement) return <LoadingIndicator />;
+  if (!announcement && !loadError) return <LoadingIndicator label="Loading announcement form" />;
+  if (!announcement) {
+    return (
+      <Screen>
+        <AppHeader title="Edit announcement" onBack={() => router.back()} />
+        <ErrorState title="Could not load announcement" message={loadError || 'Announcement not found'} />
+      </Screen>
+    );
+  }
   return (
-    <SafeAreaView style={containerStyles.wrapper}>
-      <Button style={buttonStyles.smallButtonTopLeft} onPress={() => router.back()}>
-        <Ionicons name="arrow-back-outline" size={25} color="#fff" />
-      </Button>
-      <SnackbarMessage
-        text="Saving Announcement..."
-        visible={visible}
-        setVisible={setVisible}
+    <FormScreen
+      title="Edit announcement"
+      eyebrow="Campus Cats update"
+      saveLabel="Save Announcement"
+      savingLabel="Saving announcement…"
+      busy={busy}
+      error={error}
+      onBack={() => router.back()}
+      onSave={() => void save()}
+      onDelete={confirmDelete}
+      deleteLabel="Delete Announcement"
+    >
+      <AnnouncementForm
+        formData={formData}
+        setFormData={setFormData}
+        photos={photos}
+        setPhotos={setPhotos}
       />
-      <Text style={textStyles.pageTitle}>Edit Announcement</Text>
-      <ScrollView
-        contentContainerStyle={[
-          containerStyles.scrollView,
-          { paddingBottom: '50%' },
-        ]}
-      >
-        <AnnouncementForm
-          formData={formData}
-          setFormData={setFormData}
-          photos={photos}
-          setPhotos={setPhotos}
-        />
-      </ScrollView>
-      <Button style={buttonStyles.bigButton} onPress={() => void save()}>
-        <Text style={textStyles.bigButtonText}>Save Announcement</Text>
-      </Button>
-      <Button style={buttonStyles.bigDeleteButton} onPress={confirmDelete}>
-        <Text style={textStyles.bigButtonText}>Delete Announcement</Text>
-      </Button>
-    </SafeAreaView>
+    </FormScreen>
   );
 };
 

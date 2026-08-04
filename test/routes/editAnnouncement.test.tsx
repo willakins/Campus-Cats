@@ -5,6 +5,7 @@ import { act, render, screen, userEvent, waitFor } from '@testing-library/react-
 
 import EditAnnouncement from '../../app/(app)/announcements/edit-ann';
 import { Role, parseAnnouncement, parseUser } from '../../core/domain';
+import { AppThemeProvider } from '../../theme';
 
 const mockBack = jest.fn();
 const mockReplace = jest.fn();
@@ -37,17 +38,6 @@ jest.mock('../../providers/AuthProvider', () => ({
 
 jest.mock('@expo/vector-icons', () => ({ Ionicons: () => null }));
 
-jest.mock('../../components', () => {
-  const mockReact = require('react');
-  const { Pressable: MockPressable, Text: MockText } = require('react-native');
-  return {
-    Button: ({ children, onPress }: React.PropsWithChildren<{ onPress: () => void }>) =>
-      mockReact.createElement(MockPressable, { onPress }, children),
-    LoadingIndicator: () => mockReact.createElement(MockText, null, 'Loading announcement'),
-    SnackbarMessage: () => null,
-  };
-});
-
 jest.mock('../../forms/AnnouncementForm', () => {
   const mockReact = require('react');
   const { Text: MockText } = require('react-native');
@@ -56,6 +46,13 @@ jest.mock('../../forms/AnnouncementForm', () => {
       mockReact.createElement(MockText, null, formData.title),
   };
 });
+
+const renderRoute = () =>
+  render(
+    <AppThemeProvider colorScheme="light">
+      <EditAnnouncement />
+    </AppThemeProvider>,
+  );
 
 const announcement = parseAnnouncement({
   id: 'announcement-1',
@@ -87,11 +84,13 @@ describe('edit announcement route', () => {
 
   it('shows loading state and navigates by ID after a successful save', async () => {
     const user = userEvent.setup();
-    render(<EditAnnouncement />);
+    renderRoute();
 
-    expect(screen.getByText('Loading announcement')).toBeOnTheScreen();
+    expect(
+      screen.getByRole('progressbar', { name: 'Loading announcement form' }),
+    ).toBeOnTheScreen();
     expect(await screen.findByText('Volunteer workday')).toBeOnTheScreen();
-    await user.press(screen.getByText('Save Announcement'));
+    await user.press(screen.getByRole('button', { name: 'Save Announcement' }));
 
     await waitFor(() =>
       expect(mockReplace).toHaveBeenCalledWith({
@@ -109,9 +108,9 @@ describe('edit announcement route', () => {
   it('requires destructive confirmation before deleting', async () => {
     const alert = jest.spyOn(Alert, 'alert').mockImplementation(() => undefined);
     const user = userEvent.setup();
-    render(<EditAnnouncement />);
+    renderRoute();
     await screen.findByText('Volunteer workday');
-    await user.press(screen.getByText('Delete Announcement'));
+    await user.press(screen.getByRole('button', { name: 'Delete Announcement' }));
 
     expect(mockRemove).not.toHaveBeenCalled();
     expect(alert).toHaveBeenCalledWith(
@@ -128,31 +127,27 @@ describe('edit announcement route', () => {
   });
 
   it('presents load and mutation errors without navigating', async () => {
-    const alert = jest.spyOn(Alert, 'alert').mockImplementation(() => undefined);
     mockGet.mockResolvedValue({
       ok: false,
       error: { code: 'not_found', message: 'Announcement not found' },
     });
-    const { unmount } = render(<EditAnnouncement />);
-    await waitFor(() =>
-      expect(alert).toHaveBeenCalledWith('Could not load announcement', 'Announcement not found'),
-    );
+    const { unmount } = renderRoute();
+    expect(await screen.findByText('Could not load announcement')).toBeOnTheScreen();
+    expect(screen.getByText('Announcement not found')).toBeOnTheScreen();
     unmount();
 
-    alert.mockClear();
     mockGet.mockResolvedValue({ ok: true, value: announcement, warnings: [] });
     mockUpdate.mockResolvedValue({
       ok: false,
       error: { code: 'dependency_failure', message: 'Could not save announcement' },
     });
     const user = userEvent.setup();
-    render(<EditAnnouncement />);
+    renderRoute();
     await screen.findByText('Volunteer workday');
-    await user.press(screen.getByText('Save Announcement'));
-    expect(alert).toHaveBeenCalledWith(
-      'Could not save announcement',
-      'Could not save announcement',
-    );
+    await user.press(screen.getByRole('button', { name: 'Save Announcement' }));
+    expect(
+      await screen.findByRole('alert', { name: 'Could not save announcement' }),
+    ).toBeOnTheScreen();
     expect(mockReplace).not.toHaveBeenCalled();
   });
 });
