@@ -1,10 +1,11 @@
-import React from 'react';
-import { Alert, Text, View } from 'react-native';
+import React, { useState } from 'react';
+import { Alert, View } from 'react-native';
 
-import { Button } from '@/components/ui/Buttons';
 import { appModules } from '@/composition/appModules';
 import { User, WhitelistApplication } from '@/core/domain';
-import { buttonStyles, containerStyles, textStyles } from '@/styles';
+import { useAppTheme } from '@/theme';
+
+import { AppText, Button, Card, FeedbackBanner, StatusPill } from '../design';
 
 interface WhitelistItemProps {
   readonly actor: User;
@@ -19,40 +20,77 @@ export const WhitelistItem: React.FC<WhitelistItemProps> = ({
   onChanged,
   setBusy,
 }) => {
+  const theme = useAppTheme();
+  const [pending, setPending] = useState<'accept' | 'deny'>();
+  const [error, setError] = useState<string>();
+
   const decide = async (decision: 'accept' | 'deny') => {
+    if (pending) return;
+    setPending(decision);
     setBusy(true);
+    setError(undefined);
     const result =
       decision === 'accept'
         ? await appModules.whitelist.accept(actor, application.id)
         : await appModules.whitelist.deny(actor, application.id);
+    setPending(undefined);
     setBusy(false);
     if (result.ok) onChanged();
-    else Alert.alert('Could not update application', result.error.message);
+    else setError(result.error.message);
+  };
+
+  const confirmDecision = (decision: 'accept' | 'deny') => {
+    const isAccept = decision === 'accept';
+    Alert.alert(
+      isAccept ? 'Accept Application' : 'Deny Application',
+      isAccept
+        ? `Approve ${application.name} and create their account?`
+        : `Deny and remove ${application.name}'s application?`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: isAccept ? 'Accept' : 'Deny',
+          style: isAccept ? 'default' : 'destructive',
+          onPress: () => void decide(decision),
+        },
+      ],
+    );
   };
 
   return (
-    <View style={containerStyles.card}>
-      <Text style={[textStyles.listTitle, { marginTop: 0 }]}>
-        {application.name}
-      </Text>
-      <Text style={textStyles.detail}>Code Word: {application.codeWord}</Text>
-      <Text style={textStyles.detail}>
-        Graduation Year: {application.graduationYear}
-      </Text>
-      <View style={containerStyles.buttonGroup2}>
-        <Button
-          style={[buttonStyles.rowButton, { backgroundColor: 'red' }]}
-          onPress={() => void decide('deny')}
-        >
-          <Text style={textStyles.smallButtonText}>Deny</Text>
-        </Button>
-        <Button
-          style={[buttonStyles.rowButton, { backgroundColor: 'green' }]}
-          onPress={() => void decide('accept')}
-        >
-          <Text style={textStyles.smallButtonText}>Accept</Text>
-        </Button>
+    <Card accent={theme.colors.violet}>
+      <View style={{ gap: theme.spacing.sm }}>
+        <View style={{ gap: theme.spacing.xxs }}>
+          <AppText variant="cardTitle">{application.name}</AppText>
+          <AppText color="muted" selectable>
+            {application.email}
+          </AppText>
+          <StatusPill label="Pending review" tone="warning" icon="time-outline" />
+        </View>
+        <View style={{ gap: theme.spacing.xxs }}>
+          <AppText>Graduation year: {application.graduationYear}</AppText>
+          <AppText>Code word: {application.codeWord || 'Not provided'}</AppText>
+        </View>
+        {error ? <FeedbackBanner message={error} tone="danger" /> : null}
+        <View style={{ flexDirection: 'row', gap: theme.spacing.xs, flexWrap: 'wrap' }}>
+          <Button
+            label="Deny Application"
+            variant="danger"
+            loading={pending === 'deny'}
+            disabled={Boolean(pending)}
+            style={{ flexGrow: 1 }}
+            onPress={() => confirmDecision('deny')}
+          />
+          <Button
+            label="Accept Application"
+            icon="checkmark-circle-outline"
+            loading={pending === 'accept'}
+            disabled={Boolean(pending)}
+            style={{ flexGrow: 1 }}
+            onPress={() => confirmDecision('accept')}
+          />
+        </View>
       </View>
-    </View>
+    </Card>
   );
 };

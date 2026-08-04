@@ -1,0 +1,154 @@
+import React from 'react';
+
+import { fireEvent, render, screen, userEvent, waitFor } from '@testing-library/react-native';
+
+import Settings from '../../app/(app)/(tabs)/settings';
+import ManageUsers from '../../app/(app)/settings/manage_users';
+import ManageWhitelist from '../../app/(app)/settings/manage_whitelist';
+import { Role, parseContact, parseUser } from '../../core/domain';
+import { AppThemeProvider } from '../../theme';
+
+let mockRole: Role = Role.Member;
+const mockBack = jest.fn();
+const mockPush = jest.fn();
+const mockReplace = jest.fn();
+const mockSignOut = jest.fn();
+const mockListContacts = jest.fn();
+const mockCreateContact = jest.fn();
+const mockUpdateContact = jest.fn();
+const mockRemoveContact = jest.fn();
+const mockListUsers = jest.fn();
+const mockListWhitelist = jest.fn();
+
+jest.mock('expo-router', () => {
+  const mockReact = require('react');
+  return {
+    useRouter: () => ({ back: mockBack, push: mockPush, replace: mockReplace }),
+    useFocusEffect: (callback: () => void) => mockReact.useEffect(callback, [callback]),
+  };
+});
+
+jest.mock('../../providers', () => ({
+  useAuth: () => ({
+    user: { id: 'actor-1', email: 'actor@gatech.edu', role: mockRole },
+    signOut: mockSignOut,
+  }),
+}));
+
+jest.mock('../../composition/appModules', () => ({
+  appModules: {
+    contacts: {
+      list: (...args: unknown[]) => mockListContacts(...args),
+      create: (...args: unknown[]) => mockCreateContact(...args),
+      update: (...args: unknown[]) => mockUpdateContact(...args),
+      remove: (...args: unknown[]) => mockRemoveContact(...args),
+    },
+    users: {
+      list: (...args: unknown[]) => mockListUsers(...args),
+      promote: jest.fn(),
+      demote: jest.fn(),
+      remove: jest.fn(),
+    },
+    whitelist: {
+      list: (...args: unknown[]) => mockListWhitelist(...args),
+      accept: jest.fn(),
+      deny: jest.fn(),
+    },
+  },
+}));
+
+jest.mock('@expo/vector-icons', () => ({ Ionicons: () => null }));
+
+const contact = parseContact({
+  id: 'contact-1',
+  name: 'Campus Cats Officers',
+  email: 'cats@gatech.edu',
+});
+const member = parseUser({
+  id: 'member-1',
+  email: 'member@gatech.edu',
+  role: Role.Member,
+});
+
+const renderThemed = (content: React.ReactElement) =>
+  render(<AppThemeProvider colorScheme="light">{content}</AppThemeProvider>);
+
+describe('settings and administration routes', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockRole = Role.Member;
+    mockSignOut.mockResolvedValue(undefined);
+    mockListContacts.mockResolvedValue({ ok: true, value: [contact], warnings: [] });
+    mockCreateContact.mockResolvedValue({ ok: true, value: contact, warnings: [] });
+    mockUpdateContact.mockResolvedValue({ ok: true, value: contact, warnings: [] });
+    mockRemoveContact.mockResolvedValue({ ok: true, value: undefined, warnings: [] });
+    mockListUsers.mockResolvedValue({ ok: true, value: [member], warnings: [] });
+    mockListWhitelist.mockResolvedValue({ ok: true, value: [], warnings: [] });
+  });
+
+  it('organizes More for members and signs out from an explicit account action', async () => {
+    const user = userEvent.setup();
+    renderThemed(<Settings />);
+
+    expect(screen.getByText('Account')).toBeOnTheScreen();
+    expect(screen.getByText('Club contacts')).toBeOnTheScreen();
+    expect(await screen.findByText('Campus Cats Officers')).toBeOnTheScreen();
+    expect(screen.queryByText('Officer tools')).not.toBeOnTheScreen();
+
+    await user.press(screen.getByRole('button', { name: 'Sign Out' }));
+    await waitFor(() => expect(mockReplace).toHaveBeenCalledWith('/login'));
+  });
+
+  it('shows officer tools to administrators without changing their routes', async () => {
+    mockRole = Role.Admin;
+    const user = userEvent.setup();
+    renderThemed(<Settings />);
+
+    expect(screen.getByText('Officer tools')).toBeOnTheScreen();
+    await user.press(screen.getByRole('button', { name: 'Manage Users' }));
+    await user.press(screen.getByRole('button', { name: 'Manage Whitelist' }));
+    expect(mockPush).toHaveBeenNthCalledWith(1, '/settings/manage_users');
+    expect(mockPush).toHaveBeenNthCalledWith(2, '/settings/manage_whitelist');
+  });
+
+  it('edits and saves contact information through the contacts module', async () => {
+    mockRole = Role.Admin;
+    const user = userEvent.setup();
+    renderThemed(<Settings />);
+    await screen.findByText('Campus Cats Officers');
+
+    await user.press(screen.getByRole('button', { name: 'Edit Contacts' }));
+    fireEvent.changeText(screen.getByLabelText('Contact name'), 'Campus Cats Leadership');
+    await user.press(screen.getByRole('button', { name: 'Save Contacts' }));
+
+    await waitFor(() =>
+      expect(mockUpdateContact).toHaveBeenCalledWith(
+        expect.objectContaining({ id: 'actor-1' }),
+        'contact-1',
+        { name: 'Campus Cats Leadership', email: 'cats@gatech.edu' },
+      ),
+    );
+  });
+
+  it('renders an access-denied state instead of loading users for members', () => {
+    renderThemed(<ManageUsers />);
+
+    expect(screen.getByText('Access restricted')).toBeOnTheScreen();
+    expect(mockListUsers).not.toHaveBeenCalled();
+  });
+
+  it('loads readable user cards for administrators', async () => {
+    mockRole = Role.Admin;
+    renderThemed(<ManageUsers />);
+
+    expect(await screen.findByText('member@gatech.edu')).toBeOnTheScreen();
+    expect(screen.getByText('Member')).toBeOnTheScreen();
+  });
+
+  it('shows an explicit empty whitelist state', async () => {
+    mockRole = Role.Admin;
+    renderThemed(<ManageWhitelist />);
+
+    expect(await screen.findByText('No pending applications')).toBeOnTheScreen();
+  });
+});
