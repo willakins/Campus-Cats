@@ -1,48 +1,82 @@
 import React, { useCallback, useState } from 'react';
-import { SafeAreaView, ScrollView, Text } from 'react-native';
+import { FlatList, useWindowDimensions, View } from 'react-native';
 
 import { useFocusEffect, useRouter } from 'expo-router';
 
-import { Button, CatalogItem, Errorbar } from '@/components';
+import { AppHeader, Button, EmptyState, ErrorState, Screen, Skeleton } from '@/components/design';
+import { CatalogItem } from '@/components/items/CatalogItem';
 import { appModules } from '@/composition/appModules';
-import { CatalogEntry } from '@/core/domain';
+import { canManageFeature, CatalogEntry } from '@/core/domain';
 import { useAuth } from '@/providers';
-import { buttonStyles, containerStyles, textStyles } from '@/styles';
+import { useAppTheme } from '@/theme';
 
 const Catalog = () => {
   const { user } = useAuth();
   const router = useRouter();
-  const isAdmin = user.role === 1 || user.role === 2;
+  const theme = useAppTheme();
+  const { width, fontScale } = useWindowDimensions();
+  const isAdmin = canManageFeature(user.role);
+  const columns = fontScale >= 1.5 || width < 360 ? 1 : width >= 768 ? 3 : 2;
   const [entries, setEntries] = useState<readonly CatalogEntry[]>([]);
-  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string>();
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    setError(undefined);
+    const result = await appModules.catalog.list();
+    if (result.ok) setEntries(result.value);
+    else setError(result.error.message);
+    setLoading(false);
+  }, []);
 
   useFocusEffect(
     useCallback(() => {
-      void appModules.catalog.list().then((result) => {
-        if (result.ok) setEntries(result.value);
-        else setError(result.error.message);
-      });
-    }, []),
+      void load();
+    }, [load]),
   );
 
   return (
-    <SafeAreaView style={containerStyles.wrapper}>
-      <Errorbar error={error} onDismiss={() => setError('')} />
-      <Text style={textStyles.pageTitle}>Catalog</Text>
-      <ScrollView contentContainerStyle={containerStyles.scrollView}>
-        {entries.map((entry) => (
-          <CatalogItem key={entry.id} {...entry} />
-        ))}
-      </ScrollView>
-      {isAdmin ? (
+    <Screen
+      footer={isAdmin ? (
         <Button
-          style={buttonStyles.bigButton}
+          label="Create catalog entry"
+          icon="add"
+          fullWidth
           onPress={() => router.push('/catalog/create-entry')}
-        >
-          <Text style={textStyles.bigButtonText}>Create Entry</Text>
-        </Button>
-      ) : null}
-    </SafeAreaView>
+        />
+      ) : undefined}
+    >
+      <AppHeader title="Cat catalog" eyebrow="Meet the colony" />
+      {loading ? (
+        <View style={{ gap: theme.spacing.md }}>
+          <Skeleton label="Loading cat cards" />
+          <Skeleton label="Loading another cat card" />
+        </View>
+      ) : (
+        <FlatList
+          key={`catalog-${columns}`}
+          data={error ? [] : entries}
+          numColumns={columns}
+          keyExtractor={(entry) => entry.id}
+          contentContainerStyle={{ flexGrow: 1, gap: theme.spacing.md, paddingBottom: theme.spacing.md }}
+          columnWrapperStyle={columns > 1 ? { gap: theme.spacing.md } : undefined}
+          renderItem={({ item }) => (
+            <View style={{ flex: 1, minWidth: 0 }}>
+              <CatalogItem {...item} />
+            </View>
+          )}
+          ListEmptyComponent={error ? (
+            <ErrorState title="Catalog unavailable" message={error} onRetry={() => void load()} />
+          ) : (
+            <EmptyState
+              title="No cats yet"
+              message="Catalog profiles will appear here when officers add them."
+            />
+          )}
+        />
+      )}
+    </Screen>
   );
 };
 

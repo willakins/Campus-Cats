@@ -1,17 +1,18 @@
 import React, { useEffect, useState } from 'react';
-import { Image, Text, View } from 'react-native';
+import { Image, View } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 
 import { useRouter } from 'expo-router';
 
 import { appModules } from '@/composition/appModules';
 import { CatalogEntry } from '@/core/domain';
 import { StoredMediaAsset } from '@/core/ports';
-import { containerStyles, textStyles } from '@/styles';
-
-import { Button } from '../ui/Buttons';
+import { useAppTheme } from '@/theme';
+import { AppText, Card } from '../design';
 
 export const CatalogItem: React.FC<CatalogEntry> = (entry) => {
   const router = useRouter();
+  const theme = useAppTheme();
   const [profile, setProfile] = useState<StoredMediaAsset>();
 
   useEffect(() => {
@@ -23,28 +24,41 @@ export const CatalogItem: React.FC<CatalogEntry> = (entry) => {
   }, [entry.id]);
 
   return (
-    <Button
-      style={containerStyles.card}
+    <Card
+      accessibilityLabel={`View cat: ${entry.cat.name}`}
+      style={{ flex: 1, padding: 0 }}
       onPress={() =>
         router.push({ pathname: '/catalog/view-entry', params: { id: entry.id } })
       }
     >
-      <Text style={textStyles.listTitle}>{entry.cat.name}</Text>
       {profile ? (
         <Image
+          accessibilityLabel={`${entry.cat.name} profile photo`}
           source={{ uri: profile.url }}
-          style={containerStyles.listImage}
+          style={{ width: '100%', aspectRatio: 4 / 3 }}
           resizeMode="cover"
         />
       ) : (
-        <View style={containerStyles.listImage}>
-          <Text style={textStyles.listTitle}>No profile photo</Text>
+        <View
+          accessibilityLabel={`No profile photo for ${entry.cat.name}`}
+          style={{
+            width: '100%',
+            aspectRatio: 4 / 3,
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: theme.spacing.xs,
+            backgroundColor: theme.colors.tealSurface,
+          }}
+        >
+          <Ionicons name="paw-outline" size={36} color={theme.colors.teal} />
+          <AppText variant="caption" color="muted">No profile photo</AppText>
         </View>
       )}
-      <Text style={[textStyles.detail, { alignSelf: 'center' }]}>
-        {entry.cat.descShort}
-      </Text>
-    </Button>
+      <View style={{ padding: theme.spacing.md, gap: theme.spacing.xxs }}>
+        <AppText variant="cardTitle">{entry.cat.name}</AppText>
+        <AppText color="muted" numberOfLines={2}>{entry.cat.descShort}</AppText>
+      </View>
+    </Card>
   );
 };
 
