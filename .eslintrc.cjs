@@ -15,6 +15,7 @@ module.exports = {
     '.expo/',
     'coverage/',
     'dataconnect-generated/',
+    'dist/',
     'functions/lib/',
     'node_modules/',
     'public/',
