@@ -246,6 +246,12 @@ const Settings = () => {
               icon="clipboard-outline"
               onPress={() => router.push('/settings/manage_whitelist')}
             />
+            <ListRow
+              title="iNaturalist Sync"
+              subtitle="Review imports, retry synchronization, and moderate records"
+              icon="leaf-outline"
+              onPress={() => router.push('/settings/inaturalist')}
+            />
           </FormSection>
         ) : null}
       </View>

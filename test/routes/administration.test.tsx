@@ -3,9 +3,15 @@ import React from 'react';
 import { fireEvent, render, screen, userEvent, waitFor } from '@testing-library/react-native';
 
 import Settings from '../../app/(app)/(tabs)/settings';
+import InaturalistAdministration from '../../app/(app)/settings/inaturalist';
 import ManageUsers from '../../app/(app)/settings/manage_users';
 import ManageWhitelist from '../../app/(app)/settings/manage_whitelist';
-import { Role, parseContact, parseUser } from '../../core/domain';
+import {
+  ImportedCatalogProfile,
+  Role,
+  parseContact,
+  parseUser,
+} from '../../core/domain';
 import { AppThemeProvider } from '../../theme';
 
 let mockRole: Role = Role.Member;
@@ -19,6 +25,10 @@ const mockUpdateContact = jest.fn();
 const mockRemoveContact = jest.fn();
 const mockListUsers = jest.fn();
 const mockListWhitelist = jest.fn();
+const mockInaturalistStatus = jest.fn();
+const mockInaturalistRecords = jest.fn();
+const mockRunInaturalist = jest.fn();
+const mockSetInaturalistVisibility = jest.fn();
 
 jest.mock('expo-router', () => {
   const mockReact = require('react');
@@ -54,6 +64,12 @@ jest.mock('../../composition/appModules', () => ({
       accept: jest.fn(),
       deny: jest.fn(),
     },
+    inaturalist: {
+      status: (...args: unknown[]) => mockInaturalistStatus(...args),
+      records: (...args: unknown[]) => mockInaturalistRecords(...args),
+      runNow: (...args: unknown[]) => mockRunInaturalist(...args),
+      setVisibility: (...args: unknown[]) => mockSetInaturalistVisibility(...args),
+    },
   },
 }));
 
@@ -69,6 +85,28 @@ const member = parseUser({
   email: 'member@gatech.edu',
   role: Role.Member,
 });
+const importedProfile: ImportedCatalogProfile = {
+  id: 2001,
+  guideId: 18800,
+  sourceUrl: 'https://www.inaturalist.org/guide_taxa/2001',
+  sourceUpdatedAt: new Date('2026-08-01T12:00:00.000Z'),
+  displayName: 'Goldie',
+  shortDescription: 'A friendly orange cat.',
+  metadata: {
+    yearsRecorded: ['2022–present'],
+    areasOfResidence: ['Library'],
+    furPatterns: ['Tabby'],
+  },
+  photos: [],
+  sourceActive: true,
+  visible: true,
+  importedAt: new Date('2026-08-01T12:00:00.000Z'),
+  syncedAt: new Date('2026-08-04T07:17:00.000Z'),
+  lastSeenRunId: 'run-1',
+  moderation: { hidden: false, reason: '' },
+  overrides: {},
+  matchStatus: 'ambiguous',
+};
 
 const renderThemed = (content: React.ReactElement) =>
   render(<AppThemeProvider colorScheme="light">{content}</AppThemeProvider>);
@@ -84,6 +122,14 @@ describe('settings and administration routes', () => {
     mockRemoveContact.mockResolvedValue({ ok: true, value: undefined, warnings: [] });
     mockListUsers.mockResolvedValue({ ok: true, value: [member], warnings: [] });
     mockListWhitelist.mockResolvedValue({ ok: true, value: [], warnings: [] });
+    mockInaturalistStatus.mockResolvedValue({ ok: true, value: undefined, warnings: [] });
+    mockInaturalistRecords.mockResolvedValue({
+      ok: true,
+      value: { observations: [], catalog: [importedProfile] },
+      warnings: [],
+    });
+    mockRunInaturalist.mockResolvedValue({ ok: true, value: { status: 'success' }, warnings: [] });
+    mockSetInaturalistVisibility.mockResolvedValue({ ok: true, value: undefined, warnings: [] });
   });
 
   it('organizes More for members and signs out from an explicit account action', async () => {
@@ -107,8 +153,10 @@ describe('settings and administration routes', () => {
     expect(screen.getByText('Officer tools')).toBeOnTheScreen();
     await user.press(screen.getByRole('button', { name: 'Manage Users' }));
     await user.press(screen.getByRole('button', { name: 'Manage Whitelist' }));
+    await user.press(screen.getByRole('button', { name: 'iNaturalist Sync' }));
     expect(mockPush).toHaveBeenNthCalledWith(1, '/settings/manage_users');
     expect(mockPush).toHaveBeenNthCalledWith(2, '/settings/manage_whitelist');
+    expect(mockPush).toHaveBeenNthCalledWith(3, '/settings/inaturalist');
   });
 
   it('edits and saves contact information through the contacts module', async () => {
@@ -150,5 +198,38 @@ describe('settings and administration routes', () => {
     renderThemed(<ManageWhitelist />);
 
     expect(await screen.findByText('No pending applications')).toBeOnTheScreen();
+  });
+
+  it('denies iNaturalist administration to members before loading imported data', () => {
+    renderThemed(<InaturalistAdministration />);
+
+    expect(screen.getByText('Access restricted')).toBeOnTheScreen();
+    expect(mockInaturalistRecords).not.toHaveBeenCalled();
+  });
+
+  it('lets administrators retry imports and hide records with an audit reason', async () => {
+    mockRole = Role.Admin;
+    const user = userEvent.setup();
+    renderThemed(<InaturalistAdministration />);
+
+    expect(await screen.findByText('Goldie')).toBeOnTheScreen();
+    expect(screen.getByText('Ambiguous local match')).toBeOnTheScreen();
+    await user.press(screen.getByRole('button', { name: 'Sync with iNaturalist now' }));
+    await waitFor(() => expect(mockRunInaturalist).toHaveBeenCalled());
+
+    fireEvent.changeText(
+      screen.getByLabelText('Reason for hiding a record'),
+      'Duplicate profile confirmed by an officer',
+    );
+    await user.press(screen.getByRole('button', { name: 'Hide Goldie' }));
+    await waitFor(() =>
+      expect(mockSetInaturalistVisibility).toHaveBeenCalledWith(
+        expect.objectContaining({ id: 'actor-1' }),
+        'catalog',
+        2001,
+        false,
+        'Duplicate profile confirmed by an officer',
+      ),
+    );
   });
 });

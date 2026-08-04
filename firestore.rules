@@ -75,6 +75,21 @@ service cloud.firestore {
       allow create, update, delete: if isAdmin();
     }
 
+    match /inaturalist-observations/{observationId} {
+      allow read: if signedIn() && (resource.data.visible == true || isAdmin());
+      allow create, update, delete: if false;
+    }
+
+    match /inaturalist-guide-profiles/{profileId} {
+      allow read: if signedIn() && (resource.data.visible == true || isAdmin());
+      allow create, update, delete: if false;
+    }
+
+    match /integration-state/{integrationId} {
+      allow read: if isAdmin();
+      allow create, update, delete: if false;
+    }
+
     match /whitelist/{applicationId} {
       allow create: if validWhitelistApplication();
       allow read, delete: if isAdmin();
