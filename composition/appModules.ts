@@ -28,7 +28,7 @@ import {
   app,
   auth,
   db,
-  firebaseConfig,
+  samlConfiguration,
   storage,
 } from '../config/firebase';
 
@@ -57,7 +57,7 @@ const codecs = createFirestoreCodecs({ fromDate: Timestamp.fromDate });
 const session = new FirebaseSession(
   auth,
   db,
-  new ExpoSamlCredentialProvider(firebaseConfig),
+  new ExpoSamlCredentialProvider(samlConfiguration),
 );
 
 export const appModules: AppModules = Object.freeze({

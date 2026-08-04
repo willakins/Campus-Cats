@@ -21,7 +21,8 @@
     "ui:check": "node scripts/check-ui-colors.js",
     "platform:check": "node scripts/check-platform-compat.js",
     "hosting:check": "node scripts/check-hosting.js",
-    "hosting:build": "expo export --platform web && npm run hosting:check",
+    "hosting:env": "node scripts/check-hosting-environment.js",
+    "hosting:build": "npm run hosting:env && expo export --platform web && npm run hosting:check",
     "hosting:serve": "npm run hosting:build && firebase emulators:start --only hosting --project demo-campus-cats-test",
     "quality": "npm run typecheck && npm run lint && npm run format:check && npm run ui:check && npm run platform:check && npm run hosting:check"
   },

@@ -17,7 +17,9 @@ export class ExpoSamlCredentialProvider implements SamlCredentialProvider {
   async credential(): Promise<AuthCredential | undefined> {
     const { apiKey, authDomain } = this.configuration;
     if (!apiKey || !authDomain) {
-      throw new Error('Firebase SAML configuration is incomplete');
+      throw new Error(
+        'Georgia Tech SSO requires the Firebase Web App configuration.',
+      );
     }
     const redirectUrl = Linking.createURL('/saml-sign-in');
     const backendUrl = `https://${authDomain}/firebase-wrapper-app.html`;
