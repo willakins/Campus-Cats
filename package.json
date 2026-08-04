@@ -19,7 +19,8 @@
     "typecheck": "tsc --noEmit",
     "lint": "eslint . --ext .js,.jsx,.ts,.tsx --max-warnings=0",
     "format:check": "prettier --check \"docs/**/*.md\"",
-    "quality": "npm run typecheck && npm run lint && npm run format:check"
+    "ui:check": "node scripts/check-ui-colors.js",
+    "quality": "npm run typecheck && npm run lint && npm run format:check && npm run ui:check"
   },
   "dependencies": {
     "@expo/vector-icons": "^14.0.4",

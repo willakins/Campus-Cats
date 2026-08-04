@@ -1,0 +1,25 @@
+const fs = require('node:fs');
+const path = require('node:path');
+
+const roots = ['components/design'];
+const colorPattern = /#[0-9a-f]{3,8}\b|(['"])(?:red|green|black|white|gray|grey|tomato)\1/gi;
+const sourcePattern = /\.(?:js|jsx|ts|tsx)$/;
+
+const filesUnder = (directory) =>
+  fs.readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
+    const filename = path.join(directory, entry.name);
+    return entry.isDirectory() ? filesUnder(filename) : sourcePattern.test(filename) ? [filename] : [];
+  });
+
+const violations = roots
+  .flatMap(filesUnder)
+  .filter((filename) => !filename.endsWith('.test.tsx'))
+  .flatMap((filename) => {
+    const source = fs.readFileSync(filename, 'utf8');
+    return [...source.matchAll(colorPattern)].map((match) => `${filename}:${source.slice(0, match.index).split('\n').length}`);
+  });
+
+if (violations.length > 0) {
+  console.error(`Use semantic theme colors instead of raw colors:\n${violations.join('\n')}`);
+  process.exitCode = 1;
+}
