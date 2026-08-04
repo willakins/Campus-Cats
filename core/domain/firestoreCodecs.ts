@@ -14,6 +14,12 @@ import {
   parseUser,
   parseWhitelistApplication,
 } from './models';
+import {
+  ImportedCatalogProfile,
+  ImportedObservation,
+  parseImportedCatalogProfile,
+  parseImportedObservation,
+} from './inaturalist';
 
 export const COLLECTIONS = {
   sightings: 'cat-sightings',
@@ -23,6 +29,9 @@ export const COLLECTIONS = {
   contacts: 'contact-info',
   users: 'users',
   whitelist: 'whitelist',
+  inaturalistObservations: 'inaturalist-observations',
+  inaturalistCatalog: 'inaturalist-guide-profiles',
+  integrationState: 'integration-state',
 } as const;
 
 export interface TimestampFactory<EncodedDate = unknown> {
@@ -142,6 +151,91 @@ export function createFirestoreCodecs<EncodedDate>(
     encode: ({ id: _id, ...value }) => value,
   };
 
+  const inaturalistObservation: FirestoreCodec<ImportedObservation> = {
+    decode: (id, value) => {
+      const data = record(value);
+      const moderation = record(data.moderation);
+      return parseImportedObservation({
+        ...data,
+        id: Number(id),
+        sourceUpdatedAt: decodeDate(data.sourceUpdatedAt),
+        observedAt: decodeDate(data.observedAt),
+        importedAt: decodeDate(data.importedAt),
+        syncedAt: decodeDate(data.syncedAt),
+        moderation: {
+          ...moderation,
+          updatedAt:
+            moderation.updatedAt === undefined
+              ? undefined
+              : decodeDate(moderation.updatedAt),
+        },
+      });
+    },
+    encode: ({
+      id: _id,
+      sourceUpdatedAt,
+      observedAt,
+      importedAt,
+      syncedAt,
+      moderation,
+      ...value
+    }) => ({
+      schemaVersion: 1,
+      ...value,
+      sourceUpdatedAt: timestamps.fromDate(sourceUpdatedAt),
+      observedAt: timestamps.fromDate(observedAt),
+      importedAt: timestamps.fromDate(importedAt),
+      syncedAt: timestamps.fromDate(syncedAt),
+      moderation: {
+        ...moderation,
+        updatedAt: moderation.updatedAt
+          ? timestamps.fromDate(moderation.updatedAt)
+          : undefined,
+      },
+    }),
+  };
+
+  const inaturalistCatalog: FirestoreCodec<ImportedCatalogProfile> = {
+    decode: (id, value) => {
+      const data = record(value);
+      const moderation = record(data.moderation);
+      return parseImportedCatalogProfile({
+        ...data,
+        id: Number(id),
+        sourceUpdatedAt: decodeDate(data.sourceUpdatedAt),
+        importedAt: decodeDate(data.importedAt),
+        syncedAt: decodeDate(data.syncedAt),
+        moderation: {
+          ...moderation,
+          updatedAt:
+            moderation.updatedAt === undefined
+              ? undefined
+              : decodeDate(moderation.updatedAt),
+        },
+      });
+    },
+    encode: ({
+      id: _id,
+      sourceUpdatedAt,
+      importedAt,
+      syncedAt,
+      moderation,
+      ...value
+    }) => ({
+      schemaVersion: 1,
+      ...value,
+      sourceUpdatedAt: timestamps.fromDate(sourceUpdatedAt),
+      importedAt: timestamps.fromDate(importedAt),
+      syncedAt: timestamps.fromDate(syncedAt),
+      moderation: {
+        ...moderation,
+        updatedAt: moderation.updatedAt
+          ? timestamps.fromDate(moderation.updatedAt)
+          : undefined,
+      },
+    }),
+  };
+
   return {
     user,
     sighting,
@@ -150,5 +244,7 @@ export function createFirestoreCodecs<EncodedDate>(
     announcement,
     whitelist,
     contact,
+    inaturalistObservation,
+    inaturalistCatalog,
   } as const;
 }
