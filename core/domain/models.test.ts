@@ -226,6 +226,27 @@ describe('Firestore codecs', () => {
     fromDate: (value) => ({ encodedDate: value.toISOString() }),
   });
 
+  it('keeps coordinate values attached to their named fields', () => {
+    const sighting = codecs.sighting.decode('sighting-1', {
+      name: 'Goldie',
+      info: 'Near Tech Tower',
+      fed: true,
+      health: true,
+      spotted_time: timestamp('2025-04-10T12:00:00.000Z'),
+      location: { longitude: -84.394, latitude: 33.772 },
+      createdBy: member,
+      timeofDay: 'Afternoon',
+    });
+
+    expect(sighting.location).toEqual({
+      latitude: 33.772,
+      longitude: -84.394,
+    });
+    expect(codecs.sighting.encode(sighting)).toMatchObject({
+      location: { latitude: 33.772, longitude: -84.394 },
+    });
+  });
+
   it('preserves public sighting fields while separating contributor identity', () => {
     const sighting = codecs.sighting.decode('sighting-1', {
       name: 'Goldie',
