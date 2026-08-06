@@ -4,7 +4,8 @@ import {
 } from '../../adapters/inMemory/InMemoryInaturalist';
 import {
   Role,
-  createFirestoreCodecs,
+  createPersistenceCodecs,
+  dateObjectCodec,
   parseImportedCatalogProfile,
   parseImportedObservation,
   parseUser,
@@ -68,7 +69,7 @@ const importedCatalog = parseImportedCatalogProfile({
 function buildModule() {
   const reader = new InMemoryInaturalistReader();
   const effects = new InMemoryInaturalistEffects();
-  const codecs = createFirestoreCodecs({ fromDate: (date) => date });
+  const codecs = createPersistenceCodecs(dateObjectCodec);
   const module = new InaturalistModule({
     reader,
     effects,

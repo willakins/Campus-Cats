@@ -2,7 +2,7 @@ import {
   Announcement,
   COLLECTIONS,
   Clock,
-  FirestoreCodec,
+  PersistenceCodec,
   IdGenerator,
   Outcome,
   User,
@@ -13,7 +13,7 @@ import {
 } from '../../core/domain';
 import { MediaCoordinator, MediaSelection, localMedia } from '../../core/media';
 import {
-  CallableEffects,
+  ApplicationEffects,
   DocumentStore,
   MediaStore,
   StoredMediaAsset,
@@ -37,10 +37,10 @@ interface AnnouncementsDependencies {
   readonly documents: DocumentStore;
   readonly media: MediaStore;
   readonly mediaCoordinator: MediaCoordinator;
-  readonly effects: CallableEffects;
+  readonly effects: ApplicationEffects;
   readonly ids: IdGenerator;
   readonly clock: Clock;
-  readonly codecs: { readonly announcement: FirestoreCodec<Announcement> };
+  readonly codecs: { readonly announcement: PersistenceCodec<Announcement> };
 }
 
 export class AnnouncementsModule {

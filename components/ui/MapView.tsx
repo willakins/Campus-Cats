@@ -1,29 +1,11 @@
-import { Platform } from 'react-native';
-import RNMapView, { MapViewProps } from 'react-native-maps';
+import React from 'react';
 
-type CrossPlatformMapViewProps = MapViewProps & {
-  readonly googleMapsApiKey?: string;
-};
+import { appMapAdapter } from '../../composition/mapAdapter';
+import { AppMapViewProps } from '../maps/MapAdapter';
 
-const CrossPlatformMapView = RNMapView as React.ComponentType<CrossPlatformMapViewProps>;
+export type MapViewProps = AppMapViewProps;
 
-export const MapView: React.FC<CrossPlatformMapViewProps> = ({
-  children,
-  provider,
-  googleMapsApiKey,
-  ...props
-}) => {
-  return (
-    <CrossPlatformMapView
-      provider={Platform.OS === 'web' ? 'google' : provider}
-      googleMapsApiKey={
-        Platform.OS === 'web'
-          ? googleMapsApiKey ?? process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY
-          : undefined
-      }
-      {...props}
-    >
-      {children}
-    </CrossPlatformMapView>
-  );
+export const MapView: React.FC<MapViewProps> = (props) => {
+  const AdapterView = appMapAdapter.View;
+  return <AdapterView {...props} />;
 };

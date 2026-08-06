@@ -5,7 +5,8 @@ import {
   Role,
   SequenceIdGenerator,
   SurveyAnswer,
-  createFirestoreCodecs,
+  createPersistenceCodecs,
+  dateObjectCodec,
   parseSurvey,
   parseSurveyResponse,
   parseSurveySubmissionReceipt,
@@ -29,7 +30,7 @@ const member = parseUser({
   email: 'member@gatech.edu',
   role: Role.Member,
 });
-const codecs = createFirestoreCodecs({ fromDate: (date) => date });
+const codecs = createPersistenceCodecs(dateObjectCodec);
 
 function buildModule(submissionFailure?: Error) {
   const documents = new InMemoryDocumentStore();

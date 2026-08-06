@@ -5,8 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Coordinates } from '../../core/domain';
 import { DisplayMediaAsset, isExternalMediaAsset } from '../../core/ports';
 import { useAppTheme } from '../../theme';
-import { campusMapDarkStyle } from '../mapStyles';
-import { createCampusCamera } from '../mapViewport';
+import { createCampusViewport } from '../mapViewport';
 import { MapMarker } from '../ui/MapMarker';
 import { MapView } from '../ui/MapView';
 import { ProgressiveImage } from '../ui/ProgressiveImage';
@@ -166,9 +165,8 @@ export const MapInset = ({
     >
       <MapView
         style={{ flex: 1 }}
-        userInterfaceStyle={theme.dark ? 'dark' : 'light'}
-        customMapStyle={theme.dark ? [...campusMapDarkStyle] : undefined}
-        initialCamera={createCampusCamera(mapCenter)}
+        appearance={theme.dark ? 'dark' : 'light'}
+        initialViewport={createCampusViewport(mapCenter)}
       >
         {markers.map((marker) => (
           <MapMarker

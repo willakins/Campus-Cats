@@ -15,7 +15,8 @@ jest.mock('expo-router', () => {
   const mockReact = require('react');
   return {
     useRouter: () => ({ back: mockBack }),
-    useFocusEffect: (callback: () => void) => mockReact.useEffect(callback, [callback]),
+    useFocusEffect: (callback: () => void) =>
+      mockReact.useEffect(callback, [callback]),
   };
 });
 
@@ -29,6 +30,38 @@ jest.mock('../../composition/appModules', () => ({
   appModules: {
     billing: {
       summary: (...args: unknown[]) => mockSummary(...args),
+      presentation: {
+        settingsSubtitle: 'Review monthly Firebase and Google Cloud costs',
+        consoleDescription:
+          'Firebase and Google Cloud share this project and billing account.',
+        consoleLinks: (projectId: string) => [
+          {
+            label: 'Open Firebase Console',
+            url: `https://console.firebase.google.com/project/${encodeURIComponent(projectId)}/overview`,
+          },
+          {
+            label: 'Open Google Cloud Billing',
+            url: `https://console.cloud.google.com/billing?project=${encodeURIComponent(projectId)}`,
+          },
+        ],
+        setup: (summary: {
+          readonly projectId: string;
+          readonly exportProjectId: string;
+          readonly datasetId: string;
+        }) => ({
+          message: 'Connect the cloud billing export.',
+          title: 'Connect the billing export',
+          steps: [
+            'Enable the Standard usage cost export in Google Cloud Billing.',
+            `Export it to ${summary.exportProjectId}.${summary.datasetId} in the US location.`,
+            'Give the Functions service account BigQuery access.',
+          ],
+          action: {
+            label: 'Set Up Billing Export',
+            url: `https://console.cloud.google.com/billing/export?project=${encodeURIComponent(summary.projectId)}`,
+          },
+        }),
+      },
     },
   },
 }));
@@ -121,7 +154,9 @@ describe('billing officer route', () => {
     await renderBilling();
     await screen.findByText('Connected');
 
-    await user.press(screen.getByRole('button', { name: 'Open Firebase Console' }));
+    await user.press(
+      screen.getByRole('button', { name: 'Open Firebase Console' }),
+    );
     await user.press(
       screen.getByRole('button', { name: 'Open Google Cloud Billing' }),
     );
@@ -152,8 +187,12 @@ describe('billing officer route', () => {
     });
     await renderBilling();
 
-    expect(await screen.findByText('Connect the billing export')).toBeOnTheScreen();
-    expect(screen.getByText(/campuscats-d7a5e.billing_export/)).toBeOnTheScreen();
+    expect(
+      await screen.findByText('Connect the billing export'),
+    ).toBeOnTheScreen();
+    expect(
+      screen.getByText(/campuscats-d7a5e.billing_export/),
+    ).toBeOnTheScreen();
     expect(
       screen.queryByRole('button', { name: 'Set Up Billing Export' }),
     ).not.toBeOnTheScreen();

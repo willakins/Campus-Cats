@@ -5,33 +5,36 @@ import {
   failure,
   success,
 } from '../../core/domain';
-import { BillingReader, BillingSummary } from '../../core/ports';
+import {
+  BillingProviderPresentation,
+  BillingReader,
+  BillingSummary,
+} from '../../core/ports';
 
 interface BillingDependencies {
   readonly reader: BillingReader;
+  readonly presentation: BillingProviderPresentation;
 }
 
 export class BillingModule {
   constructor(private readonly dependencies: BillingDependencies) {}
+
+  get presentation(): BillingProviderPresentation {
+    return this.dependencies.presentation;
+  }
 
   async summary(actor: User | undefined): Promise<Outcome<BillingSummary>> {
     if (!actor) {
       return failure('unauthenticated', 'Sign in to view app billing');
     }
     if (!canManageFeature(actor.role)) {
-      return failure(
-        'forbidden',
-        'Only officers may view app billing',
-      );
+      return failure('forbidden', 'Only officers may view app billing');
     }
 
     try {
       return success(await this.dependencies.reader.getSummary());
     } catch {
-      return failure(
-        'dependency_failure',
-        'Could not load Google Cloud billing data',
-      );
+      return failure('dependency_failure', 'Could not load billing data');
     }
   }
 }

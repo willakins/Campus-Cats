@@ -23,11 +23,13 @@ import {
   canManageFeature,
   parseUser,
 } from '@/core/domain';
-import { BillingSetupReason, BillingSummary, MonthlyBillingCost } from '@/core/ports';
+import {
+  BillingProviderPresentation,
+  BillingSummary,
+  MonthlyBillingCost,
+} from '@/core/ports';
 import { useAuth } from '@/providers';
 import { useAppTheme } from '@/theme';
-
-const DEFAULT_PROJECT_ID = 'campuscats-d7a5e';
 
 const Billing = () => {
   const router = useRouter();
@@ -36,6 +38,7 @@ const Billing = () => {
   const theme = useAppTheme();
   const authorized = canManageFeature(actor.role);
   const canOpenCloudConsoles = canAccessCloudConsoles(actor.role);
+  const presentation = appModules.billing.presentation;
   const [summary, setSummary] = useState<BillingSummary>();
   const [loading, setLoading] = useState(authorized);
   const [error, setError] = useState<string>();
@@ -53,10 +56,9 @@ const Billing = () => {
 
   useFocusEffect(load);
 
-  const projectId = summary?.projectId ?? DEFAULT_PROJECT_ID;
   const open = (url: string) => {
     void Linking.openURL(url).catch(() => {
-      setError('Could not open the Google console link');
+      setError('Could not open the cloud console link');
     });
   };
 
@@ -78,13 +80,20 @@ const Billing = () => {
           onRetry={load}
         />
       ) : summary ? (
-        <View style={{ gap: theme.spacing.lg, paddingBottom: theme.spacing.xl }}>
+        <View
+          style={{ gap: theme.spacing.lg, paddingBottom: theme.spacing.xl }}
+        >
           {canOpenCloudConsoles ? (
-            <ConsoleLinks projectId={projectId} open={open} />
+            <ConsoleLinks
+              presentation={presentation}
+              projectId={summary.projectId}
+              open={open}
+            />
           ) : null}
           {summary.status === 'setup-required' ? (
             <SetupRequired
               summary={summary}
+              presentation={presentation}
               open={open}
               canOpenCloudConsoles={canOpenCloudConsoles}
             />
@@ -98,40 +107,30 @@ const Billing = () => {
 };
 
 const ConsoleLinks = ({
+  presentation,
   projectId,
   open,
 }: {
+  readonly presentation: BillingProviderPresentation;
   readonly projectId: string;
   readonly open: (url: string) => void;
 }) => {
   const theme = useAppTheme();
+  const links = presentation.consoleLinks(projectId);
   return (
     <FormSection title="Cloud consoles">
       <Card accent={theme.colors.primary}>
         <View style={{ gap: theme.spacing.sm }}>
-          <AppText color="muted">
-            Firebase and Google Cloud share this project and billing account.
-          </AppText>
-          <Button
-            label="Open Firebase Console"
-            icon="open-outline"
-            variant="secondary"
-            onPress={() =>
-              open(
-                `https://console.firebase.google.com/project/${encodeURIComponent(projectId)}/overview`,
-              )
-            }
-          />
-          <Button
-            label="Open Google Cloud Billing"
-            icon="card-outline"
-            variant="secondary"
-            onPress={() =>
-              open(
-                `https://console.cloud.google.com/billing?project=${encodeURIComponent(projectId)}`,
-              )
-            }
-          />
+          <AppText color="muted">{presentation.consoleDescription}</AppText>
+          {links.map((link) => (
+            <Button
+              key={link.url}
+              label={link.label}
+              icon="open-outline"
+              variant="secondary"
+              onPress={() => open(link.url)}
+            />
+          ))}
         </View>
       </Card>
     </FormSection>
@@ -140,20 +139,23 @@ const ConsoleLinks = ({
 
 const SetupRequired = ({
   summary,
+  presentation,
   open,
   canOpenCloudConsoles,
 }: {
-  readonly summary: Extract<BillingSummary, { readonly status: 'setup-required' }>;
+  readonly summary: Extract<
+    BillingSummary,
+    { readonly status: 'setup-required' }
+  >;
+  readonly presentation: BillingProviderPresentation;
   readonly open: (url: string) => void;
   readonly canOpenCloudConsoles: boolean;
 }) => {
   const theme = useAppTheme();
+  const setup = presentation.setup(summary);
   return (
     <FormSection title="Monthly costs">
-      <FeedbackBanner
-        tone="warning"
-        message={setupMessage(summary.reason)}
-      />
+      <FeedbackBanner tone="warning" message={setup.message} />
       <Card accent={theme.colors.gold}>
         <View style={{ gap: theme.spacing.sm }}>
           <StatusPill
@@ -161,28 +163,17 @@ const SetupRequired = ({
             tone="warning"
             icon="build-outline"
           />
-          <AppText variant="cardTitle">Connect the billing export</AppText>
-          <AppText color="muted">
-            1. Enable the Standard usage cost export in Google Cloud Billing.
-          </AppText>
-          <AppText color="muted">
-            2. Export it to {summary.exportProjectId}.{summary.datasetId} in the US location.
-          </AppText>
-          <AppText color="muted">
-            3. Give the Functions service account BigQuery Job User and Data Viewer access.
-          </AppText>
-          <AppText color="muted">
-            4. Return here after Google creates and populates the export table.
-          </AppText>
-          {canOpenCloudConsoles ? (
+          <AppText variant="cardTitle">{setup.title}</AppText>
+          {setup.steps.map((step, index) => (
+            <AppText key={step} color="muted">
+              {index + 1}. {step}
+            </AppText>
+          ))}
+          {canOpenCloudConsoles && setup.action ? (
             <Button
-              label="Set Up Billing Export"
+              label={setup.action.label}
               icon="open-outline"
-              onPress={() =>
-                open(
-                  `https://console.cloud.google.com/billing/export?project=${encodeURIComponent(summary.projectId)}`,
-                )
-              }
+              onPress={() => open(setup.action!.url)}
             />
           ) : null}
         </View>
@@ -210,9 +201,17 @@ const MonthlyCosts = ({
       {latest ? (
         <Card accent={theme.colors.teal}>
           <View style={{ gap: theme.spacing.xs }}>
-            <StatusPill label="Connected" tone="success" icon="cloud-done-outline" />
-            <AppText color="muted">Latest month · {formatMonth(latest.month)}</AppText>
-            <AppText variant="display">{formatMoney(latest.netCost, latest.currency)}</AppText>
+            <StatusPill
+              label="Connected"
+              tone="success"
+              icon="cloud-done-outline"
+            />
+            <AppText color="muted">
+              Latest month · {formatMonth(latest.month)}
+            </AppText>
+            <AppText variant="display">
+              {formatMoney(latest.netCost, latest.currency)}
+            </AppText>
             <AppText color="muted">Net cost after credits</AppText>
           </View>
         </Card>
@@ -224,7 +223,10 @@ const MonthlyCosts = ({
         />
       ) : (
         summary.months.map((month) => (
-          <MonthlyCostCard key={`${month.month}-${month.currency}`} month={month} />
+          <MonthlyCostCard
+            key={`${month.month}-${month.currency}`}
+            month={month}
+          />
         ))
       )}
     </FormSection>
@@ -237,7 +239,10 @@ const MonthlyCostCard = ({ month }: { readonly month: MonthlyBillingCost }) => {
     <Card>
       <View style={{ gap: theme.spacing.sm }}>
         <AppText variant="cardTitle">{formatMonth(month.month)}</AppText>
-        <CostRow label="Usage" value={formatMoney(month.grossCost, month.currency)} />
+        <CostRow
+          label="Usage"
+          value={formatMoney(month.grossCost, month.currency)}
+        />
         <CostRow
           label="Credits"
           value={`−${formatMoney(month.credits, month.currency)}`}
@@ -265,7 +270,9 @@ const CostRow = ({
   readonly emphasized?: boolean;
   readonly valueColor?: 'default' | 'primary';
 }) => (
-  <View style={{ flexDirection: 'row', justifyContent: 'space-between', gap: 16 }}>
+  <View
+    style={{ flexDirection: 'row', justifyContent: 'space-between', gap: 16 }}
+  >
     <AppText color="muted">{label}</AppText>
     <AppText
       color={valueColor}
@@ -276,11 +283,6 @@ const CostRow = ({
     </AppText>
   </View>
 );
-
-const setupMessage = (reason: BillingSetupReason) =>
-  reason === 'access-denied'
-    ? 'The billing export exists, but the app service account cannot read it yet.'
-    : 'Google Cloud Billing is not exporting cost data to the expected BigQuery dataset yet.';
 
 const formatMoney = (value: number, currency: string) =>
   new Intl.NumberFormat('en-US', {

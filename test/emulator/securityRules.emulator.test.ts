@@ -301,6 +301,73 @@ describe('Firebase authorization matrix', () => {
     );
   });
 
+  it('keeps legacy sightings readable until contributor privacy is initialized', async () => {
+    await environment.withSecurityRulesDisabled(async (context) => {
+      const firestore = context.firestore();
+      await Promise.all([
+        setDoc(doc(firestore, 'cat-sightings', 'legacy-sighting'), {
+          name: 'Legacy Goldie report',
+          createdBy: {
+            id: 'member-1',
+            email: 'member@gatech.edu',
+            role: 0,
+          },
+        }),
+        setDoc(doc(firestore, 'catalog', 'legacy-catalog'), {
+          name: 'Legacy Goldie profile',
+          createdBy: {
+            id: 'member-1',
+            email: 'member@gatech.edu',
+            role: 0,
+          },
+        }),
+      ]);
+    });
+    const member = environment.authenticatedContext('member-2', {
+      email: 'other@gatech.edu',
+    }).firestore();
+    const president = environment.authenticatedContext('president-1', {
+      email: 'president@gatech.edu',
+    }).firestore();
+
+    const legacySightings = await assertSucceeds(
+      getDocs(collection(member, 'cat-sightings')),
+    );
+    const legacyCatalog = await assertSucceeds(
+      getDocs(collection(member, 'catalog')),
+    );
+    expect(legacySightings.size).toBe(1);
+    expect(legacyCatalog.size).toBe(1);
+    await assertSucceeds(
+      getDoc(doc(member, 'cat-sightings', 'legacy-sighting')),
+    );
+    await assertSucceeds(
+      getDoc(doc(member, 'catalog', 'legacy-catalog')),
+    );
+
+    await assertSucceeds(
+      setDoc(doc(president, 'app-settings', 'public'), {
+        logoUrl: '',
+        primaryColor: '#18314F',
+        accentColor: '#B58A16',
+        sightingsAnonymous: true,
+      }),
+    );
+
+    const memberAfterInitialization = environment.authenticatedContext(
+      'member-1',
+      { email: 'member@gatech.edu' },
+    ).firestore();
+    await assertFails(
+      getDoc(
+        doc(memberAfterInitialization, 'cat-sightings', 'legacy-sighting'),
+      ),
+    );
+    await assertFails(
+      getDoc(doc(memberAfterInitialization, 'catalog', 'legacy-catalog')),
+    );
+  });
+
   it('lets banned accounts read only their own status while denying app data and media', async () => {
     const bannedContext = environment.authenticatedContext('banned-1', {
       email: 'banned@gatech.edu',
