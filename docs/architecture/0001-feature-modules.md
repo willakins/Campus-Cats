@@ -45,6 +45,8 @@ operations define compensation behavior for partial failures.
 - Features are migrated vertically and composed once in `composition/appModules.ts`.
 - The old singleton facade, persistence services, selected-record stores, duplicate
   class models, and image-handler hierarchy have been removed.
+- Persisted records remain schema-parsed readonly object values rather than positional
+  data classes, so fields such as latitude and longitude retain their names.
 - Tests describe caller-visible behavior at module, adapter-contract, route, callable,
   and security-rule seams.
 - Dependency direction is presentation → application/domain → ports, with adapters

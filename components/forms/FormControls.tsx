@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import {
   Alert,
   Switch,
@@ -189,6 +189,7 @@ export const LocationField = ({
 }) => {
   const theme = useAppTheme();
   const hasLocation = value.latitude !== 0 || value.longitude !== 0;
+  const locationInteraction = useRef(false);
   return (
     <FormField label={label} required helper="Drag the map to position the pin.">
       <View style={{ height: 240, overflow: 'hidden', borderRadius: theme.radii.card }}>
@@ -198,12 +199,17 @@ export const LocationField = ({
           userInterfaceStyle={theme.dark ? 'dark' : 'light'}
           customMapStyle={theme.dark ? [...campusMapDarkStyle] : undefined}
           initialCamera={createCampusCamera(hasLocation ? value : GEORGIA_TECH_CENTER)}
-          onRegionChangeComplete={(region) =>
+          onPanDrag={() => {
+            locationInteraction.current = true;
+          }}
+          onRegionChangeComplete={(region, details) => {
+            if (!locationInteraction.current && !details.isGesture) return;
+            locationInteraction.current = false;
             onChange({
               latitude: region.latitude,
               longitude: region.longitude,
             })
-          }
+          }}
         />
         <View
           style={{
@@ -215,7 +221,9 @@ export const LocationField = ({
           }}
         >
           <View
-            testID="location-selection-pin"
+            accessible
+            accessibilityLabel={`${label} pin`}
+            accessibilityRole="image"
             style={{ transform: [{ translateY: -20 }] }}
           >
             <Ionicons

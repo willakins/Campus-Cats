@@ -57,24 +57,33 @@ describe('form controls', () => {
     await renderThemed(
       <LocationField
         label="Sighting location"
-        value={{ latitude: 33.776077, longitude: -84.396199 }}
+        value={{ latitude: 0, longitude: 0 }}
         onChange={onChange}
       />,
     );
 
     expect(screen.getByText('Drag the map to position the pin.')).toBeOnTheScreen();
-    expect(screen.getByTestId('location-selection-pin')).toBeOnTheScreen();
+    expect(
+      screen.getByRole('image', { name: 'Sighting location pin' }),
+    ).toBeOnTheScreen();
 
-    await fireEvent(
-      screen.getByLabelText('Sighting location'),
-      'regionChangeComplete',
-      {
-        latitude: 33.772,
-        longitude: -84.394,
-        latitudeDelta: 0.01,
-        longitudeDelta: 0.01,
-      },
-    );
+    const map = screen.getByLabelText('Sighting location');
+    const selectedRegion = {
+      latitude: 33.772,
+      longitude: -84.394,
+      latitudeDelta: 0.01,
+      longitudeDelta: 0.01,
+    };
+
+    await fireEvent(map, 'regionChangeComplete', selectedRegion, {
+      isGesture: false,
+    });
+    expect(onChange).not.toHaveBeenCalled();
+
+    await fireEvent(map, 'panDrag', {});
+    await fireEvent(map, 'regionChangeComplete', selectedRegion, {
+      isGesture: false,
+    });
 
     expect(onChange).toHaveBeenCalledWith({
       latitude: 33.772,
