@@ -1,0 +1,201 @@
+version: 2
+
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: "09:00"
+      timezone: America/New_York
+    open-pull-requests-limit: 10
+    versioning-strategy: increase
+    groups:
+      expo-sdk:
+        applies-to: version-updates
+        patterns:
+          - "@expo/*"
+          - expo
+          - "expo-*"
+        update-types:
+          - minor
+          - patch
+      routine-updates:
+        applies-to: version-updates
+        patterns:
+          - "*"
+        update-types:
+          - minor
+          - patch
+      security-updates:
+        applies-to: security-updates
+        patterns:
+          - "*"
+    ignore:
+      # Expo SDK major upgrades are coordinated manually with `expo install --fix`.
+      - dependency-name: "@expo/*"
+        update-types:
+          - version-update:semver-major
+      - dependency-name: expo
+        update-types:
+          - version-update:semver-major
+      - dependency-name: "expo-*"
+        update-types:
+          - version-update:semver-major
+
+      # These packages are pinned to Expo SDK 57's compatibility matrix.
+      # Ignore rules for update types do not suppress Dependabot security updates.
+      - dependency-name: "@react-native-async-storage/async-storage"
+        update-types:
+          - version-update:semver-major
+          - version-update:semver-minor
+          - version-update:semver-patch
+      - dependency-name: "@react-native-community/datetimepicker"
+        update-types:
+          - version-update:semver-major
+          - version-update:semver-minor
+          - version-update:semver-patch
+      - dependency-name: "@react-native/jest-preset"
+        update-types:
+          - version-update:semver-major
+          - version-update:semver-minor
+          - version-update:semver-patch
+      - dependency-name: react
+        update-types:
+          - version-update:semver-major
+          - version-update:semver-minor
+          - version-update:semver-patch
+      - dependency-name: react-dom
+        update-types:
+          - version-update:semver-major
+          - version-update:semver-minor
+          - version-update:semver-patch
+      - dependency-name: react-native
+        update-types:
+          - version-update:semver-major
+          - version-update:semver-minor
+          - version-update:semver-patch
+      - dependency-name: react-native-gesture-handler
+        update-types:
+          - version-update:semver-major
+          - version-update:semver-minor
+          - version-update:semver-patch
+      - dependency-name: react-native-get-random-values
+        update-types:
+          - version-update:semver-major
+          - version-update:semver-minor
+          - version-update:semver-patch
+      - dependency-name: react-native-maps
+        update-types:
+          - version-update:semver-major
+          - version-update:semver-minor
+          - version-update:semver-patch
+      - dependency-name: react-native-reanimated
+        update-types:
+          - version-update:semver-major
+          - version-update:semver-minor
+          - version-update:semver-patch
+      - dependency-name: react-native-safe-area-context
+        update-types:
+          - version-update:semver-major
+          - version-update:semver-minor
+          - version-update:semver-patch
+      - dependency-name: react-native-screens
+        update-types:
+          - version-update:semver-major
+          - version-update:semver-minor
+          - version-update:semver-patch
+      - dependency-name: react-native-web
+        update-types:
+          - version-update:semver-major
+          - version-update:semver-minor
+          - version-update:semver-patch
+      - dependency-name: react-native-worklets
+        update-types:
+          - version-update:semver-major
+          - version-update:semver-minor
+          - version-update:semver-patch
+      - dependency-name: "@types/react"
+        update-types:
+          - version-update:semver-major
+          - version-update:semver-minor
+          - version-update:semver-patch
+      - dependency-name: babel-preset-expo
+        update-types:
+          - version-update:semver-major
+          - version-update:semver-minor
+          - version-update:semver-patch
+      - dependency-name: jest-expo
+        update-types:
+          - version-update:semver-major
+          - version-update:semver-minor
+          - version-update:semver-patch
+      - dependency-name: test-renderer
+        update-types:
+          - version-update:semver-major
+          - version-update:semver-minor
+          - version-update:semver-patch
+
+      # Keep intentional compatibility majors documented in the dependency audit.
+      - dependency-name: "@babel/core"
+        update-types:
+          - version-update:semver-major
+      - dependency-name: "@types/jest"
+        update-types:
+          - version-update:semver-major
+      - dependency-name: "@types/node"
+        update-types:
+          - version-update:semver-major
+      - dependency-name: brace-expansion
+        update-types:
+          - version-update:semver-major
+      - dependency-name: eslint
+        update-types:
+          - version-update:semver-major
+      - dependency-name: jest
+        update-types:
+          - version-update:semver-major
+      - dependency-name: node-fetch
+        update-types:
+          - version-update:semver-major
+      - dependency-name: typescript
+        update-types:
+          - version-update:semver-major
+
+  - package-ecosystem: npm
+    directory: /functions
+    schedule:
+      interval: weekly
+      day: monday
+      time: "09:00"
+      timezone: America/New_York
+    open-pull-requests-limit: 5
+    versioning-strategy: increase
+    groups:
+      routine-updates:
+        applies-to: version-updates
+        patterns:
+          - "*"
+        update-types:
+          - minor
+          - patch
+      security-updates:
+        applies-to: security-updates
+        patterns:
+          - "*"
+    ignore:
+      - dependency-name: "@types/node"
+        update-types:
+          - version-update:semver-major
+      - dependency-name: typescript
+        update-types:
+          - version-update:semver-major
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
+    groups:
+      github-actions:
+        patterns:
+          - "*"

@@ -20,6 +20,7 @@ jobs:
           node-version-file: .node-version
           cache: npm
       - run: npm ci
+      - run: npx expo install --check
       - run: npm run quality
       - run: npm run hosting:build
         env:
