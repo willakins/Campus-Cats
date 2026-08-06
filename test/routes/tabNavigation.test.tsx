@@ -64,7 +64,7 @@ describe('bottom navigation', () => {
 
     expect(screen.getAllByRole('tab').map((tab) => tab.props.accessibilityLabel)).toEqual([
       'Map',
-      'Updates',
+      'Community',
       'Cats',
       'More',
     ]);
@@ -76,7 +76,7 @@ describe('bottom navigation', () => {
 
     expect(screen.getAllByRole('tab').map((tab) => tab.props.accessibilityLabel)).toEqual([
       'Map',
-      'Updates',
+      'Community',
       'Stations',
       'Cats',
       'More',

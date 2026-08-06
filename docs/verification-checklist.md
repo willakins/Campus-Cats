@@ -43,6 +43,10 @@ ready.
 - [ ] On one physical device, verify map location selection and rendering.
 - [ ] On one physical device, verify notification permission, push-token registration,
       and announcement delivery.
+- [ ] On one physical device, create an event picture from camera and library, verify
+      its Member view, then verify that it moves to the Officer Expired view.
+- [ ] With two test accounts, submit anonymous and named surveys once; confirm the
+      disclosure copy, duplicate prevention, and Officer response identity behavior.
 - [ ] On the other platform's simulator/emulator, verify core navigation and map
       rendering in both appearances and at its largest accessibility text setting.
 - [ ] Confirm the PR remains free of production Firebase deployments and mobile build

@@ -9,3 +9,4 @@ export * from './stationStatus';
 export * from './dependencies';
 export * from './appSettings';
 export * from './contributors';
+export * from './community';

@@ -531,6 +531,183 @@ describe('Firebase authorization matrix', () => {
     );
   });
 
+  it('protects officer events and separates anonymous survey answers from submission receipts', async () => {
+    const member = environment.authenticatedContext('member-1', {
+      email: 'member@gatech.edu',
+    }).firestore();
+    const other = environment.authenticatedContext('member-2', {
+      email: 'other@gatech.edu',
+    }).firestore();
+    const admin = environment.authenticatedContext('admin-1', {
+      email: 'admin@gatech.edu',
+    }).firestore();
+    const startsAt = Timestamp.fromDate(new Date('2026-08-10T12:00:00.000Z'));
+    const expiresAt = Timestamp.fromDate(new Date('2026-08-11T23:59:59.999Z'));
+    const createdAt = Timestamp.fromDate(new Date('2026-08-06T12:00:00.000Z'));
+    const event = {
+      title: 'Volunteer workshop',
+      details: 'Learn how to help campus cats.',
+      location: 'Student Center',
+      startsAt,
+      expiresAt,
+      imageUrl: 'https://example.com/event.jpg',
+      createdAt,
+      createdBy: { id: 'admin-1', email: 'admin@gatech.edu', role: 1 },
+    };
+
+    await assertFails(setDoc(doc(member, 'community-events', 'event-1'), event));
+    await assertSucceeds(setDoc(doc(admin, 'community-events', 'event-1'), event));
+    await assertFails(
+      setDoc(doc(admin, 'community-events', 'invalid-event'), {
+        ...event,
+        title: '   ',
+      }),
+    );
+    await assertSucceeds(getDoc(doc(member, 'community-events', 'event-1')));
+
+    const anonymousSurvey = {
+      title: 'Volunteer interests',
+      details: 'Help us plan.',
+      anonymous: true,
+      status: 'open',
+      questions: [
+        {
+          id: 'question-1',
+          type: 'short_text',
+          prompt: 'What should we plan?',
+          options: [],
+        },
+      ],
+      createdAt,
+      createdBy: { id: 'admin-1', email: 'admin@gatech.edu', role: 1 },
+    };
+    await assertFails(
+      setDoc(doc(member, 'community-surveys', 'anonymous'), anonymousSurvey),
+    );
+    await assertSucceeds(
+      setDoc(doc(admin, 'community-surveys', 'anonymous'), anonymousSurvey),
+    );
+    await assertFails(
+      setDoc(doc(admin, 'community-surveys', 'invalid-survey'), {
+        ...anonymousSurvey,
+        title: '   ',
+      }),
+    );
+    await assertSucceeds(
+      getDoc(doc(member, 'community-surveys', 'anonymous')),
+    );
+    await assertSucceeds(
+      getDoc(
+        doc(member, 'survey-submission-receipts', 'member-1__anonymous'),
+      ),
+    );
+
+    const directSubmission = writeBatch(member);
+    directSubmission.set(doc(member, 'survey-responses', 'response-blocked'), {
+      surveyId: 'anonymous',
+      answers: [{ questionId: 'question-1', value: 'A workshop' }],
+      submittedAt: createdAt,
+    });
+    directSubmission.set(
+      doc(member, 'survey-submission-receipts', 'member-1__anonymous'),
+      {
+        surveyId: 'anonymous',
+        responseId: 'response-blocked',
+        userId: 'member-1',
+        submittedAt: createdAt,
+      },
+    );
+    await assertFails(directSubmission.commit());
+
+    await environment.withSecurityRulesDisabled(async (context) => {
+      const firestore = context.firestore();
+      await Promise.all([
+        setDoc(doc(firestore, 'survey-responses', 'response-1'), {
+          surveyId: 'anonymous',
+          answers: [{ questionId: 'question-1', value: 'A workshop' }],
+          submittedAt: createdAt,
+        }),
+        setDoc(
+          doc(
+            firestore,
+            'survey-submission-receipts',
+            'member-1__anonymous',
+          ),
+          {
+            surveyId: 'anonymous',
+            responseId: 'response-1',
+            userId: 'member-1',
+            submittedAt: createdAt,
+          },
+        ),
+      ]);
+    });
+    await assertFails(getDoc(doc(member, 'survey-responses', 'response-1')));
+    await assertSucceeds(getDoc(doc(admin, 'survey-responses', 'response-1')));
+    await assertSucceeds(
+      getDoc(
+        doc(member, 'survey-submission-receipts', 'member-1__anonymous'),
+      ),
+    );
+    await assertFails(
+      getDoc(
+        doc(admin, 'survey-submission-receipts', 'member-1__anonymous'),
+      ),
+    );
+
+    const duplicate = writeBatch(member);
+    duplicate.set(doc(member, 'survey-responses', 'response-2'), {
+      surveyId: 'anonymous',
+      answers: [{ questionId: 'question-1', value: 'Another response' }],
+      submittedAt: createdAt,
+    });
+    duplicate.set(
+      doc(member, 'survey-submission-receipts', 'member-1__anonymous'),
+      {
+        surveyId: 'anonymous',
+        responseId: 'response-2',
+        userId: 'member-1',
+        submittedAt: createdAt,
+      },
+    );
+    await assertFails(duplicate.commit());
+
+    await assertSucceeds(
+      setDoc(doc(admin, 'community-surveys', 'named'), {
+        ...anonymousSurvey,
+        anonymous: false,
+      }),
+    );
+    const directNamed = writeBatch(other);
+    directNamed.set(doc(other, 'survey-responses', 'response-3'), {
+      surveyId: 'named',
+      answers: [{ questionId: 'question-1', value: 'No identity' }],
+      submittedAt: createdAt,
+    });
+    directNamed.set(
+      doc(other, 'survey-submission-receipts', 'member-2__named'),
+      {
+        surveyId: 'named',
+        responseId: 'response-3',
+        userId: 'member-2',
+        submittedAt: createdAt,
+      },
+    );
+    await assertFails(directNamed.commit());
+    await assertFails(
+      updateDoc(doc(member, 'community-surveys', 'anonymous'), {
+        status: 'closed',
+        closedAt: createdAt,
+      }),
+    );
+    await assertSucceeds(
+      updateDoc(doc(admin, 'community-surveys', 'anonymous'), {
+        status: 'closed',
+        closedAt: createdAt,
+      }),
+    );
+  });
+
   it('enforces admin media management and sighting media ownership', async () => {
     const memberStorage = environment.authenticatedContext('member-1', {
       email: 'member@gatech.edu',
@@ -576,6 +753,40 @@ describe('Firebase authorization matrix', () => {
       ),
     );
     await assertSucceeds(deleteObject(owned));
+  });
+
+  it('allows only officers to manage validated event pictures', async () => {
+    const memberStorage = environment.authenticatedContext('member-1', {
+      email: 'member@gatech.edu',
+    }).storage();
+    const adminStorage = environment.authenticatedContext('admin-1', {
+      email: 'admin@gatech.edu',
+    }).storage();
+    const image = ref(adminStorage, 'community-events/event-1/profile.jpg');
+
+    await assertFails(
+      uploadBytes(
+        ref(memberStorage, 'community-events/event-1/member.jpg'),
+        new Blob([new Uint8Array([1])], { type: 'image/jpeg' }),
+      ),
+    );
+    await assertSucceeds(
+      uploadBytes(
+        image,
+        new Blob([new Uint8Array([1])], { type: 'image/jpeg' }),
+      ),
+    );
+    await assertSucceeds(
+      getMetadata(
+        ref(memberStorage, 'community-events/event-1/profile.jpg'),
+      ),
+    );
+    await assertFails(
+      uploadBytes(
+        ref(adminStorage, 'community-events/event-1/not-an-image.txt'),
+        new Blob(['not image'], { type: 'text/plain' }),
+      ),
+    );
   });
 
   it('lets only the President publish a validated public login logo', async () => {

@@ -33,6 +33,7 @@ Campus Cats brings those workflows into one mobile experience. Members can recor
 | **Cat-alog**                   | Maintain a visual directory of known campus cats with profiles, identifying details, and recent sightings.                                      |
 | **Feeding stations**           | Track station locations and restocking information, with stocked/unstocked filtering for faster coordination.                                   |
 | **Announcements**              | Give officers a central place to publish updates and send push notifications to members.                                                        |
+| **Community engagement**       | Group announcements, image-backed events, clearly labeled surveys, response history, and future chat in one Community tab.                     |
 | **Community access**           | Support Georgia Tech SSO, an alumni whitelist workflow, and Firebase-backed authentication.                                                     |
 | **Role-aware administration**  | Separate member, officer, Vice-President, President, and developer capabilities, with an atomic presidential succession workflow.               |
 | **iNaturalist integration**    | Bring public Georgia Tech project sightings and guide profiles into the existing map and catalog through a daily, attributed, read-only import. |
@@ -64,7 +65,7 @@ flowchart LR
 ```
 
 The client is organized as behavior-first vertical modules for sightings, catalog,
-stations, announcements, contacts, users, whitelist, session, image selection, and
+stations, announcements, events, surveys, contacts, users, whitelist, session, image selection, and
 iNaturalist integration workflows.
 Screens own presentation and navigation; modules return typed outcomes; narrow ports
 isolate Firebase and Expo. Deterministic in-memory adapters and Firebase Emulator
@@ -106,6 +107,7 @@ The interface can be explored locally, but authentication, maps, notifications, 
 - [iNaturalist import and operations](docs/inaturalist-import.md)
 - [App Billing operations](docs/billing.md)
 - [App settings and contributor privacy](docs/app-settings.md)
+- [Community engagement](docs/community-engagement.md)
 - [Testing guide](docs/testing.md)
 - [Contributing](CONTRIBUTING.md)
 

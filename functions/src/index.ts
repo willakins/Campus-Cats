@@ -48,6 +48,11 @@ import {
   handleRunInaturalistSync,
   handleUpdateInaturalistCatalog,
 } from './inaturalistHandlers';
+import {
+  SurveySubmissionDependencies,
+  handleSubmitSurveyResponse,
+  validateSurveyAnswers,
+} from './surveySubmission';
 
 if (getApps().length === 0) initializeApp();
 
@@ -582,6 +587,66 @@ const synchronizeInaturalist = () =>
     runId: randomUUID,
   });
 
+const surveySubmissionDependencies: SurveySubmissionDependencies = {
+  getUser: dependencies.getUser,
+  async submit({ actor, surveyId, answers, responseId }) {
+    const surveyReference = firestore
+      .collection('community-surveys')
+      .doc(surveyId);
+    const responseReference = firestore
+      .collection('survey-responses')
+      .doc(responseId);
+    const receiptReference = firestore
+      .collection('survey-submission-receipts')
+      .doc(`${actor.id}__${surveyId}`);
+
+    return firestore.runTransaction(async (transaction) => {
+      const [surveySnapshot, receiptSnapshot] = await transaction.getAll(
+        surveyReference,
+        receiptReference,
+      );
+      if (!surveySnapshot.exists) {
+        throw new HandlerError('not-found', 'Survey not found');
+      }
+      if (receiptSnapshot.exists) {
+        throw new HandlerError(
+          'already-exists',
+          'You already submitted this survey',
+        );
+      }
+      const surveyData = surveySnapshot.data();
+      if (!surveyData) {
+        throw new HandlerError('internal', 'Stored survey is invalid');
+      }
+      validateSurveyAnswers(surveyData, answers);
+
+      const submittedAt = Timestamp.now();
+      const response = {
+        surveyId,
+        answers,
+        submittedAt,
+        ...(surveyData.anonymous === false
+          ? {
+              respondent: {
+                id: actor.id,
+                email: actor.email,
+                role: actor.role,
+              },
+            }
+          : {}),
+      };
+      transaction.create(responseReference, response);
+      transaction.create(receiptReference, {
+        surveyId,
+        responseId,
+        userId: actor.id,
+        submittedAt,
+      });
+      return { responseId, submittedAtMillis: submittedAt.toMillis() };
+    });
+  },
+};
+
 const inaturalistDependencies: InaturalistHandlerDependencies = {
   getUser: dependencies.getUser,
   runSync: synchronizeInaturalist,
@@ -682,6 +747,12 @@ export const sendAnnouncement = onCall((request) =>
 export const submitWhitelistApplication = onCall((request) =>
   execute(() =>
     handleSubmitWhitelistApplication(requestFor(request), dependencies),
+  ),
+);
+
+export const submitSurveyResponse = onCall((request) =>
+  execute(() =>
+    handleSubmitSurveyResponse(requestFor(request), surveySubmissionDependencies),
   ),
 );
 

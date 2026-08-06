@@ -6,5 +6,6 @@ export * from './inaturalist';
 export * from './media';
 export * from './passwords';
 export * from './session';
+export * from './surveys';
 export * from './whitelist';
 export * from './appSettings';

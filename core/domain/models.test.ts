@@ -3,6 +3,7 @@ import {
   Role,
   createFirestoreCodecs,
   parseAnnouncement,
+  parseClubEvent,
   parseCatalogFavorite,
   parseCatalogEntry,
   parseContact,
@@ -10,6 +11,8 @@ import {
   parsePublicProfile,
   parseSighting,
   parseStation,
+  parseSurvey,
+  parseSurveyResponse,
   parseUser,
   parseWhitelistApplication,
 } from './index';
@@ -73,6 +76,40 @@ describe('canonical domain models', () => {
         createdAt,
         createdBy: member,
         authorAlias: 'Campus Cats',
+      }),
+      parseClubEvent({
+        id: 'event-1',
+        title: 'Volunteer workshop',
+        details: 'Learn how to support campus cats.',
+        location: 'Student Center',
+        startsAt: createdAt,
+        expiresAt: new Date('2025-04-11T23:59:59.999Z'),
+        imageUrl: 'https://example.com/event.jpg',
+        createdAt,
+        createdBy: member,
+      }),
+      parseSurvey({
+        id: 'survey-1',
+        title: 'Volunteer interests',
+        details: '',
+        anonymous: true,
+        status: 'open',
+        questions: [
+          {
+            id: 'question-1',
+            type: 'short_text',
+            prompt: 'What should we plan?',
+            options: [],
+          },
+        ],
+        createdAt,
+        createdBy: member,
+      }),
+      parseSurveyResponse({
+        id: 'response-1',
+        surveyId: 'survey-1',
+        answers: [{ questionId: 'question-1', value: 'A workshop' }],
+        submittedAt: createdAt,
       }),
       parseWhitelistApplication({
         id: 'application-1',
@@ -259,6 +296,39 @@ describe('Firestore codecs', () => {
       createdAt: { encodedDate: '2025-04-10T12:00:00.000Z' },
     });
     expect(COLLECTIONS.catalogFavorites).toBe('catalog-favorites');
+  });
+
+  it('converts community dates and omits identity from anonymous survey responses', () => {
+    const event = codecs.clubEvent.decode('event-1', {
+      title: 'Volunteer workshop',
+      details: 'Learn how to support campus cats.',
+      location: 'Student Center',
+      startsAt: timestamp('2025-04-10T12:00:00.000Z'),
+      expiresAt: timestamp('2025-04-11T23:59:59.999Z'),
+      imageUrl: 'https://example.com/event.jpg',
+      createdAt: timestamp('2025-04-01T12:00:00.000Z'),
+      createdBy: member,
+    });
+    expect(event.startsAt).toEqual(new Date('2025-04-10T12:00:00.000Z'));
+    expect(codecs.clubEvent.encode(event)).toMatchObject({
+      startsAt: { encodedDate: '2025-04-10T12:00:00.000Z' },
+      expiresAt: { encodedDate: '2025-04-11T23:59:59.999Z' },
+    });
+
+    const response = parseSurveyResponse({
+      id: 'response-1',
+      surveyId: 'survey-1',
+      answers: [{ questionId: 'question-1', value: 'A workshop' }],
+      submittedAt: new Date('2025-04-10T12:00:00.000Z'),
+    });
+    expect(codecs.surveyResponse.encode(response)).toEqual({
+      surveyId: 'survey-1',
+      answers: [{ questionId: 'question-1', value: 'A workshop' }],
+      submittedAt: { encodedDate: '2025-04-10T12:00:00.000Z' },
+    });
+    expect(COLLECTIONS.surveySubmissionReceipts).toBe(
+      'survey-submission-receipts',
+    );
   });
 
   it('accepts native dates and rejects invalid document and timestamp shapes', () => {

@@ -7,13 +7,17 @@ import { Role, parseAnnouncement, parseUser } from '../../core/domain';
 import { AppThemeProvider } from '../../theme';
 
 const mockList = jest.fn();
+const mockEventList = jest.fn();
+const mockSurveyList = jest.fn();
 const mockPush = jest.fn();
 let mockRole: Role = Role.Officer;
+let mockSection: string | undefined;
 
 jest.mock('expo-router', () => {
   const mockReact = require('react');
   return {
     router: { push: (...args: unknown[]) => mockPush(...args) },
+    useLocalSearchParams: () => ({ section: mockSection }),
     useFocusEffect: (effect: () => void | (() => void)) =>
       mockReact.useEffect(effect, [effect]),
   };
@@ -22,6 +26,8 @@ jest.mock('expo-router', () => {
 jest.mock('../../composition/appModules', () => ({
   appModules: {
     announcements: { list: (...args: unknown[]) => mockList(...args) },
+    events: { list: (...args: unknown[]) => mockEventList(...args) },
+    surveys: { list: (...args: unknown[]) => mockSurveyList(...args) },
   },
 }));
 
@@ -66,7 +72,12 @@ describe('announcements list route', () => {
   beforeEach(() => {
     mockList.mockReset();
     mockPush.mockReset();
+    mockEventList.mockReset();
+    mockSurveyList.mockReset();
+    mockEventList.mockResolvedValue({ ok: true, value: [], warnings: [] });
+    mockSurveyList.mockResolvedValue({ ok: true, value: [], warnings: [] });
     mockRole = Role.Officer;
+    mockSection = undefined;
   });
 
   it('renders an empty result and limits creation to administrators', async () => {
@@ -74,7 +85,7 @@ describe('announcements list route', () => {
     const { rerender } = await renderAnnouncements();
 
     await waitFor(() => expect(mockList).toHaveBeenCalled());
-    expect(screen.getByText('Announcements')).toBeOnTheScreen();
+    expect(screen.getByText('Community')).toBeOnTheScreen();
     expect(screen.getByText('Announcement access')).toBeOnTheScreen();
     expect(screen.getByText('No announcements yet')).toBeOnTheScreen();
     expect(screen.getByRole('button', { name: 'Create announcement' })).toBeOnTheScreen();
@@ -111,11 +122,33 @@ describe('announcements list route', () => {
     const user = userEvent.setup();
     await renderAnnouncements();
 
-    expect(screen.getByText('Announcements')).toBeOnTheScreen();
+    expect(screen.getByText('Community')).toBeOnTheScreen();
     expect(screen.getByRole('progressbar', { name: 'Loading announcements' })).toBeOnTheScreen();
     await user.press(screen.getByRole('button', { name: 'Create announcement' }));
     expect(mockPush).toHaveBeenCalledWith('/announcements/create-ann');
     finish?.({ ok: true, value: [], warnings: [] });
     expect(await screen.findByText('No announcements yet')).toBeOnTheScreen();
+  });
+
+  it('groups events, surveys, and chat under the same Community tab', async () => {
+    mockList.mockResolvedValue({ ok: true, value: [], warnings: [] });
+    mockSection = 'events';
+    const user = userEvent.setup();
+    const eventsView = await renderAnnouncements();
+    expect(await screen.findByText('No upcoming events')).toBeOnTheScreen();
+    await user.press(screen.getByRole('button', { name: 'Create event' }));
+    expect(mockPush).toHaveBeenCalledWith('/events/create-event');
+    await eventsView.unmount();
+
+    mockSection = 'surveys';
+    const surveyView = await renderAnnouncements();
+    expect(await screen.findByText('Survey privacy')).toBeOnTheScreen();
+    expect(screen.getByText('No open surveys')).toBeOnTheScreen();
+    await surveyView.unmount();
+
+    mockSection = 'chat';
+    await renderAnnouncements();
+    expect(screen.getByText('Chat is coming soon')).toBeOnTheScreen();
+    expect(screen.queryByRole('button', { name: 'Create chat' })).not.toBeOnTheScreen();
   });
 });
