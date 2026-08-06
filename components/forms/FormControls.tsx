@@ -189,7 +189,9 @@ export const LocationField = ({
 }) => {
   const theme = useAppTheme();
   const hasLocation = value.latitude !== 0 || value.longitude !== 0;
-  const locationInteraction = useRef(false);
+  const lastSelectedCenter = useRef(
+    hasLocation ? value : GEORGIA_TECH_CENTER,
+  );
   return (
     <FormField label={label} required helper="Drag the map to position the pin.">
       <View style={{ height: 240, overflow: 'hidden', borderRadius: theme.radii.card }}>
@@ -199,16 +201,14 @@ export const LocationField = ({
           userInterfaceStyle={theme.dark ? 'dark' : 'light'}
           customMapStyle={theme.dark ? [...campusMapDarkStyle] : undefined}
           initialCamera={createCampusCamera(hasLocation ? value : GEORGIA_TECH_CENTER)}
-          onPanDrag={() => {
-            locationInteraction.current = true;
-          }}
-          onRegionChangeComplete={(region, details) => {
-            if (!locationInteraction.current && !details.isGesture) return;
-            locationInteraction.current = false;
-            onChange({
+          onRegionChangeComplete={(region) => {
+            const center = {
               latitude: region.latitude,
               longitude: region.longitude,
-            })
+            };
+            if (sameCoordinates(center, lastSelectedCenter.current)) return;
+            lastSelectedCenter.current = center;
+            onChange(center);
           }}
         />
         <View
@@ -237,6 +237,10 @@ export const LocationField = ({
     </FormField>
   );
 };
+
+const sameCoordinates = (left: Coordinates, right: Coordinates) =>
+  Math.abs(left.latitude - right.latitude) < 0.000001 &&
+  Math.abs(left.longitude - right.longitude) < 0.000001;
 
 interface PhotoFieldProps {
   readonly photos: readonly string[];
