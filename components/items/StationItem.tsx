@@ -1,57 +1,93 @@
-import React, { useState } from 'react';
-import { Image, Text, View } from 'react-native';
-import { useFocusEffect, useRouter } from 'expo-router';
-import { Button } from '../ui/Buttons';
-import { Station } from '@/types';
-import DatabaseService from '../../services/DatabaseService';
-import { Checkbox } from "react-native-paper";
-import { setSelectedStation } from '@/stores/stationStores';
-import { containerStyles, textStyles } from '@/styles';
+import React, { useEffect, useState } from 'react';
+import { View } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 
-export const StationItem: React.FC<Station> = ({
-  id, name, location, lastStocked, stockingFreq,
-  knownCats, isStocked, createdBy
-}) => {
+import { useRouter } from 'expo-router';
+import { appModules } from '@/composition/appModules';
+import { Station, StationStockStatus } from '@/core/domain';
+import { StoredMediaAsset } from '@/core/ports';
+import { useAppTheme } from '@/theme';
+import { AppText, Card, Skeleton, StatusPill } from '../design';
+import { ProgressiveImage } from '../ui/ProgressiveImage';
+
+interface StationItemProps {
+  readonly station: Station;
+  readonly status: StationStockStatus;
+}
+
+export const StationItem = React.memo(function StationItem({
+  station,
+  status,
+}: StationItemProps) {
   const router = useRouter();
-  const database = DatabaseService.getInstance();
-  const [profile, setProfile] = useState<string>('');
-  const [photos, setPhotos] = useState<string[]>([]);
+  const theme = useAppTheme();
+  const [profile, setProfile] = useState<StoredMediaAsset>();
+  const [mediaLoading, setMediaLoading] = useState(true);
 
-  const createObj = () => {
-    const newStation = new Station({
-      id, name, location, lastStocked, stockingFreq,
-      knownCats, isStocked, createdBy
+  useEffect(() => {
+    let active = true;
+    setMediaLoading(true);
+    void appModules.stations.media(station.id).then((result) => {
+      if (active && result.ok) {
+        setProfile(result.value.find(({ role }) => role === 'profile'));
+      }
+      if (active) setMediaLoading(false);
     });
-    setSelectedStation(newStation);
-  };
-
-  useFocusEffect(() => {
-    database.fetchStationImages(id, setProfile, setPhotos);
-  });
+    return () => {
+      active = false;
+    };
+  }, [station.id]);
 
   return (
-    <Button style={containerStyles.card} onPress={() => {
-      createObj();
-      router.push('/stations/view-station');
-    }}>
-      <Text style={textStyles.listTitle}>{name}</Text>
-      <View style={containerStyles.rowContainer}>
-        {profile ? <Image source={{ uri: profile }} style={containerStyles.cardImage}/>:
-        <View style={containerStyles.cardImage}><Text style={textStyles.listTitle}>Loading...</Text></View>}
-        <View style={containerStyles.columnContainer}>
-          <View style={containerStyles.rowContainer}>
-            <Text style={[textStyles.detail, { color: isStocked ? "green" : "red", marginVertical:0 }]}>
-              {isStocked ? "Has Food" : "Needs Food"}
-            </Text>
-            <Checkbox
-              status={isStocked ? "checked" : "unchecked"}
-              color="green"
-            />
+    <Card
+      accessibilityLabel={`View station: ${station.name}`}
+      accent={theme.colors.success}
+      onPress={() =>
+        router.push({ pathname: '/stations/view-station', params: { id: station.id } })
+      }
+    >
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: theme.spacing.md }}>
+        {mediaLoading ? (
+          <Skeleton
+            label={`Loading ${station.name} photo`}
+            width={88}
+            height={88}
+          />
+        ) : profile ? (
+          <ProgressiveImage
+            accessibilityLabel={`${station.name} photo`}
+            uri={profile.url}
+            style={{ width: 88, height: 88, borderRadius: theme.radii.field }}
+          />
+        ) : (
+          <View
+            accessibilityLabel={`No photo for ${station.name}`}
+            style={{
+              width: 88,
+              height: 88,
+              borderRadius: theme.radii.field,
+              alignItems: 'center',
+              justifyContent: 'center',
+              backgroundColor: theme.colors.successSurface,
+            }}
+          >
+            <Ionicons name="basket-outline" size={30} color={theme.colors.success} />
           </View>
-          <Text style={[textStyles.detail, {flexWrap:'wrap'}]}>Known Cats: {knownCats}</Text>
+        )}
+        <View style={{ flex: 1, gap: theme.spacing.xs }}>
+          <AppText variant="cardTitle">{station.name}</AppText>
+          <StatusPill
+            label={status.isStocked ? 'Stocked' : 'Needs food'}
+            tone={status.isStocked ? 'success' : 'warning'}
+            icon={status.isStocked ? 'checkmark-circle' : 'alert-circle'}
+          />
+          <AppText color="muted" numberOfLines={2}>
+            Known cats: {station.knownCats || 'None listed'}
+          </AppText>
         </View>
       </View>
-    </Button>
+    </Card>
   );
-};
+});
+
 export default StationItem;

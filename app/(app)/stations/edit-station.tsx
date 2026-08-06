@@ -1,79 +1,154 @@
-import { SafeAreaView, ScrollView, Text } from 'react-native';
 import React, { useEffect, useState } from 'react';
+import { Alert } from 'react-native';
 
-import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 
-import { globalStyles, buttonStyles, textStyles, containerStyles } from '@/styles';
-import { getSelectedStation, setSelectedStation } from '@/stores/stationStores';
-import { CatalogImageHandler } from '@/image_handlers/CatalogImageHandler';
-import { Button, SnackbarMessage } from '@/components';
-import DatabaseService from '@/services/DatabaseService';
+import { AppHeader, ErrorState, FormSkeleton, Screen } from '@/components/design';
+import { FormScreen } from '@/components/forms';
+import { appModules } from '@/composition/appModules';
+import { parseUser, Station } from '@/core/domain';
+import { localMedia, storedMedia } from '@/core/media';
+import { StoredMediaAsset } from '@/core/ports';
+import { StationForm, StationFormData } from '@/forms/StationForm';
 import { useAuth } from '@/providers';
-import { Station} from '@/types';
-import { StationForm } from '@/forms';
 
-const edit_station = () => {
+const EditStation = () => {
   const router = useRouter();
+  const { id } = useLocalSearchParams<{ id?: string }>();
   const { user } = useAuth();
-  const database = DatabaseService.getInstance();
-  const [visible, setVisible] = useState<boolean>(false);
-  const station = getSelectedStation();
-
-  const [profile, setProfile] = useState<string>('');
+  const [station, setStation] = useState<Station>();
+  const [storedAssets, setStoredAssets] = useState<readonly StoredMediaAsset[]>([]);
+  const [profile, setProfile] = useState('');
   const [photos, setPhotos] = useState<string[]>([]);
-  const [isPicsChanged, setPicsChanged] = useState<boolean>(false);
-  const [formData, setFormData] = useState({name: station.name, location:station.location, lastStocked:station.lastStocked, 
-    stockingFreq: station.stockingFreq, knownCats: station.knownCats});
-  const imageHandler = new CatalogImageHandler({ type:'stations', id:station.id, photos, profile, setPhotos, setProfile, setPicsChanged, setVisible});
-  
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string>();
+  const [loadError, setLoadError] = useState<string>();
+  const [formData, setFormData] = useState<StationFormData>({
+    name: '', location: { latitude: 0, longitude: 0 }, lastStocked: new Date(), stockingFreq: 7, knownCats: '',
+  });
+
   useEffect(() => {
-    database.fetchStationImages(station.id, setProfile, setPhotos);
-  }, []);
+    if (!id) {
+      setLoadError('Missing station ID');
+      return;
+    }
+    void Promise.all([appModules.stations.get(id), appModules.stations.media(id)]).then(
+      ([stationResult, mediaResult]) => {
+        if (!stationResult.ok) {
+          setLoadError(stationResult.error.message);
+          return;
+        }
+        const loaded = stationResult.value;
+        setStation(loaded);
+        setFormData({
+          name: loaded.name,
+          location: loaded.location,
+          lastStocked: loaded.lastStocked,
+          stockingFreq: loaded.stockingFreq,
+          knownCats: loaded.knownCats,
+        });
+        if (mediaResult.ok) {
+          setStoredAssets(mediaResult.value);
+          setProfile(mediaResult.value.find(({ role }) => role === 'profile')?.url ?? '');
+          setPhotos(mediaResult.value.filter(({ role }) => role === 'gallery').map(({ url }) => url));
+        } else setError(mediaResult.error.message);
+      },
+    );
+  }, [id]);
+  const selectionFor = (uri: string) => {
+    const stored = storedAssets.find((asset) => asset.url === uri);
+    return stored ? storedMedia(stored.id) : localMedia(uri);
+  };
+  const promotePhoto = (uri: string) => {
+    setPhotos((current) => [profile, ...current.filter((photo) => photo !== uri)].filter(Boolean));
+    setProfile(uri);
+  };
+  const removePhoto = (uri: string) => {
+    if (uri === profile) setProfile('');
+    else setPhotos((current) => current.filter((photo) => photo !== uri));
+  };
+  const save = async () => {
+    if (!station || busy) return;
+    if (!profile) {
+      setError('Please select a profile photo.');
+      return;
+    }
+    setBusy(true);
+    setError(undefined);
+    const result = await appModules.stations.update(parseUser(user), station.id, {
+      ...formData,
+      profile: selectionFor(profile),
+      gallery: photos.map(selectionFor),
+    });
+    setBusy(false);
+    if (!result.ok) {
+      setError(result.error.message);
+      return;
+    }
+    router.replace({ pathname: '/stations/view-station', params: { id: station.id } });
+  };
+  const confirmDelete = () => {
+    if (!station || busy) return;
+    Alert.alert('Delete Station', 'Delete this station forever?', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Delete Forever', style: 'destructive', onPress: () => {
+          setBusy(true);
+          void appModules.stations.remove(parseUser(user), station.id).then((result) => {
+            setBusy(false);
+            if (result.ok) router.replace('/stations');
+            else setError(result.error.message);
+          });
+        },
+      },
+    ]);
+  };
 
-  const createObj = () => {
-    const newStation = new Station({
-      id:station.id, 
-      name:formData.name,
-      location:formData.location, 
-      lastStocked:formData.lastStocked, 
-      stockingFreq:formData.stockingFreq, 
-      knownCats:formData.knownCats,
-      isStocked:Station.calculateStocked(formData.lastStocked, formData.stockingFreq),
-      createdBy:user});
-    setSelectedStation(newStation);
-  }
-
-  return (
-    <SafeAreaView style={containerStyles.wrapper}>
-      <Button style={buttonStyles.smallButtonTopLeft} onPress={router.back}>
-        <Ionicons name="arrow-back-outline" size={25} color="#fff" />
-      </Button>
-      <SnackbarMessage text="Saving Station..." visible={visible} setVisible={setVisible} />
-      <Text style={textStyles.pageTitle}>Edit Station</Text>
-      <ScrollView contentContainerStyle={containerStyles.scrollView}>
-        <StationForm
-          formData={formData}
-          setFormData={setFormData}
-          photos={photos}
-          profile={profile}
-          setPhotos={setPhotos}
-          setPicsChanged={setPicsChanged}
-          imageHandler={imageHandler}
-          isCreate={false}
+  if (!station && !loadError) {
+    return (
+      <Screen scroll>
+        <AppHeader
+          title="Edit station"
+          eyebrow="Officer operations"
+          onBack={() => router.back()}
         />
-      </ScrollView>
-      <Button style={buttonStyles.bigButton} 
-        onPress={() => {
-          createObj();
-          database.saveStation(profile, photos, isPicsChanged, setVisible, router)
-        }}>
-        <Text style ={textStyles.bigButtonText}> Save Station</Text>
-      </Button>
-      <Button style={buttonStyles.bigDeleteButton}onPress={() => database.deleteStation(setVisible, router)}>
-        <Text style={textStyles.bigButtonText}>Delete Station</Text> 
-      </Button>
-    </SafeAreaView>
+        <FormSkeleton label="Loading station form" fields={5} />
+      </Screen>
+    );
+  }
+  if (!station) {
+    return (
+      <Screen>
+        <AppHeader title="Edit station" onBack={() => router.back()} />
+        <ErrorState title="Could not load station" message={loadError || 'Station not found'} />
+      </Screen>
+    );
+  }
+  return (
+    <FormScreen
+      title="Edit station"
+      eyebrow="Officer operations"
+      saveLabel="Save Station"
+      savingLabel="Saving station…"
+      busy={busy}
+      error={error}
+      onBack={() => router.back()}
+      onSave={() => void save()}
+      onDelete={confirmDelete}
+      deleteLabel="Delete Station"
+    >
+      <StationForm
+        formData={formData}
+        setFormData={setFormData}
+        photos={photos}
+        profile={profile}
+        setPhotos={setPhotos}
+        onPromotePhoto={promotePhoto}
+        onDeletePhoto={removePhoto}
+        isCreate={false}
+      />
+    </FormScreen>
   );
-}
-export default edit_station;
+};
+
+export default EditStation;

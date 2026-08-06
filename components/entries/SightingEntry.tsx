@@ -1,80 +1,141 @@
-import React, { useEffect, useState } from 'react';
-import { Text, Image, View } from 'react-native';
-import MapView, { Marker } from 'react-native-maps';
-import { Checkbox } from 'react-native-paper';
+import React from 'react';
+import { Linking, View } from 'react-native';
 
-import DatabaseService from '../../services/DatabaseService';
-import { getSelectedSighting } from '@/stores/sightingStores';
-import { globalStyles, buttonStyles, textStyles, containerStyles } from '@/styles';
-import { Sighting } from '@/types';
+import { PublicProfile, SightingRecord } from '@/core/domain';
+import { DisplayMediaAsset } from '@/core/ports';
+import { useAppTheme } from '@/theme';
+import { AppText, StatusPill } from '../design';
+import { DetailHero, FieldNoteSection, MapInset, MetadataRow } from '../details';
+import { MemberIdentity } from '../profile/MemberIdentity';
 
-const SightingEntry: React.FC = () => {
-  const database = DatabaseService.getInstance();  
-  const sighting = getSelectedSighting();
-  const [photos, setPhotos] = useState<string[]>([]);
-  const [profile, setProfile] = useState<string>('');
-  
-  useEffect(() => {
-    database.fetchSightingImages(sighting.id, setProfile, setPhotos);
-  }, []);
+interface SightingEntryProps {
+  readonly sighting: SightingRecord;
+  readonly media: readonly DisplayMediaAsset[];
+  readonly reporterProfile?: PublicProfile;
+  readonly onReporterPress?: () => void;
+  readonly showContributor?: boolean;
+}
 
+const formatSightingDate = (sighting: SightingRecord): string => {
+  if (sighting.source === 'inaturalist') {
+    if (sighting.observedTimePrecision === 'date') {
+      return new Date(`${sighting.observedOn}T12:00:00`).toLocaleDateString(
+        'en-US',
+        { month: 'long', day: 'numeric', year: 'numeric' },
+      );
+    }
+    return sighting.date.toLocaleString('en-US', {
+      month: 'long',
+      day: 'numeric',
+      year: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit',
+    });
+  }
+  return `${sighting.timeOfDay} of ${sighting.date.toLocaleDateString('en-US', {
+    month: 'long',
+    day: 'numeric',
+    year: 'numeric',
+  })}`;
+};
+
+const qualityLabel = (quality: 'casual' | 'needs_id' | 'research') =>
+  ({ casual: 'Casual', needs_id: 'Needs ID', research: 'Research grade' })[
+    quality
+  ];
+
+const SightingEntry: React.FC<SightingEntryProps> = ({
+  sighting,
+  media,
+  reporterProfile,
+  onReporterPress,
+  showContributor = true,
+}) => {
+  const theme = useAppTheme();
   return (
-    <View style={containerStyles.card}>
-        {profile ? <Image source={{ uri: profile }} style={containerStyles.imageMain}/>:
-        <View style={containerStyles.imageMain}><Text style={textStyles.listTitle}>Loading...</Text></View>}
-        <Text style={textStyles.label}>Location</Text>
-        <MapView
-        style={containerStyles.mapContainer}
-        initialRegion={{
-            latitude: 33.7756,
-            longitude: -84.3963,
-            latitudeDelta: 0.01,
-            longitudeDelta: 0.01,
-        }}
-        >
-        <Marker coordinate={sighting.location} />
-        </MapView>
-
-        <Text style={textStyles.label}>Cat's Name</Text>
-        <Text style={textStyles.detail}>{sighting.name}</Text>
-
-        <Text style={textStyles.label}>Time of Sighting</Text>
-        <Text style={textStyles.detail}>{Sighting.getDateString(sighting)}</Text>
-
-        {sighting.info.length > 0 ? <><Text style={textStyles.label}>Additional Notes</Text>
-        <Text style={textStyles.detail}>{sighting.info}</Text></>:null}
-
-        <View style={containerStyles.sectionCard}>
-            <View style={containerStyles.rowStack}>
-                <View style={containerStyles.rowContainer}>
-                    <Text style={[textStyles.detail,{ color: sighting.fed ? "green" : "red" }]}>{sighting.fed ? "Was fed" : "Not fed"}</Text>
-                    <Checkbox
-                        status={sighting.fed ? "checked" : "unchecked"}
-                        color="green"
-                        />
-                </View>
-                <View style={containerStyles.rowContainer}>
-                    <Text style={[textStyles.detail, { color: sighting.health ? "green" : "red" }]}>
-                        {sighting.health ? "Was healthy" : "Not healthy"}</Text>
-                        <Checkbox
-                        status={sighting.health ? "checked" : "unchecked"}
-                        color="green"
-                        />
-                </View>
-            </View>
+    <View style={{ gap: theme.spacing.lg }}>
+      <DetailHero title={sighting.name} media={media} />
+      <View style={{ gap: theme.spacing.xs }}>
+        <AppText variant="pageTitle">{sighting.name}</AppText>
+        <AppText color="muted">{formatSightingDate(sighting)}</AppText>
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: theme.spacing.xs }}>
+          {sighting.source === 'inaturalist' ? (
+            <>
+              <StatusPill label="iNaturalist" tone="info" icon="leaf-outline" />
+              <StatusPill
+                label={qualityLabel(sighting.qualityGrade)}
+                tone={sighting.qualityGrade === 'research' ? 'success' : 'neutral'}
+                icon="ribbon-outline"
+              />
+            </>
+          ) : (
+            <>
+              <StatusPill
+                label={sighting.fed ? 'Was fed' : 'Not fed'}
+                tone={sighting.fed ? 'success' : 'warning'}
+                icon={sighting.fed ? 'checkmark-circle' : 'alert-circle'}
+              />
+              <StatusPill
+                label={sighting.health ? 'Appeared healthy' : 'Health concern'}
+                tone={sighting.health ? 'success' : 'danger'}
+                icon={sighting.health ? 'heart' : 'medkit'}
+              />
+            </>
+          )}
         </View>
-        {photos.length > 0 && (
-        <>
-            <Text style={textStyles.label}>Extra Photos</Text>
-            {photos.map((url, index) => (
-            <Image key={index} source={{ uri: url }} style={containerStyles.imageMain} />
-            ))}
-        </>
-        )}
-        <View style={containerStyles.footer}>
-            <Text style={textStyles.footerText}>Author: {sighting.createdBy.id}</Text>
-        </View>
+      </View>
+      {sighting.location ? (
+        <FieldNoteSection title="Location" icon="location-outline">
+          <MapInset
+            label={`Map showing ${sighting.name}'s sighting location`}
+            center={sighting.location}
+            markers={[{
+              id: sighting.id,
+              location: sighting.location,
+              title: sighting.name,
+              description: sighting.info,
+            }]}
+          />
+        </FieldNoteSection>
+      ) : sighting.source === 'inaturalist' ? (
+        <FieldNoteSection title="Location" icon="location-outline">
+          <AppText color="muted">Public coordinates are not available for this observation.</AppText>
+        </FieldNoteSection>
+      ) : null}
+      {sighting.info ? (
+        <FieldNoteSection title="Field notes" icon="document-text-outline">
+          <AppText>{sighting.info}</AppText>
+        </FieldNoteSection>
+      ) : null}
+      {sighting.source === 'inaturalist' ? (
+        <FieldNoteSection title="iNaturalist source" icon="leaf-outline">
+          <MetadataRow
+            label="Observer"
+            value={sighting.observer.displayName ?? sighting.observer.login}
+          />
+          {sighting.observationFieldValue ? (
+            <MetadataRow label="Georgia Tech Cats field" value={sighting.observationFieldValue} />
+          ) : null}
+          <AppText
+            color="primary"
+            accessibilityRole="link"
+            accessibilityHint="Opens this observation on iNaturalist"
+            onPress={() => void Linking.openURL(sighting.sourceUrl)}
+          >
+            View on iNaturalist
+          </AppText>
+        </FieldNoteSection>
+      ) : showContributor && sighting.createdBy ? (
+        <FieldNoteSection title="Contribution" icon="person-outline">
+          <MemberIdentity
+            profile={reporterProfile}
+            fallbackEmail={sighting.createdBy.email}
+            onPress={onReporterPress ?? (() => undefined)}
+          />
+        </FieldNoteSection>
+      ) : null}
     </View>
   );
 };
+
 export { SightingEntry };

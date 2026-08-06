@@ -1,90 +1,139 @@
-<!DOCTYPE html>
-<html>
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Georgia Tech SSO · Campus Cats</title>
+    <script defer src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script defer src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+    <script defer src="/firebase-wrapper-app.js"></script>
+    <style>
+      :root {
+        color-scheme: light dark;
+        font-family:
+          -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      }
 
-<head> </head>
+      body {
+        align-items: center;
+        background: #fff9f0;
+        color: #18314f;
+        display: flex;
+        justify-content: center;
+        margin: 0;
+        min-height: 100vh;
+        padding: 24px;
+      }
 
-<body>
-  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
-  <script>
-    // Utility functions
-    function setCookie(cName, cValue, expMinutes) {
-      let date = new Date();
-      date.setTime(date.getTime() + expMinutes * 60 * 1000);
-      const expires = "expires=" + date.toUTCString();
-      document.cookie = cName + "=" + cValue + "; " + expires + "; path=/";
-    }
-    function getCookie(cName) {
-      const name = cName + "=";
-      const cDecoded = decodeURIComponent(document.cookie); //to be careful
-      const cArr = cDecoded.split("; ");
-      let res;
-      cArr.forEach((val) => {
-        if (val.indexOf(name) === 0) res = val.substring(name.length);
+      main {
+        background: #ffffff;
+        border: 1px solid #ddd4c3;
+        border-radius: 20px;
+        box-shadow: 0 8px 24px #18314f2e;
+        box-sizing: border-box;
+        max-width: 440px;
+        padding: 32px;
+        text-align: center;
+        width: 100%;
+      }
+
+      h1 {
+        font-size: 24px;
+        line-height: 30px;
+        margin: 0 0 12px;
+      }
+
+      p {
+        font-size: 16px;
+        line-height: 24px;
+        margin: 0;
+      }
+
+      button {
+        background: #18314f;
+        border: 0;
+        border-radius: 999px;
+        color: #ffffff;
+        cursor: pointer;
+        font: inherit;
+        font-weight: 700;
+        margin-top: 24px;
+        min-height: 44px;
+        padding: 10px 20px;
+      }
+
+      button:focus-visible {
+        outline: 3px solid #b58a16;
+        outline-offset: 3px;
+      }
+
+      [data-state="error"] {
+        color: #b23a3a;
+      }
+
+      @media (prefers-color-scheme: dark) {
+        body {
+          background: #111a22;
+          color: #f7f1e5;
+        }
+
+        main {
+          background: #19242e;
+          border-color: #3a4a55;
+          box-shadow: none;
+        }
+
+        button {
+          background: #f0c85a;
+          color: #241b05;
+        }
+
+        [data-state="error"] {
+          color: #ff8f85;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>Georgia Tech sign-in</h1>
+      <p id="status" role="status" aria-live="polite">Preparing secure sign-in…</p>
+      <button id="retry" type="button" hidden>Try again</button>
+    </main>
+    <script>
+      document.addEventListener('DOMContentLoaded', function () {
+        const status = document.querySelector('#status');
+        const retry = document.querySelector('#retry');
+        const bridge = window.CampusCatsSamlBridge;
+
+        const render = function ({ state, message, canRetry }) {
+          status.dataset.state = state;
+          status.textContent = message;
+          status.setAttribute('role', state === 'error' ? 'alert' : 'status');
+          retry.hidden = !canRetry;
+        };
+
+        retry.addEventListener('click', function () {
+          window.sessionStorage.removeItem('campus-cats:saml-redirect');
+          window.location.reload();
+        });
+
+        if (!bridge) {
+          render({
+            state: 'error',
+            message: 'Georgia Tech SSO could not load. Please try again.',
+            canRetry: true,
+          });
+          return;
+        }
+
+        void bridge.runSamlBridge({
+          firebase: window.firebase,
+          location: window.location,
+          storage: window.sessionStorage,
+          render,
+        });
       });
-      return res;
-    }
-
-    // Get URL Query Parameters
-    const urlSearchParams = new URLSearchParams(window.location.search);
-    const params = Object.fromEntries(urlSearchParams.entries());
-
-    // Set up firebase variables
-    const app = firebase.initializeApp({
-      apiKey: params["apiKey"], 
-      authDomain: params["authDomain"],
-    });
-    const provider = new firebase.auth.SAMLAuthProvider(
-      "saml.gt-sso"
-    );
-
-    if (params["linkingUri"].includes("saml-sign-in")) {
-      // Are we logging a user in?
-      if (getCookie("redirecting") === "true") {
-        // Has firebase redirected back here from an SSO page?
-        setCookie("redirecting", "false", 5); // Reset the redirect cookie in case the user comes back within 5 minutes (cookie expiration)
-        app.auth().getRedirectResult() // Get the auth token generated from the SAML login page
-          .then(
-            function (result) {
-              let credential = result.credential;
-              let credentialJSON = JSON.stringify(credential.toJSON()); // Convert the auth token into a string so it can be passed back
-              setTimeout(function () {
-                window.location.replace(
-                  params["linkingUri"] + "?credential=" + credentialJSON
-                ); // Redirect back to the app
-              }, 200);
-            },
-            function (error) {
-              console.log("error code: " + error.code + ": " + error);
-              alert("error code: " + error.code + ": " + error);
-            }
-          );
-      } else {
-        setTimeout(function () {
-          setCookie("redirecting", "true", 5); // Remember that it is a redirect once the user signs in
-          app.auth().signInWithRedirect(provider); // Go to the sign in page
-        }, 200);
-      }
-    } else if (params["linkingUri"].includes("saml-reauth")) {
-      // Are we reauthenticating?
-      if (getCookie("redirecting") === "true") {
-        // Has firebase redirected back here from an SSO page?
-        setCookie("redirecting", "false", 5); // Reset the redirect cookie in case the user comes back withing 5 minutes (cookie expiration)
-        // !!! Implement this if you need it, implementation will vary based on use case, but for SSO you generally don't need it !!!
-        setTimeout(function () {
-          window.location.replace(
-            params["linkingUri"] + "?credential=" + credentialJSON
-          ); // Redirect back to the app
-        }, 200);
-      } else {
-        setTimeout(function () {
-          setCookie("redirecting", "true", 5); // Remember that it is a redirect once the user signs in
-          app.auth().reauthenticateWithRedirect(provider); // Go to the sign in page
-        }, 200);
-      }
-    }
-  </script>
-  <p>You should be redirected in a moment, if you are not redirected after a second, reload the page</p>
-</body>
-
+    </script>
+  </body>
 </html>

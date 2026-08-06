@@ -1,30 +1,45 @@
 import React from 'react';
-import { Text, View } from 'react-native';
+import { View } from 'react-native';
 
 import { useRouter } from 'expo-router';
 
-import { Button } from '../ui/Buttons';
-import { Announcement } from '@/types';
-import { globalStyles, buttonStyles, textStyles, containerStyles } from '@/styles';
-import { setSelectedAnnouncement } from '@/stores/announcementStores';
+import { Announcement } from '@/core/domain';
+import { useAppTheme } from '@/theme';
+import { AppText, Card } from '../design';
 
-export const AnnouncementItem: React.FC<Announcement> = ({ id, title, info, createdAt, createdBy, authorAlias }) => {
+export const AnnouncementItem = React.memo(function AnnouncementItem(
+  announcement: Announcement,
+) {
   const router = useRouter();
-
-  const createObj = () => {
-    return new Announcement({id, title, info, createdAt, createdBy, authorAlias});
-  }
+  const theme = useAppTheme();
 
   return (
-    <Button style={containerStyles.card} onPress={() => {
-        setSelectedAnnouncement(createObj());
-        router.push('/announcements/view-ann');
-    }}>
-      <View style={containerStyles.verticalCard}>
-        <Text style={textStyles.listTitle}>{title}</Text>
-        <Text style={textStyles.detail}>{info}</Text>
+    <Card
+      accessibilityLabel={`Read announcement: ${announcement.title}`}
+      accent={theme.colors.gold}
+      onPress={() =>
+        router.push({
+          pathname: '/announcements/view-ann',
+          params: { id: announcement.id },
+        })
+      }
+    >
+      <View style={{ gap: theme.spacing.xs }}>
+        <AppText variant="caption" color="primary">
+          {announcement.createdAt.toLocaleDateString(undefined, {
+            month: 'short',
+            day: 'numeric',
+            year: 'numeric',
+          })}
+        </AppText>
+        <AppText variant="cardTitle">{announcement.title}</AppText>
+        <AppText color="muted" numberOfLines={3}>{announcement.info}</AppText>
+        {announcement.authorAlias ? (
+          <AppText variant="caption" color="muted">By {announcement.authorAlias}</AppText>
+        ) : null}
       </View>
-    </Button>
+    </Card>
   );
-};
+});
+
 export default AnnouncementItem;

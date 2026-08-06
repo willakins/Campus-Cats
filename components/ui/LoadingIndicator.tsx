@@ -1,11 +1,7 @@
 import React from 'react';
-import { ActivityIndicator, View } from 'react-native';
-import { globalStyles, buttonStyles, textStyles, containerStyles } from '@/styles';
 
-export const LoadingIndicator = () => {
-  return (
-    <View style={globalStyles.screen}>
-      <ActivityIndicator size="large" color="#000" />
-    </View>
-  );
+import { StartupSkeleton } from '../design';
+
+export const LoadingIndicator = ({ label = 'Getting things ready…' }: { label?: string }) => {
+  return <StartupSkeleton label={label} />;
 };
