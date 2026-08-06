@@ -1,7 +1,7 @@
 import {
   AchievementId,
   COLLECTIONS,
-  FirestoreCodec,
+  PersistenceCodec,
   Outcome,
   PublicProfile,
   User,
@@ -9,7 +9,7 @@ import {
   success,
 } from '../../core/domain';
 import { MediaCoordinator, MediaSelection } from '../../core/media';
-import { CallableEffects, DocumentStore, MediaStore } from '../../core/ports';
+import { ApplicationEffects, DocumentStore, MediaStore } from '../../core/ports';
 
 export interface PublicProfileDraft {
   readonly displayName: string;
@@ -21,8 +21,8 @@ interface ProfilesDependencies {
   readonly documents: DocumentStore;
   readonly media: MediaStore;
   readonly mediaCoordinator: MediaCoordinator;
-  readonly effects: CallableEffects;
-  readonly codecs: { readonly publicProfile: FirestoreCodec<PublicProfile> };
+  readonly effects: ApplicationEffects;
+  readonly codecs: { readonly publicProfile: PersistenceCodec<PublicProfile> };
 }
 
 export class ProfilesModule {

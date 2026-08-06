@@ -11,8 +11,7 @@ import {
   StatusPill,
   Screen,
 } from '@/components/design';
-import { campusMapDarkStyle } from '@/components/mapStyles';
-import { createCampusCamera, GEORGIA_TECH_CENTER } from '@/components/mapViewport';
+import { createCampusViewport, GEORGIA_TECH_CENTER } from '@/components/mapViewport';
 import { appModules } from '@/composition/appModules';
 import { SightingRecord, SystemClock } from '@/core/domain';
 import { filterSightingsByAge } from '@/features/sightings';
@@ -77,9 +76,8 @@ const HomeScreen = () => {
           list={mappablePins}
           filter={() => true}
           style={{ flex: 1 }}
-          userInterfaceStyle={theme.dark ? 'dark' : 'light'}
-          customMapStyle={theme.dark ? [...campusMapDarkStyle] : undefined}
-          initialCamera={createCampusCamera(GEORGIA_TECH_CENTER)}
+          appearance={theme.dark ? 'dark' : 'light'}
+          initialViewport={createCampusViewport(GEORGIA_TECH_CENTER)}
           onPerMarkerPress={(pin) =>
             router.push({
               pathname: '/sighting/view-sighting',

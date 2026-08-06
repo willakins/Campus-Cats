@@ -1,7 +1,7 @@
 import {
   COLLECTIONS,
   Clock,
-  FirestoreCodec,
+  PersistenceCodec,
   IdGenerator,
   Outcome,
   Survey,
@@ -42,8 +42,8 @@ interface SurveysDependencies {
   readonly ids: IdGenerator;
   readonly clock: Clock;
   readonly codecs: {
-    readonly survey: FirestoreCodec<Survey>;
-    readonly surveyResponse: FirestoreCodec<SurveyResponse>;
+    readonly survey: PersistenceCodec<Survey>;
+    readonly surveyResponse: PersistenceCodec<SurveyResponse>;
   };
 }
 

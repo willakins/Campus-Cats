@@ -2,7 +2,8 @@ import { InMemoryDocumentStore } from '../../adapters/inMemory/InMemoryDocumentS
 import {
   Role,
   SequenceIdGenerator,
-  createFirestoreCodecs,
+  createPersistenceCodecs,
+  dateObjectCodec,
   parseUser,
 } from '../../core/domain';
 import { ContactsModule } from './ContactsModule';
@@ -24,7 +25,7 @@ function buildModule() {
     module: new ContactsModule({
       documents,
       ids: new SequenceIdGenerator(['contact-1']),
-      codecs: createFirestoreCodecs({ fromDate: (date) => date }),
+      codecs: createPersistenceCodecs(dateObjectCodec),
     }),
     documents,
   };

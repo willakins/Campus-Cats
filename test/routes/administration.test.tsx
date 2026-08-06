@@ -1,6 +1,12 @@
 import React from 'react';
 
-import { fireEvent, render, screen, userEvent, waitFor } from '@testing-library/react-native';
+import {
+  fireEvent,
+  render,
+  screen,
+  userEvent,
+  waitFor,
+} from '@testing-library/react-native';
 
 import Settings from '../../app/(app)/(tabs)/settings';
 import InaturalistAdministration from '../../app/(app)/settings/inaturalist';
@@ -37,7 +43,8 @@ jest.mock('expo-router', () => {
   const mockReact = require('react');
   return {
     useRouter: () => ({ back: mockBack, push: mockPush, replace: mockReplace }),
-    useFocusEffect: (callback: () => void) => mockReact.useEffect(callback, [callback]),
+    useFocusEffect: (callback: () => void) =>
+      mockReact.useEffect(callback, [callback]),
   };
 });
 
@@ -74,10 +81,16 @@ jest.mock('../../composition/appModules', () => ({
       status: (...args: unknown[]) => mockInaturalistStatus(...args),
       records: (...args: unknown[]) => mockInaturalistRecords(...args),
       runNow: (...args: unknown[]) => mockRunInaturalist(...args),
-      setVisibility: (...args: unknown[]) => mockSetInaturalistVisibility(...args),
+      setVisibility: (...args: unknown[]) =>
+        mockSetInaturalistVisibility(...args),
       linkCatalog: (...args: unknown[]) => mockLinkInaturalistCatalog(...args),
     },
     catalog: { list: (...args: unknown[]) => mockCatalogList(...args) },
+    billing: {
+      presentation: {
+        settingsSubtitle: 'Review monthly cloud costs',
+      },
+    },
   },
 }));
 
@@ -147,24 +160,46 @@ const importedProfile: ImportedCatalogProfile = {
 };
 
 const renderThemed = async (content: React.ReactElement) =>
-  await render(<AppThemeProvider colorScheme="light">{content}</AppThemeProvider>);
+  await render(
+    <AppThemeProvider colorScheme="light">{content}</AppThemeProvider>,
+  );
 
 describe('settings and administration routes', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     mockRole = Role.Member;
     mockSignOut.mockResolvedValue(undefined);
-    mockListContacts.mockResolvedValue({ ok: true, value: [contact], warnings: [] });
-    mockCreateContact.mockResolvedValue({ ok: true, value: contact, warnings: [] });
-    mockUpdateContact.mockResolvedValue({ ok: true, value: contact, warnings: [] });
-    mockRemoveContact.mockResolvedValue({ ok: true, value: undefined, warnings: [] });
+    mockListContacts.mockResolvedValue({
+      ok: true,
+      value: [contact],
+      warnings: [],
+    });
+    mockCreateContact.mockResolvedValue({
+      ok: true,
+      value: contact,
+      warnings: [],
+    });
+    mockUpdateContact.mockResolvedValue({
+      ok: true,
+      value: contact,
+      warnings: [],
+    });
+    mockRemoveContact.mockResolvedValue({
+      ok: true,
+      value: undefined,
+      warnings: [],
+    });
     mockListUsers.mockResolvedValue({
       ok: true,
       value: [member, bannedMember, vicePresident, developer],
       warnings: [],
     });
     mockListWhitelist.mockResolvedValue({ ok: true, value: [], warnings: [] });
-    mockInaturalistStatus.mockResolvedValue({ ok: true, value: undefined, warnings: [] });
+    mockInaturalistStatus.mockResolvedValue({
+      ok: true,
+      value: undefined,
+      warnings: [],
+    });
     mockInaturalistRecords.mockResolvedValue({
       ok: true,
       value: { observations: [], catalog: [importedProfile] },
@@ -175,8 +210,16 @@ describe('settings and administration routes', () => {
       value: { status: 'success', runId: 'run-1' },
       warnings: [],
     });
-    mockSetInaturalistVisibility.mockResolvedValue({ ok: true, value: undefined, warnings: [] });
-    mockLinkInaturalistCatalog.mockResolvedValue({ ok: true, value: undefined, warnings: [] });
+    mockSetInaturalistVisibility.mockResolvedValue({
+      ok: true,
+      value: undefined,
+      warnings: [],
+    });
+    mockLinkInaturalistCatalog.mockResolvedValue({
+      ok: true,
+      value: undefined,
+      warnings: [],
+    });
     mockCatalogList.mockResolvedValue({
       ok: true,
       value: [
@@ -199,7 +242,9 @@ describe('settings and administration routes', () => {
     expect(await screen.findByText('Campus Cats Officers')).toBeOnTheScreen();
     expect(screen.getByText('Officer-only tools')).toBeOnTheScreen();
     expect(
-      screen.getByText('Feeding stations and administrative tools are available only to officers, so they do not appear in your navigation.'),
+      screen.getByText(
+        'Feeding stations and administrative tools are available only to officers, so they do not appear in your navigation.',
+      ),
     ).toBeOnTheScreen();
     expect(screen.queryByText('Officer tools')).not.toBeOnTheScreen();
 
@@ -255,7 +300,10 @@ describe('settings and administration routes', () => {
     await screen.findByText('Campus Cats Officers');
 
     await user.press(screen.getByRole('button', { name: 'Edit Contacts' }));
-    await fireEvent.changeText(screen.getByLabelText('Contact name'), 'Campus Cats Leadership');
+    await fireEvent.changeText(
+      screen.getByLabelText('Contact name'),
+      'Campus Cats Leadership',
+    );
     await user.press(screen.getByRole('button', { name: 'Save Contacts' }));
 
     await waitFor(() =>
@@ -361,7 +409,9 @@ describe('settings and administration routes', () => {
 
     expect(screen.getByText('Banned Member')).toBeOnTheScreen();
     expect(screen.getByText('banned@gatech.edu')).toBeOnTheScreen();
-    expect(screen.getByRole('button', { name: 'Unban User' })).toBeOnTheScreen();
+    expect(
+      screen.getByRole('button', { name: 'Unban User' }),
+    ).toBeOnTheScreen();
     expect(screen.queryByText('member@gatech.edu')).not.toBeOnTheScreen();
   });
 
@@ -383,11 +433,19 @@ describe('settings and administration routes', () => {
     expect(screen.getByText('actor@gatech.edu')).toBeOnTheScreen();
     expect(screen.getByText('developer2@gatech.edu')).toBeOnTheScreen();
     expect(screen.queryByText('member@gatech.edu')).not.toBeOnTheScreen();
-    expect(screen.queryByRole('button', { name: /^Promote to / })).not.toBeOnTheScreen();
-    expect(screen.queryByRole('button', { name: /^Demote to / })).not.toBeOnTheScreen();
-    expect(screen.queryByRole('button', { name: 'Remove User' })).not.toBeOnTheScreen();
     expect(
-      screen.queryByText('This protected role cannot be changed with ordinary user controls.'),
+      screen.queryByRole('button', { name: /^Promote to / }),
+    ).not.toBeOnTheScreen();
+    expect(
+      screen.queryByRole('button', { name: /^Demote to / }),
+    ).not.toBeOnTheScreen();
+    expect(
+      screen.queryByRole('button', { name: 'Remove User' }),
+    ).not.toBeOnTheScreen();
+    expect(
+      screen.queryByText(
+        'This protected role cannot be changed with ordinary user controls.',
+      ),
     ).not.toBeOnTheScreen();
   });
 
@@ -397,14 +455,18 @@ describe('settings and administration routes', () => {
     const { unmount } = await renderThemed(<ManageUsers />);
 
     expect(screen.getByText('Manage users')).toBeOnTheScreen();
-    expect(screen.getByRole('progressbar', { name: 'Loading users' })).toBeOnTheScreen();
+    expect(
+      screen.getByRole('progressbar', { name: 'Loading users' }),
+    ).toBeOnTheScreen();
     await unmount();
 
     mockListWhitelist.mockImplementation(() => new Promise(() => undefined));
     await renderThemed(<ManageWhitelist />);
     expect(screen.getByText('Whitelist applications')).toBeOnTheScreen();
     expect(
-      screen.getByRole('progressbar', { name: 'Loading whitelist applications' }),
+      screen.getByRole('progressbar', {
+        name: 'Loading whitelist applications',
+      }),
     ).toBeOnTheScreen();
   });
 
@@ -412,7 +474,9 @@ describe('settings and administration routes', () => {
     mockRole = Role.Officer;
     await renderThemed(<ManageWhitelist />);
 
-    expect(await screen.findByText('No pending applications')).toBeOnTheScreen();
+    expect(
+      await screen.findByText('No pending applications'),
+    ).toBeOnTheScreen();
   });
 
   it('searches and filters whitelist applications', async () => {
@@ -429,8 +493,13 @@ describe('settings and administration routes', () => {
     await user.press(screen.getByRole('button', { name: 'No code word' }));
     expect(screen.queryByText('Alex Catfan')).not.toBeOnTheScreen();
     expect(screen.getByText('Sam Volunteer')).toBeOnTheScreen();
-    await user.type(screen.getByLabelText('Search whitelist applications'), '2028');
-    expect(await screen.findByText('No matching applications')).toBeOnTheScreen();
+    await user.type(
+      screen.getByLabelText('Search whitelist applications'),
+      '2028',
+    );
+    expect(
+      await screen.findByText('No matching applications'),
+    ).toBeOnTheScreen();
   });
 
   it('denies iNaturalist administration to members before loading imported data', async () => {
@@ -447,9 +516,13 @@ describe('settings and administration routes', () => {
 
     expect(await screen.findByText('Goldie')).toBeOnTheScreen();
     expect(screen.getByText('Ambiguous local match')).toBeOnTheScreen();
-    await user.press(screen.getByRole('button', { name: 'Sync with iNaturalist now' }));
+    await user.press(
+      screen.getByRole('button', { name: 'Sync with iNaturalist now' }),
+    );
     await waitFor(() => expect(mockRunInaturalist).toHaveBeenCalled());
-    expect(screen.getByText('iNaturalist synchronization completed.')).toBeOnTheScreen();
+    expect(
+      screen.getByText('iNaturalist synchronization completed.'),
+    ).toBeOnTheScreen();
 
     await fireEvent.changeText(
       screen.getByLabelText('Reason for hiding a record'),
@@ -469,7 +542,9 @@ describe('settings and administration routes', () => {
 
   it('keeps iNaturalist administration chrome visible while data loads', async () => {
     mockRole = Role.Officer;
-    mockInaturalistStatus.mockImplementation(() => new Promise(() => undefined));
+    mockInaturalistStatus.mockImplementation(
+      () => new Promise(() => undefined),
+    );
     await renderThemed(<InaturalistAdministration />);
 
     expect(screen.getByText('iNaturalist sync')).toBeOnTheScreen();

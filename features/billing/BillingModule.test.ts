@@ -1,5 +1,9 @@
 import { Role, parseUser } from '../../core/domain';
-import { BillingReader, BillingSummary } from '../../core/ports';
+import {
+  BillingProviderPresentation,
+  BillingReader,
+  BillingSummary,
+} from '../../core/ports';
 import { BillingModule } from './BillingModule';
 
 const admin = parseUser({
@@ -29,6 +33,12 @@ const summary: BillingSummary = {
     },
   ],
 };
+const presentation: BillingProviderPresentation = {
+  settingsSubtitle: 'Review monthly cloud costs',
+  consoleDescription: 'Cloud billing consoles',
+  consoleLinks: () => [],
+  setup: () => ({ message: 'Setup required', title: 'Setup', steps: [] }),
+};
 
 class FakeBillingReader implements BillingReader {
   calls = 0;
@@ -44,7 +54,7 @@ class FakeBillingReader implements BillingReader {
 describe('BillingModule', () => {
   it('loads monthly costs for an administrator', async () => {
     const reader = new FakeBillingReader();
-    const module = new BillingModule({ reader });
+    const module = new BillingModule({ reader, presentation });
 
     await expect(module.summary(admin)).resolves.toEqual({
       ok: true,
@@ -52,11 +62,12 @@ describe('BillingModule', () => {
       warnings: [],
     });
     expect(reader.calls).toBe(1);
+    expect(module.presentation).toBe(presentation);
   });
 
   it('denies members without calling the billing service', async () => {
     const reader = new FakeBillingReader();
-    const module = new BillingModule({ reader });
+    const module = new BillingModule({ reader, presentation });
 
     await expect(module.summary(member)).resolves.toMatchObject({
       ok: false,
@@ -67,7 +78,7 @@ describe('BillingModule', () => {
 
   it('requires authentication before reading billing', async () => {
     const reader = new FakeBillingReader();
-    const module = new BillingModule({ reader });
+    const module = new BillingModule({ reader, presentation });
 
     await expect(module.summary(undefined)).resolves.toMatchObject({
       ok: false,
@@ -82,13 +93,13 @@ describe('BillingModule', () => {
         throw new Error('private provider details');
       },
     };
-    const module = new BillingModule({ reader });
+    const module = new BillingModule({ reader, presentation });
 
     await expect(module.summary(admin)).resolves.toEqual({
       ok: false,
       error: {
         code: 'dependency_failure',
-        message: 'Could not load Google Cloud billing data',
+        message: 'Could not load billing data',
       },
     });
   });

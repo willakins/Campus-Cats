@@ -5,7 +5,8 @@ import {
   COLLECTIONS,
   Role,
   SequenceIdGenerator,
-  createFirestoreCodecs,
+  createPersistenceCodecs,
+  dateObjectCodec,
   parseUser,
 } from '../../core/domain';
 import { PasswordGenerator } from '../../core/ports';
@@ -35,7 +36,7 @@ function buildModule() {
         documents,
         new SequenceIdGenerator(['application-1', 'application-2']),
       ),
-      codecs: createFirestoreCodecs({ fromDate: (date) => date }),
+      codecs: createPersistenceCodecs(dateObjectCodec),
     }),
     documents,
     effects,

@@ -32,8 +32,8 @@ password generation live behind narrow ports. Production adapters use Firebase a
 Expo; deterministic in-memory adapters support behavior tests. Contract suites verify
 that in-memory and emulator-backed adapters agree.
 
-Domain values are immutable and parsed by canonical Zod schemas. Firestore codecs own
-the mapping between persisted documents and domain values. Routes pass record IDs and
+Domain values are immutable and parsed by canonical Zod schemas. Persistence codecs
+own the mapping between provider documents and domain values. Routes pass record IDs and
 load by ID instead of sharing selected objects through module globals.
 
 Media operations share one reconciliation workflow. Stored image identity is opaque;
@@ -79,8 +79,8 @@ flowchart TD
   wrappers translate authentication and infrastructure at the edge.
 
 Records cross routes only as IDs. Screens reload records through their feature module,
-which prevents stale module-global selections. Firestore codecs preserve the existing
-collections and field names, and media adapters preserve the existing Storage folder
+which prevents stale module-global selections. Persistence codecs preserve the existing
+Firestore collections and field names, and media adapters preserve the Storage folder
 layout; this refactor therefore requires no production-data migration.
 
 ## Presentation boundary

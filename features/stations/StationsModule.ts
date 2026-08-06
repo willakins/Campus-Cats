@@ -1,7 +1,7 @@
 import {
   COLLECTIONS,
   Clock,
-  FirestoreCodec,
+  PersistenceCodec,
   IdGenerator,
   Outcome,
   Station,
@@ -36,7 +36,7 @@ interface StationsDependencies {
   readonly mediaCoordinator: MediaCoordinator;
   readonly ids: IdGenerator;
   readonly clock: Clock;
-  readonly codecs: { readonly station: FirestoreCodec<Station> };
+  readonly codecs: { readonly station: PersistenceCodec<Station> };
 }
 
 export class StationsModule {

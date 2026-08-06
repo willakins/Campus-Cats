@@ -4,7 +4,8 @@ import {
   FixedClock,
   Role,
   SequenceIdGenerator,
-  createFirestoreCodecs,
+  createPersistenceCodecs,
+  dateObjectCodec,
   parseUser,
 } from '../../core/domain';
 import { MediaCoordinator, storedMedia } from '../../core/media';
@@ -29,7 +30,7 @@ function buildModule() {
       mediaCoordinator: new MediaCoordinator(media, ids),
       ids,
       clock,
-      codecs: createFirestoreCodecs({ fromDate: (date) => date }),
+      codecs: createPersistenceCodecs(dateObjectCodec),
     }),
     documents,
     media,

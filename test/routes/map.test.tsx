@@ -176,11 +176,8 @@ describe('sightings map route', () => {
     await renderMap();
 
     expect(mockSightingMapProps).toHaveBeenCalledWith(expect.objectContaining({
-      initialCamera: {
+      initialViewport: {
         center: { latitude: 33.776077, longitude: -84.396199 },
-        heading: 0,
-        pitch: 0,
-        altitude: 1000,
         zoom: 16,
       },
     }));

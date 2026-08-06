@@ -1,18 +1,14 @@
-import { Camera } from 'react-native-maps';
-
 import { Coordinates } from '../core/domain';
+import { MapViewport } from './maps/MapAdapter';
 
 export const GEORGIA_TECH_CENTER: Coordinates = {
   latitude: 33.776077,
   longitude: -84.396199,
 };
 
-export const createCampusCamera = (
+export const createCampusViewport = (
   center: Coordinates = GEORGIA_TECH_CENTER,
-): Camera => ({
+): MapViewport => ({
   center,
-  heading: 0,
-  pitch: 0,
-  altitude: 1000,
   zoom: 16,
 });

@@ -1,7 +1,7 @@
 import {
   COLLECTIONS,
   Role,
-  createFirestoreCodecs,
+  createPersistenceCodecs,
   parseAnnouncement,
   parseClubEvent,
   parseCatalogFavorite,
@@ -218,12 +218,24 @@ describe('canonical domain models', () => {
   });
 });
 
-describe('Firestore codecs', () => {
+describe('persistence codecs', () => {
   const timestamp = (value: string) => ({
     toDate: () => new Date(value),
   });
-  const codecs = createFirestoreCodecs({
-    fromDate: (value) => ({ encodedDate: value.toISOString() }),
+  const codecs = createPersistenceCodecs({
+    encode: (value) => ({ encodedDate: value.toISOString() }),
+    decode: (value) => {
+      if (value instanceof Date) return new Date(value);
+      if (
+        typeof value !== 'object' ||
+        value === null ||
+        !('toDate' in value) ||
+        typeof value.toDate !== 'function'
+      ) {
+        throw new Error('Expected a test timestamp');
+      }
+      return value.toDate();
+    },
   });
 
   it('keeps coordinate values attached to their named fields', () => {
@@ -363,10 +375,10 @@ describe('Firestore codecs', () => {
       }),
     ).toMatchObject({ createdAt: new Date('2025-04-10T12:00:00.000Z') });
     expect(() => codecs.user.decode('member-1', null)).toThrow(
-      'Expected Firestore document data',
+      'Expected persisted document data',
     );
     expect(() => codecs.user.decode('member-1', [])).toThrow(
-      'Expected Firestore document data',
+      'Expected persisted document data',
     );
     expect(() =>
       codecs.announcement.decode('announcement-1', {
@@ -376,7 +388,7 @@ describe('Firestore codecs', () => {
         createdBy: member,
         authorAlias: 'Campus Cats',
       }),
-    ).toThrow('Expected a Firestore timestamp');
+    ).toThrow('Expected a test timestamp');
   });
 
   it('defaults legacy users to active and decodes disciplinary history', () => {

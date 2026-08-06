@@ -1,6 +1,4 @@
-import { MapViewProps } from 'react-native-maps';
-
-import { MapView } from '@/components/ui/MapView';
+import { MapView, MapViewProps } from '@/components/ui/MapView';
 import { MapMarker } from '@/components/ui/MapMarker';
 import { SightingRecord } from '@/core/domain';
 import { useAppTheme } from '@/theme';

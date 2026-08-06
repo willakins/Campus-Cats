@@ -3,7 +3,8 @@ import {
   COLLECTIONS,
   DEFAULT_APP_SETTINGS,
   Role,
-  createFirestoreCodecs,
+  createPersistenceCodecs,
+  dateObjectCodec,
   parseUser,
 } from '../../core/domain';
 import { ContentContributors } from './ContentContributors';
@@ -26,7 +27,7 @@ const officer = parseUser({
 
 const buildContributors = () => {
   const documents = new InMemoryDocumentStore();
-  const codecs = createFirestoreCodecs({ fromDate: (date) => date });
+  const codecs = createPersistenceCodecs(dateObjectCodec);
   let sightingsAnonymous = true;
   const contributors = new ContentContributors({
     documents,
