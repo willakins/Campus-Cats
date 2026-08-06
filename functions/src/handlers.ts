@@ -84,6 +84,7 @@ export type HandlerErrorCode =
   | 'permission-denied'
   | 'invalid-argument'
   | 'already-exists'
+  | 'failed-precondition'
   | 'not-found'
   | 'internal';
 

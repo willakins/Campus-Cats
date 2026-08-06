@@ -48,9 +48,9 @@ const TabNavigator = () => {
       <Tabs.Screen
         name="announcements"
         options={{
-          tabBarLabel: 'Updates',
+          tabBarLabel: 'Community',
           tabBarIcon: ({ color, size }) => (
-            <Ionicons name="notifications-outline" size={size} color={color} />
+            <Ionicons name="people-outline" size={size} color={color} />
           ),
         }}
       />

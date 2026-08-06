@@ -34,6 +34,16 @@ import {
   ContentContributor,
   parseContentContributor,
 } from './contributors';
+import {
+  ClubEvent,
+  Survey,
+  SurveyResponse,
+  SurveySubmissionReceipt,
+  parseClubEvent,
+  parseSurvey,
+  parseSurveyResponse,
+  parseSurveySubmissionReceipt,
+} from './community';
 
 export const COLLECTIONS = {
   sightings: 'cat-sightings',
@@ -50,6 +60,10 @@ export const COLLECTIONS = {
   integrationState: 'integration-state',
   appSettings: 'app-settings',
   contentContributors: 'content-contributors',
+  events: 'community-events',
+  surveys: 'community-surveys',
+  surveyResponses: 'survey-responses',
+  surveySubmissionReceipts: 'survey-submission-receipts',
 } as const;
 
 export const APP_SETTINGS_DOCUMENT_ID = 'public';
@@ -231,6 +245,73 @@ export function createFirestoreCodecs<EncodedDate>(
     encode: (value) => ({ ...value }),
   };
 
+  const clubEvent: FirestoreCodec<ClubEvent> = {
+    decode: (id, value) => {
+      const data = record(value);
+      return parseClubEvent({
+        id,
+        ...data,
+        startsAt: decodeDate(data.startsAt),
+        expiresAt: decodeDate(data.expiresAt),
+        createdAt: decodeDate(data.createdAt),
+      });
+    },
+    encode: ({ id: _id, startsAt, expiresAt, createdAt, ...value }) => ({
+      ...value,
+      startsAt: timestamps.fromDate(startsAt),
+      expiresAt: timestamps.fromDate(expiresAt),
+      createdAt: timestamps.fromDate(createdAt),
+    }),
+  };
+
+  const survey: FirestoreCodec<Survey> = {
+    decode: (id, value) => {
+      const data = record(value);
+      return parseSurvey({
+        id,
+        ...data,
+        createdAt: decodeDate(data.createdAt),
+        closedAt:
+          data.closedAt === undefined ? undefined : decodeDate(data.closedAt),
+      });
+    },
+    encode: ({ id: _id, createdAt, closedAt, ...value }) => ({
+      ...value,
+      createdAt: timestamps.fromDate(createdAt),
+      ...(closedAt ? { closedAt: timestamps.fromDate(closedAt) } : {}),
+    }),
+  };
+
+  const surveyResponse: FirestoreCodec<SurveyResponse> = {
+    decode: (id, value) => {
+      const data = record(value);
+      return parseSurveyResponse({
+        id,
+        ...data,
+        submittedAt: decodeDate(data.submittedAt),
+      });
+    },
+    encode: ({ id: _id, submittedAt, respondent, ...value }) => ({
+      ...value,
+      ...(respondent ? { respondent } : {}),
+      submittedAt: timestamps.fromDate(submittedAt),
+    }),
+  };
+
+  const surveySubmissionReceipt: FirestoreCodec<SurveySubmissionReceipt> = {
+    decode: (_id, value) => {
+      const data = record(value);
+      return parseSurveySubmissionReceipt({
+        ...data,
+        submittedAt: decodeDate(data.submittedAt),
+      });
+    },
+    encode: ({ submittedAt, ...value }) => ({
+      ...value,
+      submittedAt: timestamps.fromDate(submittedAt),
+    }),
+  };
+
   const inaturalistObservation: FirestoreCodec<ImportedObservation> = {
     decode: (id, value) => {
       const data = record(value);
@@ -393,6 +474,10 @@ export function createFirestoreCodecs<EncodedDate>(
     contact,
     appSettings,
     contentContributor,
+    clubEvent,
+    survey,
+    surveyResponse,
+    surveySubmissionReceipt,
     inaturalistObservation,
     inaturalistCatalog,
     inaturalistStatus,

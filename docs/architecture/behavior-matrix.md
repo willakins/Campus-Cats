@@ -13,6 +13,11 @@ unless a later decision explicitly changes them.
 | Manage catalog cats                        | Deny            | Deny                         | Allow                 | Allow                 | Allow                 | Allow                  |
 | Manage feeding stations and restocks       | Deny            | Deny                         | Allow                 | Allow                 | Allow                 | Allow                  |
 | Manage announcements                       | Deny            | Deny                         | Allow                 | Allow                 | Allow                 | Allow                  |
+| Read active community events               | Deny            | Allow                        | Allow                 | Allow                 | Allow                 | Allow                  |
+| Manage events and view expired events      | Deny            | Deny                         | Allow                 | Allow                 | Allow                 | Allow                  |
+| Read open and past surveys                 | Deny            | Allow                        | Allow                 | Allow                 | Allow                 | Allow                  |
+| Submit one response to an open survey      | Deny            | Allow                        | Allow                 | Allow                 | Allow                 | Allow                  |
+| Create/close surveys and inspect responses | Deny            | Deny                         | Allow                 | Allow                 | Allow                 | Allow                  |
 | Manage contacts and whitelist applications | Deny            | Deny                         | Allow                 | Allow                 | Allow                 | Allow                  |
 | Manage members                             | Deny            | Deny                         | Allow, excluding self | Allow, excluding self | Allow, excluding self | Allow, excluding self  |
 | Manage officers                            | Deny            | Deny                         | Deny                  | Allow, excluding self | Allow, excluding self | Allow, excluding self  |
@@ -60,6 +65,12 @@ unless a later decision explicitly changes them.
   anonymous: officers may inspect identities, while contributors receive only the
   self-access required to maintain their own sightings. Turning anonymity off makes
   those identities visible to all active Members.
+- Event pictures are required and are uploaded before the event document is published.
+  Expired events disappear for Members but remain in the Officer history view.
+- Published surveys are immutable and closed rather than deleted. Each submission
+  atomically creates a random response and a per-account receipt. Anonymous response
+  documents omit identity; named responses include the current user snapshot. Receipts
+  prevent duplicate submissions and are unreadable by Officer result screens.
 
 ## Test seams
 

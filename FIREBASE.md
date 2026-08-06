@@ -40,6 +40,10 @@ existing-data rollout order are documented in the
 before deploying the related Functions, Firestore rules, Storage rules, or client;
 the contributor migration requires a coordinated maintenance window.
 
+Community event media, survey-response privacy, and the release checks for the new
+Firestore collections are documented in the
+[Community engagement guide](docs/community-engagement.md).
+
 Do not run a deploy command from a refactor or contributor branch.
 
 ## Before deploying
@@ -65,6 +69,12 @@ npx firebase-tools deploy --only firestore:rules
 
 ```bash
 npx firebase-tools deploy --only storage
+```
+
+## Deploy survey submission callable
+
+```bash
+npx firebase-tools deploy --only functions:submitSurveyResponse
 ```
 
 ## Deploy Firestore indexes

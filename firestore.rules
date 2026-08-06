@@ -61,6 +61,15 @@ service cloud.firestore {
         && data.user.role == role();
     }
 
+    function validCurrentUserSnapshot(user) {
+      return isActiveUser()
+        && user is map
+        && user.keys().hasOnly(['id', 'email', 'role'])
+        && user.id == request.auth.uid
+        && user.email == request.auth.token.email
+        && user.role == role();
+    }
+
     function hasNewContributor(kind, contentId) {
       return existsAfter(contributorPath(kind, contentId))
         && getAfter(contributorPath(kind, contentId)).data.user.id == request.auth.uid;
@@ -97,6 +106,44 @@ service cloud.firestore {
         && request.resource.data.email.matches('^[^@]+@[^@]+\\.[^@]+$')
         && request.resource.data.codeWord is string
         && request.resource.data.codeWord.size() <= 200;
+    }
+
+    function validEvent(data) {
+      return data.keys().hasOnly([
+          'title',
+          'details',
+          'location',
+          'startsAt',
+          'expiresAt',
+          'imageUrl',
+          'createdAt',
+          'createdBy'
+        ])
+        && data.title is string
+        && data.title.size() > 0
+        && data.title.size() <= 120
+        && data.title.matches('.*\\S.*')
+        && data.details is string
+        && data.details.size() > 0
+        && data.details.size() <= 5000
+        && data.details.matches('.*\\S.*')
+        && data.location is string
+        && data.location.size() > 0
+        && data.location.size() <= 300
+        && data.location.matches('.*\\S.*')
+        && data.startsAt is timestamp
+        && data.expiresAt is timestamp
+        && data.expiresAt >= data.startsAt
+        && data.imageUrl is string
+        && data.imageUrl.size() > 0
+        && data.imageUrl.size() <= 2048
+        && data.imageUrl.matches('^https://.+$')
+        && data.createdAt is timestamp
+        && data.createdBy is map
+        && data.createdBy.keys().hasOnly(['id', 'email', 'role'])
+        && data.createdBy.id is string
+        && data.createdBy.email is string
+        && data.createdBy.role is int;
     }
 
     match /cat-sightings/{sightingId} {
@@ -220,6 +267,64 @@ service cloud.firestore {
     match /announcements/{announcementId} {
       allow read: if isActiveUser();
       allow create, update, delete: if isAdmin();
+    }
+
+    match /community-events/{eventId} {
+      allow read: if isActiveUser();
+      allow create: if isAdmin()
+        && validEvent(request.resource.data)
+        && validCurrentUserSnapshot(request.resource.data.createdBy);
+      allow update: if isAdmin()
+        && validEvent(request.resource.data)
+        && request.resource.data.createdAt == resource.data.createdAt
+        && request.resource.data.createdBy == resource.data.createdBy;
+      allow delete: if isAdmin();
+    }
+
+    match /community-surveys/{surveyId} {
+      allow read: if isActiveUser();
+      allow create: if isAdmin()
+        && request.resource.data.keys().hasOnly([
+          'title',
+          'details',
+          'anonymous',
+          'status',
+          'questions',
+          'createdAt',
+          'createdBy'
+        ])
+        && request.resource.data.title is string
+        && request.resource.data.title.size() > 0
+        && request.resource.data.title.size() <= 120
+        && request.resource.data.title.matches('.*\\S.*')
+        && request.resource.data.details is string
+        && request.resource.data.details.size() <= 5000
+        && request.resource.data.anonymous is bool
+        && request.resource.data.status == 'open'
+        && request.resource.data.questions is list
+        && request.resource.data.questions.size() > 0
+        && request.resource.data.questions.size() <= 40
+        && request.resource.data.createdAt is timestamp
+        && validCurrentUserSnapshot(request.resource.data.createdBy);
+      allow update: if isAdmin()
+        && request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(['status', 'closedAt'])
+        && resource.data.status == 'open'
+        && request.resource.data.status == 'closed'
+        && request.resource.data.closedAt is timestamp;
+      allow delete: if false;
+    }
+
+    match /survey-responses/{responseId} {
+      allow read: if isAdmin();
+      allow create, update, delete: if false;
+    }
+
+    match /survey-submission-receipts/{receiptId} {
+      allow get: if isActiveUser()
+        && receiptId.matches('^' + request.auth.uid + '__.+$');
+      allow list: if false;
+      allow create, update, delete: if false;
     }
 
     match /contact-info/{contactId} {
