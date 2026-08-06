@@ -5,12 +5,13 @@ import {
   FixedClock,
   Role,
   SequenceIdGenerator,
-  createFirestoreCodecs,
+  createPersistenceCodecs,
+  dateObjectCodec,
   parseAnnouncement,
   parseUser,
 } from '../../core/domain';
 import { MediaCoordinator, localMedia } from '../../core/media';
-import { CallableEffects } from '../../core/ports';
+import { ApplicationEffects } from '../../core/ports';
 import { AnnouncementsModule } from './AnnouncementsModule';
 
 const admin = parseUser({
@@ -25,12 +26,12 @@ const member = parseUser({
 });
 const now = new Date('2025-04-15T12:00:00.000Z');
 const clock = new FixedClock(now);
-const codecs = createFirestoreCodecs({ fromDate: (date) => date });
+const codecs = createPersistenceCodecs(dateObjectCodec);
 
-function buildModule(effects?: Partial<CallableEffects>) {
+function buildModule(effects?: Partial<ApplicationEffects>) {
   const documents = new InMemoryDocumentStore();
   const media = new InMemoryMediaStore();
-  const callableEffects: CallableEffects = {
+  const callableEffects: ApplicationEffects = {
     notifyAnnouncement: jest.fn().mockResolvedValue(undefined),
     provisionWhitelistUser: jest.fn(),
     emailWhitelistCredentials: jest.fn(),

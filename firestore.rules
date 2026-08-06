@@ -35,8 +35,12 @@ service cloud.firestore {
     }
 
     function contributorsAreAnonymous() {
-      return !exists(/databases/$(database)/documents/app-settings/public)
+      return !contributorPrivacyIsInitialized()
         || get(/databases/$(database)/documents/app-settings/public).data.sightingsAnonymous != false;
+    }
+
+    function contributorPrivacyIsInitialized() {
+      return exists(/databases/$(database)/documents/app-settings/public);
     }
 
     function canReadContributors() {
@@ -148,7 +152,11 @@ service cloud.firestore {
 
     match /cat-sightings/{sightingId} {
       allow read: if isActiveUser()
-        && (canReadContributors() || !('createdBy' in resource.data));
+        && (
+          !contributorPrivacyIsInitialized()
+          || canReadContributors()
+          || !('createdBy' in resource.data)
+        );
       allow create: if isActiveUser()
         && !('createdBy' in request.resource.data)
         && hasNewContributor('sighting', sightingId);
@@ -160,7 +168,11 @@ service cloud.firestore {
 
     match /catalog/{entryId} {
       allow read: if isActiveUser()
-        && (canReadContributors() || !('createdBy' in resource.data));
+        && (
+          !contributorPrivacyIsInitialized()
+          || canReadContributors()
+          || !('createdBy' in resource.data)
+        );
       allow create, update: if isAdmin()
         && !('createdBy' in request.resource.data)
         && hasNewContributor('catalog', entryId);

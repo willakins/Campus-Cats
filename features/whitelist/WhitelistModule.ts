@@ -1,6 +1,6 @@
 import {
   COLLECTIONS,
-  FirestoreCodec,
+  PersistenceCodec,
   Outcome,
   User,
   WhitelistApplication,
@@ -10,7 +10,7 @@ import {
   success,
 } from '../../core/domain';
 import {
-  CallableEffects,
+  ApplicationEffects,
   DocumentStore,
   PasswordGenerator,
   WhitelistSubmissionPort,
@@ -25,11 +25,11 @@ export interface WhitelistDraft {
 
 interface WhitelistDependencies {
   readonly documents: DocumentStore;
-  readonly effects: CallableEffects;
+  readonly effects: ApplicationEffects;
   readonly passwords: PasswordGenerator;
   readonly submissions: WhitelistSubmissionPort;
   readonly codecs: {
-    readonly whitelist: FirestoreCodec<WhitelistApplication>;
+    readonly whitelist: PersistenceCodec<WhitelistApplication>;
   };
 }
 

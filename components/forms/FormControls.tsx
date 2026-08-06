@@ -15,8 +15,7 @@ import { Coordinates } from '../../core/domain';
 import { useAppTheme } from '../../theme';
 import { PickerConfig } from '../../types';
 import { AppText, FormField, MediaPicker } from '../design';
-import { campusMapDarkStyle } from '../mapStyles';
-import { createCampusCamera, GEORGIA_TECH_CENTER } from '../mapViewport';
+import { createCampusViewport, GEORGIA_TECH_CENTER } from '../mapViewport';
 import { DateTimeInput } from '../ui/DateTimeInput';
 import { MapView } from '../ui/MapView';
 
@@ -198,14 +197,11 @@ export const LocationField = ({
         <MapView
           accessibilityLabel={label}
           style={{ flex: 1 }}
-          userInterfaceStyle={theme.dark ? 'dark' : 'light'}
-          customMapStyle={theme.dark ? [...campusMapDarkStyle] : undefined}
-          initialCamera={createCampusCamera(hasLocation ? value : GEORGIA_TECH_CENTER)}
-          onRegionChangeComplete={(region) => {
-            const center = {
-              latitude: region.latitude,
-              longitude: region.longitude,
-            };
+          appearance={theme.dark ? 'dark' : 'light'}
+          initialViewport={createCampusViewport(
+            hasLocation ? value : GEORGIA_TECH_CENTER,
+          )}
+          onCenterChange={(center) => {
             if (sameCoordinates(center, lastSelectedCenter.current)) return;
             lastSelectedCenter.current = center;
             onChange(center);

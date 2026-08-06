@@ -10,7 +10,7 @@ export interface WhitelistCredentials {
   readonly password: string;
 }
 
-export interface CallableEffects {
+export interface ApplicationEffects {
   notifyAnnouncement(notification: AnnouncementNotification): Promise<void>;
   provisionWhitelistUser(credentials: WhitelistCredentials): Promise<string>;
   emailWhitelistCredentials(credentials: WhitelistCredentials): Promise<void>;

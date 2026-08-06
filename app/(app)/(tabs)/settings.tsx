@@ -20,7 +20,12 @@ import {
 } from '@/components/design';
 import { FormTextInput } from '@/components/forms';
 import { appModules } from '@/composition/appModules';
-import { Role, canManageAppSettings, canManageFeature, parseUser } from '@/core/domain';
+import {
+  Role,
+  canManageAppSettings,
+  canManageFeature,
+  parseUser,
+} from '@/core/domain';
 import { useAuth } from '@/providers';
 import { useAppTheme } from '@/theme';
 
@@ -58,7 +63,11 @@ const Settings = () => {
     void loadContacts();
   }, [loadContacts]);
 
-  const changeContact = (id: string, field: 'name' | 'email', value: string) => {
+  const changeContact = (
+    id: string,
+    field: 'name' | 'email',
+    value: string,
+  ) => {
     setContacts((current) =>
       current.map((contact) =>
         contact.id === id ? { ...contact, [field]: value } : contact,
@@ -114,7 +123,9 @@ const Settings = () => {
           void appModules.contacts.remove(actor, contact.id).then((result) => {
             setSavingContacts(false);
             if (result.ok) {
-              setContacts((current) => current.filter(({ id }) => id !== contact.id));
+              setContacts((current) =>
+                current.filter(({ id }) => id !== contact.id),
+              );
             } else setError(result.error.message);
           });
         },
@@ -157,7 +168,11 @@ const Settings = () => {
               <StatusPill
                 label={roleLabel(actor.role)}
                 tone={actor.role === Role.Member ? 'neutral' : 'primary'}
-                icon={actor.role === Role.Member ? 'person-outline' : 'shield-checkmark-outline'}
+                icon={
+                  actor.role === Role.Member
+                    ? 'person-outline'
+                    : 'shield-checkmark-outline'
+                }
               />
               <Button
                 label="View My Profile"
@@ -188,14 +203,13 @@ const Settings = () => {
               icon={isEditable ? 'checkmark' : 'create-outline'}
               variant="secondary"
               loading={savingContacts}
-              onPress={() => (isEditable ? void saveContacts() : setIsEditable(true))}
+              onPress={() =>
+                isEditable ? void saveContacts() : setIsEditable(true)
+              }
             />
           ) : null}
           {loadingContacts ? (
-            <CardListSkeleton
-              label="Loading club contacts"
-              count={2}
-            />
+            <CardListSkeleton label="Loading club contacts" count={2} />
           ) : contacts.length === 0 ? (
             <EmptyState
               title="No contacts yet"
@@ -210,13 +224,17 @@ const Settings = () => {
                       label="Contact name"
                       required
                       value={contact.name}
-                      onChangeText={(value) => changeContact(contact.id, 'name', value)}
+                      onChangeText={(value) =>
+                        changeContact(contact.id, 'name', value)
+                      }
                     />
                     <FormTextInput
                       label="Contact email"
                       required
                       value={contact.email}
-                      onChangeText={(value) => changeContact(contact.id, 'email', value)}
+                      onChangeText={(value) =>
+                        changeContact(contact.id, 'email', value)
+                      }
                       autoCapitalize="none"
                       keyboardType="email-address"
                     />
@@ -282,7 +300,7 @@ const Settings = () => {
             />
             <ListRow
               title="App Billing"
-              subtitle="Review monthly Firebase and Google Cloud costs"
+              subtitle={appModules.billing.presentation.settingsSubtitle}
               icon="card-outline"
               onPress={() => router.push('/settings/billing')}
             />

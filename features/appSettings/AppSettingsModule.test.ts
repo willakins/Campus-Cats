@@ -4,7 +4,8 @@ import {
   DEFAULT_APP_SETTINGS,
   Role,
   SequenceIdGenerator,
-  createFirestoreCodecs,
+  createPersistenceCodecs,
+  dateObjectCodec,
   parseUser,
 } from '../../core/domain';
 import { MediaCoordinator } from '../../core/media';
@@ -25,7 +26,7 @@ const buildModule = () => {
   const documents = new InMemoryDocumentStore();
   const media = new InMemoryMediaStore();
   const ids = new SequenceIdGenerator(['logo-1']);
-  const codecs = createFirestoreCodecs({ fromDate: (date) => date });
+  const codecs = createPersistenceCodecs(dateObjectCodec);
   const migrateContributorPrivacy = jest.fn().mockResolvedValue(undefined);
   return {
     documents,

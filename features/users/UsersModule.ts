@@ -1,6 +1,6 @@
 import {
   COLLECTIONS,
-  FirestoreCodec,
+  PersistenceCodec,
   ManagedUser,
   Outcome,
   Role,
@@ -14,12 +14,12 @@ import {
   parseManagedUser,
   success,
 } from '../../core/domain';
-import { CallableEffects, DocumentStore } from '../../core/ports';
+import { ApplicationEffects, DocumentStore } from '../../core/ports';
 
 interface UsersDependencies {
   readonly documents: DocumentStore;
-  readonly effects: CallableEffects;
-  readonly codecs: { readonly user: FirestoreCodec<ManagedUser> };
+  readonly effects: ApplicationEffects;
+  readonly codecs: { readonly user: PersistenceCodec<ManagedUser> };
 }
 
 export class UsersModule {

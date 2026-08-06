@@ -1,7 +1,7 @@
 import {
   Clock,
   COLLECTIONS,
-  FirestoreCodec,
+  PersistenceCodec,
   ImportedObservation,
   IdGenerator,
   LocalSightingRecord,
@@ -52,10 +52,10 @@ interface SightingsDependencies {
   readonly mediaCoordinator: MediaCoordinator;
   readonly ids: IdGenerator;
   readonly contributors: ContentContributors;
-  readonly codecs: { readonly sighting: FirestoreCodec<Sighting> };
+  readonly codecs: { readonly sighting: PersistenceCodec<Sighting> };
   readonly imports?: {
     readonly reader: InaturalistReader;
-    readonly codec: FirestoreCodec<ImportedObservation>;
+    readonly codec: PersistenceCodec<ImportedObservation>;
   };
 }
 

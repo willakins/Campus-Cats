@@ -5,7 +5,8 @@ import {
   FixedClock,
   Role,
   SequenceIdGenerator,
-  createFirestoreCodecs,
+  createPersistenceCodecs,
+  dateObjectCodec,
   parseClubEvent,
   parseUser,
 } from '../../core/domain';
@@ -23,7 +24,7 @@ const member = parseUser({
   email: 'member@gatech.edu',
   role: Role.Member,
 });
-const codecs = createFirestoreCodecs({ fromDate: (date) => date });
+const codecs = createPersistenceCodecs(dateObjectCodec);
 
 function buildModule(ids: readonly string[] = ['event-1', 'image-1']) {
   const documents = new InMemoryDocumentStore();

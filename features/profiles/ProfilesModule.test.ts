@@ -5,7 +5,8 @@ import {
   COLLECTIONS,
   Role,
   SequenceIdGenerator,
-  createFirestoreCodecs,
+  createPersistenceCodecs,
+  dateObjectCodec,
   parsePublicProfile,
   parseUser,
 } from '../../core/domain';
@@ -27,7 +28,7 @@ const profile = parsePublicProfile({
   achievementIds: [],
   selectedTitleId: '',
 });
-const codecs = createFirestoreCodecs({ fromDate: (date) => date });
+const codecs = createPersistenceCodecs(dateObjectCodec);
 
 async function buildModule() {
   const documents = new InMemoryDocumentStore();

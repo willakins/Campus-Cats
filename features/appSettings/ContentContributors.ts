@@ -3,7 +3,7 @@ import {
   COLLECTIONS,
   ContentContributor,
   ContributionKind,
-  FirestoreCodec,
+  PersistenceCodec,
   User,
   canViewContributors,
   contributorDocumentId,
@@ -17,7 +17,7 @@ import {
 interface ContentContributorsDependencies {
   readonly documents: DocumentStore;
   readonly settings: AppSettingsReader;
-  readonly codec: FirestoreCodec<ContentContributor>;
+  readonly codec: PersistenceCodec<ContentContributor>;
 }
 
 export class ContentContributors {

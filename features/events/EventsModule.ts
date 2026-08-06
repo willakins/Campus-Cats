@@ -2,7 +2,7 @@ import {
   COLLECTIONS,
   Clock,
   ClubEvent,
-  FirestoreCodec,
+  PersistenceCodec,
   IdGenerator,
   Outcome,
   User,
@@ -39,7 +39,7 @@ interface EventsDependencies {
   readonly mediaCoordinator: MediaCoordinator;
   readonly ids: IdGenerator;
   readonly clock: Clock;
-  readonly codec: FirestoreCodec<ClubEvent>;
+  readonly codec: PersistenceCodec<ClubEvent>;
 }
 
 export class EventsModule {

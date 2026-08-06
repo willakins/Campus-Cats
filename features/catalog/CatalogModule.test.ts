@@ -5,7 +5,8 @@ import {
   FixedClock,
   Role,
   SequenceIdGenerator,
-  createFirestoreCodecs,
+  createPersistenceCodecs,
+  dateObjectCodec,
   DEFAULT_APP_SETTINGS,
   parseUser,
 } from '../../core/domain';
@@ -39,7 +40,7 @@ function buildModule() {
   const media = new InMemoryMediaStore();
   const ids = new SequenceIdGenerator(['cat-1', 'profile-1']);
   const imports = new InMemoryInaturalistReader();
-  const codecs = createFirestoreCodecs({ fromDate: (date) => date });
+  const codecs = createPersistenceCodecs(dateObjectCodec);
   const contributors = new ContentContributors({
     documents,
     settings: { getSettings: async () => DEFAULT_APP_SETTINGS },

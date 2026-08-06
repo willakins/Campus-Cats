@@ -2,7 +2,7 @@ import {
   APP_SETTINGS_DOCUMENT_ID,
   AppSettings,
   COLLECTIONS,
-  FirestoreCodec,
+  PersistenceCodec,
   Outcome,
   User,
   canManageAppSettings,
@@ -26,7 +26,7 @@ export interface AppSettingsDraft {
 interface AppSettingsDependencies {
   readonly documents: DocumentStore;
   readonly mediaCoordinator: MediaCoordinator;
-  readonly codecs: { readonly appSettings: FirestoreCodec<AppSettings> };
+  readonly codecs: { readonly appSettings: PersistenceCodec<AppSettings> };
   readonly migrateContributorPrivacy?: () => Promise<void>;
 }
 

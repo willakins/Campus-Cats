@@ -3,7 +3,8 @@ import { InMemoryDocumentStore } from '../../adapters/inMemory/InMemoryDocumentS
 import {
   COLLECTIONS,
   Role,
-  createFirestoreCodecs,
+  createPersistenceCodecs,
+  dateObjectCodec,
   parseManagedUser,
 } from '../../core/domain';
 import { UsersModule } from './UsersModule';
@@ -33,7 +34,7 @@ const developer = parseManagedUser({
   email: 'developer@gatech.edu',
   role: Role.Developer,
 });
-const codecs = createFirestoreCodecs({ fromDate: (date) => date });
+const codecs = createPersistenceCodecs(dateObjectCodec);
 
 async function buildModule() {
   const documents = new InMemoryDocumentStore();

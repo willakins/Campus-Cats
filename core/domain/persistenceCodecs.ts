@@ -68,41 +68,37 @@ export const COLLECTIONS = {
 
 export const APP_SETTINGS_DOCUMENT_ID = 'public';
 
-export interface TimestampFactory<EncodedDate = unknown> {
-  fromDate(value: Date): EncodedDate;
+export interface StoredDateCodec<EncodedDate = unknown> {
+  encode(value: Date): EncodedDate;
+  decode(value: unknown): Date;
 }
 
-export interface FirestoreCodec<Model, Encoded = Record<string, unknown>> {
+export const dateObjectCodec: StoredDateCodec<Date> = {
+  encode: (value) => new Date(value),
+  decode: (value) => {
+    if (!(value instanceof Date)) {
+      throw new Error('Expected a persisted date');
+    }
+    return new Date(value);
+  },
+};
+
+export interface PersistenceCodec<Model, Encoded = Record<string, unknown>> {
   decode(id: string, data: unknown): Model;
   encode(value: Model): Encoded;
 }
 
 function record(value: unknown): Record<string, unknown> {
   if (typeof value !== 'object' || value === null || Array.isArray(value)) {
-    throw new Error('Expected Firestore document data');
+    throw new Error('Expected persisted document data');
   }
   return value as Record<string, unknown>;
 }
 
-function decodeDate(value: unknown): Date {
-  if (value instanceof Date) {
-    return new Date(value);
-  }
-  if (
-    typeof value === 'object' &&
-    value !== null &&
-    'toDate' in value &&
-    typeof value.toDate === 'function'
-  ) {
-    return value.toDate();
-  }
-  throw new Error('Expected a Firestore timestamp');
-}
-
-export function createFirestoreCodecs<EncodedDate>(
-  timestamps: TimestampFactory<EncodedDate>,
+export function createPersistenceCodecs<EncodedDate>(
+  dates: StoredDateCodec<EncodedDate>,
 ) {
-  const user: FirestoreCodec<ManagedUser> = {
+  const user: PersistenceCodec<ManagedUser> = {
     decode: (id, value) => {
       const data = record(value);
       const notices = data.disciplinaryNotices ?? [];
@@ -117,7 +113,7 @@ export function createFirestoreCodecs<EncodedDate>(
           const notice = record(value);
           return {
             ...notice,
-            createdAt: decodeDate(notice.createdAt),
+            createdAt: dates.decode(notice.createdAt),
           };
         }),
       });
@@ -128,12 +124,12 @@ export function createFirestoreCodecs<EncodedDate>(
       banned,
       disciplinaryNotices: disciplinaryNotices.map((notice) => ({
         ...notice,
-        createdAt: timestamps.fromDate(notice.createdAt),
+        createdAt: dates.encode(notice.createdAt),
       })),
     }),
   };
 
-  const publicProfile: FirestoreCodec<PublicProfile> = {
+  const publicProfile: PersistenceCodec<PublicProfile> = {
     decode: (id, value) =>
       parsePublicProfile({
         id,
@@ -142,7 +138,7 @@ export function createFirestoreCodecs<EncodedDate>(
     encode: ({ id: _id, ...value }) => value,
   };
 
-  const sighting: FirestoreCodec<Sighting> = {
+  const sighting: PersistenceCodec<Sighting> = {
     decode: (id, value) => {
       const data = record(value);
       return parseSighting({
@@ -151,7 +147,7 @@ export function createFirestoreCodecs<EncodedDate>(
         info: data.info,
         fed: data.fed,
         health: data.health,
-        date: decodeDate(data.spotted_time),
+        date: dates.decode(data.spotted_time),
         location: data.location,
         createdBy: data.createdBy,
         timeOfDay: data.timeofDay,
@@ -159,176 +155,176 @@ export function createFirestoreCodecs<EncodedDate>(
     },
     encode: ({ id: _id, date, timeOfDay, createdBy: _createdBy, ...value }) => ({
       ...value,
-      spotted_time: timestamps.fromDate(date),
+      spotted_time: dates.encode(date),
       timeofDay: timeOfDay,
     }),
   };
 
-  const catalog: FirestoreCodec<CatalogEntry> = {
+  const catalog: PersistenceCodec<CatalogEntry> = {
     decode: (id, value) => {
       const data = record(value);
       return parseCatalogEntry({
         id,
         ...data,
-        createdAt: decodeDate(data.createdAt),
+        createdAt: dates.decode(data.createdAt),
       });
     },
     encode: ({ id: _id, createdAt, createdBy: _createdBy, ...value }) => ({
       ...value,
-      createdAt: timestamps.fromDate(createdAt),
+      createdAt: dates.encode(createdAt),
     }),
   };
 
-  const catalogFavorite: FirestoreCodec<CatalogFavorite> = {
+  const catalogFavorite: PersistenceCodec<CatalogFavorite> = {
     decode: (id, value) => {
       const data = record(value);
       return parseCatalogFavorite({
         userId: id,
         catalogId: data.catalogId,
-        createdAt: decodeDate(data.createdAt),
+        createdAt: dates.decode(data.createdAt),
       });
     },
     encode: ({ userId: _userId, createdAt, ...value }) => ({
       ...value,
-      createdAt: timestamps.fromDate(createdAt),
+      createdAt: dates.encode(createdAt),
     }),
   };
 
-  const station: FirestoreCodec<Station> = {
+  const station: PersistenceCodec<Station> = {
     decode: (id, value) => {
       const data = record(value);
       return parseStation({
         id,
         ...data,
-        lastStocked: decodeDate(data.lastStocked),
+        lastStocked: dates.decode(data.lastStocked),
       });
     },
     encode: ({ id: _id, lastStocked, ...value }) => ({
       ...value,
-      lastStocked: timestamps.fromDate(lastStocked),
+      lastStocked: dates.encode(lastStocked),
     }),
   };
 
-  const announcement: FirestoreCodec<Announcement> = {
+  const announcement: PersistenceCodec<Announcement> = {
     decode: (id, value) => {
       const data = record(value);
       return parseAnnouncement({
         id,
         ...data,
-        createdAt: decodeDate(data.createdAt),
+        createdAt: dates.decode(data.createdAt),
       });
     },
     encode: ({ id: _id, createdAt, ...value }) => ({
       ...value,
-      createdAt: timestamps.fromDate(createdAt),
+      createdAt: dates.encode(createdAt),
     }),
   };
 
-  const whitelist: FirestoreCodec<WhitelistApplication> = {
+  const whitelist: PersistenceCodec<WhitelistApplication> = {
     decode: (id, value) =>
       parseWhitelistApplication({ id, ...record(value) }),
     encode: ({ id: _id, ...value }) => value,
   };
 
-  const contact: FirestoreCodec<Contact> = {
+  const contact: PersistenceCodec<Contact> = {
     decode: (id, value) => parseContact({ id, ...record(value) }),
     encode: ({ id: _id, ...value }) => value,
   };
 
-  const appSettings: FirestoreCodec<AppSettings> = {
+  const appSettings: PersistenceCodec<AppSettings> = {
     decode: (_id, value) => parseStoredAppSettings(record(value)),
     encode: (value) => ({ ...value }),
   };
 
-  const contentContributor: FirestoreCodec<ContentContributor> = {
+  const contentContributor: PersistenceCodec<ContentContributor> = {
     decode: (_id, value) => parseContentContributor(record(value)),
     encode: (value) => ({ ...value }),
   };
 
-  const clubEvent: FirestoreCodec<ClubEvent> = {
+  const clubEvent: PersistenceCodec<ClubEvent> = {
     decode: (id, value) => {
       const data = record(value);
       return parseClubEvent({
         id,
         ...data,
-        startsAt: decodeDate(data.startsAt),
-        expiresAt: decodeDate(data.expiresAt),
-        createdAt: decodeDate(data.createdAt),
+        startsAt: dates.decode(data.startsAt),
+        expiresAt: dates.decode(data.expiresAt),
+        createdAt: dates.decode(data.createdAt),
       });
     },
     encode: ({ id: _id, startsAt, expiresAt, createdAt, ...value }) => ({
       ...value,
-      startsAt: timestamps.fromDate(startsAt),
-      expiresAt: timestamps.fromDate(expiresAt),
-      createdAt: timestamps.fromDate(createdAt),
+      startsAt: dates.encode(startsAt),
+      expiresAt: dates.encode(expiresAt),
+      createdAt: dates.encode(createdAt),
     }),
   };
 
-  const survey: FirestoreCodec<Survey> = {
+  const survey: PersistenceCodec<Survey> = {
     decode: (id, value) => {
       const data = record(value);
       return parseSurvey({
         id,
         ...data,
-        createdAt: decodeDate(data.createdAt),
+        createdAt: dates.decode(data.createdAt),
         closedAt:
-          data.closedAt === undefined ? undefined : decodeDate(data.closedAt),
+          data.closedAt === undefined ? undefined : dates.decode(data.closedAt),
       });
     },
     encode: ({ id: _id, createdAt, closedAt, ...value }) => ({
       ...value,
-      createdAt: timestamps.fromDate(createdAt),
-      ...(closedAt ? { closedAt: timestamps.fromDate(closedAt) } : {}),
+      createdAt: dates.encode(createdAt),
+      ...(closedAt ? { closedAt: dates.encode(closedAt) } : {}),
     }),
   };
 
-  const surveyResponse: FirestoreCodec<SurveyResponse> = {
+  const surveyResponse: PersistenceCodec<SurveyResponse> = {
     decode: (id, value) => {
       const data = record(value);
       return parseSurveyResponse({
         id,
         ...data,
-        submittedAt: decodeDate(data.submittedAt),
+        submittedAt: dates.decode(data.submittedAt),
       });
     },
     encode: ({ id: _id, submittedAt, respondent, ...value }) => ({
       ...value,
       ...(respondent ? { respondent } : {}),
-      submittedAt: timestamps.fromDate(submittedAt),
+      submittedAt: dates.encode(submittedAt),
     }),
   };
 
-  const surveySubmissionReceipt: FirestoreCodec<SurveySubmissionReceipt> = {
+  const surveySubmissionReceipt: PersistenceCodec<SurveySubmissionReceipt> = {
     decode: (_id, value) => {
       const data = record(value);
       return parseSurveySubmissionReceipt({
         ...data,
-        submittedAt: decodeDate(data.submittedAt),
+        submittedAt: dates.decode(data.submittedAt),
       });
     },
     encode: ({ submittedAt, ...value }) => ({
       ...value,
-      submittedAt: timestamps.fromDate(submittedAt),
+      submittedAt: dates.encode(submittedAt),
     }),
   };
 
-  const inaturalistObservation: FirestoreCodec<ImportedObservation> = {
+  const inaturalistObservation: PersistenceCodec<ImportedObservation> = {
     decode: (id, value) => {
       const data = record(value);
       const moderation = record(data.moderation);
       return parseImportedObservation({
         ...data,
         id: Number(id),
-        sourceUpdatedAt: decodeDate(data.sourceUpdatedAt),
-        observedAt: decodeDate(data.observedAt),
-        importedAt: decodeDate(data.importedAt),
-        syncedAt: decodeDate(data.syncedAt),
+        sourceUpdatedAt: dates.decode(data.sourceUpdatedAt),
+        observedAt: dates.decode(data.observedAt),
+        importedAt: dates.decode(data.importedAt),
+        syncedAt: dates.decode(data.syncedAt),
         moderation: {
           ...moderation,
           updatedAt:
             moderation.updatedAt === undefined
               ? undefined
-              : decodeDate(moderation.updatedAt),
+              : dates.decode(moderation.updatedAt),
         },
       });
     },
@@ -343,35 +339,35 @@ export function createFirestoreCodecs<EncodedDate>(
     }) => ({
       schemaVersion: 1,
       ...value,
-      sourceUpdatedAt: timestamps.fromDate(sourceUpdatedAt),
-      observedAt: timestamps.fromDate(observedAt),
-      importedAt: timestamps.fromDate(importedAt),
-      syncedAt: timestamps.fromDate(syncedAt),
+      sourceUpdatedAt: dates.encode(sourceUpdatedAt),
+      observedAt: dates.encode(observedAt),
+      importedAt: dates.encode(importedAt),
+      syncedAt: dates.encode(syncedAt),
       moderation: {
         ...moderation,
         updatedAt: moderation.updatedAt
-          ? timestamps.fromDate(moderation.updatedAt)
+          ? dates.encode(moderation.updatedAt)
           : undefined,
       },
     }),
   };
 
-  const inaturalistCatalog: FirestoreCodec<ImportedCatalogProfile> = {
+  const inaturalistCatalog: PersistenceCodec<ImportedCatalogProfile> = {
     decode: (id, value) => {
       const data = record(value);
       const moderation = record(data.moderation);
       return parseImportedCatalogProfile({
         ...data,
         id: Number(id),
-        sourceUpdatedAt: decodeDate(data.sourceUpdatedAt),
-        importedAt: decodeDate(data.importedAt),
-        syncedAt: decodeDate(data.syncedAt),
+        sourceUpdatedAt: dates.decode(data.sourceUpdatedAt),
+        importedAt: dates.decode(data.importedAt),
+        syncedAt: dates.decode(data.syncedAt),
         moderation: {
           ...moderation,
           updatedAt:
             moderation.updatedAt === undefined
               ? undefined
-              : decodeDate(moderation.updatedAt),
+              : dates.decode(moderation.updatedAt),
         },
       });
     },
@@ -385,19 +381,19 @@ export function createFirestoreCodecs<EncodedDate>(
     }) => ({
       schemaVersion: 1,
       ...value,
-      sourceUpdatedAt: timestamps.fromDate(sourceUpdatedAt),
-      importedAt: timestamps.fromDate(importedAt),
-      syncedAt: timestamps.fromDate(syncedAt),
+      sourceUpdatedAt: dates.encode(sourceUpdatedAt),
+      importedAt: dates.encode(importedAt),
+      syncedAt: dates.encode(syncedAt),
       moderation: {
         ...moderation,
         updatedAt: moderation.updatedAt
-          ? timestamps.fromDate(moderation.updatedAt)
+          ? dates.encode(moderation.updatedAt)
           : undefined,
       },
     }),
   };
 
-  const inaturalistStatus: FirestoreCodec<InaturalistSyncStatus> = {
+  const inaturalistStatus: PersistenceCodec<InaturalistSyncStatus> = {
     decode: (_id, value) => {
       const data = record(value);
       const observations =
@@ -405,7 +401,7 @@ export function createFirestoreCodecs<EncodedDate>(
       const catalogStatus =
         data.catalog === undefined ? {} : record(data.catalog);
       const decodeOptional = (date: unknown) =>
-        date === undefined || date === null ? undefined : decodeDate(date);
+        date === undefined || date === null ? undefined : dates.decode(date);
       return parseInaturalistSyncStatus({
         ...data,
         startedAt: decodeOptional(data.startedAt),
@@ -436,27 +432,27 @@ export function createFirestoreCodecs<EncodedDate>(
     encode: (value) => ({
       ...value,
       startedAt: value.startedAt
-        ? timestamps.fromDate(value.startedAt)
+        ? dates.encode(value.startedAt)
         : undefined,
       completedAt: value.completedAt
-        ? timestamps.fromDate(value.completedAt)
+        ? dates.encode(value.completedAt)
         : undefined,
       observations: {
         ...value.observations,
         lastAttemptAt: value.observations.lastAttemptAt
-          ? timestamps.fromDate(value.observations.lastAttemptAt)
+          ? dates.encode(value.observations.lastAttemptAt)
           : undefined,
         lastSuccessAt: value.observations.lastSuccessAt
-          ? timestamps.fromDate(value.observations.lastSuccessAt)
+          ? dates.encode(value.observations.lastSuccessAt)
           : undefined,
       },
       catalog: {
         ...value.catalog,
         lastAttemptAt: value.catalog.lastAttemptAt
-          ? timestamps.fromDate(value.catalog.lastAttemptAt)
+          ? dates.encode(value.catalog.lastAttemptAt)
           : undefined,
         lastSuccessAt: value.catalog.lastSuccessAt
-          ? timestamps.fromDate(value.catalog.lastSuccessAt)
+          ? dates.encode(value.catalog.lastSuccessAt)
           : undefined,
       },
     }),
@@ -483,3 +479,5 @@ export function createFirestoreCodecs<EncodedDate>(
     inaturalistStatus,
   } as const;
 }
+
+export type ApplicationCodecs = ReturnType<typeof createPersistenceCodecs>;
