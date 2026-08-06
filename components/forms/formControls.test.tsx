@@ -68,6 +68,12 @@ describe('form controls', () => {
     ).toBeOnTheScreen();
 
     const map = screen.getByLabelText('Sighting location');
+    const initialRegion = {
+      latitude: 33.776077,
+      longitude: -84.396199,
+      latitudeDelta: 0.01,
+      longitudeDelta: 0.01,
+    };
     const selectedRegion = {
       latitude: 33.772,
       longitude: -84.394,
@@ -75,15 +81,10 @@ describe('form controls', () => {
       longitudeDelta: 0.01,
     };
 
-    await fireEvent(map, 'regionChangeComplete', selectedRegion, {
-      isGesture: false,
-    });
+    await fireEvent(map, 'regionChangeComplete', initialRegion);
     expect(onChange).not.toHaveBeenCalled();
 
-    await fireEvent(map, 'panDrag', {});
-    await fireEvent(map, 'regionChangeComplete', selectedRegion, {
-      isGesture: false,
-    });
+    await fireEvent(map, 'regionChangeComplete', selectedRegion);
 
     expect(onChange).toHaveBeenCalledWith({
       latitude: 33.772,
