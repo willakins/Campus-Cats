@@ -18,6 +18,7 @@ import {
 } from '@/core/domain';
 import { localMedia, storedMedia } from '@/core/media';
 import { DisplayMediaAsset, StoredMediaAsset, isExternalMediaAsset } from '@/core/ports';
+import { isSourceManagedCatalogEntry } from '@/features/catalog/catalogDiscovery';
 import { CatalogForm, CatalogFormData } from '@/forms/CatalogForm';
 import { useAuth } from '@/providers';
 import { PickerConfig } from '@/types';
@@ -253,7 +254,7 @@ const EditEntry = () => {
         onPromotePhoto={promotePhoto}
         onDeletePhoto={removePhoto}
         isCreate={false}
-        sourceManaged={entry.source === 'inaturalist'}
+        sourceManaged={isSourceManagedCatalogEntry(entry)}
       />
     </FormScreen>
   );

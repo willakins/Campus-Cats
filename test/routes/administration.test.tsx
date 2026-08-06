@@ -267,6 +267,59 @@ describe('settings and administration routes', () => {
     );
   });
 
+  it('does not recreate contacts that succeeded during a partial save', async () => {
+    mockRole = Role.Officer;
+    const createdContact = parseContact({
+      id: 'contact-2',
+      name: 'Volunteer Coordinator',
+      email: 'volunteers@gatech.edu',
+    });
+    mockUpdateContact.mockResolvedValueOnce({
+      ok: false,
+      error: {
+        code: 'dependency_failure',
+        message: 'Could not update the contact',
+      },
+    });
+    mockCreateContact.mockResolvedValueOnce({
+      ok: true,
+      value: createdContact,
+      warnings: [],
+    });
+    const user = userEvent.setup();
+    await renderThemed(<Settings />);
+    await screen.findByText('Campus Cats Officers');
+
+    await user.press(screen.getByRole('button', { name: 'Edit Contacts' }));
+    await user.press(screen.getByRole('button', { name: 'Add Contact' }));
+    await fireEvent.changeText(
+      screen.getAllByLabelText('Contact name')[1],
+      createdContact.name,
+    );
+    await fireEvent.changeText(
+      screen.getAllByLabelText('Contact email')[1],
+      createdContact.email,
+    );
+    await user.press(screen.getByRole('button', { name: 'Save Contacts' }));
+    expect(
+      await screen.findByText('Could not update the contact'),
+    ).toBeOnTheScreen();
+
+    await user.press(screen.getByRole('button', { name: 'Save Contacts' }));
+
+    await waitFor(() =>
+      expect(mockUpdateContact).toHaveBeenCalledWith(
+        expect.objectContaining({ id: 'actor-1' }),
+        'contact-2',
+        {
+          name: createdContact.name,
+          email: createdContact.email,
+        },
+      ),
+    );
+    expect(mockCreateContact).toHaveBeenCalledTimes(1);
+  });
+
   it('renders an access-denied state instead of loading users for members', async () => {
     await renderThemed(<ManageUsers />);
 
