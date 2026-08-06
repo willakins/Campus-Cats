@@ -82,6 +82,12 @@ const Settings = () => {
           : appModules.contacts.update(actor, id, { name, email }),
       ),
     );
+    setContacts(
+      contacts.map((contact, index) => {
+        const result = results[index];
+        return result?.ok ? result.value : contact;
+      }),
+    );
     const failed = results.find((result) => !result.ok);
     setSavingContacts(false);
     if (failed && !failed.ok) {

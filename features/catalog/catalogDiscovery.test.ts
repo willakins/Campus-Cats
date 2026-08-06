@@ -12,6 +12,7 @@ import {
 import {
   buildCatalogItems,
   filterAndSortCatalog,
+  isSourceManagedCatalogEntry,
   moveCatalogFavorite,
   sightingsForCatalogEntry,
 } from './catalogDiscovery';
@@ -179,6 +180,17 @@ describe('catalog discovery', () => {
     );
 
     expect(sightingsForCatalogEntry(linked, [localMimi])).toEqual([localMimi]);
+  });
+
+  it('only source-manages imported profiles without a linked local entry', () => {
+    expect(isSourceManagedCatalogEntry(importedEntry)).toBe(true);
+    expect(
+      isSourceManagedCatalogEntry({
+        ...importedEntry,
+        linkedLocalCatalogId: 'goldie',
+      }),
+    ).toBe(false);
+    expect(isSourceManagedCatalogEntry(goldie)).toBe(false);
   });
 
   it('searches profile fields and supports every requested sort order', () => {

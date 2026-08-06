@@ -23,6 +23,12 @@ export const catalogSortOptions: readonly CatalogSortOption[] = [
   { value: 'hearts', label: 'Most hearts' },
 ];
 
+export function isSourceManagedCatalogEntry(entry: CatalogRecord): boolean {
+  return (
+    entry.source === 'inaturalist' && entry.linkedLocalCatalogId === undefined
+  );
+}
+
 export interface CatalogFavoriteSummary {
   readonly selectedCatalogId?: string;
   readonly counts: Readonly<Record<string, number>>;

@@ -36,6 +36,7 @@ import {
   handleUpdatePublicProfile,
 } from './handlers';
 import { createGoogleCloudBillingReader } from './billing';
+import { deleteAuthUserIfPresent } from './firebaseAuth';
 import { FirebaseInaturalistRepository } from './firebaseInaturalist';
 import {
   InaturalistHttpGateway,
@@ -234,7 +235,7 @@ const dependencies: HandlerDependencies = {
   },
 
   async deleteAuthUser(id) {
-    await auth.deleteUser(id);
+    await deleteAuthUserIfPresent(auth, id);
   },
 
   async putUser(user) {
