@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import {
   Alert,
   Switch,
@@ -8,6 +8,7 @@ import {
 } from 'react-native';
 
 import DropdownPicker from 'react-native-dropdown-picker';
+import { Ionicons } from '@expo/vector-icons';
 
 import { appModules } from '../../composition/appModules';
 import { Coordinates } from '../../core/domain';
@@ -17,7 +18,6 @@ import { AppText, FormField, MediaPicker } from '../design';
 import { campusMapDarkStyle } from '../mapStyles';
 import { createCampusCamera, GEORGIA_TECH_CENTER } from '../mapViewport';
 import { DateTimeInput } from '../ui/DateTimeInput';
-import { MapMarker } from '../ui/MapMarker';
 import { MapView } from '../ui/MapView';
 
 interface FormTextInputProps extends TextInputProps {
@@ -189,8 +189,11 @@ export const LocationField = ({
 }) => {
   const theme = useAppTheme();
   const hasLocation = value.latitude !== 0 || value.longitude !== 0;
+  const lastSelectedCenter = useRef(
+    hasLocation ? value : GEORGIA_TECH_CENTER,
+  );
   return (
-    <FormField label={label} required helper="Tap the map to place the marker.">
+    <FormField label={label} required helper="Drag the map to position the pin.">
       <View style={{ height: 240, overflow: 'hidden', borderRadius: theme.radii.card }}>
         <MapView
           accessibilityLabel={label}
@@ -198,14 +201,46 @@ export const LocationField = ({
           userInterfaceStyle={theme.dark ? 'dark' : 'light'}
           customMapStyle={theme.dark ? [...campusMapDarkStyle] : undefined}
           initialCamera={createCampusCamera(hasLocation ? value : GEORGIA_TECH_CENTER)}
-          onPress={(event) => onChange(event.nativeEvent.coordinate)}
+          onRegionChangeComplete={(region) => {
+            const center = {
+              latitude: region.latitude,
+              longitude: region.longitude,
+            };
+            if (sameCoordinates(center, lastSelectedCenter.current)) return;
+            lastSelectedCenter.current = center;
+            onChange(center);
+          }}
+        />
+        <View
+          style={{
+            position: 'absolute',
+            inset: 0,
+            alignItems: 'center',
+            justifyContent: 'center',
+            pointerEvents: 'none',
+          }}
         >
-          {hasLocation ? <MapMarker coordinate={value} /> : null}
-        </MapView>
+          <View
+            accessible
+            accessibilityLabel={`${label} pin`}
+            accessibilityRole="image"
+            style={{ transform: [{ translateY: -20 }] }}
+          >
+            <Ionicons
+              name="location-sharp"
+              size={44}
+              color={theme.colors.coral}
+            />
+          </View>
+        </View>
       </View>
     </FormField>
   );
 };
+
+const sameCoordinates = (left: Coordinates, right: Coordinates) =>
+  Math.abs(left.latitude - right.latitude) < 0.000001 &&
+  Math.abs(left.longitude - right.longitude) < 0.000001;
 
 interface PhotoFieldProps {
   readonly photos: readonly string[];

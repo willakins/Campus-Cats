@@ -1,3 +1,7 @@
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
+import { runInNewContext } from 'node:vm';
+
 const { runSamlBridge } = require('../public/firebase-wrapper-app.js');
 
 const linkingUri = 'campuscats://saml-sign-in';
@@ -19,10 +23,12 @@ const createHarness = ({
     initializeApp: jest.fn(() => ({ auth: () => auth })),
     auth: { SAMLAuthProvider: jest.fn(() => provider) },
   };
+  const storageValues = new Map(pending ? [['campus-cats:saml-redirect', 'pending']] : []);
   const storage = {
-    getItem: jest.fn(() => (pending ? 'pending' : null)),
-    setItem: jest.fn(),
-    removeItem: jest.fn(),
+    values: storageValues,
+    getItem: jest.fn((key: string) => storageValues.get(key) ?? null),
+    setItem: jest.fn((key: string, value: string) => storageValues.set(key, value)),
+    removeItem: jest.fn((key: string) => storageValues.delete(key)),
   };
   const location = {
     search,
@@ -101,6 +107,99 @@ describe('Firebase SAML bridge', () => {
       message:
         'Georgia Tech SSO could not start. Check the Firebase Web App configuration and try again.',
       canRetry: true,
+    });
+  });
+
+  it('offers a retry when the Firebase SDK did not load', async () => {
+    const harness = createHarness();
+
+    await runSamlBridge({ ...harness, firebase: undefined });
+
+    expect(harness.render).toHaveBeenLastCalledWith({
+      state: 'error',
+      message:
+        'Georgia Tech SSO needs an internet connection. Reconnect and try again.',
+      canRetry: true,
+    });
+    expect(harness.storage.values.size).toBe(0);
+    expect(harness.auth.signInWithRedirect).not.toHaveBeenCalled();
+  });
+
+  it('keeps the hosted page retryable when the bridge script did not load', () => {
+    const html = readFileSync(
+      resolve(process.cwd(), 'public/firebase-wrapper-app.html'),
+      'utf8',
+    );
+    const scripts = [...html.matchAll(/<script>([\s\S]*?)<\/script>/g)];
+    const bootstrap = scripts.at(-1)?.[1];
+    if (!bootstrap) throw new Error('Hosted SAML bootstrap script was not found');
+
+    const status = {
+      dataset: {} as Record<string, string>,
+      textContent: '',
+      setAttribute: jest.fn(),
+    };
+    let retryHandler: () => void = () => undefined;
+    const retry = {
+      hidden: true,
+      addEventListener: jest.fn((_event: string, handler: () => void) => {
+        retryHandler = handler;
+      }),
+    };
+    const sessionStorage = { removeItem: jest.fn() };
+    const location = { reload: jest.fn() };
+    const document = {
+      addEventListener: jest.fn((_event: string, handler: () => void) => handler()),
+      querySelector: jest.fn((selector: string) =>
+        selector === '#status' ? status : retry,
+      ),
+    };
+
+    runInNewContext(bootstrap, {
+      document,
+      window: { CampusCatsSamlBridge: undefined, location, sessionStorage },
+    });
+
+    expect(status.dataset.state).toBe('error');
+    expect(status.textContent).toBe(
+      'Georgia Tech SSO could not load. Reconnect and reload this page.',
+    );
+    expect(retry.hidden).toBe(false);
+
+    retryHandler();
+    expect(sessionStorage.removeItem).toHaveBeenCalledWith(
+      'campus-cats:saml-redirect',
+    );
+    expect(location.reload).toHaveBeenCalledTimes(1);
+  });
+
+  it('recovers when the first SSO attempt starts offline', async () => {
+    const harness = createHarness();
+    const offlineError = Object.assign(new Error('offline'), {
+      code: 'auth/network-request-failed',
+    });
+    harness.auth.signInWithRedirect
+      .mockRejectedValueOnce(offlineError)
+      .mockResolvedValueOnce(undefined);
+
+    await runSamlBridge(harness);
+
+    expect(harness.render).toHaveBeenLastCalledWith({
+      state: 'error',
+      message:
+        'Georgia Tech SSO needs an internet connection. Reconnect and try again.',
+      canRetry: true,
+    });
+    expect(harness.storage.values.has('campus-cats:saml-redirect')).toBe(false);
+
+    await runSamlBridge(harness);
+
+    expect(harness.auth.signInWithRedirect).toHaveBeenCalledTimes(2);
+    expect(harness.storage.values.get('campus-cats:saml-redirect')).toBe('pending');
+    expect(harness.render).toHaveBeenLastCalledWith({
+      state: 'loading',
+      message: 'Redirecting to Georgia Tech…',
+      canRetry: false,
     });
   });
 });
