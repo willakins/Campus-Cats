@@ -4,7 +4,7 @@ import { Alert } from 'react-native';
 import { fireEvent, render, screen, userEvent, waitFor } from '@testing-library/react-native';
 
 import { AppThemeProvider } from '../../theme';
-import { FormTextInput, PhotoField, ToggleField } from './index';
+import { FormTextInput, LocationField, PhotoField, ToggleField } from './index';
 
 const mockTakePhoto = jest.fn();
 const mockPickFromLibrary = jest.fn();
@@ -50,6 +50,36 @@ describe('form controls', () => {
 
     await fireEvent(screen.getByRole('switch', { name: 'Cat was fed' }), 'valueChange', true);
     expect(onValueChange).toHaveBeenCalledWith(true);
+  });
+
+  it('selects a named location by moving the map beneath a fixed pin', async () => {
+    const onChange = jest.fn();
+    await renderThemed(
+      <LocationField
+        label="Sighting location"
+        value={{ latitude: 33.776077, longitude: -84.396199 }}
+        onChange={onChange}
+      />,
+    );
+
+    expect(screen.getByText('Drag the map to position the pin.')).toBeOnTheScreen();
+    expect(screen.getByTestId('location-selection-pin')).toBeOnTheScreen();
+
+    await fireEvent(
+      screen.getByLabelText('Sighting location'),
+      'regionChangeComplete',
+      {
+        latitude: 33.772,
+        longitude: -84.394,
+        latitudeDelta: 0.01,
+        longitudeDelta: 0.01,
+      },
+    );
+
+    expect(onChange).toHaveBeenCalledWith({
+      latitude: 33.772,
+      longitude: -84.394,
+    });
   });
 
   it('names cover promotion and removal and adds a selected library photo', async () => {

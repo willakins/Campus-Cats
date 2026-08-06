@@ -8,6 +8,7 @@ import {
 } from 'react-native';
 
 import DropdownPicker from 'react-native-dropdown-picker';
+import { Ionicons } from '@expo/vector-icons';
 
 import { appModules } from '../../composition/appModules';
 import { Coordinates } from '../../core/domain';
@@ -17,7 +18,6 @@ import { AppText, FormField, MediaPicker } from '../design';
 import { campusMapDarkStyle } from '../mapStyles';
 import { createCampusCamera, GEORGIA_TECH_CENTER } from '../mapViewport';
 import { DateTimeInput } from '../ui/DateTimeInput';
-import { MapMarker } from '../ui/MapMarker';
 import { MapView } from '../ui/MapView';
 
 interface FormTextInputProps extends TextInputProps {
@@ -190,7 +190,7 @@ export const LocationField = ({
   const theme = useAppTheme();
   const hasLocation = value.latitude !== 0 || value.longitude !== 0;
   return (
-    <FormField label={label} required helper="Tap the map to place the marker.">
+    <FormField label={label} required helper="Drag the map to position the pin.">
       <View style={{ height: 240, overflow: 'hidden', borderRadius: theme.radii.card }}>
         <MapView
           accessibilityLabel={label}
@@ -198,10 +198,33 @@ export const LocationField = ({
           userInterfaceStyle={theme.dark ? 'dark' : 'light'}
           customMapStyle={theme.dark ? [...campusMapDarkStyle] : undefined}
           initialCamera={createCampusCamera(hasLocation ? value : GEORGIA_TECH_CENTER)}
-          onPress={(event) => onChange(event.nativeEvent.coordinate)}
+          onRegionChangeComplete={(region) =>
+            onChange({
+              latitude: region.latitude,
+              longitude: region.longitude,
+            })
+          }
+        />
+        <View
+          style={{
+            position: 'absolute',
+            inset: 0,
+            alignItems: 'center',
+            justifyContent: 'center',
+            pointerEvents: 'none',
+          }}
         >
-          {hasLocation ? <MapMarker coordinate={value} /> : null}
-        </MapView>
+          <View
+            testID="location-selection-pin"
+            style={{ transform: [{ translateY: -20 }] }}
+          >
+            <Ionicons
+              name="location-sharp"
+              size={44}
+              color={theme.colors.coral}
+            />
+          </View>
+        </View>
       </View>
     </FormField>
   );
