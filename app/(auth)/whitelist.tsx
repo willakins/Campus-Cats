@@ -1,84 +1,93 @@
-import { SafeAreaView, ScrollView, Text, View } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
 import { useState } from 'react';
-import { globalStyles, buttonStyles, textStyles, containerStyles } from '@/styles';
-import { Button, SnackbarMessage, TextInput } from '@/components';
-import DatabaseService from '@/services/DatabaseService';
-import { WhitelistApp } from "@/types";
+import { Alert } from 'react-native';
+import { useRouter } from 'expo-router';
+
+import { AuthScaffold, AuthTextField } from '@/components/auth';
+import { Button, FeedbackBanner, FormSection } from '@/components/design';
+import { appModules } from '@/composition/appModules';
 
 const Whitelist = () => {
-    const router = useRouter();
-    const database = DatabaseService.getInstance();
-    const [visible, setVisible] = useState<boolean>(false);
-    const [formData, setFormData] = useState({id:"", name:"", graduationYear:"", email:"", codeWord:""});    
-
-    const handleChange = (field: string, value: string) => {
-    setFormData(prevData => ({
-        ...prevData,
-        [field]: value
-    }));
-    };
-
-    const createObj = () => {
-        return new WhitelistApp(formData.id, formData.name, formData.graduationYear, formData.email, formData.codeWord);
+  const router = useRouter();
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string>();
+  const [formData, setFormData] = useState({
+    name: '',
+    graduationYear: '',
+    email: '',
+    codeWord: '',
+  });
+  const handleChange = (field: keyof typeof formData, value: string) => {
+    setFormData((current) => ({ ...current, [field]: value }));
+  };
+  const submit = async () => {
+    if (busy) return;
+    try {
+      setBusy(true);
+      setError(undefined);
+      const result = await appModules.whitelist.submit(formData);
+      if (!result.ok) {
+        setError(result.error.message);
+        return;
+      }
+      Alert.alert(
+        'Application submitted',
+        'An officer will review it and email you if it is accepted.',
+      );
+      router.replace('/login');
+    } finally {
+      setBusy(false);
     }
+  };
 
-    return (
-    <SafeAreaView style={containerStyles.wrapper}>
-        <Button style={buttonStyles.smallButtonTopLeft} onPress={() => router.back()}>
-        <Ionicons name="arrow-back-outline" size={25} color="#fff" />
-        </Button>
-        <SnackbarMessage text="Saving Application..." visible={visible} setVisible={setVisible} />
-        <Text style={textStyles.lowerPageTitle}>Apply for non-GT account</Text>
-        <ScrollView contentContainerStyle={containerStyles.scrollViewCenter}>
-            <View style={containerStyles.card}>
-                <Text style={textStyles.label}>Enter your full name</Text>
-                <View style={containerStyles.inputContainer}>
-                    <TextInput
-                        value={formData.name}
-                        placeholderTextColor="#888"
-                        onChangeText={(text) => handleChange('name', text)} 
-                        style={textStyles.input} 
-                        multiline={false}/>
-                </View>
-                    
-                <Text style={textStyles.label}>What year did you graduate Georgia Tech?</Text>
-                <View style={containerStyles.inputContainer}>
-                    <TextInput
-                        value={formData.graduationYear}
-                        placeholderTextColor="#888"
-                        onChangeText={(text) => handleChange('graduationYear', text)} 
-                        style={textStyles.input} 
-                        multiline={false}/>
-                </View>
-                    
-                <Text style={textStyles.label}>What email would you like to use to login?</Text>
-                <View style={containerStyles.inputContainer}>
-                    <TextInput
-                        value={formData.email}
-                        placeholderTextColor="#888"
-                        onChangeText={(text) => handleChange('email', text)} 
-                        style={textStyles.input} 
-                        multiline={false}/>
-                </View>
-                    
-                <Text style={textStyles.label}>Do you have a secret security word from an officer? (optional)</Text>
-                <View style={containerStyles.inputContainer}>
-                    <TextInput
-                        value={formData.codeWord}
-                        placeholderTextColor="#888"
-                        onChangeText={(text) => handleChange('codeWord', text)} 
-                        style={textStyles.input} 
-                        multiline={false}/>
-                </View>
-                    
-            </View>
-        </ScrollView>
-        <Button style={buttonStyles.bigButton} onPress={() => database.submitWhitelist(createObj(), setVisible, router)}>
-            <Text style={textStyles.bigButtonText}>Submit Application</Text>
-        </Button>
-    </SafeAreaView>
-    );
+  return (
+    <AuthScaffold
+      title="Community access"
+      subtitle="Alumni and community volunteers can ask an officer to review an account request."
+      onBack={() => router.back()}
+    >
+      <FormSection title="Your information">
+        <AuthTextField
+          label="Full name"
+          required
+          value={formData.name}
+          autoComplete="name"
+          onChangeText={(text) => handleChange('name', text)}
+        />
+        <AuthTextField
+          label="Georgia Tech graduation year"
+          required
+          value={formData.graduationYear}
+          inputMode="numeric"
+          keyboardType="number-pad"
+          onChangeText={(text) => handleChange('graduationYear', text)}
+        />
+        <AuthTextField
+          label="Email"
+          required
+          value={formData.email}
+          autoCapitalize="none"
+          autoComplete="email"
+          inputMode="email"
+          keyboardType="email-address"
+          onChangeText={(text) => handleChange('email', text)}
+        />
+        <AuthTextField
+          label="Officer security word"
+          helper="Optional—leave blank if an officer did not give you one."
+          value={formData.codeWord}
+          onChangeText={(text) => handleChange('codeWord', text)}
+        />
+      </FormSection>
+      {error ? <FeedbackBanner message={error} tone="danger" /> : null}
+      <Button
+        label="Submit application"
+        fullWidth
+        loading={busy}
+        loadingLabel="Submitting…"
+        onPress={() => void submit()}
+      />
+    </AuthScaffold>
+  );
 };
+
 export default Whitelist;

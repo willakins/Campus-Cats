@@ -1,0 +1,52 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+      - refactor/behavior-first-architecture
+
+permissions:
+  contents: read
+
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version-file: .node-version
+          cache: npm
+      - run: npm ci
+      - run: npm run quality
+      - run: npm run hosting:build
+        env:
+          EXPO_PUBLIC_API_KEY: demo-api-key
+          EXPO_PUBLIC_AUTH_DOMAIN: demo-campus-cats-test.firebaseapp.com
+          EXPO_PUBLIC_PROJECT_ID: demo-campus-cats-test
+          EXPO_PUBLIC_STORAGE_BUCKET: demo-campus-cats-test.appspot.com
+          EXPO_PUBLIC_MESSAGING_SENDER_ID: "1234567890"
+          EXPO_PUBLIC_APP_ID: 1:1234567890:web:demo
+          EXPO_PUBLIC_WEB_API_KEY: demo-web-api-key
+          EXPO_PUBLIC_WEB_APP_ID: 1:1234567890:web:demo-web
+          EXPO_PUBLIC_GOOGLE_MAPS_API_KEY: demo-maps-key
+      - run: npm run test:coverage
+      - run: npm ci --prefix functions
+      - run: npm run test:ci --prefix functions
+
+  firebase-emulators:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version-file: .node-version
+          cache: npm
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: 21
+      - run: npm ci
+      - run: npm run emulator:exec

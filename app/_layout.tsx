@@ -1,20 +1,48 @@
-import { SafeAreaView } from 'react-native';
+import { View } from 'react-native';
 
 import { Slot } from 'expo-router';
+import { StatusBar } from 'expo-status-bar';
 import { Provider as PaperProvider } from 'react-native-paper';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 
-import { AuthProvider } from '@/providers';
-import { globalStyles } from '@/styles';
+import { AppSettingsProvider, AuthProvider, useAppSettings } from '@/providers';
+import { AppThemeProvider, useAppTheme } from '@/theme';
+
+const ThemedApplication = () => {
+  const theme = useAppTheme();
+  return (
+    <PaperProvider theme={theme.paper}>
+      <StatusBar style={theme.dark ? 'light' : 'dark'} />
+      <View style={{ flex: 1, backgroundColor: theme.colors.background }}>
+        <Slot />
+      </View>
+    </PaperProvider>
+  );
+};
+
+const BrandedApplication = () => {
+  const { settings } = useAppSettings();
+  return (
+    <AppThemeProvider
+      brandColors={{
+        primaryColor: settings.primaryColor,
+        accentColor: settings.accentColor,
+      }}
+    >
+      <AuthProvider>
+        <ThemedApplication />
+      </AuthProvider>
+    </AppThemeProvider>
+  );
+};
 
 const RootLayout = () => {
   return (
-    <AuthProvider>
-      <SafeAreaView style = {globalStyles.safeView}>
-        <PaperProvider>
-          <Slot />
-        </PaperProvider>
-      </SafeAreaView>
-    </AuthProvider>
+    <SafeAreaProvider>
+      <AppSettingsProvider>
+        <BrandedApplication />
+      </AppSettingsProvider>
+    </SafeAreaProvider>
   );
 };
 export default RootLayout;

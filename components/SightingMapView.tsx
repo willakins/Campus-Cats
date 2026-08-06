@@ -1,11 +1,14 @@
-import { MapViewProps, Marker } from 'react-native-maps';
+import { MapViewProps } from 'react-native-maps';
+
 import { MapView } from '@/components/ui/MapView';
-import { Sighting } from '@/types';
+import { MapMarker } from '@/components/ui/MapMarker';
+import { SightingRecord } from '@/core/domain';
+import { useAppTheme } from '@/theme';
 
 type SightingMapViewProps = MapViewProps & {
-  list: Sighting[];
-  filter: (item: Sighting) => boolean;
-  onPerMarkerPress?: (item: Sighting) => void;
+  list: readonly SightingRecord[];
+  filter: (item: SightingRecord) => boolean;
+  onPerMarkerPress?: (item: SightingRecord) => void;
 };
 
 const SightingMapView: React.FC<SightingMapViewProps> = ({
@@ -13,20 +16,28 @@ const SightingMapView: React.FC<SightingMapViewProps> = ({
   filter,
   onPerMarkerPress,
   children,
-	...props
+  ...props
 }) => {
+  const theme = useAppTheme();
   return (
     <MapView {...props}>
-      {list.filter(filter).map((item: Sighting) => (
-        <Marker
+      {list.filter((item) => filter(item) && item.location !== null).map((item) => (
+        <MapMarker
           key={item.id}
           coordinate={{
-            latitude: item.location.latitude,
-            longitude: item.location.longitude,
+            latitude: item.location!.latitude,
+            longitude: item.location!.longitude,
           }}
           title={item.name}
           description={item.info}
+          accessibilityLabel={`View sighting: ${item.name}`}
+          accessibilityRole="button"
           onPress={onPerMarkerPress ? (() => onPerMarkerPress(item)) : undefined}
+          backgroundColor={
+            item.source === 'inaturalist'
+              ? theme.colors.teal
+              : theme.colors.coral
+          }
         />
       ))}
       {children}

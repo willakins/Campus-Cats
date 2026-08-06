@@ -1,0 +1,26 @@
+const fs = require('node:fs');
+const path = require('node:path');
+
+const targets = ['app', 'components', 'forms'];
+const exemptions = new Set(['components/mapStyles.ts']);
+const colorPattern = /#[0-9a-f]{3,8}\b|(['"])(?:red|green|blue|black|white|gray|grey|yellow|orange|pink|purple|tomato)\1/gi;
+const sourcePattern = /\.(?:js|jsx|ts|tsx)$/;
+
+const filesUnder = (directory) =>
+  fs.readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
+    const filename = path.join(directory, entry.name);
+    return entry.isDirectory() ? filesUnder(filename) : sourcePattern.test(filename) ? [filename] : [];
+  });
+
+const violations = targets
+  .flatMap((target) => (fs.statSync(target).isDirectory() ? filesUnder(target) : [target]))
+  .filter((filename) => !filename.includes('.test.') && !exemptions.has(filename))
+  .flatMap((filename) => {
+    const source = fs.readFileSync(filename, 'utf8');
+    return [...source.matchAll(colorPattern)].map((match) => `${filename}:${source.slice(0, match.index).split('\n').length}`);
+  });
+
+if (violations.length > 0) {
+  console.error(`Use semantic theme colors instead of raw colors:\n${violations.join('\n')}`);
+  process.exitCode = 1;
+}

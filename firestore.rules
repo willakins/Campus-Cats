@@ -2,8 +2,379 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function userDocument() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid));
+    }
+
+    function isActiveUser() {
+      return signedIn()
+        && (!('banned' in userDocument().data)
+          || userDocument().data.banned != true);
+    }
+
+    function role() {
+      return isActiveUser() && userDocument().data.role is int
+        ? userDocument().data.role
+        : -1;
+    }
+
+    function isAdmin() {
+      return role() >= 1;
+    }
+
+    function isPresident() {
+      return role() == 3;
+    }
+
+    function contributorPath(kind, contentId) {
+      return /databases/$(database)/documents/content-contributors/$(kind + '__' + contentId);
+    }
+
+    function contributorsAreAnonymous() {
+      return !exists(/databases/$(database)/documents/app-settings/public)
+        || get(/databases/$(database)/documents/app-settings/public).data.sightingsAnonymous != false;
+    }
+
+    function canReadContributors() {
+      return isAdmin() || !contributorsAreAnonymous();
+    }
+
+    function ownsContributor(kind, contentId) {
+      return isActiveUser()
+        && exists(contributorPath(kind, contentId))
+        && get(contributorPath(kind, contentId)).data.user.id == request.auth.uid;
+    }
+
+    function validCurrentUserContributor(data, kind, contentId) {
+      return isActiveUser()
+        && data.keys().hasOnly(['kind', 'contentId', 'user'])
+        && data.kind == kind
+        && data.contentId == contentId
+        && data.user is map
+        && data.user.keys().hasOnly(['id', 'email', 'role'])
+        && data.user.id == request.auth.uid
+        && data.user.email == request.auth.token.email
+        && data.user.role == role();
+    }
+
+    function validCurrentUserSnapshot(user) {
+      return isActiveUser()
+        && user is map
+        && user.keys().hasOnly(['id', 'email', 'role'])
+        && user.id == request.auth.uid
+        && user.email == request.auth.token.email
+        && user.role == role();
+    }
+
+    function hasNewContributor(kind, contentId) {
+      return existsAfter(contributorPath(kind, contentId))
+        && getAfter(contributorPath(kind, contentId)).data.user.id == request.auth.uid;
+    }
+
+    function contentPath(kind, contentId) {
+      return kind == 'sighting'
+        ? /databases/$(database)/documents/cat-sightings/$(contentId)
+        : /databases/$(database)/documents/catalog/$(contentId);
+    }
+
+    function ownsSighting(data) {
+      return isActiveUser()
+        && data.createdBy is map
+        && data.createdBy.id == request.auth.uid;
+    }
+
+    function validWhitelistApplication() {
+      return request.resource.data.keys().hasOnly([
+          'name',
+          'graduationYear',
+          'email',
+          'codeWord'
+        ])
+        && request.resource.data.name is string
+        && request.resource.data.name.size() > 0
+        && request.resource.data.name.size() <= 200
+        && request.resource.data.graduationYear is string
+        && request.resource.data.graduationYear.size() > 0
+        && request.resource.data.graduationYear.size() <= 20
+        && request.resource.data.email is string
+        && request.resource.data.email.size() >= 3
+        && request.resource.data.email.size() <= 320
+        && request.resource.data.email.matches('^[^@]+@[^@]+\\.[^@]+$')
+        && request.resource.data.codeWord is string
+        && request.resource.data.codeWord.size() <= 200;
+    }
+
+    function validEvent(data) {
+      return data.keys().hasOnly([
+          'title',
+          'details',
+          'location',
+          'startsAt',
+          'expiresAt',
+          'imageUrl',
+          'createdAt',
+          'createdBy'
+        ])
+        && data.title is string
+        && data.title.size() > 0
+        && data.title.size() <= 120
+        && data.title.matches('.*\\S.*')
+        && data.details is string
+        && data.details.size() > 0
+        && data.details.size() <= 5000
+        && data.details.matches('.*\\S.*')
+        && data.location is string
+        && data.location.size() > 0
+        && data.location.size() <= 300
+        && data.location.matches('.*\\S.*')
+        && data.startsAt is timestamp
+        && data.expiresAt is timestamp
+        && data.expiresAt >= data.startsAt
+        && data.imageUrl is string
+        && data.imageUrl.size() > 0
+        && data.imageUrl.size() <= 2048
+        && data.imageUrl.matches('^https://.+$')
+        && data.createdAt is timestamp
+        && data.createdBy is map
+        && data.createdBy.keys().hasOnly(['id', 'email', 'role'])
+        && data.createdBy.id is string
+        && data.createdBy.email is string
+        && data.createdBy.role is int;
+    }
+
+    match /cat-sightings/{sightingId} {
+      allow read: if isActiveUser()
+        && (canReadContributors() || !('createdBy' in resource.data));
+      allow create: if isActiveUser()
+        && !('createdBy' in request.resource.data)
+        && hasNewContributor('sighting', sightingId);
+      allow update: if ownsContributor('sighting', sightingId)
+        && !('createdBy' in request.resource.data);
+      allow delete: if ownsContributor('sighting', sightingId)
+        && !existsAfter(contributorPath('sighting', sightingId));
+    }
+
+    match /catalog/{entryId} {
+      allow read: if isActiveUser()
+        && (canReadContributors() || !('createdBy' in resource.data));
+      allow create, update: if isAdmin()
+        && !('createdBy' in request.resource.data)
+        && hasNewContributor('catalog', entryId);
+      allow delete: if isAdmin()
+        && !existsAfter(contributorPath('catalog', entryId));
+    }
+
+    match /content-contributors/{contributorId} {
+      allow read: if isActiveUser()
+        && (canReadContributors() || resource.data.user.id == request.auth.uid);
+      allow create: if
+        (
+          (
+            validCurrentUserContributor(
+              request.resource.data,
+              'sighting',
+              request.resource.data.contentId
+            )
+            && contributorId == 'sighting__' + request.resource.data.contentId
+          )
+          || (
+            isAdmin()
+            && validCurrentUserContributor(
+              request.resource.data,
+              'catalog',
+              request.resource.data.contentId
+            )
+            && contributorId == 'catalog__' + request.resource.data.contentId
+          )
+        )
+        && existsAfter(contentPath(
+          request.resource.data.kind,
+          request.resource.data.contentId
+        ));
+      allow update: if
+        (
+          resource.data.kind == 'sighting'
+          && resource.data.user.id == request.auth.uid
+          && validCurrentUserContributor(
+            request.resource.data,
+            'sighting',
+            resource.data.contentId
+          )
+          && contributorId == 'sighting__' + resource.data.contentId
+        )
+        || (
+          isAdmin()
+          && resource.data.kind == 'catalog'
+          && validCurrentUserContributor(
+            request.resource.data,
+            'catalog',
+            resource.data.contentId
+          )
+          && contributorId == 'catalog__' + resource.data.contentId
+        );
+      allow delete: if
+        (
+          (
+            resource.data.kind == 'sighting'
+            && resource.data.user.id == request.auth.uid
+          )
+          || (resource.data.kind == 'catalog' && isAdmin())
+        )
+        && !existsAfter(contentPath(resource.data.kind, resource.data.contentId));
+    }
+
+    match /app-settings/{settingsId} {
+      allow read: if settingsId == 'public';
+      allow create, update: if settingsId == 'public'
+        && isPresident()
+        && request.resource.data.keys().hasOnly([
+          'logoUrl',
+          'primaryColor',
+          'accentColor',
+          'sightingsAnonymous'
+        ])
+        && request.resource.data.logoUrl is string
+        && request.resource.data.logoUrl.size() <= 2048
+        && request.resource.data.primaryColor is string
+        && request.resource.data.primaryColor.matches('^#[0-9A-Fa-f]{6}$')
+        && request.resource.data.accentColor is string
+        && request.resource.data.accentColor.matches('^#[0-9A-Fa-f]{6}$')
+        && request.resource.data.sightingsAnonymous is bool;
+      allow delete: if false;
+    }
+
+    match /catalog-favorites/{userId} {
+      allow read: if isActiveUser();
+      allow create, update: if isActiveUser()
+        && request.auth.uid == userId
+        && request.resource.data.keys().hasOnly(['catalogId', 'createdAt'])
+        && request.resource.data.catalogId is string
+        && request.resource.data.catalogId.size() > 0
+        && request.resource.data.catalogId.size() <= 200
+        && request.resource.data.createdAt is timestamp;
+      allow delete: if isActiveUser() && request.auth.uid == userId;
+    }
+
+    match /stations/{stationId} {
+      allow read: if isActiveUser();
+      allow create, update, delete: if isAdmin();
+    }
+
+    match /announcements/{announcementId} {
+      allow read: if isActiveUser();
+      allow create, update, delete: if isAdmin();
+    }
+
+    match /community-events/{eventId} {
+      allow read: if isActiveUser();
+      allow create: if isAdmin()
+        && validEvent(request.resource.data)
+        && validCurrentUserSnapshot(request.resource.data.createdBy);
+      allow update: if isAdmin()
+        && validEvent(request.resource.data)
+        && request.resource.data.createdAt == resource.data.createdAt
+        && request.resource.data.createdBy == resource.data.createdBy;
+      allow delete: if isAdmin();
+    }
+
+    match /community-surveys/{surveyId} {
+      allow read: if isActiveUser();
+      allow create: if isAdmin()
+        && request.resource.data.keys().hasOnly([
+          'title',
+          'details',
+          'anonymous',
+          'status',
+          'questions',
+          'createdAt',
+          'createdBy'
+        ])
+        && request.resource.data.title is string
+        && request.resource.data.title.size() > 0
+        && request.resource.data.title.size() <= 120
+        && request.resource.data.title.matches('.*\\S.*')
+        && request.resource.data.details is string
+        && request.resource.data.details.size() <= 5000
+        && request.resource.data.anonymous is bool
+        && request.resource.data.status == 'open'
+        && request.resource.data.questions is list
+        && request.resource.data.questions.size() > 0
+        && request.resource.data.questions.size() <= 40
+        && request.resource.data.createdAt is timestamp
+        && validCurrentUserSnapshot(request.resource.data.createdBy);
+      allow update: if isAdmin()
+        && request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(['status', 'closedAt'])
+        && resource.data.status == 'open'
+        && request.resource.data.status == 'closed'
+        && request.resource.data.closedAt is timestamp;
+      allow delete: if false;
+    }
+
+    match /survey-responses/{responseId} {
+      allow read: if isAdmin();
+      allow create, update, delete: if false;
+    }
+
+    match /survey-submission-receipts/{receiptId} {
+      allow get: if isActiveUser()
+        && receiptId.matches('^' + request.auth.uid + '__.+$');
+      allow list: if false;
+      allow create, update, delete: if false;
+    }
+
+    match /contact-info/{contactId} {
+      allow read: if isActiveUser();
+      allow create, update, delete: if isAdmin();
+    }
+
+    match /inaturalist-observations/{observationId} {
+      allow read: if isActiveUser() && (resource.data.visible == true || isAdmin());
+      allow create, update, delete: if false;
+    }
+
+    match /inaturalist-guide-profiles/{profileId} {
+      allow read: if isActiveUser() && (resource.data.visible == true || isAdmin());
+      allow create, update, delete: if false;
+    }
+
+    match /integration-state/{integrationId} {
+      allow read: if isAdmin();
+      allow create, update, delete: if false;
+    }
+
+    match /whitelist/{applicationId} {
+      allow create: if validWhitelistApplication();
+      allow read, delete: if isAdmin();
+      allow update: if false;
+    }
+
+    match /users/{userId} {
+      allow get: if signedIn() && (request.auth.uid == userId || isAdmin());
+      allow list: if isAdmin();
+      allow create: if signedIn()
+        && request.auth.uid == userId
+        && request.resource.data.keys().hasOnly(['email', 'role'])
+        && request.resource.data.email == request.auth.token.email
+        && request.resource.data.role == 0;
+      allow update: if isActiveUser()
+        && request.auth.uid == userId
+        && request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(['expoPushToken']);
+      allow delete: if false;
+    }
+
+    match /public-profiles/{userId} {
+      allow read: if isActiveUser();
+      allow create, update, delete: if false;
+    }
+
     match /{document=**} {
-      allow read, write: if request.auth != null;
+      allow read, write: if false;
     }
   }
 }

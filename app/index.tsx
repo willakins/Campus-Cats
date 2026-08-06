@@ -1,13 +1,10 @@
-import React, { useCallback, useEffect, useState, useRef } from 'react';
+import React, { useEffect } from 'react';
 
 import { Redirect } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 
-import { LoadingIndicator } from '@/components';
-import { auth } from '@/config/firebase';
+import { LoadingIndicator } from '@/components/ui/LoadingIndicator';
 import { useAuth } from '@/providers';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { globalStyles } from '@/styles';
 
 // Instruct SplashScreen not to hide yet, we want to do this manually
 SplashScreen.preventAutoHideAsync().catch(() => {
@@ -16,13 +13,13 @@ SplashScreen.preventAutoHideAsync().catch(() => {
 
 // Set the animation options. This is optional.
 SplashScreen.setOptions({
-  duration: 1000,
+  duration: 220,
   fade: true,
 });
 
 const App = () => {
-  const { loading, user } = useAuth(); // Make sure useAuth returns user too
-  
+  const { currentUser, loading } = useAuth();
+
   // Use useEffect to handle splash screen hiding
   useEffect(() => {
     if (!loading) {
@@ -42,7 +39,7 @@ const App = () => {
     return <LoadingIndicator />;
   }
 
-  if (auth.currentUser) {
+  if (currentUser) {
     return <Redirect href="/(app)/(tabs)" />;
   } else {
     return <Redirect href="/login" />;

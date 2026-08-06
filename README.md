@@ -9,9 +9,9 @@
 </p>
 
 <p align="center">
-  <img alt="Expo 52" src="https://img.shields.io/badge/Expo-52-000020?logo=expo&logoColor=white" />
-  <img alt="React Native 0.76" src="https://img.shields.io/badge/React_Native-0.76-61DAFB?logo=react&logoColor=111827" />
-  <img alt="TypeScript" src="https://img.shields.io/badge/TypeScript-5.8-3178C6?logo=typescript&logoColor=white" />
+  <img alt="Expo 57" src="https://img.shields.io/badge/Expo-57-000020?logo=expo&logoColor=white" />
+  <img alt="React Native 0.86" src="https://img.shields.io/badge/React_Native-0.86-61DAFB?logo=react&logoColor=111827" />
+  <img alt="TypeScript 6" src="https://img.shields.io/badge/TypeScript-6.0-3178C6?logo=typescript&logoColor=white" />
   <img alt="Firebase" src="https://img.shields.io/badge/Firebase-Cloud_Backend-FFCA28?logo=firebase&logoColor=111827" />
   <a href="LICENSE"><img alt="Apache 2.0 license" src="https://img.shields.io/badge/License-Apache_2.0-blue.svg" /></a>
 </p>
@@ -23,18 +23,23 @@
 
 Georgia Tech's Campus Cats volunteers care for a population of stray and feral cats across campus. Without a shared system, sightings, cat histories, feeding-station status, and time-sensitive updates can become fragmented across people and channels.
 
-Campus Cats brings those workflows into one mobile experience. Members can record photo-backed sightings on a live map, learn about known cats, and receive club announcements. Administrators can maintain the shared data, coordinate station restocking, and manage community access.
+Campus Cats brings those workflows into one mobile experience. Members can record photo-backed sightings on a live map, learn about known cats, and receive club announcements. Officers can maintain the shared data, coordinate station restocking, and manage community access.
 
 ## What we built
 
-| Experience | What it enables |
-| --- | --- |
-| **Live sighting map** | Report a cat's location, condition, date, and photos; explore sightings with 7-day through all-time filters. |
-| **Cat-alog** | Maintain a visual directory of known campus cats with profiles, identifying details, and recent sightings. |
-| **Feeding stations** | Track station locations and restocking information, with stocked/unstocked filtering for faster coordination. |
-| **Announcements** | Give administrators a central place to publish updates and send push notifications to members. |
-| **Community access** | Support Georgia Tech SSO, an alumni whitelist workflow, and Firebase-backed authentication. |
-| **Role-aware administration** | Separate member, admin, and super-admin capabilities for content and user management. |
+| Experience                     | What it enables                                                                                                                                 |
+| ------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Live sighting map**          | Report a cat's location, condition, date, and photos; explore sightings with 7-day through all-time filters.                                    |
+| **Cat-alog**                   | Maintain a visual directory of known campus cats with profiles, identifying details, and recent sightings.                                      |
+| **Feeding stations**           | Track station locations and restocking information, with stocked/unstocked filtering for faster coordination.                                   |
+| **Announcements**              | Give officers a central place to publish updates and send push notifications to members.                                                        |
+| **Community engagement**       | Group announcements, image-backed events, clearly labeled surveys, response history, and future chat in one Community tab.                     |
+| **Community access**           | Support Georgia Tech SSO, an alumni whitelist workflow, and Firebase-backed authentication.                                                     |
+| **Role-aware administration**  | Separate member, officer, Vice-President, President, and developer capabilities, with an atomic presidential succession workflow.               |
+| **iNaturalist integration**    | Bring public Georgia Tech project sightings and guide profiles into the existing map and catalog through a daily, attributed, read-only import. |
+| **Officer billing**            | Review monthly Firebase and Google Cloud usage, credits, and net app costs from a role-protected screen.                                        |
+| **President-managed settings** | Change login branding and accessible app colors, and control whether Campus Cats contributor identities are visible to Members.                 |
+| **Member moderation**          | Power-role users can record disciplinary notices and ban or restore Member accounts with Firebase-enforced login blocking.                      |
 
 ## Why it stands out
 
@@ -48,28 +53,36 @@ Campus Cats brings those workflows into one mobile experience. Members can recor
 
 ```mermaid
 flowchart LR
-    A[Expo / React Native client] --> B[Expo Router and role-aware UI]
-    B --> C[Typed forms and service layer]
-    B --> D[Firebase Authentication and GT SAML]
-    C --> E[(Cloud Firestore)]
-    C --> F[(Firebase Storage)]
-    C --> G[Cloud Functions]
-    G --> H[Expo Push API]
-    G --> I[SendGrid]
+    A[Expo Router screens] --> B[Immutable AppModules composition]
+    B --> C[Vertical feature modules]
+    C --> D[Domain models, outcomes, and policies]
+    C --> E[Typed ports]
+    E --> F[Firebase and Expo adapters]
+    E --> G[Deterministic in-memory adapters]
+    F --> H[(Firestore, Storage, Auth)]
+    F --> I[Callable Functions]
+    I --> J[Expo Push API and SendGrid]
 ```
 
-The client uses typed domain models and reusable service modules to keep presentation, business logic, and persistence concerns distinct. Firebase supplies authentication, document storage, media storage, and serverless functions; external integrations deliver push notifications and whitelist emails.
+The client is organized as behavior-first vertical modules for sightings, catalog,
+stations, announcements, events, surveys, contacts, users, whitelist, session, image selection, and
+iNaturalist integration workflows.
+Screens own presentation and navigation; modules return typed outcomes; narrow ports
+isolate Firebase and Expo. Deterministic in-memory adapters and Firebase Emulator
+contracts protect behavior during refactors. See the
+[architecture decision](docs/architecture/0001-feature-modules.md) for the dependency
+rules and compatibility constraints.
 
 ### Technology
 
-| Area | Tools |
-| --- | --- |
-| Client | React Native, Expo, Expo Router, React Navigation |
-| Language and validation | TypeScript, React Hook Form, Zod |
-| Location and media | React Native Maps, Expo Location, Expo Image Picker |
-| Backend | Firebase Authentication, Cloud Firestore, Cloud Storage, Cloud Functions |
-| Communication | Expo Notifications, Expo Push API, SendGrid |
-| Tooling | ESLint, Jest Expo |
+| Area                    | Tools                                                                    |
+| ----------------------- | ------------------------------------------------------------------------ |
+| Client                  | React Native, Expo, Expo Router                                          |
+| Language and validation | TypeScript, React Hook Form, Zod                                         |
+| Location and media      | React Native Maps, Expo Location, Expo Image Picker                      |
+| Backend                 | Firebase Authentication, Cloud Firestore, Cloud Storage, Cloud Functions |
+| Communication           | Expo Notifications, Expo Push API, SendGrid                              |
+| Tooling                 | ESLint, Jest Expo                                                        |
 
 ## Run it locally
 
@@ -88,6 +101,15 @@ The interface can be explored locally, but authentication, maps, notifications, 
 - [Release notes](CHANGELOG.md)
 - [Detailed design document](Detailed%20Design%20Document.pdf) — the team's original capstone design artifact; it includes planned ideas beyond the final v1 scope
 - [Firebase operations](FIREBASE.md)
+- [Architecture](docs/architecture/0001-feature-modules.md)
+- [Authorization matrix](docs/architecture/behavior-matrix.md)
+- [Campus Field Guide design system](docs/design-system.md)
+- [iNaturalist import and operations](docs/inaturalist-import.md)
+- [App Billing operations](docs/billing.md)
+- [App settings and contributor privacy](docs/app-settings.md)
+- [Community engagement](docs/community-engagement.md)
+- [Testing guide](docs/testing.md)
+- [Contributing](CONTRIBUTING.md)
 
 ## Team
 

@@ -1,85 +1,100 @@
-import React, { Dispatch } from 'react';
-import { View, Text, Switch, TextInput, Image } from 'react-native';
-import MapView, { Marker } from 'react-native-maps';
-import DropdownPicker from 'react-native-dropdown-picker';
-import { CameraButton, DateTimeInput, Button, ImageButton, FormCamera } from '@/components';
-import { buttonStyles, containerStyles, textStyles } from '@/styles';
-import { CatalogImageHandler } from '@/image_handlers/CatalogImageHandler';
+import React from 'react';
+
+import { FormSection } from '@/components/design';
+import { DateField, FormTextInput, LocationField, PhotoField } from '@/components/forms';
+import { Coordinates } from '@/core/domain';
+
+export interface StationFormData {
+  readonly name: string;
+  readonly location: Coordinates;
+  readonly lastStocked: Date;
+  readonly stockingFreq: number;
+  readonly knownCats: string;
+}
 
 interface StationFormProps {
-  formData: any;
-  setFormData: React.Dispatch<React.SetStateAction<any>>;
+  formData: StationFormData;
+  setFormData: React.Dispatch<React.SetStateAction<StationFormData>>;
   photos: string[];
   profile?: string;
   setPhotos: React.Dispatch<React.SetStateAction<string[]>>;
-  setPicsChanged?: Dispatch<React.SetStateAction<boolean>>;
-  imageHandler?: CatalogImageHandler;
   isCreate: boolean;
+  onPromotePhoto?: (uri: string) => void;
+  onDeletePhoto?: (uri: string) => void;
 }
 
 const StationForm: React.FC<StationFormProps> = ({
-  formData, setFormData, photos, profile, setPhotos, setPicsChanged, imageHandler, isCreate
+  formData,
+  setFormData,
+  photos,
+  profile,
+  setPhotos,
+  onPromotePhoto,
+  onDeletePhoto,
 }) => {
-    const handleChange = (field: string, val: any) => {
-        setFormData((prev: any) => ({ ...prev, [field]: val }));
-    };
+  const handleChange = <Key extends keyof StationFormData>(field: Key, value: StationFormData[Key]) =>
+    setFormData((current) => ({ ...current, [field]: value }));
+  const displayedPhotos = profile ? [profile, ...photos] : photos;
+  const promote = onPromotePhoto ?? ((uri: string) =>
+    setPhotos((current) => [uri, ...current.filter((photo) => photo !== uri)]));
+  const remove = onDeletePhoto ?? ((uri: string) =>
+    setPhotos((current) => current.filter((photo) => photo !== uri)));
 
-    return (
-        <View style={containerStyles.card}>
-            {!isCreate ?
-             <>{profile ?  (<Image source={{ uri: profile }} style={containerStyles.imageMain} />):
-             <View style={containerStyles.imageMain}><Text style={textStyles.listTitle}>Loading...</Text></View>}</>
-             : null}
-            <Text style={textStyles.label}>Station Location</Text>
-            <MapView
-                style={containerStyles.mapContainer}
-                initialRegion={{
-                latitude: 33.7756, // Default location (e.g., Georgia Tech)
-                longitude: -84.3963,
-                latitudeDelta: 0.01,
-                longitudeDelta: 0.01,
-                }}
-                onPress={(e) => handleChange('location', e.nativeEvent.coordinate)}
-            >
-                {formData.location ? <Marker coordinate={formData.location} /> : null}
-            </MapView>
-            <Text style={textStyles.label}>Station Name</Text>
-            <View style={containerStyles.inputContainer}>
-                <TextInput 
-                    value={formData.name || ''}
-                    placeholder="What should this station be called?"
-                    placeholderTextColor="#888"
-                    onChangeText={(text) => handleChange('name', text)} 
-                    style={textStyles.input} />
-            </View>
-            <Text style={textStyles.label}>Last Time Stocked</Text>
-            <DateTimeInput date={formData.lastStocked} setDate={(text) => handleChange('lastStocked', text)}/>
-            <Text style={textStyles.label}>How Often Does This Station Need to be restocked? (in days)</Text>
-            <View style={containerStyles.inputContainer}>
-                <TextInput
-                    value={formData.stockingFreq === 0 ? '' : String(formData.stockingFreq)}
-                    placeholder={"7"}
-                    placeholderTextColor="#888"
-                    onChangeText={(text) => handleChange('stockingFreq', Number(text))}
-                    style={textStyles.input}/>
-            </View>
-            <Text style={textStyles.label}>Cats Known to Frequent This Station (optional)</Text>
-            <View style={containerStyles.descInputContainer}>
-                <TextInput
-                    value={formData.knownCats || ''}
-                    placeholder={"Common cats seen here"}
-                    placeholderTextColor="#888"
-                    onChangeText={(text) => handleChange('knownCats', text)} 
-                    style={textStyles.input}
-                    multiline={true} />
-            </View>
-            <FormCamera
-                photos={photos}
-                setPhotos={setPhotos}
-                setPicsChanged={setPicsChanged}
-                imageHandler={imageHandler}
-                isCreate={isCreate}/>
-        </View>
-    )
-}
+  return (
+    <>
+      <FormSection title="Basics">
+        <FormTextInput
+          label="Station name"
+          required
+          value={formData.name}
+          placeholder="What should this station be called?"
+          onChangeText={(text) => handleChange('name', text)}
+        />
+      </FormSection>
+      <FormSection title="Location">
+        <LocationField
+          label="Station location"
+          value={formData.location}
+          onChange={(location) => handleChange('location', location)}
+        />
+      </FormSection>
+      <FormSection title="Status">
+        <DateField
+          label="Last stocked"
+          date={formData.lastStocked}
+          onChange={(date) => handleChange('lastStocked', date)}
+        />
+        <FormTextInput
+          label="Restocking frequency in days"
+          required
+          value={formData.stockingFreq === 0 ? '' : String(formData.stockingFreq)}
+          placeholder="7"
+          inputMode="numeric"
+          keyboardType="number-pad"
+          onChangeText={(text) => handleChange('stockingFreq', Number(text))}
+        />
+      </FormSection>
+      <FormSection title="Photos">
+        <PhotoField
+          photos={displayedPhotos}
+          coverUri={profile || photos[0]}
+          onAddPhoto={(uri) => setPhotos((current) => [...current, uri])}
+          onPromotePhoto={promote}
+          onRemovePhoto={remove}
+        />
+      </FormSection>
+      <FormSection title="Notes">
+        <FormTextInput
+          label="Known cats"
+          helper="Optional—list cats that frequent this station."
+          value={formData.knownCats}
+          placeholder="Common cats seen here"
+          multiline
+          onChangeText={(text) => handleChange('knownCats', text)}
+        />
+      </FormSection>
+    </>
+  );
+};
+
 export { StationForm };

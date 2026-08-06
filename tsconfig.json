@@ -5,7 +5,7 @@
     "checkJs": false,
     "jsx": "react-native",
     "typeRoots": ["node_modules/@types"],
-    "types": ["react"],
+    "types": ["react", "jest", "node"],
     "esModuleInterop": true,
     "strict": true,
     "paths": {
@@ -16,10 +16,10 @@
   },
   "include": [
     "node_modules/react-native/types/**/*.d.ts",
-    "src/**/*",
     "**/*.ts",
     "**/*.tsx",
     ".expo/types/**/*.ts",
     "expo-env.d.ts"
-, "components/image_handlers/CatalogImageHandler.ts"  ]
+  ],
+  "exclude": ["functions"]
 }
