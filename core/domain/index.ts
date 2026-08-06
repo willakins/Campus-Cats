@@ -1,5 +1,5 @@
 export * from './achievements';
-export * from './firestoreCodecs';
+export * from './persistenceCodecs';
 export * from './ids';
 export * from './inaturalist';
 export * from './models';

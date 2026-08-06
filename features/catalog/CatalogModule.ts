@@ -5,7 +5,7 @@ import {
   CatalogRecord,
   Cat,
   Clock,
-  FirestoreCodec,
+  PersistenceCodec,
   ImportedCatalogProfile,
   IdGenerator,
   Outcome,
@@ -49,12 +49,12 @@ interface CatalogDependencies {
   readonly clock: Clock;
   readonly contributors: ContentContributors;
   readonly codecs: {
-    readonly catalog: FirestoreCodec<CatalogEntry>;
-    readonly catalogFavorite: FirestoreCodec<CatalogFavorite>;
+    readonly catalog: PersistenceCodec<CatalogEntry>;
+    readonly catalogFavorite: PersistenceCodec<CatalogFavorite>;
   };
   readonly imports?: {
     readonly reader: InaturalistReader;
-    readonly codec: FirestoreCodec<ImportedCatalogProfile>;
+    readonly codec: PersistenceCodec<ImportedCatalogProfile>;
   };
 }
 

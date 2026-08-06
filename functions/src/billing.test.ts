@@ -69,6 +69,26 @@ describe('GoogleCloudBillingReader', () => {
     }
   });
 
+  it('treats an empty billing export wildcard as setup still in progress', async () => {
+    const reader = new GoogleCloudBillingReader(config, {
+      async query() {
+        throw Object.assign(
+          new Error(
+            'campuscats-d7a5e:billing_export.gcp_billing_export_v1_* does not match any table.',
+          ),
+          { code: 400 },
+        );
+      },
+    });
+
+    const result = await reader.getSummary();
+
+    assert.equal(result.status, 'setup-required');
+    if (result.status === 'setup-required') {
+      assert.equal(result.reason, 'export-not-configured');
+    }
+  });
+
   it('distinguishes service-account access from a missing export', async () => {
     const reader = new GoogleCloudBillingReader(config, {
       async query() {

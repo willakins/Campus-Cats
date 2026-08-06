@@ -1,6 +1,6 @@
 import {
   CatalogOverride,
-  FirestoreCodec,
+  PersistenceCodec,
   ImportedCatalogProfile,
   ImportedObservation,
   InaturalistSyncStatus,
@@ -21,9 +21,9 @@ interface InaturalistDependencies {
   readonly reader: InaturalistReader;
   readonly effects: InaturalistEffects;
   readonly codecs: {
-    readonly observation: FirestoreCodec<ImportedObservation>;
-    readonly catalog: FirestoreCodec<ImportedCatalogProfile>;
-    readonly status: FirestoreCodec<InaturalistSyncStatus>;
+    readonly observation: PersistenceCodec<ImportedObservation>;
+    readonly catalog: PersistenceCodec<ImportedCatalogProfile>;
+    readonly status: PersistenceCodec<InaturalistSyncStatus>;
   };
 }
 

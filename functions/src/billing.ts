@@ -111,7 +111,7 @@ export class GoogleCloudBillingReader {
       };
     } catch (error) {
       const code = errorCode(error);
-      if (code === 404) {
+      if (isMissingExportError(error)) {
         return {
           ...base,
           status: 'setup-required',
@@ -218,4 +218,14 @@ function errorCode(error: unknown): number | undefined {
   }
   const code = Number((error as { readonly code?: unknown }).code);
   return Number.isFinite(code) ? code : undefined;
+}
+
+function isMissingExportError(error: unknown): boolean {
+  const code = errorCode(error);
+  if (code === 404) return true;
+  return (
+    code === 400 &&
+    error instanceof Error &&
+    /gcp_billing_export_v1_\* does not match any table/i.test(error.message)
+  );
 }

@@ -2,12 +2,12 @@ import { Functions, httpsCallable } from 'firebase/functions';
 
 import {
   AnnouncementNotification,
-  CallableEffects,
+  ApplicationEffects,
   WhitelistCredentials,
 } from '../../core/ports';
 import { AchievementId } from '../../core/domain';
 
-export class FirebaseCallableEffects implements CallableEffects {
+export class FirebaseCallableEffects implements ApplicationEffects {
   constructor(private readonly functions: Functions) {}
 
   async notifyAnnouncement(

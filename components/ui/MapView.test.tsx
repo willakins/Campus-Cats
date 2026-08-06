@@ -39,14 +39,23 @@ describe('MapView', () => {
     }
   });
 
-  it('selects the Google provider on web without relying on a native export', async () => {
+  it('translates the app map interface to the selected web adapter', async () => {
     Object.defineProperty(Platform, 'OS', {
       configurable: true,
       value: 'web',
     });
+    const onCenterChange = jest.fn();
 
     await render(
-      <MapView testID="map">
+      <MapView
+        testID="map"
+        appearance="dark"
+        initialViewport={{
+          center: { latitude: 33.776077, longitude: -84.396199 },
+          zoom: 16,
+        }}
+        onCenterChange={onCenterChange}
+      >
         <View testID="map-child" />
       </MapView>,
     );
@@ -56,6 +65,24 @@ describe('MapView', () => {
       'googleMapsApiKey',
       'test-web-maps-key',
     );
+    expect(screen.getByTestId('map')).toHaveProp('userInterfaceStyle', 'dark');
+    expect(screen.getByTestId('map')).toHaveProp('initialCamera', {
+      center: { latitude: 33.776077, longitude: -84.396199 },
+      heading: 0,
+      pitch: 0,
+      altitude: 1000,
+      zoom: 16,
+    });
+    await screen.getByTestId('map').props.onRegionChangeComplete({
+      latitude: 33.772,
+      longitude: -84.394,
+      latitudeDelta: 0.01,
+      longitudeDelta: 0.01,
+    });
+    expect(onCenterChange).toHaveBeenCalledWith({
+      latitude: 33.772,
+      longitude: -84.394,
+    });
     expect(screen.getByTestId('map-child')).toBeOnTheScreen();
   });
 });

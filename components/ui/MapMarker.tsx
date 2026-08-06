@@ -2,19 +2,20 @@ import React from 'react';
 import { View } from 'react-native';
 
 import { Ionicons } from '@expo/vector-icons';
-import { MapMarkerProps, Marker } from 'react-native-maps';
-
+import { appMapAdapter } from '../../composition/mapAdapter';
 import { useAppTheme } from '../../theme';
+import { AppMapMarkerProps } from '../maps/MapAdapter';
 
-type AppMapMarkerProps = Omit<MapMarkerProps, 'children'> & {
+type MapMarkerProps = AppMapMarkerProps & {
   readonly backgroundColor?: string;
 };
 
-export const MapMarker = ({ backgroundColor, ...props }: AppMapMarkerProps) => {
+export const MapMarker = ({ backgroundColor, ...props }: MapMarkerProps) => {
   const theme = useAppTheme();
+  const AdapterMarker = appMapAdapter.Marker;
 
   return (
-    <Marker {...props}>
+    <AdapterMarker {...props}>
       <View
         testID="map-marker-visual"
         style={{
@@ -30,6 +31,6 @@ export const MapMarker = ({ backgroundColor, ...props }: AppMapMarkerProps) => {
       >
         <Ionicons name="paw" size={19} color={theme.colors.onPrimary} />
       </View>
-    </Marker>
+    </AdapterMarker>
   );
 };

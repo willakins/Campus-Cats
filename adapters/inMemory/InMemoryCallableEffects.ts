@@ -1,6 +1,6 @@
 import {
   AnnouncementNotification,
-  CallableEffects,
+  ApplicationEffects,
   WhitelistCredentials,
 } from '../../core/ports';
 import { AchievementId } from '../../core/domain';
@@ -20,7 +20,7 @@ type Operation =
   | 'selectProfileTitle'
   | 'migrateContributorPrivacy';
 
-export class InMemoryCallableEffects implements CallableEffects {
+export class InMemoryCallableEffects implements ApplicationEffects {
   readonly operations: string[] = [];
   readonly notifications: AnnouncementNotification[] = [];
   readonly #userIds: string[];

@@ -1,7 +1,7 @@
 import {
   COLLECTIONS,
   Contact,
-  FirestoreCodec,
+  PersistenceCodec,
   IdGenerator,
   Outcome,
   User,
@@ -20,7 +20,7 @@ export interface ContactDraft {
 interface ContactsDependencies {
   readonly documents: DocumentStore;
   readonly ids: IdGenerator;
-  readonly codecs: { readonly contact: FirestoreCodec<Contact> };
+  readonly codecs: { readonly contact: PersistenceCodec<Contact> };
 }
 
 export class ContactsModule {

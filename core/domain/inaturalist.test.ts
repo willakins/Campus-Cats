@@ -1,5 +1,5 @@
 import { mediaAssetId } from '../ports';
-import { createFirestoreCodecs } from './firestoreCodecs';
+import { createPersistenceCodecs } from './persistenceCodecs';
 import {
   externalMediaAssetSchema,
   importedCatalogProfileSchema,
@@ -194,9 +194,20 @@ describe('iNaturalist domain contracts', () => {
     ).toThrow();
   });
 
-  it('round-trips imported Firestore timestamps without changing field names', () => {
-    const codecs = createFirestoreCodecs({
-      fromDate: (date: Date) => ({ iso: date.toISOString() }),
+  it('round-trips imported persisted dates without changing field names', () => {
+    const codecs = createPersistenceCodecs({
+      encode: (date: Date) => ({ iso: date.toISOString() }),
+      decode: (value) => {
+        if (
+          typeof value !== 'object' ||
+          value === null ||
+          !('toDate' in value) ||
+          typeof value.toDate !== 'function'
+        ) {
+          throw new Error('Expected a test timestamp');
+        }
+        return value.toDate();
+      },
     });
     const firestoreTimestamp = { toDate: () => timestamp };
     const decoded = codecs.inaturalistObservation.decode('321', {
@@ -246,7 +257,20 @@ describe('iNaturalist domain contracts', () => {
   });
 
   it('decodes the first running lease before source summaries exist', () => {
-    const codecs = createFirestoreCodecs({ fromDate: (date: Date) => date });
+    const codecs = createPersistenceCodecs({
+      encode: (date: Date) => date,
+      decode: (value) => {
+        if (
+          typeof value !== 'object' ||
+          value === null ||
+          !('toDate' in value) ||
+          typeof value.toDate !== 'function'
+        ) {
+          throw new Error('Expected a test timestamp');
+        }
+        return value.toDate();
+      },
+    });
     const status = codecs.inaturalistStatus.decode('inaturalist', {
       running: true,
       runId: 'run-1',
