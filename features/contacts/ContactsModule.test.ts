@@ -15,7 +15,7 @@ const member = parseUser({
 const admin = parseUser({
   id: 'admin-1',
   email: 'admin@gatech.edu',
-  role: Role.Admin,
+  role: Role.Officer,
 });
 
 function buildModule() {
@@ -86,6 +86,35 @@ describe('ContactsModule', () => {
       ok: false,
       error: { code: 'dependency_failure' },
     });
+  });
+
+  it('loads valid contacts alongside legacy blank documents', async () => {
+    const { module, documents } = buildModule();
+    const warning = jest.spyOn(console, 'warn').mockImplementation();
+    await module.create(admin, {
+      name: 'Campus Cats President',
+      email: 'cats@gatech.edu',
+    });
+    await documents.put('contact-info', 'legacy-blank', {
+      name: '',
+      email: '',
+    });
+
+    await expect(module.list(member)).resolves.toMatchObject({
+      ok: true,
+      value: [
+        {
+          id: 'contact-1',
+          name: 'Campus Cats President',
+          email: 'cats@gatech.edu',
+        },
+      ],
+    });
+    expect(warning).toHaveBeenCalledWith(
+      '[contacts] Ignoring invalid contact document: legacy-blank',
+      expect.any(String),
+    );
+    warning.mockRestore();
   });
 
   it('covers update and delete authorization and validation', async () => {

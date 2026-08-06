@@ -8,7 +8,7 @@ import { AppThemeProvider } from '../../theme';
 
 const mockList = jest.fn();
 const mockPush = jest.fn();
-let mockRole: Role = Role.Admin;
+let mockRole: Role = Role.Officer;
 
 jest.mock('expo-router', () => {
   const mockReact = require('react');
@@ -42,8 +42,8 @@ jest.mock('../../components/items/AnnouncementItem', () => {
 
 jest.mock('@expo/vector-icons', () => ({ Ionicons: () => null }));
 
-const renderAnnouncements = () =>
-  render(
+const renderAnnouncements = async () =>
+  await render(
     <AppThemeProvider colorScheme="light">
       <Announcements />
     </AppThemeProvider>,
@@ -57,7 +57,7 @@ const announcement = parseAnnouncement({
   createdBy: parseUser({
     id: 'admin-1',
     email: 'admin@gatech.edu',
-    role: Role.Admin,
+    role: Role.Officer,
   }),
   authorAlias: 'Campus Cats',
 });
@@ -66,38 +66,42 @@ describe('announcements list route', () => {
   beforeEach(() => {
     mockList.mockReset();
     mockPush.mockReset();
-    mockRole = Role.Admin;
+    mockRole = Role.Officer;
   });
 
   it('renders an empty result and limits creation to administrators', async () => {
     mockList.mockResolvedValue({ ok: true, value: [], warnings: [] });
-    const { rerender } = renderAnnouncements();
+    const { rerender } = await renderAnnouncements();
 
     await waitFor(() => expect(mockList).toHaveBeenCalled());
     expect(screen.getByText('Announcements')).toBeOnTheScreen();
+    expect(screen.getByText('Announcement access')).toBeOnTheScreen();
     expect(screen.getByText('No announcements yet')).toBeOnTheScreen();
     expect(screen.getByRole('button', { name: 'Create announcement' })).toBeOnTheScreen();
 
     mockRole = Role.Member;
-    rerender(
+    await rerender(
       <AppThemeProvider colorScheme="light">
         <Announcements />
       </AppThemeProvider>,
     );
     expect(screen.queryByRole('button', { name: 'Create announcement' })).not.toBeOnTheScreen();
+    expect(
+      screen.getByText('Everyone can read club updates. Only officers can publish or edit announcements.'),
+    ).toBeOnTheScreen();
   });
 
   it('renders successful results and module errors', async () => {
     mockList.mockResolvedValue({ ok: true, value: [announcement], warnings: [] });
-    const { unmount } = renderAnnouncements();
+    const { unmount } = await renderAnnouncements();
     expect(await screen.findByText('Volunteer workday')).toBeOnTheScreen();
-    unmount();
+    await unmount();
 
     mockList.mockResolvedValue({
       ok: false,
       error: { code: 'dependency_failure', message: 'Could not load announcements' },
     });
-    renderAnnouncements();
+    await renderAnnouncements();
     expect(await screen.findByText('Could not load announcements')).toBeOnTheScreen();
   });
 
@@ -105,8 +109,9 @@ describe('announcements list route', () => {
     let finish: ((value: unknown) => void) | undefined;
     mockList.mockImplementation(() => new Promise((resolve) => { finish = resolve; }));
     const user = userEvent.setup();
-    renderAnnouncements();
+    await renderAnnouncements();
 
+    expect(screen.getByText('Announcements')).toBeOnTheScreen();
     expect(screen.getByRole('progressbar', { name: 'Loading announcements' })).toBeOnTheScreen();
     await user.press(screen.getByRole('button', { name: 'Create announcement' }));
     expect(mockPush).toHaveBeenCalledWith('/announcements/create-ann');

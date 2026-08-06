@@ -176,7 +176,7 @@ function adminDenied(actor: User | undefined): Outcome<never> | undefined {
   if (!canManageFeature(actor.role)) {
     return failure(
       'forbidden',
-      'Only administrators may manage iNaturalist data',
+      'Only officers may manage iNaturalist data',
     );
   }
   return undefined;

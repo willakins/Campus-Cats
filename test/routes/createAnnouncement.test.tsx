@@ -37,8 +37,8 @@ jest.mock('../../forms/AnnouncementForm', () => {
   };
 });
 
-const renderRoute = () =>
-  render(
+const renderRoute = async () =>
+  await render(
     <AppThemeProvider colorScheme="light">
       <CreateAnnouncement />
     </AppThemeProvider>,
@@ -56,11 +56,11 @@ describe('create announcement route', () => {
         resolveCreate = resolve;
       }),
     );
-    renderRoute();
+    await renderRoute();
 
     const save = screen.getByRole('button', { name: 'Create Announcement' });
-    fireEvent.press(save);
-    fireEvent.press(save);
+    await fireEvent.press(save);
+    await fireEvent.press(save);
 
     expect(mockCreate).toHaveBeenCalledTimes(1);
     expect(screen.getByText('Creating announcement…')).toBeOnTheScreen();
@@ -76,9 +76,9 @@ describe('create announcement route', () => {
       ok: false,
       error: { code: 'dependency_failure', message: 'The announcement could not be saved' },
     });
-    renderRoute();
+    await renderRoute();
 
-    fireEvent.press(screen.getByRole('button', { name: 'Create Announcement' }));
+    await fireEvent.press(screen.getByRole('button', { name: 'Create Announcement' }));
 
     expect(
       await screen.findByRole('alert', { name: 'The announcement could not be saved' }),
@@ -88,9 +88,9 @@ describe('create announcement route', () => {
 
   it('navigates after a successful save', async () => {
     mockCreate.mockResolvedValue({ ok: true, value: undefined, warnings: [] });
-    renderRoute();
+    await renderRoute();
 
-    fireEvent.press(screen.getByRole('button', { name: 'Create Announcement' }));
+    await fireEvent.press(screen.getByRole('button', { name: 'Create Announcement' }));
 
     await waitFor(() => expect(mockReplace).toHaveBeenCalledWith('/announcements'));
   });

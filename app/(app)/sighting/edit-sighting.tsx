@@ -3,9 +3,8 @@ import { Alert } from 'react-native';
 
 import { useLocalSearchParams, useRouter } from 'expo-router';
 
-import { AppHeader, ErrorState, Screen } from '@/components/design';
+import { AppHeader, ErrorState, FormSkeleton, Screen } from '@/components/design';
 import { FormScreen } from '@/components/forms';
-import { LoadingIndicator } from '@/components/ui/LoadingIndicator';
 import { appModules } from '@/composition/appModules';
 import { parseUser, Sighting } from '@/core/domain';
 import { localMedia, storedMedia } from '@/core/media';
@@ -48,7 +47,7 @@ const SightingEditScreen = () => {
       return;
     }
     void Promise.all([
-      appModules.sightings.get(id),
+      appModules.sightings.get(parseUser(user), id),
       appModules.sightings.media(id),
     ]).then(([sightingResult, mediaResult]) => {
       if (!sightingResult.ok) {
@@ -79,7 +78,7 @@ const SightingEditScreen = () => {
         setPhotos(stored.filter(({ role }) => role === 'gallery').map(({ url }) => url));
       } else setError(mediaResult.error.message);
     });
-  }, [id]);
+  }, [id, user.id, user.role]);
 
   const selectionFor = (uri: string) => {
     const stored = storedAssets.find((asset) => asset.url === uri);
@@ -136,7 +135,18 @@ const SightingEditScreen = () => {
     ]);
   };
 
-  if (!sighting && !loadError) return <LoadingIndicator label="Loading sighting form" />;
+  if (!sighting && !loadError) {
+    return (
+      <Screen scroll>
+        <AppHeader
+          title="Edit sighting"
+          eyebrow="Field report"
+          onBack={() => router.back()}
+        />
+        <FormSkeleton label="Loading sighting form" fields={5} />
+      </Screen>
+    );
+  }
   if (!sighting) {
     return (
       <Screen>

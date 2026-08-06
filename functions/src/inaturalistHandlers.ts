@@ -114,7 +114,7 @@ async function requireAdmin(
   if (!actor || actor.role < 1) {
     throw new HandlerError(
       'permission-denied',
-      'Administrator access required',
+      'Officer access required',
     );
   }
   return actor;

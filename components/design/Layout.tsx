@@ -24,6 +24,7 @@ interface ScreenProps {
   readonly keyboardAware?: boolean;
   readonly fullBleed?: boolean;
   readonly footer?: React.ReactNode;
+  readonly floatingAction?: React.ReactNode;
   readonly contentStyle?: StyleProp<ViewStyle>;
   readonly testID?: string;
 }
@@ -34,6 +35,7 @@ export const Screen = ({
   keyboardAware = false,
   fullBleed = false,
   footer,
+  floatingAction,
   contentStyle,
   testID,
 }: ScreenProps) => {
@@ -50,7 +52,7 @@ export const Screen = ({
     const animation = Animated.timing(opacity, {
       toValue: 1,
       duration: theme.motion.content,
-      useNativeDriver: true,
+      useNativeDriver: Platform.OS !== 'web',
     });
     animation.start();
     return () => animation.stop();
@@ -91,6 +93,33 @@ export const Screen = ({
           style={{ flex: 1 }}
         >
           {body}
+          {floatingAction ? (
+            <View
+              style={{
+                pointerEvents: 'box-none',
+                position: 'absolute',
+                right: 0,
+                bottom: theme.spacing.lg,
+                left: 0,
+                zIndex: 10,
+                alignItems: 'center',
+              }}
+            >
+              <View
+                style={{
+                  pointerEvents: 'box-none',
+                  width: '100%',
+                  maxWidth: theme.layout.maxContentWidth,
+                  paddingHorizontal: fullBleed
+                    ? theme.spacing.lg
+                    : theme.layout.screenGutter,
+                  alignItems: 'flex-end',
+                }}
+              >
+                {floatingAction}
+              </View>
+            </View>
+          ) : null}
           {footer ? (
             <View
               style={{

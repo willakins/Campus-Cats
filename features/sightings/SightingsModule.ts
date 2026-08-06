@@ -4,6 +4,7 @@ import {
   FirestoreCodec,
   ImportedObservation,
   IdGenerator,
+  LocalSightingRecord,
   Outcome,
   Sighting,
   SightingRecord,
@@ -26,6 +27,7 @@ import {
   InaturalistReader,
   MediaStore,
 } from '../../core/ports';
+import { ContentContributors } from '../appSettings';
 
 export interface SightingDraft {
   readonly name: string;
@@ -49,6 +51,7 @@ interface SightingsDependencies {
   readonly media: MediaStore;
   readonly mediaCoordinator: MediaCoordinator;
   readonly ids: IdGenerator;
+  readonly contributors: ContentContributors;
   readonly codecs: { readonly sighting: FirestoreCodec<Sighting> };
   readonly imports?: {
     readonly reader: InaturalistReader;
@@ -59,17 +62,27 @@ interface SightingsDependencies {
 export class SightingsModule {
   constructor(private readonly dependencies: SightingsDependencies) {}
 
-  async list(): Promise<Outcome<readonly SightingRecord[]>> {
+  async list(actor?: User): Promise<Outcome<readonly SightingRecord[]>> {
     let local: readonly SightingRecord[];
     try {
-      const documents = await this.dependencies.documents.list(
-        COLLECTIONS.sightings,
-      );
-      local = documents.map(({ id, data }) =>
-        localSightingRecord(
-          this.dependencies.codecs.sighting.decode(id, data),
-        ),
-      );
+      const canViewContributors = await this.dependencies.contributors.canView(actor);
+      const [documents, contributors] = await Promise.all([
+        this.dependencies.documents.list(COLLECTIONS.sightings),
+        canViewContributors
+          ? this.dependencies.contributors.visibleByContentId(actor, 'sighting')
+          : Promise.resolve(new Map<string, User>()),
+      ]);
+      local = documents.map(({ id, data }) => {
+        const decoded = this.dependencies.codecs.sighting.decode(id, data);
+        return localSightingRecord(
+          withSightingContributor(
+            decoded,
+            canViewContributors
+              ? contributors.get(id) ?? decoded.createdBy
+              : undefined,
+          ),
+        );
+      });
     } catch {
       return failure('dependency_failure', 'Could not load sightings');
     }
@@ -79,14 +92,34 @@ export class SightingsModule {
       const imported = await this.dependencies.imports.reader.listObservations(
         false,
       );
-      return success([
-        ...local,
-        ...imported.map(({ id, data }) =>
-          importedSightingRecord(
-            this.dependencies.imports!.codec.decode(id, data),
-          ),
-        ),
-      ]);
+      const importedRecords: SightingRecord[] = [];
+      let invalidImportedCount = 0;
+
+      for (const { id, data } of imported) {
+        try {
+          importedRecords.push(
+            importedSightingRecord(
+              this.dependencies.imports.codec.decode(id, data),
+            ),
+          );
+        } catch {
+          invalidImportedCount += 1;
+        }
+      }
+
+      const warnings =
+        invalidImportedCount > 0
+          ? [
+              {
+                code: 'partial_completion' as const,
+                message: `${invalidImportedCount} invalid iNaturalist ${
+                  invalidImportedCount === 1 ? 'sighting was' : 'sightings were'
+                } skipped`,
+              },
+            ]
+          : [];
+
+      return success([...local, ...importedRecords], warnings);
     } catch {
       return success(local, [
         {
@@ -98,7 +131,62 @@ export class SightingsModule {
     }
   }
 
-  async get(id: string): Promise<Outcome<SightingRecord>> {
+  async listByReporter(
+    actorOrUserId: User | string | undefined,
+    requestedUserId?: string,
+  ): Promise<Outcome<readonly LocalSightingRecord[]>> {
+    const actor = typeof actorOrUserId === 'string' ? undefined : actorOrUserId;
+    const userId = typeof actorOrUserId === 'string' ? actorOrUserId : requestedUserId;
+    if (!userId) return failure('validation', 'Missing member profile ID');
+    try {
+      const mayView = actor?.id === userId || await this.dependencies.contributors.canView(actor);
+      if (!mayView) return success([]);
+      const [ids, legacyDocuments] = await Promise.all([
+        this.dependencies.contributors.contentIdsForUser(
+          actor,
+          'sighting',
+          userId,
+        ),
+        this.dependencies.documents.listWhereEqual(
+          COLLECTIONS.sightings,
+          'createdBy.id',
+          userId,
+        ),
+      ]);
+      const migratedDocuments = await Promise.all(
+        ids.map((id) => this.dependencies.documents.get(COLLECTIONS.sightings, id)),
+      );
+      const byId = new Map(
+        [...legacyDocuments, ...migratedDocuments.filter((document) => document !== undefined)]
+          .map((document) => [document.id, document]),
+      );
+      return success(
+        [...byId.values()]
+          .map(({ id, data }) =>
+            localSightingRecord(
+              withSightingContributor(
+                this.dependencies.codecs.sighting.decode(id, data),
+                actor?.id === userId ? actor : undefined,
+              ),
+            ),
+          )
+          .sort((left, right) => right.date.getTime() - left.date.getTime()),
+      );
+    } catch {
+      return failure(
+        'dependency_failure',
+        'Could not load the member sightings',
+      );
+    }
+  }
+
+  async get(
+    actorOrId: User | string | undefined,
+    requestedId?: string,
+  ): Promise<Outcome<SightingRecord>> {
+    const actor = typeof actorOrId === 'string' ? undefined : actorOrId;
+    const id = typeof actorOrId === 'string' ? actorOrId : requestedId;
+    if (!id) return failure('validation', 'Missing sighting ID');
     const importedId = importedObservationId(id);
     if (importedId !== undefined) {
       if (!this.dependencies.imports) {
@@ -126,16 +214,26 @@ export class SightingsModule {
         COLLECTIONS.sightings,
         id,
       );
-      return document
-        ? success(
-            localSightingRecord(
-              this.dependencies.codecs.sighting.decode(
-                document.id,
-                document.data,
-              ),
-            ),
-          )
-        : failure('not_found', 'Sighting not found');
+      if (!document) return failure('not_found', 'Sighting not found');
+      const decoded = this.dependencies.codecs.sighting.decode(
+        document.id,
+        document.data,
+      );
+      const canViewContributors = await this.dependencies.contributors.canView(actor);
+      const contributor = await this.dependencies.contributors.visibleForContent(
+        actor,
+        'sighting',
+        id,
+      );
+      const legacyContributor =
+        canViewContributors || decoded.createdBy?.id === actor?.id
+          ? decoded.createdBy
+          : undefined;
+      return success(
+        localSightingRecord(
+          withSightingContributor(decoded, contributor ?? legacyContributor),
+        ),
+      );
     } catch {
       return failure('dependency_failure', 'Could not load the sighting');
     }
@@ -189,11 +287,15 @@ export class SightingsModule {
       profile: localMedia(draft.photos[0]),
       gallery: draft.photos.slice(1).map(localMedia),
       persist: async () =>
-        this.dependencies.documents.put(
-          COLLECTIONS.sightings,
-          id,
-          this.dependencies.codecs.sighting.encode(sighting),
-        ),
+        this.dependencies.documents.commit([
+          {
+            operation: 'put',
+            collection: COLLECTIONS.sightings,
+            id,
+            data: this.dependencies.codecs.sighting.encode(sighting),
+          },
+          this.dependencies.contributors.write('sighting', id, actor),
+        ]),
     });
     return mediaResult.ok
       ? success(sighting, mediaResult.warnings)
@@ -214,7 +316,7 @@ export class SightingsModule {
         'iNaturalist sightings are read-only in Campus Cats',
       );
     }
-    const existingResult = await this.get(id);
+    const existingResult = await this.get(actor, id);
     if (!existingResult.ok) {
       return existingResult;
     }
@@ -224,7 +326,7 @@ export class SightingsModule {
         'iNaturalist sightings are read-only in Campus Cats',
       );
     }
-    if (!canModifySighting(actor.id, existingResult.value.createdBy.id)) {
+    if (!existingResult.value.createdBy || !canModifySighting(actor.id, existingResult.value.createdBy.id)) {
       return failure('forbidden', 'Only the creator may update this sighting');
     }
     const validation = validateDraft(update, 1);
@@ -267,7 +369,7 @@ export class SightingsModule {
         'iNaturalist sightings cannot be deleted from Campus Cats',
       );
     }
-    const existingResult = await this.get(id);
+    const existingResult = await this.get(actor, id);
     if (!existingResult.ok) {
       return existingResult;
     }
@@ -277,7 +379,7 @@ export class SightingsModule {
         'iNaturalist sightings cannot be deleted from Campus Cats',
       );
     }
-    if (!canModifySighting(actor.id, existingResult.value.createdBy.id)) {
+    if (!existingResult.value.createdBy || !canModifySighting(actor.id, existingResult.value.createdBy.id)) {
       return failure('forbidden', 'Only the creator may delete this sighting');
     }
 
@@ -303,7 +405,10 @@ export class SightingsModule {
     }
 
     try {
-      await this.dependencies.documents.remove(COLLECTIONS.sightings, id);
+      await this.dependencies.documents.commit([
+        { operation: 'remove', collection: COLLECTIONS.sightings, id },
+        this.dependencies.contributors.remove('sighting', id),
+      ]);
       return success(undefined);
     } catch {
       return failure(
@@ -312,6 +417,14 @@ export class SightingsModule {
       );
     }
   }
+}
+
+function withSightingContributor(
+  sighting: Sighting,
+  createdBy: User | undefined,
+): Sighting {
+  const { createdBy: _legacyContributor, ...value } = sighting;
+  return parseSighting({ ...value, createdBy });
 }
 
 function importedObservationId(id: string): number | undefined {

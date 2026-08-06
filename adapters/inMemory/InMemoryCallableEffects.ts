@@ -3,6 +3,7 @@ import {
   CallableEffects,
   WhitelistCredentials,
 } from '../../core/ports';
+import { AchievementId } from '../../core/domain';
 
 type Operation =
   | 'notifyAnnouncement'
@@ -10,7 +11,14 @@ type Operation =
   | 'emailWhitelistCredentials'
   | 'removeProvisionedUser'
   | 'updateUserRole'
-  | 'removeUser';
+  | 'addDisciplinaryNotice'
+  | 'setUserBanned'
+  | 'transferPresidency'
+  | 'removeUser'
+  | 'syncPublicProfile'
+  | 'updatePublicProfile'
+  | 'selectProfileTitle'
+  | 'migrateContributorPrivacy';
 
 export class InMemoryCallableEffects implements CallableEffects {
   readonly operations: string[] = [];
@@ -61,9 +69,50 @@ export class InMemoryCallableEffects implements CallableEffects {
     this.operations.push(`update-role:${userId}:${role}`);
   }
 
+  async addDisciplinaryNotice(userId: string, message: string): Promise<void> {
+    this.maybeFail('addDisciplinaryNotice');
+    this.operations.push(`discipline:${userId}:${message}`);
+  }
+
+  async setUserBanned(userId: string, banned: boolean): Promise<void> {
+    this.maybeFail('setUserBanned');
+    this.operations.push(`${banned ? 'ban' : 'unban'}:${userId}`);
+  }
+
+  async transferPresidency(userId: string): Promise<void> {
+    this.maybeFail('transferPresidency');
+    this.operations.push(`transfer-presidency:${userId}`);
+  }
+
   async removeUser(userId: string): Promise<void> {
     this.maybeFail('removeUser');
     this.operations.push(`remove-user:${userId}`);
+  }
+
+  async syncPublicProfile(userId?: string): Promise<void> {
+    this.maybeFail('syncPublicProfile');
+    this.operations.push(`sync-public-profile:${userId ?? 'self'}`);
+  }
+
+  async updatePublicProfile(profile: {
+    readonly displayName: string;
+    readonly bio: string;
+    readonly profilePhotoUrl: string;
+  }): Promise<void> {
+    this.maybeFail('updatePublicProfile');
+    this.operations.push(
+      `update-public-profile:${profile.displayName}:${profile.bio}:${profile.profilePhotoUrl}`,
+    );
+  }
+
+  async selectProfileTitle(achievementId: AchievementId | ''): Promise<void> {
+    this.maybeFail('selectProfileTitle');
+    this.operations.push(`select-profile-title:${achievementId}`);
+  }
+
+  async migrateContributorPrivacy(): Promise<void> {
+    this.maybeFail('migrateContributorPrivacy');
+    this.operations.push('migrate-contributor-privacy');
   }
 
   private maybeFail(operation: Operation): void {

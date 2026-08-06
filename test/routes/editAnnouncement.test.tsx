@@ -47,8 +47,8 @@ jest.mock('../../forms/AnnouncementForm', () => {
   };
 });
 
-const renderRoute = () =>
-  render(
+const renderRoute = async () =>
+  await render(
     <AppThemeProvider colorScheme="light">
       <EditAnnouncement />
     </AppThemeProvider>,
@@ -62,7 +62,7 @@ const announcement = parseAnnouncement({
   createdBy: parseUser({
     id: 'admin-1',
     email: 'admin@gatech.edu',
-    role: Role.Admin,
+    role: Role.Officer,
   }),
   authorAlias: 'Campus Cats',
 });
@@ -83,12 +83,22 @@ describe('edit announcement route', () => {
   });
 
   it('shows loading state and navigates by ID after a successful save', async () => {
+    let finishGet: ((value: unknown) => void) | undefined;
+    mockGet.mockImplementation(
+      () => new Promise((resolve) => {
+        finishGet = resolve;
+      }),
+    );
     const user = userEvent.setup();
-    renderRoute();
+    await renderRoute();
 
+    expect(screen.getByText('Edit announcement')).toBeOnTheScreen();
     expect(
       screen.getByRole('progressbar', { name: 'Loading announcement form' }),
     ).toBeOnTheScreen();
+    await act(async () =>
+      finishGet?.({ ok: true, value: announcement, warnings: [] }),
+    );
     expect(await screen.findByText('Volunteer workday')).toBeOnTheScreen();
     await user.press(screen.getByRole('button', { name: 'Save Announcement' }));
 
@@ -108,7 +118,7 @@ describe('edit announcement route', () => {
   it('requires destructive confirmation before deleting', async () => {
     const alert = jest.spyOn(Alert, 'alert').mockImplementation(() => undefined);
     const user = userEvent.setup();
-    renderRoute();
+    await renderRoute();
     await screen.findByText('Volunteer workday');
     await user.press(screen.getByRole('button', { name: 'Delete Announcement' }));
 
@@ -131,10 +141,10 @@ describe('edit announcement route', () => {
       ok: false,
       error: { code: 'not_found', message: 'Announcement not found' },
     });
-    const { unmount } = renderRoute();
+    const { unmount } = await renderRoute();
     expect(await screen.findByText('Could not load announcement')).toBeOnTheScreen();
     expect(screen.getByText('Announcement not found')).toBeOnTheScreen();
-    unmount();
+    await unmount();
 
     mockGet.mockResolvedValue({ ok: true, value: announcement, warnings: [] });
     mockUpdate.mockResolvedValue({
@@ -142,7 +152,7 @@ describe('edit announcement route', () => {
       error: { code: 'dependency_failure', message: 'Could not save announcement' },
     });
     const user = userEvent.setup();
-    renderRoute();
+    await renderRoute();
     await screen.findByText('Volunteer workday');
     await user.press(screen.getByRole('button', { name: 'Save Announcement' }));
     expect(

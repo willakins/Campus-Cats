@@ -4,16 +4,20 @@ import { render, screen, userEvent } from '@testing-library/react-native';
 
 import { AppThemeProvider } from '../../theme';
 import {
+  AccessBanner,
   AccessDeniedState,
   AppText,
   AppHeader,
   Button,
   Card,
+  CardListSkeleton,
   Chip,
   EmptyState,
   ErrorState,
   FeedbackBanner,
+  FloatingActionButton,
   FormField,
+  FormSkeleton,
   FormSection,
   IconButton,
   ListRow,
@@ -21,19 +25,20 @@ import {
   Screen,
   SegmentedControl,
   Skeleton,
+  DetailSkeleton,
   StatusPill,
 } from './index';
 
 jest.mock('@expo/vector-icons', () => ({ Ionicons: () => null }));
 
-const renderThemed = (content: React.ReactElement) =>
-  render(<AppThemeProvider colorScheme="light">{content}</AppThemeProvider>);
+const renderThemed = async (content: React.ReactElement) =>
+  await render(<AppThemeProvider colorScheme="light">{content}</AppThemeProvider>);
 
 describe('Campus Cats design primitives', () => {
   it('exposes accessible button loading and disabled behavior', async () => {
     const onPress = jest.fn();
     const user = userEvent.setup();
-    const { rerender } = renderThemed(
+    const { rerender } = await renderThemed(
       <Button label="Save cat" onPress={onPress} />,
     );
 
@@ -41,7 +46,7 @@ describe('Campus Cats design primitives', () => {
     await user.press(saveButton);
     expect(onPress).toHaveBeenCalledTimes(1);
 
-    rerender(
+    await rerender(
       <AppThemeProvider colorScheme="light">
         <Button label="Save cat" loading loadingLabel="Saving…" onPress={onPress} />
       </AppThemeProvider>,
@@ -53,7 +58,7 @@ describe('Campus Cats design primitives', () => {
   it('announces segmented selection and changes it through the public control', async () => {
     const onChange = jest.fn();
     const user = userEvent.setup();
-    renderThemed(
+    await renderThemed(
       <SegmentedControl
         label="Sighting age"
         value="7"
@@ -75,7 +80,7 @@ describe('Campus Cats design primitives', () => {
   it('renders labeled status and recoverable screen states', async () => {
     const retry = jest.fn();
     const user = userEvent.setup();
-    renderThemed(
+    await renderThemed(
       <>
         <StatusPill tone="success" icon="checkmark-circle" label="Stocked" />
         <EmptyState title="No announcements yet" message="Check back soon." />
@@ -91,8 +96,8 @@ describe('Campus Cats design primitives', () => {
     expect(retry).toHaveBeenCalledTimes(1);
   });
 
-  it('gives fields persistent labels, requirements, and announced errors', () => {
-    renderThemed(
+  it('gives fields persistent labels, requirements, and announced errors', async () => {
+    await renderThemed(
       <FormField label="Cat name" required error="Enter a name">
         {({ inputId, describedBy }) => (
           <StatusPill
@@ -117,7 +122,7 @@ describe('Campus Cats design primitives', () => {
     const onPromote = jest.fn();
     const onRemove = jest.fn();
     const user = userEvent.setup();
-    renderThemed(
+    await renderThemed(
       <MediaPicker
         photos={['file://one.jpg', 'file://two.jpg']}
         coverUri="file://one.jpg"
@@ -139,7 +144,7 @@ describe('Campus Cats design primitives', () => {
   it('provides a consistent header and responsive screen surface', async () => {
     const onBack = jest.fn();
     const user = userEvent.setup();
-    renderThemed(
+    await renderThemed(
       <Screen>
         <AppHeader eyebrow="Campus Cats" title="Goldie" onBack={onBack} />
       </Screen>,
@@ -152,7 +157,7 @@ describe('Campus Cats design primitives', () => {
   it('supports each action emphasis and labeled icon-only controls', async () => {
     const onIconPress = jest.fn();
     const user = userEvent.setup();
-    renderThemed(
+    await renderThemed(
       <>
         <Button label="Secondary" variant="secondary" icon="paw" />
         <Button label="Tertiary" variant="tertiary" size="small" />
@@ -169,16 +174,22 @@ describe('Campus Cats design primitives', () => {
           variant="danger"
           disabled
         />
+        <FloatingActionButton
+          accessibilityLabel="Create cat profile"
+          onPress={onIconPress}
+        />
       </>,
     );
 
     await user.press(screen.getByRole('button', { name: 'Close gallery' }));
-    expect(onIconPress).toHaveBeenCalledTimes(1);
+    await user.press(screen.getByRole('button', { name: 'Create cat profile' }));
+    expect(screen.queryByText('Create cat profile')).not.toBeOnTheScreen();
+    expect(onIconPress).toHaveBeenCalledTimes(2);
     expect(screen.getByRole('button', { name: 'Delete disabled' })).toBeDisabled();
   });
 
-  it('supports scrolling, keyboard avoidance, full-bleed content, and a sticky footer', () => {
-    renderThemed(
+  it('supports scrolling, keyboard avoidance, full-bleed content, and a sticky footer', async () => {
+    await renderThemed(
       <Screen
         scroll
         keyboardAware
@@ -193,8 +204,8 @@ describe('Campus Cats design primitives', () => {
     expect(screen.getByRole('button', { name: 'Save changes' })).toBeOnTheScreen();
   });
 
-  it('keeps text scalable and interactive targets at least 44 points', () => {
-    renderThemed(
+  it('keeps text scalable and interactive targets at least 44 points', async () => {
+    await renderThemed(
       <>
         <AppText>Scalable field note</AppText>
         <Button label="Accessible target" />
@@ -212,7 +223,7 @@ describe('Campus Cats design primitives', () => {
     const openCard = jest.fn();
     const openRow = jest.fn();
     const user = userEvent.setup();
-    renderThemed(
+    await renderThemed(
       <>
         <Card><AppText>Field note</AppText></Card>
         <Card accessibilityLabel="Open Goldie" accent="coral" onPress={openCard}>
@@ -235,8 +246,8 @@ describe('Campus Cats design primitives', () => {
     expect(screen.getByText('Admin')).toBeOnTheScreen();
   });
 
-  it('renders form helpers, static children, and grouped sections', () => {
-    renderThemed(
+  it('renders form helpers, static children, and grouped sections', async () => {
+    await renderThemed(
       <FormSection title="Basics">
         <FormField label="Nickname" helper="The name students know.">
           <AppText>Text input placeholder</AppText>
@@ -249,18 +260,28 @@ describe('Campus Cats design primitives', () => {
     expect(screen.getByText('The name students know.')).toBeOnTheScreen();
   });
 
-  it('renders passive chips, feedback announcements, and loading geometry', () => {
-    renderThemed(
+  it('renders passive chips, feedback announcements, and loading geometry', async () => {
+    await renderThemed(
       <>
         <Chip label="Featured" selected />
+        <AccessBanner
+          title="Catalog access"
+          message="Only officers can create entries."
+        />
         <FeedbackBanner message="Saved successfully." tone="success" />
         <FeedbackBanner message="Could not save." tone="danger" />
         <Skeleton />
         <Skeleton label="Loading cat cards" />
+        <CardListSkeleton label="Loading station cards" layout="leading" />
+        <DetailSkeleton label="Loading cat profile" />
+        <FormSkeleton label="Loading cat form" />
       </>,
     );
 
     expect(screen.getByText('Featured')).toBeOnTheScreen();
+    expect(
+      screen.getByLabelText('Catalog access. Only officers can create entries.'),
+    ).not.toHaveProp('accessibilityRole', 'alert');
     expect(screen.getByRole('alert', { name: 'Saved successfully.' })).toHaveProp(
       'accessibilityLiveRegion',
       'polite',
@@ -271,10 +292,13 @@ describe('Campus Cats design primitives', () => {
     );
     expect(screen.getByRole('progressbar', { name: 'Loading content' })).toBeOnTheScreen();
     expect(screen.getByRole('progressbar', { name: 'Loading cat cards' })).toBeOnTheScreen();
+    expect(screen.getByRole('progressbar', { name: 'Loading station cards' })).toBeOnTheScreen();
+    expect(screen.getByRole('progressbar', { name: 'Loading cat profile' })).toBeOnTheScreen();
+    expect(screen.getByRole('progressbar', { name: 'Loading cat form' })).toBeOnTheScreen();
   });
 
-  it('uses the first photo as the cover when no explicit cover is supplied', () => {
-    renderThemed(
+  it('uses the first photo as the cover when no explicit cover is supplied', async () => {
+    await renderThemed(
       <MediaPicker
         photos={['file://only.jpg']}
         onAdd={jest.fn()}

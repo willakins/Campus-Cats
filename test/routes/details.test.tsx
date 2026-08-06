@@ -23,12 +23,21 @@ const mockBack = jest.fn();
 const mockCatalogGet = jest.fn();
 const mockCatalogMedia = jest.fn();
 const mockSightingsList = jest.fn();
+const mockCatalogFavoriteSummary = jest.fn();
+const mockCatalogSetFavorite = jest.fn();
 const mockStationGet = jest.fn();
 const mockStationMedia = jest.fn();
 const mockStationRestock = jest.fn();
 const mockStationStatus = jest.fn();
 let mockRouteId = 'catalog-1';
-let mockRole: Role = Role.Admin;
+let mockRole: Role = Role.Officer;
+const mockAuthUser = {
+  id: 'admin-1',
+  email: 'admin@gatech.edu',
+  get role() {
+    return mockRole;
+  },
+};
 
 jest.mock('expo-router', () => {
   const mockReact = require('react');
@@ -45,6 +54,8 @@ jest.mock('../../composition/appModules', () => ({
     catalog: {
       get: (...args: unknown[]) => mockCatalogGet(...args),
       media: (...args: unknown[]) => mockCatalogMedia(...args),
+      favoriteSummary: (...args: unknown[]) => mockCatalogFavoriteSummary(...args),
+      setFavorite: (...args: unknown[]) => mockCatalogSetFavorite(...args),
     },
     sightings: { list: (...args: unknown[]) => mockSightingsList(...args) },
     stations: {
@@ -57,17 +68,38 @@ jest.mock('../../composition/appModules', () => ({
 }));
 
 jest.mock('../../providers', () => ({
-  useAuth: () => ({
-    user: { id: 'admin-1', email: 'admin@gatech.edu', role: mockRole },
-  }),
+  useAuth: () => ({ currentUser: mockAuthUser, user: mockAuthUser }),
 }));
 
 jest.mock('../../components/entries/CatalogEntryElement', () => {
   const mockReact = require('react');
-  const { Text: MockText } = require('react-native');
+  const { Pressable: MockPressable, Text: MockText, View: MockView } = require('react-native');
   return {
-    CatalogEntryElement: ({ entry }: { entry: { cat: { name: string } } }) =>
+    CatalogEntryElement: ({
+      entry,
+      heartCount,
+      onToggleFavorite,
+    }: {
+      entry: { cat: { name: string } };
+      heartCount: number;
+      onToggleFavorite?: () => void;
+    }) => mockReact.createElement(
+      MockView,
+      null,
       mockReact.createElement(MockText, null, entry.cat.name),
+      mockReact.createElement(MockText, null, `${heartCount} route hearts`),
+      onToggleFavorite
+        ? mockReact.createElement(
+            MockPressable,
+            {
+              accessibilityRole: 'button',
+              accessibilityLabel: `Favorite ${entry.cat.name}`,
+              onPress: onToggleFavorite,
+            },
+            mockReact.createElement(MockText, null, 'Favorite'),
+          )
+        : null,
+    ),
   };
 });
 
@@ -82,7 +114,7 @@ jest.mock('../../components/entries/StationEntry', () => {
 
 jest.mock('@expo/vector-icons', () => ({ Ionicons: () => null }));
 
-const actor = parseUser({ id: 'admin-1', email: 'admin@gatech.edu', role: Role.Admin });
+const actor = parseUser({ id: 'admin-1', email: 'admin@gatech.edu', role: Role.Officer });
 const catalogEntry = parseCatalogEntry({
   id: 'catalog-1',
   cat: {
@@ -113,26 +145,45 @@ const station = parseStation({
   createdBy: actor,
 });
 
-const renderThemed = (content: React.ReactElement) =>
-  render(<AppThemeProvider colorScheme="light">{content}</AppThemeProvider>);
+const renderThemed = async (content: React.ReactElement) =>
+  await render(<AppThemeProvider colorScheme="light">{content}</AppThemeProvider>);
 
 describe('catalog detail route', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    mockRole = Role.Admin;
+    mockRole = Role.Officer;
     mockRouteId = 'catalog-1';
     mockCatalogGet.mockResolvedValue({ ok: true, value: catalogEntry, warnings: [] });
     mockCatalogMedia.mockResolvedValue({ ok: true, value: [], warnings: [] });
     mockSightingsList.mockResolvedValue({ ok: true, value: [], warnings: [] });
+    mockCatalogFavoriteSummary.mockResolvedValue({
+      ok: true,
+      value: { counts: { 'catalog-1': 2 } },
+      warnings: [],
+    });
+    mockCatalogSetFavorite.mockResolvedValue({ ok: true, value: {}, warnings: [] });
+  });
+
+  it('renders catalog chrome and detail geometry while data loads', async () => {
+    mockCatalogGet.mockImplementation(() => new Promise(() => undefined));
+    await renderThemed(<ViewCatalogEntry />);
+
+    expect(screen.getByText('Cat profile')).toBeOnTheScreen();
+    expect(
+      screen.getByRole('progressbar', { name: 'Loading cat profile' }),
+    ).toBeOnTheScreen();
   });
 
   it('loads by ID and exposes editing only to administrators', async () => {
     const user = userEvent.setup();
-    renderThemed(<ViewCatalogEntry />);
+    await renderThemed(<ViewCatalogEntry />);
 
     expect(await screen.findByText('Goldie')).toBeOnTheScreen();
     await user.press(screen.getByRole('button', { name: 'Edit catalog entry' }));
-    expect(mockCatalogGet).toHaveBeenCalledWith('catalog-1');
+    expect(mockCatalogGet).toHaveBeenCalledWith(
+      expect.objectContaining({ id: 'admin-1' }),
+      'catalog-1',
+    );
     expect(mockPush).toHaveBeenCalledWith({
       pathname: '/catalog/edit-entry',
       params: { id: 'catalog-1' },
@@ -144,20 +195,33 @@ describe('catalog detail route', () => {
       ok: false,
       error: { code: 'not_found', message: 'Catalog entry not found' },
     });
-    renderThemed(<ViewCatalogEntry />);
+    await renderThemed(<ViewCatalogEntry />);
 
     expect(await screen.findByText('Catalog entry not found')).toBeOnTheScreen();
   });
 
   it('does not offer catalog editing to members', async () => {
     mockRole = Role.Member;
-    renderThemed(<ViewCatalogEntry />);
+    await renderThemed(<ViewCatalogEntry />);
 
     expect(await screen.findByText('Goldie')).toBeOnTheScreen();
     expect(screen.queryByRole('button', { name: 'Edit catalog entry' })).not.toBeOnTheScreen();
   });
 
-  it('keeps local sightings in a linked imported catalog profile', () => {
+  it('loads heart counts and persists the account favorite', async () => {
+    const user = userEvent.setup();
+    await renderThemed(<ViewCatalogEntry />);
+
+    expect(await screen.findByText('2 route hearts')).toBeOnTheScreen();
+    await user.press(screen.getByRole('button', { name: 'Favorite Goldie' }));
+    expect(mockCatalogSetFavorite).toHaveBeenCalledWith(
+      expect.objectContaining({ id: 'admin-1' }),
+      'catalog-1',
+    );
+    expect(await screen.findByText('Goldie is now your favorite cat.')).toBeOnTheScreen();
+  });
+
+  it('keeps local sightings in a linked imported catalog profile', async () => {
     const linkedEntry: CatalogRecord = {
       source: 'inaturalist',
       id: 'inat-guide-2001',
@@ -216,7 +280,7 @@ describe('catalog detail route', () => {
 describe('station detail route', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    mockRole = Role.Admin;
+    mockRole = Role.Officer;
     mockRouteId = 'station-1';
     mockStationGet.mockResolvedValue({ ok: true, value: station, warnings: [] });
     mockStationMedia.mockResolvedValue({ ok: true, value: [], warnings: [] });
@@ -224,11 +288,21 @@ describe('station detail route', () => {
     mockStationStatus.mockReturnValue({ isStocked: true, daysRemaining: 7 });
   });
 
+  it('renders station chrome and detail geometry while data loads', async () => {
+    mockStationGet.mockImplementation(() => new Promise(() => undefined));
+    await renderThemed(<ViewStation />);
+
+    expect(screen.getByText('Station details')).toBeOnTheScreen();
+    expect(
+      screen.getByRole('progressbar', { name: 'Loading feeding station' }),
+    ).toBeOnTheScreen();
+  });
+
   it('protects restocking while busy and keeps edit navigation by ID', async () => {
     let finish: ((value: unknown) => void) | undefined;
     mockStationRestock.mockImplementation(() => new Promise((resolve) => { finish = resolve; }));
     const user = userEvent.setup();
-    renderThemed(<ViewStation />);
+    await renderThemed(<ViewStation />);
 
     expect(await screen.findByText('Library station')).toBeOnTheScreen();
     await user.press(screen.getByRole('button', { name: 'Mark station restocked' }));
@@ -236,6 +310,9 @@ describe('station detail route', () => {
     expect(screen.getByText('Restocking…')).toBeOnTheScreen();
     finish?.({ ok: true, value: station, warnings: [] });
     await waitFor(() => expect(mockStationRestock).toHaveBeenCalledTimes(1));
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: 'Edit station' })).toBeEnabled(),
+    );
 
     await user.press(screen.getByRole('button', { name: 'Edit station' }));
     expect(mockPush).toHaveBeenCalledWith({
@@ -244,9 +321,9 @@ describe('station detail route', () => {
     });
   });
 
-  it('denies direct member access to station operations', () => {
+  it('denies direct member access to station operations', async () => {
     mockRole = Role.Member;
-    renderThemed(<ViewStation />);
+    await renderThemed(<ViewStation />);
 
     expect(screen.getByText('Access restricted')).toBeOnTheScreen();
     expect(mockStationGet).not.toHaveBeenCalled();
@@ -257,7 +334,7 @@ describe('station detail route', () => {
       ok: false,
       error: { code: 'not_found', message: 'Feeding station not found' },
     });
-    renderThemed(<ViewStation />);
+    await renderThemed(<ViewStation />);
 
     expect(await screen.findByText('Feeding station not found')).toBeOnTheScreen();
   });

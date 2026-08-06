@@ -1,7 +1,8 @@
 # Testing Campus Cats
 
-Campus Cats uses behavior-first tests at the boundaries callers depend on. Use Node 22
-for every command; emulator tests also require Java 21.
+Campus Cats uses behavior-first tests at the boundaries callers depend on. Use the
+pinned Node 22.23.2/npm 10 toolchain for every command; emulator tests also require
+Java 21.
 
 ## Local verification
 

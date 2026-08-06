@@ -6,12 +6,14 @@ import {
   Role,
   SequenceIdGenerator,
   createFirestoreCodecs,
+  DEFAULT_APP_SETTINGS,
   parseUser,
 } from '../../core/domain';
 import { MediaCoordinator, storedMedia } from '../../core/media';
 import { CatalogModule } from './CatalogModule';
+import { ContentContributors } from '../appSettings';
 
-const admin = parseUser({ id: 'admin-1', email: 'admin@gatech.edu', role: Role.Admin });
+const admin = parseUser({ id: 'admin-1', email: 'admin@gatech.edu', role: Role.Officer });
 const member = parseUser({
   id: 'member-1',
   email: 'member@gatech.edu',
@@ -38,6 +40,11 @@ function buildModule() {
   const ids = new SequenceIdGenerator(['cat-1', 'profile-1']);
   const imports = new InMemoryInaturalistReader();
   const codecs = createFirestoreCodecs({ fromDate: (date) => date });
+  const contributors = new ContentContributors({
+    documents,
+    settings: { getSettings: async () => DEFAULT_APP_SETTINGS },
+    codec: codecs.contentContributor,
+  });
   return {
     module: new CatalogModule({
       documents,
@@ -45,6 +52,7 @@ function buildModule() {
       mediaCoordinator: new MediaCoordinator(media, ids),
       ids,
       clock: new FixedClock(new Date('2025-04-10T12:00:00.000Z')),
+      contributors,
       codecs,
       imports: { reader: imports, codec: codecs.inaturalistCatalog },
     }),
@@ -74,6 +82,25 @@ describe('CatalogModule', () => {
       value: { id: 'cat-1', source: 'campus-cats' },
     });
     await expect(module.remove(admin, 'cat-1')).resolves.toMatchObject({ ok: true });
+  });
+
+  it('shows separately stored catalog contributors only to officers by default', async () => {
+    const { module, documents } = buildModule();
+    await module.create(admin, {
+      cat,
+      credits: 'Campus Cats team',
+      photos: ['file://profile.jpg'],
+    });
+
+    expect((await documents.get('catalog', 'cat-1'))?.data).not.toHaveProperty('createdBy');
+    await expect(module.get(member, 'cat-1')).resolves.toMatchObject({
+      ok: true,
+      value: { createdBy: undefined },
+    });
+    await expect(module.get(admin, 'cat-1')).resolves.toMatchObject({
+      ok: true,
+      value: { createdBy: { id: 'admin-1' } },
+    });
   });
 
   it('populates the catalog from guide profiles and applies local overrides', async () => {
@@ -209,6 +236,56 @@ describe('CatalogModule', () => {
     ).resolves.toMatchObject({ ok: false, error: { code: 'forbidden' } });
   });
 
+  it('stores at most one favorite per account and aggregates heart counts', async () => {
+    const { module, documents } = buildModule();
+
+    await expect(module.setFavorite(member, 'cat-1')).resolves.toMatchObject({
+      ok: true,
+      value: { userId: 'member-1', catalogId: 'cat-1' },
+    });
+    await expect(
+      module.setFavorite(member, 'inat-guide-2113386'),
+    ).resolves.toMatchObject({
+      ok: true,
+      value: { userId: 'member-1', catalogId: 'inat-guide-2113386' },
+    });
+
+    expect(await documents.list('catalog-favorites')).toHaveLength(1);
+    await expect(module.favoriteSummary(member)).resolves.toMatchObject({
+      ok: true,
+      value: {
+        selectedCatalogId: 'inat-guide-2113386',
+        counts: { 'inat-guide-2113386': 1 },
+      },
+    });
+
+    await expect(module.setFavorite(member, undefined)).resolves.toMatchObject({
+      ok: true,
+      value: undefined,
+    });
+    await expect(module.favoriteSummary(member)).resolves.toMatchObject({
+      ok: true,
+      value: { counts: {} },
+    });
+  });
+
+  it('requires an authenticated account for favorite operations', async () => {
+    const { module } = buildModule();
+
+    await expect(module.favoriteSummary(undefined)).resolves.toMatchObject({
+      ok: false,
+      error: { code: 'unauthenticated' },
+    });
+    await expect(module.setFavorite(undefined, 'cat-1')).resolves.toMatchObject({
+      ok: false,
+      error: { code: 'unauthenticated' },
+    });
+    await expect(module.setFavorite(member, '   ')).resolves.toMatchObject({
+      ok: false,
+      error: { code: 'validation' },
+    });
+  });
+
   it('reports the first missing required field and requires a profile photo', async () => {
     const { module } = buildModule();
 
@@ -236,7 +313,7 @@ describe('CatalogModule', () => {
     const superAdmin = parseUser({
       id: 'super-1',
       email: 'super@gatech.edu',
-      role: Role.SuperAdmin,
+      role: Role.VicePresident,
     });
 
     const updated = await module.update(superAdmin, 'cat-1', {
@@ -336,7 +413,7 @@ describe('CatalogModule', () => {
 
     const documentFailure = buildModule();
     await documentFailure.module.create(admin, { cat, credits: '', photos: ['file://profile.jpg'] });
-    documentFailure.documents.failNext('remove', new Error('offline'));
+    documentFailure.documents.failNext('commit', new Error('offline'));
     await expect(documentFailure.module.remove(admin, 'cat-1')).resolves.toMatchObject({
       ok: false,
       error: { code: 'dependency_failure' },

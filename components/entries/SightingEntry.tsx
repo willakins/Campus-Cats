@@ -1,15 +1,19 @@
 import React from 'react';
 import { Linking, View } from 'react-native';
 
-import { SightingRecord } from '@/core/domain';
+import { PublicProfile, SightingRecord } from '@/core/domain';
 import { DisplayMediaAsset } from '@/core/ports';
 import { useAppTheme } from '@/theme';
 import { AppText, StatusPill } from '../design';
 import { DetailHero, FieldNoteSection, MapInset, MetadataRow } from '../details';
+import { MemberIdentity } from '../profile/MemberIdentity';
 
 interface SightingEntryProps {
   readonly sighting: SightingRecord;
   readonly media: readonly DisplayMediaAsset[];
+  readonly reporterProfile?: PublicProfile;
+  readonly onReporterPress?: () => void;
+  readonly showContributor?: boolean;
 }
 
 const formatSightingDate = (sighting: SightingRecord): string => {
@@ -40,7 +44,13 @@ const qualityLabel = (quality: 'casual' | 'needs_id' | 'research') =>
     quality
   ];
 
-const SightingEntry: React.FC<SightingEntryProps> = ({ sighting, media }) => {
+const SightingEntry: React.FC<SightingEntryProps> = ({
+  sighting,
+  media,
+  reporterProfile,
+  onReporterPress,
+  showContributor = true,
+}) => {
   const theme = useAppTheme();
   return (
     <View style={{ gap: theme.spacing.lg }}>
@@ -115,11 +125,15 @@ const SightingEntry: React.FC<SightingEntryProps> = ({ sighting, media }) => {
             View on iNaturalist
           </AppText>
         </FieldNoteSection>
-      ) : (
+      ) : showContributor && sighting.createdBy ? (
         <FieldNoteSection title="Contribution" icon="person-outline">
-          <MetadataRow label="Author" value={sighting.createdBy.id} />
+          <MemberIdentity
+            profile={reporterProfile}
+            fallbackEmail={sighting.createdBy.email}
+            onPress={onReporterPress ?? (() => undefined)}
+          />
         </FieldNoteSection>
-      )}
+      ) : null}
     </View>
   );
 };

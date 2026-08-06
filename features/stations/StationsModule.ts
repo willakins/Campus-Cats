@@ -192,7 +192,7 @@ export class StationsModule {
 function mutationDenied(actor: User | undefined): Outcome<never> | undefined {
   if (!actor) return failure('unauthenticated', 'Sign in to manage feeding stations');
   if (!canManageFeature(actor.role)) {
-    return failure('forbidden', 'Only administrators may manage feeding stations');
+    return failure('forbidden', 'Only officers may manage feeding stations');
   }
   return undefined;
 }

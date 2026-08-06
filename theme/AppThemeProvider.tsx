@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import { AccessibilityInfo, ColorSchemeName, useColorScheme } from 'react-native';
 
-import { AppTheme, resolveAppTheme } from './tokens';
+import { AppBrandColors, AppTheme, resolveAppTheme } from './tokens';
 
 const ThemeContext = createContext<AppTheme | undefined>(undefined);
 const ReducedMotionContext = createContext(false);
@@ -9,14 +9,19 @@ const ReducedMotionContext = createContext(false);
 interface AppThemeProviderProps {
   readonly children: React.ReactNode;
   readonly colorScheme?: ColorSchemeName;
+  readonly brandColors?: AppBrandColors;
 }
 
 export const AppThemeProvider = ({
   children,
   colorScheme,
+  brandColors,
 }: AppThemeProviderProps) => {
   const systemScheme = useColorScheme();
-  const theme = resolveAppTheme(colorScheme ?? systemScheme);
+  const theme = useMemo(
+    () => resolveAppTheme(colorScheme ?? systemScheme, brandColors),
+    [brandColors?.accentColor, brandColors?.primaryColor, colorScheme, systemScheme],
+  );
   const [reducedMotion, setReducedMotion] = useState(false);
 
   useEffect(() => {

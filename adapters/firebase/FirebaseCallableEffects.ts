@@ -5,6 +5,7 @@ import {
   CallableEffects,
   WhitelistCredentials,
 } from '../../core/ports';
+import { AchievementId } from '../../core/domain';
 
 export class FirebaseCallableEffects implements CallableEffects {
   constructor(private readonly functions: Functions) {}
@@ -45,7 +46,44 @@ export class FirebaseCallableEffects implements CallableEffects {
     await httpsCallable(this.functions, 'updateUserRole')({ userId, role });
   }
 
+  async addDisciplinaryNotice(userId: string, message: string): Promise<void> {
+    await httpsCallable(this.functions, 'addDisciplinaryNotice')({
+      userId,
+      message,
+    });
+  }
+
+  async setUserBanned(userId: string, banned: boolean): Promise<void> {
+    await httpsCallable(this.functions, 'setUserBanned')({ userId, banned });
+  }
+
+  async transferPresidency(userId: string): Promise<void> {
+    await httpsCallable(this.functions, 'transferPresidency')({ userId });
+  }
+
   async removeUser(userId: string): Promise<void> {
     await httpsCallable(this.functions, 'removeManagedUser')({ userId });
+  }
+
+  async syncPublicProfile(userId?: string): Promise<void> {
+    await httpsCallable(this.functions, 'syncPublicProfile')(
+      userId ? { userId } : {},
+    );
+  }
+
+  async updatePublicProfile(profile: {
+    readonly displayName: string;
+    readonly bio: string;
+    readonly profilePhotoUrl: string;
+  }): Promise<void> {
+    await httpsCallable(this.functions, 'updatePublicProfile')(profile);
+  }
+
+  async selectProfileTitle(achievementId: AchievementId | ''): Promise<void> {
+    await httpsCallable(this.functions, 'selectProfileTitle')({ achievementId });
+  }
+
+  async migrateContributorPrivacy(): Promise<void> {
+    await httpsCallable(this.functions, 'migrateContributorPrivacy')({});
   }
 }

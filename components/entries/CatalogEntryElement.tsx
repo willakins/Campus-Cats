@@ -11,9 +11,21 @@ interface CatalogEntryElementProps {
   readonly entry: CatalogRecord;
   readonly media: readonly DisplayMediaAsset[];
   readonly sightings: readonly SightingRecord[];
+  readonly heartCount?: number;
+  readonly isFavorite?: boolean;
+  readonly favoriteBusy?: boolean;
+  readonly onToggleFavorite?: () => void;
 }
 
-const CatalogEntryElement: React.FC<CatalogEntryElementProps> = ({ entry, media, sightings }) => {
+const CatalogEntryElement: React.FC<CatalogEntryElementProps> = ({
+  entry,
+  media,
+  sightings,
+  heartCount = 0,
+  isFavorite = false,
+  favoriteBusy = false,
+  onToggleFavorite,
+}) => {
   const theme = useAppTheme();
   const [showDetails, setShowDetails] = useState(false);
   const cat = entry.cat;
@@ -34,7 +46,27 @@ const CatalogEntryElement: React.FC<CatalogEntryElementProps> = ({ entry, media,
             tone={cat.tnr === 'Yes' ? 'success' : 'neutral'}
             icon="shield-checkmark-outline"
           />
+          <StatusPill
+            label={`${heartCount} ${heartCount === 1 ? 'heart' : 'hearts'}`}
+            tone={isFavorite ? 'primary' : 'neutral'}
+            icon={isFavorite ? 'heart' : 'heart-outline'}
+          />
         </View>
+        {onToggleFavorite ? (
+          <View style={{ gap: theme.spacing.xxs, paddingTop: theme.spacing.xs }}>
+            <Button
+              label={isFavorite ? 'Remove as favorite' : 'Choose as favorite'}
+              icon={isFavorite ? 'heart' : 'heart-outline'}
+              variant={isFavorite ? 'primary' : 'secondary'}
+              loading={favoriteBusy}
+              loadingLabel="Updating favorite…"
+              onPress={onToggleFavorite}
+            />
+            <AppText variant="caption" color="muted">
+              Each account can choose one favorite cat. Choosing another profile moves your heart.
+            </AppText>
+          </View>
+        ) : null}
       </View>
       <FieldNoteSection title="Profile" icon="book-outline">
         <AppText>{cat.descLong || cat.descShort}</AppText>
@@ -80,16 +112,16 @@ const CatalogEntryElement: React.FC<CatalogEntryElementProps> = ({ entry, media,
           >
             View in the Georgia Tech Cats guide
           </AppText>
-          {entry.localContribution ? (
+          {entry.localContribution?.createdBy ? (
             <MetadataRow label="Campus Cats contributor" value={entry.localContribution.createdBy.id} />
           ) : null}
         </FieldNoteSection>
-      ) : (
+      ) : entry.createdBy ? (
         <FieldNoteSection title="Contribution" icon="person-outline">
           <MetadataRow label="Author" value={entry.createdBy.id} />
           <MetadataRow label="Posted" value={entry.createdAt.toLocaleDateString()} />
         </FieldNoteSection>
-      )}
+      ) : null}
     </View>
   );
 };

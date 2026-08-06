@@ -3,6 +3,11 @@ import { MD3DarkTheme, MD3LightTheme, MD3Theme } from 'react-native-paper';
 
 export type AppColorScheme = 'light' | 'dark';
 
+export interface AppBrandColors {
+  readonly primaryColor: string;
+  readonly accentColor: string;
+}
+
 export interface AppColors {
   readonly background: string;
   readonly surface: string;
@@ -254,5 +259,82 @@ const createTheme = (dark: boolean, colors: AppColors): AppTheme => ({
 export const lightTheme = createTheme(false, lightColors);
 export const darkTheme = createTheme(true, darkColors);
 
-export const resolveAppTheme = (scheme: string | null | undefined): AppTheme =>
-  scheme === 'dark' ? darkTheme : lightTheme;
+const rgb = (hex: string): readonly [number, number, number] => [
+  Number.parseInt(hex.slice(1, 3), 16),
+  Number.parseInt(hex.slice(3, 5), 16),
+  Number.parseInt(hex.slice(5, 7), 16),
+];
+
+const hex = (channels: readonly number[]): string =>
+  `#${channels
+    .map((channel) => Math.round(channel).toString(16).padStart(2, '0'))
+    .join('')}`.toUpperCase();
+
+const mix = (foreground: string, background: string, amount: number): string => {
+  const front = rgb(foreground);
+  const back = rgb(background);
+  return hex(front.map((channel, index) =>
+    channel * amount + back[index] * (1 - amount),
+  ));
+};
+
+const luminance = (color: string): number => {
+  const channels = rgb(color).map((channel) => channel / 255).map((channel) =>
+    channel <= 0.03928
+      ? channel / 12.92
+      : ((channel + 0.055) / 1.055) ** 2.4,
+  );
+  return 0.2126 * channels[0] + 0.7152 * channels[1] + 0.0722 * channels[2];
+};
+
+const contrast = (left: string, right: string): number => {
+  const lighter = Math.max(luminance(left), luminance(right));
+  const darker = Math.min(luminance(left), luminance(right));
+  return (lighter + 0.05) / (darker + 0.05);
+};
+
+const accessibleAgainst = (
+  seed: string,
+  background: string,
+  dark: boolean,
+): string => {
+  const target = dark ? '#FFFFFF' : '#000000';
+  for (let step = 0; step <= 20; step += 1) {
+    const candidate = mix(target, seed, step / 20);
+    if (contrast(candidate, background) >= 4.5) return candidate;
+  }
+  return target;
+};
+
+const foregroundFor = (background: string): string =>
+  contrast('#FFFFFF', background) >= contrast('#000000', background)
+    ? '#FFFFFF'
+    : '#000000';
+
+export const createBrandedTheme = (
+  dark: boolean,
+  brand: AppBrandColors,
+): AppTheme => {
+  const base = dark ? darkColors : lightColors;
+  const primary = accessibleAgainst(brand.primaryColor, base.background, dark);
+  const accent = accessibleAgainst(brand.accentColor, base.background, dark);
+  return createTheme(dark, {
+    ...base,
+    primary,
+    onPrimary: foregroundFor(primary),
+    primarySurface: mix(primary, base.surface, dark ? 0.22 : 0.12),
+    gold: accent,
+    goldSurface: mix(accent, base.surface, dark ? 0.22 : 0.12),
+    warning: accent,
+    warningSurface: mix(accent, base.surface, dark ? 0.22 : 0.12),
+    shadow: dark ? base.shadow : primary,
+  });
+};
+
+export const resolveAppTheme = (
+  scheme: string | null | undefined,
+  brand?: AppBrandColors,
+): AppTheme => {
+  const dark = scheme === 'dark';
+  return brand ? createBrandedTheme(dark, brand) : dark ? darkTheme : lightTheme;
+};

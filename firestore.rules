@@ -10,8 +10,14 @@ service cloud.firestore {
       return get(/databases/$(database)/documents/users/$(request.auth.uid));
     }
 
+    function isActiveUser() {
+      return signedIn()
+        && (!('banned' in userDocument().data)
+          || userDocument().data.banned != true);
+    }
+
     function role() {
-      return signedIn() && userDocument().data.role is int
+      return isActiveUser() && userDocument().data.role is int
         ? userDocument().data.role
         : -1;
     }
@@ -20,8 +26,54 @@ service cloud.firestore {
       return role() >= 1;
     }
 
+    function isPresident() {
+      return role() == 3;
+    }
+
+    function contributorPath(kind, contentId) {
+      return /databases/$(database)/documents/content-contributors/$(kind + '__' + contentId);
+    }
+
+    function contributorsAreAnonymous() {
+      return !exists(/databases/$(database)/documents/app-settings/public)
+        || get(/databases/$(database)/documents/app-settings/public).data.sightingsAnonymous != false;
+    }
+
+    function canReadContributors() {
+      return isAdmin() || !contributorsAreAnonymous();
+    }
+
+    function ownsContributor(kind, contentId) {
+      return isActiveUser()
+        && exists(contributorPath(kind, contentId))
+        && get(contributorPath(kind, contentId)).data.user.id == request.auth.uid;
+    }
+
+    function validCurrentUserContributor(data, kind, contentId) {
+      return isActiveUser()
+        && data.keys().hasOnly(['kind', 'contentId', 'user'])
+        && data.kind == kind
+        && data.contentId == contentId
+        && data.user is map
+        && data.user.keys().hasOnly(['id', 'email', 'role'])
+        && data.user.id == request.auth.uid
+        && data.user.email == request.auth.token.email
+        && data.user.role == role();
+    }
+
+    function hasNewContributor(kind, contentId) {
+      return existsAfter(contributorPath(kind, contentId))
+        && getAfter(contributorPath(kind, contentId)).data.user.id == request.auth.uid;
+    }
+
+    function contentPath(kind, contentId) {
+      return kind == 'sighting'
+        ? /databases/$(database)/documents/cat-sightings/$(contentId)
+        : /databases/$(database)/documents/catalog/$(contentId);
+    }
+
     function ownsSighting(data) {
-      return signedIn()
+      return isActiveUser()
         && data.createdBy is map
         && data.createdBy.id == request.auth.uid;
     }
@@ -48,40 +100,140 @@ service cloud.firestore {
     }
 
     match /cat-sightings/{sightingId} {
-      allow read: if signedIn();
-      allow create: if ownsSighting(request.resource.data);
-      allow update: if ownsSighting(resource.data)
-        && request.resource.data.createdBy == resource.data.createdBy;
-      allow delete: if ownsSighting(resource.data);
+      allow read: if isActiveUser()
+        && (canReadContributors() || !('createdBy' in resource.data));
+      allow create: if isActiveUser()
+        && !('createdBy' in request.resource.data)
+        && hasNewContributor('sighting', sightingId);
+      allow update: if ownsContributor('sighting', sightingId)
+        && !('createdBy' in request.resource.data);
+      allow delete: if ownsContributor('sighting', sightingId)
+        && !existsAfter(contributorPath('sighting', sightingId));
     }
 
     match /catalog/{entryId} {
-      allow read: if signedIn();
-      allow create, update, delete: if isAdmin();
+      allow read: if isActiveUser()
+        && (canReadContributors() || !('createdBy' in resource.data));
+      allow create, update: if isAdmin()
+        && !('createdBy' in request.resource.data)
+        && hasNewContributor('catalog', entryId);
+      allow delete: if isAdmin()
+        && !existsAfter(contributorPath('catalog', entryId));
+    }
+
+    match /content-contributors/{contributorId} {
+      allow read: if isActiveUser()
+        && (canReadContributors() || resource.data.user.id == request.auth.uid);
+      allow create: if
+        (
+          (
+            validCurrentUserContributor(
+              request.resource.data,
+              'sighting',
+              request.resource.data.contentId
+            )
+            && contributorId == 'sighting__' + request.resource.data.contentId
+          )
+          || (
+            isAdmin()
+            && validCurrentUserContributor(
+              request.resource.data,
+              'catalog',
+              request.resource.data.contentId
+            )
+            && contributorId == 'catalog__' + request.resource.data.contentId
+          )
+        )
+        && existsAfter(contentPath(
+          request.resource.data.kind,
+          request.resource.data.contentId
+        ));
+      allow update: if
+        (
+          resource.data.kind == 'sighting'
+          && resource.data.user.id == request.auth.uid
+          && validCurrentUserContributor(
+            request.resource.data,
+            'sighting',
+            resource.data.contentId
+          )
+          && contributorId == 'sighting__' + resource.data.contentId
+        )
+        || (
+          isAdmin()
+          && resource.data.kind == 'catalog'
+          && validCurrentUserContributor(
+            request.resource.data,
+            'catalog',
+            resource.data.contentId
+          )
+          && contributorId == 'catalog__' + resource.data.contentId
+        );
+      allow delete: if
+        (
+          (
+            resource.data.kind == 'sighting'
+            && resource.data.user.id == request.auth.uid
+          )
+          || (resource.data.kind == 'catalog' && isAdmin())
+        )
+        && !existsAfter(contentPath(resource.data.kind, resource.data.contentId));
+    }
+
+    match /app-settings/{settingsId} {
+      allow read: if settingsId == 'public';
+      allow create, update: if settingsId == 'public'
+        && isPresident()
+        && request.resource.data.keys().hasOnly([
+          'logoUrl',
+          'primaryColor',
+          'accentColor',
+          'sightingsAnonymous'
+        ])
+        && request.resource.data.logoUrl is string
+        && request.resource.data.logoUrl.size() <= 2048
+        && request.resource.data.primaryColor is string
+        && request.resource.data.primaryColor.matches('^#[0-9A-Fa-f]{6}$')
+        && request.resource.data.accentColor is string
+        && request.resource.data.accentColor.matches('^#[0-9A-Fa-f]{6}$')
+        && request.resource.data.sightingsAnonymous is bool;
+      allow delete: if false;
+    }
+
+    match /catalog-favorites/{userId} {
+      allow read: if isActiveUser();
+      allow create, update: if isActiveUser()
+        && request.auth.uid == userId
+        && request.resource.data.keys().hasOnly(['catalogId', 'createdAt'])
+        && request.resource.data.catalogId is string
+        && request.resource.data.catalogId.size() > 0
+        && request.resource.data.catalogId.size() <= 200
+        && request.resource.data.createdAt is timestamp;
+      allow delete: if isActiveUser() && request.auth.uid == userId;
     }
 
     match /stations/{stationId} {
-      allow read: if signedIn();
+      allow read: if isActiveUser();
       allow create, update, delete: if isAdmin();
     }
 
     match /announcements/{announcementId} {
-      allow read: if signedIn();
+      allow read: if isActiveUser();
       allow create, update, delete: if isAdmin();
     }
 
     match /contact-info/{contactId} {
-      allow read: if signedIn();
+      allow read: if isActiveUser();
       allow create, update, delete: if isAdmin();
     }
 
     match /inaturalist-observations/{observationId} {
-      allow read: if signedIn() && (resource.data.visible == true || isAdmin());
+      allow read: if isActiveUser() && (resource.data.visible == true || isAdmin());
       allow create, update, delete: if false;
     }
 
     match /inaturalist-guide-profiles/{profileId} {
-      allow read: if signedIn() && (resource.data.visible == true || isAdmin());
+      allow read: if isActiveUser() && (resource.data.visible == true || isAdmin());
       allow create, update, delete: if false;
     }
 
@@ -104,11 +256,16 @@ service cloud.firestore {
         && request.resource.data.keys().hasOnly(['email', 'role'])
         && request.resource.data.email == request.auth.token.email
         && request.resource.data.role == 0;
-      allow update: if signedIn()
+      allow update: if isActiveUser()
         && request.auth.uid == userId
         && request.resource.data.diff(resource.data).affectedKeys()
           .hasOnly(['expoPushToken']);
       allow delete: if false;
+    }
+
+    match /public-profiles/{userId} {
+      allow read: if isActiveUser();
+      allow create, update, delete: if false;
     }
 
     match /{document=**} {

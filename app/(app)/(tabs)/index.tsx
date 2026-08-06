@@ -4,11 +4,19 @@ import { View } from 'react-native';
 import { useFocusEffect, useRouter } from 'expo-router';
 
 import { SightingMapView } from '@/components/SightingMapView';
-import { Button, FeedbackBanner, SegmentedControl, StatusPill, Screen } from '@/components/design';
+import {
+  FeedbackBanner,
+  FloatingActionButton,
+  SegmentedControl,
+  StatusPill,
+  Screen,
+} from '@/components/design';
 import { campusMapDarkStyle } from '@/components/mapStyles';
+import { createCampusCamera, GEORGIA_TECH_CENTER } from '@/components/mapViewport';
 import { appModules } from '@/composition/appModules';
 import { SightingRecord, SystemClock } from '@/core/domain';
 import { filterSightingsByAge } from '@/features/sightings';
+import { useAuth } from '@/providers';
 import { useAppTheme } from '@/theme';
 
 const clock = new SystemClock();
@@ -16,6 +24,7 @@ const clock = new SystemClock();
 const HomeScreen = () => {
   const router = useRouter();
   const theme = useAppTheme();
+  const { currentUser } = useAuth();
   const [filter, setFilter] = useState<'7' | '30' | '90' | '365' | 'all'>('all');
   const [pins, setPins] = useState<readonly SightingRecord[]>([]);
   const [loading, setLoading] = useState(true);
@@ -26,7 +35,7 @@ const HomeScreen = () => {
       let active = true;
       setLoading(true);
       setError(undefined);
-      void appModules.sightings.list().then((result) => {
+      void appModules.sightings.list(currentUser).then((result) => {
         if (!active) return;
         if (result.ok) {
           setPins(result.value);
@@ -38,7 +47,7 @@ const HomeScreen = () => {
       return () => {
         active = false;
       };
-    }, []),
+    }, [currentUser?.id, currentUser?.role]),
   );
 
   const visiblePins = filterSightingsByAge(
@@ -49,7 +58,20 @@ const HomeScreen = () => {
   const mappablePins = visiblePins.filter(({ location }) => location !== null);
 
   return (
-    <Screen fullBleed>
+    <Screen
+      fullBleed
+      floatingAction={(
+        <FloatingActionButton
+          accessibilityLabel="Report a sighting"
+          accessibilityHint="Opens the new sighting report form"
+          style={{
+            backgroundColor: theme.colors.coral,
+            borderColor: theme.colors.coral,
+          }}
+          onPress={() => router.push('/sighting/create-sighting')}
+        />
+      )}
+    >
       <View style={{ flex: 1 }}>
         <SightingMapView
           list={mappablePins}
@@ -57,12 +79,7 @@ const HomeScreen = () => {
           style={{ flex: 1 }}
           userInterfaceStyle={theme.dark ? 'dark' : 'light'}
           customMapStyle={theme.dark ? [...campusMapDarkStyle] : undefined}
-          initialRegion={{
-            latitude: 33.776077,
-            longitude: -84.396199,
-            latitudeDelta: 0.01,
-            longitudeDelta: 0.01,
-          }}
+          initialCamera={createCampusCamera(GEORGIA_TECH_CENTER)}
           onPerMarkerPress={(pin) =>
             router.push({
               pathname: '/sighting/view-sighting',
@@ -107,29 +124,9 @@ const HomeScreen = () => {
             label={loading ? 'Loading sightings' : `${mappablePins.length} ${mappablePins.length === 1 ? 'sighting' : 'sightings'}`}
             tone="neutral"
             icon="paw"
+            loading={loading}
           />
           {error ? <FeedbackBanner message={error} tone="danger" /> : null}
-        </View>
-        <View
-          style={{
-            position: 'absolute',
-            left: theme.spacing.lg,
-            right: theme.spacing.lg,
-            bottom: theme.spacing.lg,
-            alignItems: 'center',
-          }}
-        >
-          <Button
-            label="Report a sighting"
-            icon="add"
-            fullWidth
-            style={{
-              maxWidth: theme.layout.maxAuthWidth,
-              backgroundColor: theme.colors.coral,
-              borderColor: theme.colors.coral,
-            }}
-            onPress={() => router.push('/sighting/create-sighting')}
-          />
         </View>
       </View>
     </Screen>

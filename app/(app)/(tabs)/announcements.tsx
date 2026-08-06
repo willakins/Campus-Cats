@@ -3,8 +3,17 @@ import { FlatList, View } from 'react-native';
 
 import { router, useFocusEffect } from 'expo-router';
 
-import { AppHeader, Button, EmptyState, ErrorState, Screen, Skeleton } from '@/components/design';
+import {
+  AccessBanner,
+  AppHeader,
+  CardListSkeleton,
+  EmptyState,
+  ErrorState,
+  FloatingActionButton,
+  Screen,
+} from '@/components/design';
 import { AnnouncementItem } from '@/components/items/AnnouncementItem';
+import { virtualizedListPerformanceProps } from '@/components/collections/virtualizedListPerformance';
 import { appModules } from '@/composition/appModules';
 import { Announcement, canManageFeature } from '@/core/domain';
 import { useAuth } from '@/providers';
@@ -35,26 +44,33 @@ const Announcements = () => {
 
   return (
     <Screen
-      footer={isAdmin ? (
-        <Button
-          label="Create announcement"
-          icon="add"
-          fullWidth
+      floatingAction={isAdmin ? (
+        <FloatingActionButton
+          accessibilityLabel="Create announcement"
+          accessibilityHint="Opens the new announcement form"
           onPress={() => router.push('/announcements/create-ann')}
         />
       ) : undefined}
     >
       <AppHeader title="Announcements" eyebrow="Campus Cats updates" />
+      <View style={{ paddingBottom: theme.spacing.md }}>
+        <AccessBanner
+          title="Announcement access"
+          message="Everyone can read club updates. Only officers can publish or edit announcements."
+        />
+      </View>
       {loading ? (
-        <View style={{ gap: theme.spacing.md }}>
-          <Skeleton label="Loading announcements" />
-          <Skeleton label="Loading another announcement" />
-        </View>
+        <CardListSkeleton label="Loading announcements" />
       ) : (
         <FlatList
+          {...virtualizedListPerformanceProps}
           data={error ? [] : announcements}
           keyExtractor={(announcement) => announcement.id}
-          contentContainerStyle={{ flexGrow: 1, gap: theme.spacing.md, paddingBottom: theme.spacing.md }}
+          contentContainerStyle={{
+            flexGrow: 1,
+            gap: theme.spacing.md,
+            paddingBottom: isAdmin ? theme.spacing.huge * 2 : theme.spacing.md,
+          }}
           renderItem={({ item }) => <AnnouncementItem {...item} />}
           ListEmptyComponent={error ? (
             <ErrorState title="Updates are unavailable" message={error} onRetry={() => void load()} />

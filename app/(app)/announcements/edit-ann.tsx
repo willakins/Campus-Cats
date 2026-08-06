@@ -3,9 +3,8 @@ import { Alert } from 'react-native';
 
 import { useLocalSearchParams, useRouter } from 'expo-router';
 
-import { AppHeader, ErrorState, Screen } from '@/components/design';
+import { AppHeader, ErrorState, FormSkeleton, Screen } from '@/components/design';
 import { FormScreen } from '@/components/forms';
-import { LoadingIndicator } from '@/components/ui/LoadingIndicator';
 import { appModules } from '@/composition/appModules';
 import { Announcement, parseUser } from '@/core/domain';
 import { localMedia, storedMedia } from '@/core/media';
@@ -97,7 +96,18 @@ const EditAnnouncement = () => {
     ]);
   };
 
-  if (!announcement && !loadError) return <LoadingIndicator label="Loading announcement form" />;
+  if (!announcement && !loadError) {
+    return (
+      <Screen scroll>
+        <AppHeader
+          title="Edit announcement"
+          eyebrow="Campus Cats update"
+          onBack={() => router.back()}
+        />
+        <FormSkeleton label="Loading announcement form" fields={3} />
+      </Screen>
+    );
+  }
   if (!announcement) {
     return (
       <Screen>

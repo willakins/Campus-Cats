@@ -3,8 +3,11 @@ import {
   Role,
   createFirestoreCodecs,
   parseAnnouncement,
+  parseCatalogFavorite,
   parseCatalogEntry,
   parseContact,
+  parseManagedUser,
+  parsePublicProfile,
   parseSighting,
   parseStation,
   parseUser,
@@ -83,6 +86,20 @@ describe('canonical domain models', () => {
         name: 'Campus Cats',
         email: 'cats@gatech.edu',
       }),
+      parseCatalogFavorite({
+        userId: 'member-1',
+        catalogId: 'cat-1',
+        createdAt,
+      }),
+      parsePublicProfile({
+        id: 'member-1',
+        displayName: 'Cat Watcher',
+        bio: 'I watch cats.',
+        profilePhotoUrl: 'https://storage.example/profile.jpg',
+        role: Role.Member,
+        achievementIds: ['profile-photo'],
+        selectedTitleId: 'profile-photo',
+      }),
     ];
 
     for (const record of records) {
@@ -105,6 +122,63 @@ describe('canonical domain models', () => {
       }),
     ).toThrow();
   });
+
+  it('parses the developer role as a persisted user role', () => {
+    expect(
+      parseUser({
+        id: 'developer-1',
+        email: 'developer@gatech.edu',
+        role: Role.Developer,
+      }),
+    ).toMatchObject({ role: 4 });
+  });
+
+  it('keeps managed-account moderation separate from content authors', () => {
+    const managed = parseManagedUser({
+      ...member,
+      banned: true,
+      disciplinaryNotices: [
+        {
+          id: 'notice-1',
+          message: 'Posted an inappropriate image',
+          createdAt: new Date('2026-08-05T12:00:00.000Z'),
+          issuedById: 'officer-1',
+          issuedByEmail: 'officer@gatech.edu',
+        },
+      ],
+    });
+
+    expect(managed).toMatchObject({
+      banned: true,
+      disciplinaryNotices: [{ message: 'Posted an inappropriate image' }],
+    });
+    expect(parseUser(managed)).toEqual(member);
+  });
+
+  it('rejects duplicate achievements and locked displayed titles', () => {
+    const baseProfile = {
+      id: 'member-1',
+      displayName: 'Cat Watcher',
+      bio: '',
+      profilePhotoUrl: '',
+      role: Role.Member,
+      achievementIds: ['first-sighting'],
+      selectedTitleId: 'first-sighting',
+    };
+
+    expect(() =>
+      parsePublicProfile({
+        ...baseProfile,
+        achievementIds: ['first-sighting', 'first-sighting'],
+      }),
+    ).toThrow('Achievements must be unique');
+    expect(() =>
+      parsePublicProfile({
+        ...baseProfile,
+        achievementIds: [],
+      }),
+    ).toThrow('The displayed title must be unlocked');
+  });
 });
 
 describe('Firestore codecs', () => {
@@ -115,7 +189,7 @@ describe('Firestore codecs', () => {
     fromDate: (value) => ({ encodedDate: value.toISOString() }),
   });
 
-  it('preserves existing collection and sighting field names', () => {
+  it('preserves public sighting fields while separating contributor identity', () => {
     const sighting = codecs.sighting.decode('sighting-1', {
       name: 'Goldie',
       info: 'Near Tech Tower',
@@ -135,10 +209,23 @@ describe('Firestore codecs', () => {
       health: true,
       spotted_time: { encodedDate: '2025-04-10T12:00:00.000Z' },
       location: { latitude: 33.772, longitude: -84.394 },
-      createdBy: member,
       timeofDay: 'Afternoon',
     });
     expect(COLLECTIONS.sightings).toBe('cat-sightings');
+    expect(COLLECTIONS.contentContributors).toBe('content-contributors');
+    expect(
+      codecs.contentContributor.encode(
+        codecs.contentContributor.decode('sighting__sighting-1', {
+          kind: 'sighting',
+          contentId: 'sighting-1',
+          user: member,
+        }),
+      ),
+    ).toEqual({
+      kind: 'sighting',
+      contentId: 'sighting-1',
+      user: member,
+    });
   });
 
   it('decodes station timestamps and derives no clock-dependent state', () => {
@@ -155,6 +242,23 @@ describe('Firestore codecs', () => {
       id: 'station-1',
       lastStocked: new Date('2025-04-10T12:00:00.000Z'),
     });
+  });
+
+  it('stores one favorite under the account ID without duplicating it in the payload', () => {
+    const favorite = codecs.catalogFavorite.decode('member-1', {
+      catalogId: 'inat-guide-2113386',
+      createdAt: timestamp('2025-04-10T12:00:00.000Z'),
+    });
+
+    expect(favorite).toMatchObject({
+      userId: 'member-1',
+      catalogId: 'inat-guide-2113386',
+    });
+    expect(codecs.catalogFavorite.encode(favorite)).toEqual({
+      catalogId: 'inat-guide-2113386',
+      createdAt: { encodedDate: '2025-04-10T12:00:00.000Z' },
+    });
+    expect(COLLECTIONS.catalogFavorites).toBe('catalog-favorites');
   });
 
   it('accepts native dates and rejects invalid document and timestamp shapes', () => {
@@ -182,5 +286,55 @@ describe('Firestore codecs', () => {
         authorAlias: 'Campus Cats',
       }),
     ).toThrow('Expected a Firestore timestamp');
+  });
+
+  it('defaults legacy users to active and decodes disciplinary history', () => {
+    expect(codecs.user.decode('member-1', {
+      email: 'member@gatech.edu',
+      role: Role.Member,
+    })).toMatchObject({ banned: false, disciplinaryNotices: [] });
+
+    const managed = codecs.user.decode('member-1', {
+      email: 'member@gatech.edu',
+      role: Role.Member,
+      banned: true,
+      disciplinaryNotices: [
+        {
+          id: 'notice-1',
+          message: 'Posted an inappropriate image',
+          createdAt: timestamp('2026-08-05T12:00:00.000Z'),
+          issuedById: 'officer-1',
+          issuedByEmail: 'officer@gatech.edu',
+        },
+      ],
+    });
+    expect(managed.disciplinaryNotices[0]?.createdAt).toEqual(
+      new Date('2026-08-05T12:00:00.000Z'),
+    );
+    expect(codecs.user.encode(managed)).toMatchObject({
+      banned: true,
+      disciplinaryNotices: [
+        { createdAt: { encodedDate: '2026-08-05T12:00:00.000Z' } },
+      ],
+    });
+  });
+
+  it('keeps public profile data separate from private moderation records', () => {
+    const profile = codecs.publicProfile.decode('member-1', {
+      displayName: 'Cat Watcher',
+      bio: 'I watch cats.',
+      profilePhotoUrl: '',
+      role: Role.Member,
+      achievementIds: ['first-sighting'],
+      selectedTitleId: 'first-sighting',
+    });
+
+    expect(profile).toMatchObject({
+      id: 'member-1',
+      displayName: 'Cat Watcher',
+      achievementIds: ['first-sighting'],
+    });
+    expect(codecs.publicProfile.encode(profile)).not.toHaveProperty('id');
+    expect(COLLECTIONS.publicProfiles).toBe('public-profiles');
   });
 });

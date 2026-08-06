@@ -1,7 +1,9 @@
 const fs = require('fs');
 const path = require('path');
+const { load } = require('@expo/env');
 
 const projectRoot = path.resolve(__dirname, '..');
+load(projectRoot, { silent: true });
 const firebaseConfig = JSON.parse(
   fs.readFileSync(path.join(projectRoot, 'firebase.json'), 'utf8'),
 );

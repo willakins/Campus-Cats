@@ -1,8 +1,7 @@
-import { MapViewProps, Marker } from 'react-native-maps';
-import { View } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { MapViewProps } from 'react-native-maps';
 
 import { MapView } from '@/components/ui/MapView';
+import { MapMarker } from '@/components/ui/MapMarker';
 import { SightingRecord } from '@/core/domain';
 import { useAppTheme } from '@/theme';
 
@@ -17,13 +16,13 @@ const SightingMapView: React.FC<SightingMapViewProps> = ({
   filter,
   onPerMarkerPress,
   children,
-	...props
+  ...props
 }) => {
   const theme = useAppTheme();
   return (
     <MapView {...props}>
       {list.filter((item) => filter(item) && item.location !== null).map((item) => (
-        <Marker
+        <MapMarker
           key={item.id}
           coordinate={{
             latitude: item.location!.latitude,
@@ -34,25 +33,12 @@ const SightingMapView: React.FC<SightingMapViewProps> = ({
           accessibilityLabel={`View sighting: ${item.name}`}
           accessibilityRole="button"
           onPress={onPerMarkerPress ? (() => onPerMarkerPress(item)) : undefined}
-        >
-          <View
-            style={{
-              width: 36,
-              height: 36,
-              alignItems: 'center',
-              justifyContent: 'center',
-              borderRadius: theme.radii.pill,
-              borderWidth: 2,
-              borderColor: theme.colors.surface,
-              backgroundColor:
-                item.source === 'inaturalist'
-                  ? theme.colors.teal
-                  : theme.colors.coral,
-            }}
-          >
-            <Ionicons name="paw" size={19} color={theme.colors.onPrimary} />
-          </View>
-        </Marker>
+          backgroundColor={
+            item.source === 'inaturalist'
+              ? theme.colors.teal
+              : theme.colors.coral
+          }
+        />
       ))}
       {children}
     </MapView>

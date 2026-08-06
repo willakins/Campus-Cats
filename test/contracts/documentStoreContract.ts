@@ -25,14 +25,29 @@ export function documentStoreContract(
       await store.put(collection, id, {
         name: 'Campus Cats Officers',
         email: 'cats@gatech.edu',
+        owner: { id: 'member-1' },
       });
       await expect(store.list(collection)).resolves.toContainEqual({
         id,
         data: {
           name: 'Campus Cats Officers',
           email: 'cats@gatech.edu',
+          owner: { id: 'member-1' },
         },
       });
+      await expect(
+        store.listWhereEqual(collection, 'owner.id', 'member-1'),
+      ).resolves.toContainEqual({
+        id,
+        data: {
+          name: 'Campus Cats Officers',
+          email: 'cats@gatech.edu',
+          owner: { id: 'member-1' },
+        },
+      });
+      await expect(
+        store.listWhereEqual(collection, 'owner.id', 'member-2'),
+      ).resolves.toEqual([]);
 
       await store.remove(collection, id);
       await expect(store.get(collection, id)).resolves.toBeUndefined();

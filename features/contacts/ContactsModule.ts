@@ -28,16 +28,25 @@ export class ContactsModule {
 
   async list(actor: User | undefined): Promise<Outcome<readonly Contact[]>> {
     if (!actor) return failure('unauthenticated', 'Sign in to view contacts');
+    let documents;
     try {
-      const documents = await this.dependencies.documents.list(COLLECTIONS.contacts);
-      return success(
-        documents.map(({ id, data }) =>
-          this.dependencies.codecs.contact.decode(id, data),
-        ),
-      );
+      documents = await this.dependencies.documents.list(COLLECTIONS.contacts);
     } catch {
       return failure('dependency_failure', 'Could not load contact information');
     }
+
+    const contacts: Contact[] = [];
+    for (const { id, data } of documents) {
+      try {
+        contacts.push(this.dependencies.codecs.contact.decode(id, data));
+      } catch (error) {
+        console.warn(
+          `[contacts] Ignoring invalid contact document: ${id}`,
+          error instanceof Error ? error.message : error,
+        );
+      }
+    }
+    return success(contacts);
   }
 
   async create(
@@ -111,7 +120,7 @@ export class ContactsModule {
 function mutationDenied(actor: User | undefined): Outcome<never> | undefined {
   if (!actor) return failure('unauthenticated', 'Sign in to manage contacts');
   if (!canManageFeature(actor.role)) {
-    return failure('forbidden', 'Only administrators may manage contacts');
+    return failure('forbidden', 'Only officers may manage contacts');
   }
   return undefined;
 }

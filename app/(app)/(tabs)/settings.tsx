@@ -5,10 +5,12 @@ import { useRouter } from 'expo-router';
 
 import { roleLabel } from '@/components/administration/rolePresentation';
 import {
+  AccessBanner,
   AppHeader,
   AppText,
   Button,
   Card,
+  CardListSkeleton,
   EmptyState,
   FeedbackBanner,
   FormSection,
@@ -17,9 +19,8 @@ import {
   StatusPill,
 } from '@/components/design';
 import { FormTextInput } from '@/components/forms';
-import { LoadingIndicator } from '@/components/ui/LoadingIndicator';
 import { appModules } from '@/composition/appModules';
-import { Role, canManageFeature, parseUser } from '@/core/domain';
+import { Role, canManageAppSettings, canManageFeature, parseUser } from '@/core/domain';
 import { useAuth } from '@/providers';
 import { useAppTheme } from '@/theme';
 
@@ -134,6 +135,13 @@ const Settings = () => {
       <View style={{ gap: theme.spacing.lg }}>
         {error ? <FeedbackBanner message={error} tone="danger" /> : null}
 
+        {!isAdmin ? (
+          <AccessBanner
+            title="Officer-only tools"
+            message="Feeding stations and administrative tools are available only to officers, so they do not appear in your navigation."
+          />
+        ) : null}
+
         <FormSection title="Account">
           <Card accent={theme.colors.primary}>
             <View style={{ gap: theme.spacing.sm }}>
@@ -144,6 +152,17 @@ const Settings = () => {
                 label={roleLabel(actor.role)}
                 tone={actor.role === Role.Member ? 'neutral' : 'primary'}
                 icon={actor.role === Role.Member ? 'person-outline' : 'shield-checkmark-outline'}
+              />
+              <Button
+                label="View My Profile"
+                icon="person-circle-outline"
+                variant="secondary"
+                onPress={() =>
+                  router.push({
+                    pathname: '/profile/view-profile',
+                    params: { id: actor.id },
+                  })
+                }
               />
               <Button
                 label="Sign Out"
@@ -167,7 +186,10 @@ const Settings = () => {
             />
           ) : null}
           {loadingContacts ? (
-            <LoadingIndicator label="Loading club contacts" />
+            <CardListSkeleton
+              label="Loading club contacts"
+              count={2}
+            />
           ) : contacts.length === 0 ? (
             <EmptyState
               title="No contacts yet"
@@ -251,6 +273,23 @@ const Settings = () => {
               subtitle="Review imports, retry synchronization, and moderate records"
               icon="leaf-outline"
               onPress={() => router.push('/settings/inaturalist')}
+            />
+            <ListRow
+              title="App Billing"
+              subtitle="Review monthly Firebase and Google Cloud costs"
+              icon="card-outline"
+              onPress={() => router.push('/settings/billing')}
+            />
+          </FormSection>
+        ) : null}
+
+        {canManageAppSettings(actor.role) ? (
+          <FormSection title="President tools">
+            <ListRow
+              title="App Settings"
+              subtitle="Change branding and contributor privacy"
+              icon="color-palette-outline"
+              onPress={() => router.push('/settings/app-settings' as never)}
             />
           </FormSection>
         ) : null}

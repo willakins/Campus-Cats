@@ -7,7 +7,7 @@ ready.
 
 ## Automated
 
-- [x] Node 22 root typecheck and lint pass with zero TypeScript errors.
+- [x] Node 22.23.2 root typecheck and lint pass with zero TypeScript errors.
 - [x] Jest Expo unit and route suites pass.
 - [x] Global owned-TypeScript coverage is at least 80% for statements, branches,
       functions, and lines.

@@ -36,7 +36,8 @@ const SightingCreateScreen = () => {
     if (busy) return;
     setBusy(true);
     setError(undefined);
-    const result = await appModules.sightings.create(parseUser(user), {
+    const actor = parseUser(user);
+    const result = await appModules.sightings.create(actor, {
       ...formData,
       timeOfDay: value,
       photos,
@@ -46,6 +47,7 @@ const SightingCreateScreen = () => {
       setError(result.error.message);
       return;
     }
+    await appModules.profiles.sync(actor);
     router.replace({
       pathname: '/sighting/view-sighting',
       params: { id: result.value.id },

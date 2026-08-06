@@ -7,12 +7,12 @@ import {
   AccessDeniedState,
   AppHeader,
   Button,
+  DetailSkeleton,
   ErrorState,
   FeedbackBanner,
   Screen,
 } from '@/components/design';
 import { StationEntry } from '@/components/entries/StationEntry';
-import { LoadingIndicator } from '@/components/ui/LoadingIndicator';
 import { appModules } from '@/composition/appModules';
 import { canManageFeature, parseUser, Station } from '@/core/domain';
 import { StoredMediaAsset } from '@/core/ports';
@@ -76,8 +76,6 @@ const ViewStation = () => {
     );
   }
 
-  if (!station && !error) return <LoadingIndicator label="Loading feeding station" />;
-
   return (
     <Screen
       scroll
@@ -114,7 +112,9 @@ const ViewStation = () => {
           tone={feedback === 'Station marked as restocked.' ? 'success' : 'danger'}
         />
       ) : null}
-      {station ? (
+      {!station && !error ? (
+        <DetailSkeleton label="Loading feeding station" />
+      ) : station ? (
         <StationEntry
           station={station}
           status={appModules.stations.stockStatus(station)}

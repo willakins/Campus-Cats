@@ -14,7 +14,7 @@ import { WhitelistModule } from './WhitelistModule';
 const admin = parseUser({
   id: 'admin-1',
   email: 'admin@gatech.edu',
-  role: Role.Admin,
+  role: Role.Officer,
 });
 const member = parseUser({
   id: 'member-1',

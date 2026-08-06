@@ -1,19 +1,11 @@
 import React from 'react';
-import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
+import { Tabs } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { canManageFeature } from '@/core/domain';
 import { useAuth } from '@/providers';
 import { useAppTheme } from '@/theme';
-import HomeScreen from './index';
-import Announcements from './announcements';
-import Catalog from './catalog';
-import Settings from './settings';
-import Stations from './stations';
-
-const Tab = createBottomTabNavigator();
-
 const TabNavigator = () => {
   const { user } = useAuth();
   const theme = useAppTheme();
@@ -21,7 +13,7 @@ const TabNavigator = () => {
   const isAdmin = canManageFeature(user.role);
 
   return (
-    <Tab.Navigator
+    <Tabs
       screenOptions={{
         headerShown: false,
         tabBarActiveTintColor: theme.colors.primary,
@@ -44,9 +36,8 @@ const TabNavigator = () => {
         },
       }}
     >
-      <Tab.Screen
-        name="Home"
-        component={HomeScreen}
+      <Tabs.Screen
+        name="index"
         options={{
           tabBarLabel: 'Map',
           tabBarIcon: ({ color, size }) => (
@@ -54,9 +45,8 @@ const TabNavigator = () => {
           ),
         }}
       />
-      <Tab.Screen
-        name="Announcements"
-        component={Announcements}
+      <Tabs.Screen
+        name="announcements"
         options={{
           tabBarLabel: 'Updates',
           tabBarIcon: ({ color, size }) => (
@@ -64,10 +54,9 @@ const TabNavigator = () => {
           ),
         }}
       />
-      {isAdmin && (
-        <Tab.Screen
-          name="Stations"
-          component={Stations}
+      <Tabs.Protected guard={isAdmin}>
+        <Tabs.Screen
+          name="stations"
           options={{
             tabBarLabel: 'Stations',
             tabBarIcon: ({ color, size }) => (
@@ -75,10 +64,9 @@ const TabNavigator = () => {
             ),
           }}
         />
-      )}
-      <Tab.Screen
-        name="Catalog"
-        component={Catalog}
+      </Tabs.Protected>
+      <Tabs.Screen
+        name="catalog"
         options={{
           tabBarLabel: 'Cats',
           tabBarIcon: ({ color, size }) => (
@@ -86,9 +74,8 @@ const TabNavigator = () => {
           ),
         }}
       />
-      <Tab.Screen
-        name="Info"
-        component={Settings}
+      <Tabs.Screen
+        name="settings"
         options={{
           tabBarLabel: 'More',
           tabBarIcon: ({ color, size }) => (
@@ -96,7 +83,7 @@ const TabNavigator = () => {
           ),
         }}
       />
-    </Tab.Navigator>
+    </Tabs>
   );
 };
 export default TabNavigator;

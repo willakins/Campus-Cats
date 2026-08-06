@@ -1,7 +1,11 @@
 import { z } from 'zod';
 
 import { Outcome, User, failure, success } from '../../core/domain';
-import { ExternalSignInResult, SessionPort } from '../../core/ports';
+import {
+  BannedAccountError,
+  ExternalSignInResult,
+  SessionPort,
+} from '../../core/ports';
 
 interface SessionDependencies {
   readonly session: SessionPort;
@@ -11,6 +15,8 @@ const credentialsSchema = z.object({
   email: z.string().trim().email(),
   password: z.string().min(1),
 });
+
+const emailSchema = z.string().trim().email();
 
 export class SessionModule {
   constructor(private readonly dependencies: SessionDependencies) {}
@@ -23,13 +29,20 @@ export class SessionModule {
     }
   }
 
+  observeCurrentUser(onChange: (user: User | undefined) => void): () => void {
+    return this.dependencies.session.observeCurrentUser(onChange);
+  }
+
   async signInWithEmail(email: string, password: string): Promise<Outcome<User>> {
     if (!credentialsSchema.safeParse({ email, password }).success) {
       return failure('validation', 'Enter a valid email and password');
     }
     try {
       return success(await this.dependencies.session.signInWithEmail(email, password));
-    } catch {
+    } catch (error) {
+      if (error instanceof BannedAccountError) {
+        return failure('forbidden', error.message);
+      }
       return failure('authentication_failed', 'Email sign-in failed');
     }
   }
@@ -45,10 +58,29 @@ export class SessionModule {
     }
   }
 
+  async requestPasswordReset(email: string): Promise<Outcome<void>> {
+    const parsed = emailSchema.safeParse(email);
+    if (!parsed.success) {
+      return failure('validation', 'Enter the email address for your account.');
+    }
+    try {
+      await this.dependencies.session.requestPasswordReset(parsed.data.toLowerCase());
+      return success(undefined);
+    } catch {
+      return failure(
+        'dependency_failure',
+        'Could not send password-reset instructions. Please try again.',
+      );
+    }
+  }
+
   async signInWithSaml(): Promise<Outcome<ExternalSignInResult>> {
     try {
       return success(await this.dependencies.session.signInWithSaml());
-    } catch {
+    } catch (error) {
+      if (error instanceof BannedAccountError) {
+        return failure('forbidden', error.message);
+      }
       return failure('dependency_failure', 'SSO sign-in could not be completed');
     }
   }

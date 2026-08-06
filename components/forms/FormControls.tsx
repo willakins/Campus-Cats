@@ -7,7 +7,6 @@ import {
   View,
 } from 'react-native';
 
-import { Marker } from 'react-native-maps';
 import DropdownPicker from 'react-native-dropdown-picker';
 
 import { appModules } from '../../composition/appModules';
@@ -16,7 +15,9 @@ import { useAppTheme } from '../../theme';
 import { PickerConfig } from '../../types';
 import { AppText, FormField, MediaPicker } from '../design';
 import { campusMapDarkStyle } from '../mapStyles';
+import { createCampusCamera, GEORGIA_TECH_CENTER } from '../mapViewport';
 import { DateTimeInput } from '../ui/DateTimeInput';
+import { MapMarker } from '../ui/MapMarker';
 import { MapView } from '../ui/MapView';
 
 interface FormTextInputProps extends TextInputProps {
@@ -196,15 +197,10 @@ export const LocationField = ({
           style={{ flex: 1 }}
           userInterfaceStyle={theme.dark ? 'dark' : 'light'}
           customMapStyle={theme.dark ? [...campusMapDarkStyle] : undefined}
-          initialRegion={{
-            latitude: hasLocation ? value.latitude : 33.7756,
-            longitude: hasLocation ? value.longitude : -84.3963,
-            latitudeDelta: 0.01,
-            longitudeDelta: 0.01,
-          }}
+          initialCamera={createCampusCamera(hasLocation ? value : GEORGIA_TECH_CENTER)}
           onPress={(event) => onChange(event.nativeEvent.coordinate)}
         >
-          {hasLocation ? <Marker coordinate={value} /> : null}
+          {hasLocation ? <MapMarker coordinate={value} /> : null}
         </MapView>
       </View>
     </FormField>

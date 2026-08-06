@@ -2,6 +2,7 @@ import { Timestamp } from 'firebase/firestore';
 import { getFunctions } from 'firebase/functions';
 
 import { ExpoImageSelection } from '../adapters/expo/ExpoImageSelection';
+import { FirebaseBillingReader } from '../adapters/firebase/FirebaseBillingReader';
 import { ExpoSamlCredentialProvider } from '../adapters/firebase/ExpoSamlCredentialProvider';
 import { FirebaseCallableEffects } from '../adapters/firebase/FirebaseCallableEffects';
 import { FirebaseDocumentStore } from '../adapters/firebase/FirebaseDocumentStore';
@@ -15,10 +16,13 @@ import { UuidGenerator } from '../adapters/runtime/UuidGenerator';
 import { SystemClock, createFirestoreCodecs } from '../core/domain';
 import { MediaCoordinator } from '../core/media';
 import { AnnouncementsModule } from '../features/announcements';
+import { AppSettingsModule, ContentContributors } from '../features/appSettings';
+import { BillingModule } from '../features/billing';
 import { CatalogModule } from '../features/catalog';
 import { ContactsModule } from '../features/contacts';
 import { ImageSelectionModule } from '../features/imageSelection';
 import { InaturalistModule } from '../features/inaturalist';
+import { ProfilesModule } from '../features/profiles';
 import { SessionModule } from '../features/session';
 import { SightingsModule } from '../features/sightings';
 import { StationsModule } from '../features/stations';
@@ -34,10 +38,13 @@ import {
 
 export interface AppModules {
   readonly announcements: AnnouncementsModule;
+  readonly appSettings: AppSettingsModule;
+  readonly billing: BillingModule;
   readonly catalog: CatalogModule;
   readonly contacts: ContactsModule;
   readonly imageSelection: ImageSelectionModule;
   readonly inaturalist: InaturalistModule;
+  readonly profiles: ProfilesModule;
   readonly session: SessionModule;
   readonly sightings: SightingsModule;
   readonly stations: StationsModule;
@@ -49,6 +56,7 @@ const documents = new FirebaseDocumentStore(db);
 const media = new FirebaseMediaStore(storage);
 const functions = getFunctions(app);
 const effects = new FirebaseCallableEffects(functions);
+const billingReader = new FirebaseBillingReader(functions);
 const inaturalistReader = new FirebaseInaturalistReader(db);
 const inaturalistEffects = new FirebaseInaturalistEffects(functions);
 const ids = new UuidGenerator();
@@ -59,6 +67,17 @@ const session = new FirebaseSession(
   db,
   new ExpoSamlCredentialProvider(samlConfiguration),
 );
+const appSettings = new AppSettingsModule({
+  documents,
+  mediaCoordinator: new MediaCoordinator(media, ids),
+  codecs: { appSettings: codecs.appSettings },
+  migrateContributorPrivacy: () => effects.migrateContributorPrivacy(),
+});
+const contributors = new ContentContributors({
+  documents,
+  settings: appSettings,
+  codec: codecs.contentContributor,
+});
 
 export const appModules: AppModules = Object.freeze({
   announcements: new AnnouncementsModule({
@@ -70,12 +89,15 @@ export const appModules: AppModules = Object.freeze({
     clock,
     codecs,
   }),
+  appSettings,
+  billing: new BillingModule({ reader: billingReader }),
   catalog: new CatalogModule({
     documents,
     media,
     mediaCoordinator: new MediaCoordinator(media, ids),
     ids,
     clock,
+    contributors,
     codecs,
     imports: {
       reader: inaturalistReader,
@@ -93,12 +115,20 @@ export const appModules: AppModules = Object.freeze({
       status: codecs.inaturalistStatus,
     },
   }),
+  profiles: new ProfilesModule({
+    documents,
+    media,
+    mediaCoordinator: new MediaCoordinator(media, ids),
+    effects,
+    codecs,
+  }),
   session: new SessionModule({ session }),
   sightings: new SightingsModule({
     documents,
     media,
     mediaCoordinator: new MediaCoordinator(media, ids),
     ids,
+    contributors,
     codecs,
     imports: {
       reader: inaturalistReader,

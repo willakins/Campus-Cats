@@ -19,17 +19,17 @@ jest.mock('../../composition/appModules', () => ({
   },
 }));
 
-const renderThemed = (content: React.ReactElement) =>
-  render(<AppThemeProvider colorScheme="light">{content}</AppThemeProvider>);
+const renderThemed = async (content: React.ReactElement) =>
+  await render(<AppThemeProvider colorScheme="light">{content}</AppThemeProvider>);
 
 describe('form controls', () => {
   beforeEach(() => {
     jest.clearAllMocks();
   });
 
-  it('keeps labels visible and forwards text changes', () => {
+  it('keeps labels visible and forwards text changes', async () => {
     const onChangeText = jest.fn();
-    renderThemed(
+    await renderThemed(
       <FormTextInput
         label="Cat name"
         required
@@ -40,15 +40,15 @@ describe('form controls', () => {
     );
 
     expect(screen.getByText('Cat name *')).toBeOnTheScreen();
-    fireEvent.changeText(screen.getByLabelText('Cat name'), 'Goldie II');
+    await fireEvent.changeText(screen.getByLabelText('Cat name'), 'Goldie II');
     expect(onChangeText).toHaveBeenCalledWith('Goldie II');
   });
 
-  it('pairs switches with a descriptive label', () => {
+  it('pairs switches with a descriptive label', async () => {
     const onValueChange = jest.fn();
-    renderThemed(<ToggleField label="Cat was fed" value={false} onValueChange={onValueChange} />);
+    await renderThemed(<ToggleField label="Cat was fed" value={false} onValueChange={onValueChange} />);
 
-    fireEvent(screen.getByRole('switch', { name: 'Cat was fed' }), 'valueChange', true);
+    await fireEvent(screen.getByRole('switch', { name: 'Cat was fed' }), 'valueChange', true);
     expect(onValueChange).toHaveBeenCalledWith(true);
   });
 
@@ -63,7 +63,7 @@ describe('form controls', () => {
       value: { localUri: 'file://three.jpg' },
       warnings: [],
     });
-    renderThemed(
+    await renderThemed(
       <PhotoField
         photos={['file://one.jpg', 'file://two.jpg']}
         coverUri="file://one.jpg"

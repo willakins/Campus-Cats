@@ -1,6 +1,7 @@
 import {
   COLLECTIONS,
   CatalogEntry,
+  CatalogFavorite,
   CatalogRecord,
   Cat,
   Clock,
@@ -14,6 +15,7 @@ import {
   importedCatalogMedia,
   localCatalogRecord,
   parseCatalogEntry,
+  parseCatalogFavorite,
   success,
 } from '../../core/domain';
 import { MediaCoordinator, MediaSelection, localMedia } from '../../core/media';
@@ -23,6 +25,8 @@ import {
   InaturalistReader,
   MediaStore,
 } from '../../core/ports';
+import { CatalogFavoriteSummary } from './catalogDiscovery';
+import { ContentContributors } from '../appSettings';
 
 export interface CatalogDraft {
   readonly cat: Cat;
@@ -43,7 +47,11 @@ interface CatalogDependencies {
   readonly mediaCoordinator: MediaCoordinator;
   readonly ids: IdGenerator;
   readonly clock: Clock;
-  readonly codecs: { readonly catalog: FirestoreCodec<CatalogEntry> };
+  readonly contributors: ContentContributors;
+  readonly codecs: {
+    readonly catalog: FirestoreCodec<CatalogEntry>;
+    readonly catalogFavorite: FirestoreCodec<CatalogFavorite>;
+  };
   readonly imports?: {
     readonly reader: InaturalistReader;
     readonly codec: FirestoreCodec<ImportedCatalogProfile>;
@@ -53,13 +61,31 @@ interface CatalogDependencies {
 export class CatalogModule {
   constructor(private readonly dependencies: CatalogDependencies) {}
 
-  async list(): Promise<Outcome<readonly CatalogRecord[]>> {
+  async list(actor?: User): Promise<Outcome<readonly CatalogRecord[]>> {
+    const [localAttempt, importedAttempt, contributorAttempt] = await Promise.allSettled([
+      this.dependencies.documents.list(COLLECTIONS.catalog),
+      this.dependencies.imports
+        ? this.dependencies.imports.reader.listCatalog(false)
+        : Promise.resolve(undefined),
+      this.dependencies.contributors.visibleByContentId(actor, 'catalog'),
+    ]);
+    if (localAttempt.status === 'rejected') {
+      return failure('dependency_failure', 'Could not load the catalog');
+    }
+
     let localEntries: readonly CatalogEntry[];
     try {
-      const documents = await this.dependencies.documents.list(COLLECTIONS.catalog);
-      localEntries = documents.map(({ id, data }) =>
-        this.dependencies.codecs.catalog.decode(id, data),
-      );
+      const contributors = contributorAttempt.status === 'fulfilled'
+        ? contributorAttempt.value
+        : new Map<string, User>();
+      const canViewContributors = await this.dependencies.contributors.canView(actor);
+      localEntries = localAttempt.value.map(({ id, data }) => {
+        const decoded = this.dependencies.codecs.catalog.decode(id, data);
+        return withCatalogContributor(
+          decoded,
+          canViewContributors ? contributors.get(id) ?? decoded.createdBy : undefined,
+        );
+      });
     } catch {
       return failure('dependency_failure', 'Could not load the catalog');
     }
@@ -67,10 +93,17 @@ export class CatalogModule {
     if (!this.dependencies.imports) {
       return success(localEntries.map(localCatalogRecord));
     }
+    if (importedAttempt.status === 'rejected' || !importedAttempt.value) {
+      return success(localEntries.map(localCatalogRecord), [
+        {
+          code: 'partial_completion',
+          message:
+            'Local catalog profiles loaded, but iNaturalist profiles are unavailable',
+        },
+      ]);
+    }
     try {
-      const importedDocuments =
-        await this.dependencies.imports.reader.listCatalog(false);
-      const profiles = importedDocuments.map(({ id, data }) =>
+      const profiles = importedAttempt.value.map(({ id, data }) =>
         this.dependencies.imports!.codec.decode(id, data),
       );
       const linkedLocalIds = new Set(
@@ -110,7 +143,116 @@ export class CatalogModule {
     }
   }
 
-  async get(id: string): Promise<Outcome<CatalogRecord>> {
+  async favoriteSummary(
+    actor: User | undefined,
+  ): Promise<Outcome<CatalogFavoriteSummary>> {
+    if (!actor) {
+      return failure('unauthenticated', 'Sign in to view catalog favorites');
+    }
+
+    try {
+      const documents = await this.dependencies.documents.list(
+        COLLECTIONS.catalogFavorites,
+      );
+      const counts: Record<string, number> = {};
+      let selectedCatalogId: string | undefined;
+      let invalidCount = 0;
+
+      for (const document of documents) {
+        try {
+          const favorite = this.dependencies.codecs.catalogFavorite.decode(
+            document.id,
+            document.data,
+          );
+          counts[favorite.catalogId] = (counts[favorite.catalogId] ?? 0) + 1;
+          if (favorite.userId === actor.id) {
+            selectedCatalogId = favorite.catalogId;
+          }
+        } catch {
+          invalidCount += 1;
+        }
+      }
+
+      return success(
+        { selectedCatalogId, counts },
+        invalidCount > 0
+          ? [
+              {
+                code: 'partial_completion',
+                message: `${invalidCount} invalid favorite ${invalidCount === 1 ? 'record was' : 'records were'} ignored`,
+              },
+            ]
+          : [],
+      );
+    } catch {
+      return failure('dependency_failure', 'Could not load catalog favorites');
+    }
+  }
+
+  async favoriteForUser(
+    userId: string,
+  ): Promise<Outcome<CatalogFavorite | undefined>> {
+    try {
+      const document = await this.dependencies.documents.get(
+        COLLECTIONS.catalogFavorites,
+        userId,
+      );
+      return success(
+        document
+          ? this.dependencies.codecs.catalogFavorite.decode(
+              document.id,
+              document.data,
+            )
+          : undefined,
+      );
+    } catch {
+      return failure('dependency_failure', 'Could not load the favorite cat');
+    }
+  }
+
+  async setFavorite(
+    actor: User | undefined,
+    catalogId: string | undefined,
+  ): Promise<Outcome<CatalogFavorite | undefined>> {
+    if (!actor) {
+      return failure('unauthenticated', 'Sign in to choose a favorite cat');
+    }
+    if (catalogId !== undefined && !catalogId.trim()) {
+      return failure('validation', 'Choose a valid catalog profile');
+    }
+
+    try {
+      if (catalogId === undefined) {
+        await this.dependencies.documents.remove(
+          COLLECTIONS.catalogFavorites,
+          actor.id,
+        );
+        return success(undefined);
+      }
+
+      const favorite = parseCatalogFavorite({
+        userId: actor.id,
+        catalogId: catalogId.trim(),
+        createdAt: this.dependencies.clock.now(),
+      });
+      await this.dependencies.documents.put(
+        COLLECTIONS.catalogFavorites,
+        actor.id,
+        this.dependencies.codecs.catalogFavorite.encode(favorite),
+      );
+      return success(favorite);
+    } catch {
+      return failure('dependency_failure', 'Could not update your favorite cat');
+    }
+  }
+
+  async get(
+    actorOrId: User | string | undefined,
+    requestedId?: string,
+  ): Promise<Outcome<CatalogRecord>> {
+    const actor = typeof actorOrId === 'string' ? undefined : actorOrId;
+    const id = typeof actorOrId === 'string' ? actorOrId : requestedId;
+    if (!id) return failure('validation', 'Missing catalog entry ID');
     const importedId = importedCatalogId(id);
     if (importedId !== undefined) {
       if (!this.dependencies.imports) {
@@ -126,7 +268,7 @@ export class CatalogModule {
           document.data,
         );
         const linked = profile.linkedLocalCatalogId
-          ? await this.getLocal(profile.linkedLocalCatalogId)
+          ? await this.getLocal(actor, profile.linkedLocalCatalogId)
           : undefined;
         return success(importedCatalogRecord(profile, linked));
       } catch {
@@ -135,16 +277,25 @@ export class CatalogModule {
     }
     try {
       const document = await this.dependencies.documents.get(COLLECTIONS.catalog, id);
-      return document
-        ? success(
-            localCatalogRecord(
-              this.dependencies.codecs.catalog.decode(
-                document.id,
-                document.data,
-              ),
-            ),
-          )
-        : failure('not_found', 'Catalog entry not found');
+      if (!document) return failure('not_found', 'Catalog entry not found');
+      const decoded = this.dependencies.codecs.catalog.decode(
+        document.id,
+        document.data,
+      );
+      const canViewContributors = await this.dependencies.contributors.canView(actor);
+      const contributor = await this.dependencies.contributors.visibleForContent(
+        actor,
+        'catalog',
+        id,
+      );
+      return success(
+        localCatalogRecord(
+          withCatalogContributor(
+            decoded,
+            contributor ?? (canViewContributors ? decoded.createdBy : undefined),
+          ),
+        ),
+      );
     } catch {
       return failure('dependency_failure', 'Could not load the catalog entry');
     }
@@ -200,11 +351,15 @@ export class CatalogModule {
       profile: localMedia(draft.photos[0]),
       gallery: draft.photos.slice(1).map(localMedia),
       persist: async () =>
-        this.dependencies.documents.put(
-          COLLECTIONS.catalog,
-          id,
-          this.dependencies.codecs.catalog.encode(entry),
-        ),
+        this.dependencies.documents.commit([
+          {
+            operation: 'put',
+            collection: COLLECTIONS.catalog,
+            id,
+            data: this.dependencies.codecs.catalog.encode(entry),
+          },
+          this.dependencies.contributors.write('catalog', id, actor!),
+        ]),
     });
     return mediaResult.ok ? success(entry, mediaResult.warnings) : mediaResult;
   }
@@ -222,7 +377,7 @@ export class CatalogModule {
         'Use local overrides to edit an iNaturalist catalog profile',
       );
     }
-    const existing = await this.get(id);
+    const existing = await this.get(actor, id);
     if (!existing.ok) return existing;
     if (existing.value.source !== 'campus-cats') {
       return failure(
@@ -245,11 +400,15 @@ export class CatalogModule {
       profile: update.profile,
       gallery: update.gallery,
       persist: async () =>
-        this.dependencies.documents.put(
-          COLLECTIONS.catalog,
-          id,
-          this.dependencies.codecs.catalog.encode(entry),
-        ),
+        this.dependencies.documents.commit([
+          {
+            operation: 'put',
+            collection: COLLECTIONS.catalog,
+            id,
+            data: this.dependencies.codecs.catalog.encode(entry),
+          },
+          this.dependencies.contributors.write('catalog', id, actor!),
+        ]),
     });
     return mediaResult.ok ? success(entry, mediaResult.warnings) : mediaResult;
   }
@@ -263,7 +422,7 @@ export class CatalogModule {
         'iNaturalist catalog profiles can be hidden but not deleted',
       );
     }
-    const existing = await this.get(id);
+    const existing = await this.get(actor, id);
     if (!existing.ok) return existing;
     if (existing.value.source !== 'campus-cats') {
       return failure(
@@ -273,7 +432,10 @@ export class CatalogModule {
     }
 
     try {
-      await this.dependencies.documents.remove(COLLECTIONS.catalog, id);
+      await this.dependencies.documents.commit([
+        { operation: 'remove', collection: COLLECTIONS.catalog, id },
+        this.dependencies.contributors.remove('catalog', id),
+      ]);
     } catch {
       return failure('dependency_failure', 'Could not delete the catalog entry');
     }
@@ -304,15 +466,28 @@ export class CatalogModule {
     }
   }
 
-  private async getLocal(id: string): Promise<CatalogEntry | undefined> {
+  private async getLocal(actor: User | undefined, id: string): Promise<CatalogEntry | undefined> {
     const document = await this.dependencies.documents.get(
       COLLECTIONS.catalog,
       id,
     );
-    return document
-      ? this.dependencies.codecs.catalog.decode(document.id, document.data)
-      : undefined;
+    if (!document) return undefined;
+    const decoded = this.dependencies.codecs.catalog.decode(document.id, document.data);
+    const canViewContributors = await this.dependencies.contributors.canView(actor);
+    const contributor = await this.dependencies.contributors.visibleForContent(actor, 'catalog', id);
+    return withCatalogContributor(
+      decoded,
+      contributor ?? (canViewContributors ? decoded.createdBy : undefined),
+    );
   }
+}
+
+function withCatalogContributor(
+  entry: CatalogEntry,
+  createdBy: User | undefined,
+): CatalogEntry {
+  const { createdBy: _legacyContributor, ...value } = entry;
+  return parseCatalogEntry({ ...value, createdBy });
 }
 
 function importedCatalogId(id: string): number | undefined {
@@ -369,7 +544,7 @@ function importedCatalogRecord(
 function mutationDenied(actor: User | undefined): Outcome<never> | undefined {
   if (!actor) return failure('unauthenticated', 'Sign in to manage the catalog');
   if (!canManageFeature(actor.role)) {
-    return failure('forbidden', 'Only administrators may manage the catalog');
+    return failure('forbidden', 'Only officers may manage the catalog');
   }
   return undefined;
 }

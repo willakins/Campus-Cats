@@ -1,10 +1,15 @@
 import { Role, User, parseUser } from '../../core/domain';
-import { ExternalSignInResult, SessionPort } from '../../core/ports';
+import {
+  BannedAccountError,
+  ExternalSignInResult,
+  SessionPort,
+} from '../../core/ports';
 
 type Operation =
   | 'currentUser'
   | 'signInWithEmail'
   | 'createAccount'
+  | 'requestPasswordReset'
   | 'signInWithSaml'
   | 'signOut'
   | 'registerPushToken';
@@ -19,6 +24,7 @@ export class InMemorySession implements SessionPort {
   readonly #accounts = new Map<string, EmailAccount>();
   readonly #samlResults: ExternalSignInResult[] = [];
   readonly #failures = new Map<Operation, Error>();
+  readonly #observers = new Set<(user: User | undefined) => void>();
   #current: User | undefined;
 
   constructor(current?: User) {
@@ -39,7 +45,19 @@ export class InMemorySession implements SessionPort {
 
   async currentUser(): Promise<User | undefined> {
     this.maybeFail('currentUser');
+    if (this.#current) this.requireActive(this.#current);
     return this.#current;
+  }
+
+  observeCurrentUser(onChange: (user: User | undefined) => void): () => void {
+    this.#observers.add(onChange);
+    onChange(this.isBanned(this.#current) ? undefined : this.#current);
+    return () => this.#observers.delete(onChange);
+  }
+
+  setCurrentUser(user: User | undefined): void {
+    this.#current = user;
+    this.notifyObservers();
   }
 
   async signInWithEmail(email: string, password: string): Promise<User> {
@@ -48,7 +66,9 @@ export class InMemorySession implements SessionPort {
     if (!account || account.password !== password) {
       throw new Error('Invalid credentials');
     }
+    this.requireActive(account.user);
     this.#current = account.user;
+    this.notifyObservers();
     this.operations.push(`email-sign-in:${account.user.id}`);
     return account.user;
   }
@@ -65,15 +85,25 @@ export class InMemorySession implements SessionPort {
     });
     this.addEmailAccount(email, password, user);
     this.#current = user;
+    this.notifyObservers();
     this.operations.push(`create-account:${user.id}`);
     return user;
+  }
+
+  async requestPasswordReset(email: string): Promise<void> {
+    this.maybeFail('requestPasswordReset');
+    this.operations.push(`password-reset:${email.toLowerCase()}`);
   }
 
   async signInWithSaml(): Promise<ExternalSignInResult> {
     this.maybeFail('signInWithSaml');
     const result = this.#samlResults.shift();
     if (!result) throw new Error('No deterministic SAML result remains');
-    if (result.status === 'authenticated') this.#current = result.user;
+    if (result.status === 'authenticated') {
+      this.requireActive(result.user);
+      this.#current = result.user;
+      this.notifyObservers();
+    }
     this.operations.push(`saml:${result.status}`);
     return result;
   }
@@ -81,6 +111,7 @@ export class InMemorySession implements SessionPort {
   async signOut(): Promise<void> {
     this.maybeFail('signOut');
     this.#current = undefined;
+    this.notifyObservers();
     this.operations.push('sign-out');
   }
 
@@ -96,5 +127,18 @@ export class InMemorySession implements SessionPort {
       this.#failures.delete(operation);
       throw failure;
     }
+  }
+
+  private notifyObservers(): void {
+    const current = this.isBanned(this.#current) ? undefined : this.#current;
+    for (const observer of this.#observers) observer(current);
+  }
+
+  private isBanned(user: User | undefined): boolean {
+    return Boolean(user && 'banned' in user && user.banned === true);
+  }
+
+  private requireActive(user: User): void {
+    if (this.isBanned(user)) throw new BannedAccountError();
   }
 }

@@ -10,6 +10,7 @@ import {
   whitelistApplicationIdSchema,
 } from './ids';
 import { roleSchema } from './roles';
+import { achievementIdSchema } from './achievements';
 
 const requiredText = z.string().trim().min(1);
 const validDate = z.date().refine((date) => !Number.isNaN(date.getTime()), {
@@ -27,6 +28,51 @@ export const userSchema = z.object({
   role: roleSchema,
 });
 
+export const disciplinaryNoticeSchema = z.object({
+  id: requiredText,
+  message: z.string().trim().min(1).max(500),
+  createdAt: validDate,
+  issuedById: userIdSchema,
+  issuedByEmail: z.string().trim().email(),
+});
+
+export const managedUserSchema = userSchema.extend({
+  banned: z.boolean().default(false),
+  disciplinaryNotices: z.array(disciplinaryNoticeSchema).default([]),
+});
+
+export const publicProfileSchema = z
+  .object({
+    id: userIdSchema,
+    displayName: z.string().trim().min(1).max(60),
+    bio: z.string().trim().max(500).default(''),
+    profilePhotoUrl: z
+      .union([z.literal(''), z.string().url().max(2048)])
+      .default(''),
+    role: roleSchema,
+    achievementIds: z.array(achievementIdSchema).default([]),
+    selectedTitleId: z.union([z.literal(''), achievementIdSchema]).default(''),
+  })
+  .superRefine((profile, context) => {
+    if (new Set(profile.achievementIds).size !== profile.achievementIds.length) {
+      context.addIssue({
+        code: 'custom',
+        path: ['achievementIds'],
+        message: 'Achievements must be unique',
+      });
+    }
+    if (
+      profile.selectedTitleId &&
+      !profile.achievementIds.includes(profile.selectedTitleId)
+    ) {
+      context.addIssue({
+        code: 'custom',
+        path: ['selectedTitleId'],
+        message: 'The displayed title must be unlocked',
+      });
+    }
+  });
+
 export const sightingSchema = z.object({
   id: sightingIdSchema,
   name: requiredText,
@@ -35,7 +81,7 @@ export const sightingSchema = z.object({
   health: z.boolean(),
   date: validDate,
   location: coordinatesSchema,
-  createdBy: userSchema,
+  createdBy: userSchema.optional(),
   timeOfDay: requiredText,
 });
 
@@ -65,7 +111,13 @@ export const catalogEntrySchema = z.object({
   cat: catSchema,
   credits: z.string(),
   createdAt: validDate,
-  createdBy: userSchema,
+  createdBy: userSchema.optional(),
+});
+
+export const catalogFavoriteSchema = z.object({
+  userId: userIdSchema,
+  catalogId: catalogEntryIdSchema,
+  createdAt: validDate,
 });
 
 export const stationSchema = z.object({
@@ -103,6 +155,11 @@ export const contactSchema = z.object({
 
 export type Coordinates = Readonly<z.infer<typeof coordinatesSchema>>;
 export type User = Readonly<z.infer<typeof userSchema>>;
+export type DisciplinaryNotice = Readonly<
+  z.infer<typeof disciplinaryNoticeSchema>
+>;
+export type ManagedUser = Readonly<z.infer<typeof managedUserSchema>>;
+export type PublicProfile = Readonly<z.infer<typeof publicProfileSchema>>;
 export type Sighting = Readonly<z.infer<typeof sightingSchema>>;
 export type Cat = Readonly<z.infer<typeof catSchema>>;
 export type CatStatus = Cat['currentStatus'];
@@ -110,6 +167,7 @@ export type Fur = Cat['furLength'];
 export type TNRStatus = Cat['tnr'];
 export type Sex = Cat['sex'];
 export type CatalogEntry = Readonly<z.infer<typeof catalogEntrySchema>>;
+export type CatalogFavorite = Readonly<z.infer<typeof catalogFavoriteSchema>>;
 export type Station = Readonly<z.infer<typeof stationSchema>>;
 export type Announcement = Readonly<z.infer<typeof announcementSchema>>;
 export type WhitelistApplication = Readonly<
@@ -137,10 +195,16 @@ function parseImmutable<Schema extends z.ZodTypeAny>(
 
 export const parseUser = (value: unknown): User =>
   parseImmutable(userSchema, value);
+export const parseManagedUser = (value: unknown): ManagedUser =>
+  parseImmutable(managedUserSchema, value);
+export const parsePublicProfile = (value: unknown): PublicProfile =>
+  parseImmutable(publicProfileSchema, value);
 export const parseSighting = (value: unknown): Sighting =>
   parseImmutable(sightingSchema, value);
 export const parseCatalogEntry = (value: unknown): CatalogEntry =>
   parseImmutable(catalogEntrySchema, value);
+export const parseCatalogFavorite = (value: unknown): CatalogFavorite =>
+  parseImmutable(catalogFavoriteSchema, value);
 export const parseStation = (value: unknown): Station =>
   parseImmutable(stationSchema, value);
 export const parseAnnouncement = (value: unknown): Announcement =>

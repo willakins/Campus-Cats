@@ -14,12 +14,12 @@ interface WhitelistItemProps {
   readonly setBusy: (busy: boolean) => void;
 }
 
-export const WhitelistItem: React.FC<WhitelistItemProps> = ({
+export const WhitelistItem = React.memo(function WhitelistItem({
   actor,
   application,
   onChanged,
   setBusy,
-}) => {
+}: WhitelistItemProps) {
   const theme = useAppTheme();
   const [pending, setPending] = useState<'accept' | 'deny'>();
   const [error, setError] = useState<string>();
@@ -93,4 +93,4 @@ export const WhitelistItem: React.FC<WhitelistItemProps> = ({
       </View>
     </Card>
   );
-};
+});

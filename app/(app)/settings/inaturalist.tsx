@@ -9,6 +9,7 @@ import {
   AppText,
   Button,
   Card,
+  CardListSkeleton,
   EmptyState,
   ErrorState,
   FeedbackBanner,
@@ -18,7 +19,7 @@ import {
   StatusPill,
 } from '@/components/design';
 import { FormTextInput } from '@/components/forms';
-import { LoadingIndicator } from '@/components/ui/LoadingIndicator';
+import { virtualizedListPerformanceProps } from '@/components/collections/virtualizedListPerformance';
 import { appModules } from '@/composition/appModules';
 import {
   ImportedCatalogProfile,
@@ -74,7 +75,7 @@ const InaturalistAdministration = () => {
     void Promise.all([
       appModules.inaturalist.status(actor),
       appModules.inaturalist.records(actor),
-      appModules.catalog.list(),
+      appModules.catalog.list(actor),
     ]).then(([statusResult, recordsResult, catalogResult]) => {
       setLoading(false);
       if (!statusResult.ok) {
@@ -194,7 +195,7 @@ const InaturalistAdministration = () => {
     return (
       <Screen>
         <AppHeader title="iNaturalist sync" eyebrow="Officer tools" onBack={() => router.back()} />
-        <AccessDeniedState message="Only administrators may manage imported iNaturalist data." />
+        <AccessDeniedState message="Only officers may manage imported iNaturalist data." />
       </Screen>
     );
   }
@@ -203,11 +204,15 @@ const InaturalistAdministration = () => {
     <Screen>
       <AppHeader title="iNaturalist sync" eyebrow="Officer tools" onBack={() => router.back()} />
       {loading ? (
-        <LoadingIndicator label="Loading iNaturalist synchronization" />
+        <CardListSkeleton
+          label="Loading iNaturalist synchronization"
+          layout="actions"
+        />
       ) : error ? (
         <ErrorState title="Could not load iNaturalist data" message={error} onRetry={load} />
       ) : (
         <FlatList
+          {...virtualizedListPerformanceProps}
           data={records}
           keyExtractor={(record) => `${record.kind}-${record.value.id}`}
           contentContainerStyle={{ gap: theme.spacing.sm, paddingBottom: theme.spacing.xl }}

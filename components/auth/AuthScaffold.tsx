@@ -7,6 +7,7 @@ import {
 } from 'react-native';
 
 import { useAppTheme } from '../../theme';
+import { useAppSettings } from '../../providers/AppSettingsProvider';
 import { AppHeader, AppText, Card, FormField, Screen } from '../design';
 
 interface AuthScaffoldProps {
@@ -18,6 +19,7 @@ interface AuthScaffoldProps {
 
 export const AuthScaffold = ({ title, subtitle, onBack, children }: AuthScaffoldProps) => {
   const theme = useAppTheme();
+  const { settings } = useAppSettings();
   return (
     <Screen scroll keyboardAware contentStyle={{ paddingBottom: theme.spacing.huge }}>
       {onBack ? <AppHeader title={title} eyebrow="Account access" onBack={onBack} /> : null}
@@ -42,7 +44,11 @@ export const AuthScaffold = ({ title, subtitle, onBack, children }: AuthScaffold
           <Image
             accessibilityLabel="Campus Cats logo"
             resizeMode="contain"
-            source={require('../../assets/images/campus_cats_logo.png')}
+            source={
+              settings.logoUrl
+                ? { uri: settings.logoUrl }
+                : require('../../assets/images/campus_cats_logo.png')
+            }
             style={{ width: '100%', height: 152 }}
           />
           {!onBack ? (
