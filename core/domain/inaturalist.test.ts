@@ -83,7 +83,11 @@ describe('iNaturalist domain contracts', () => {
       displayName: 'Domestic cat',
       description: '',
       qualityGrade: 'casual',
-      observer: { id: 43, login: 'another-observer' },
+      observer: {
+        id: 43,
+        login: 'another-observer',
+        displayName: '   ',
+      },
       location: null,
       positionalAccuracy: null,
       photos: [],
@@ -97,6 +101,7 @@ describe('iNaturalist domain contracts', () => {
 
     expect(observation.location).toBeNull();
     expect(observation.photos).toEqual([]);
+    expect(observation.observer.displayName).toBeUndefined();
   });
 
   it('parses guide metadata, local overrides, and a persistent local link', () => {

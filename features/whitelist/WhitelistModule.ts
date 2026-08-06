@@ -159,7 +159,7 @@ export class WhitelistModule {
 function adminDenied(actor: User | undefined): Outcome<never> | undefined {
   if (!actor) return failure('unauthenticated', 'Sign in to manage applications');
   if (!canManageFeature(actor.role)) {
-    return failure('forbidden', 'Only administrators may manage applications');
+    return failure('forbidden', 'Only officers may manage applications');
   }
   return undefined;
 }

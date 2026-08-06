@@ -1,8 +1,79 @@
-import React, { useId } from 'react';
-import { View } from 'react-native';
+import React, { useId, useState } from 'react';
+import { Pressable, TextInput, View } from 'react-native';
+
+import { Ionicons } from '@expo/vector-icons';
 
 import { useAppTheme } from '../../theme';
 import { AppText } from './Typography';
+
+interface SearchFieldProps {
+  readonly value: string;
+  readonly onChangeText: (value: string) => void;
+  readonly accessibilityLabel: string;
+  readonly placeholder: string;
+}
+
+export const SearchField = ({
+  value,
+  onChangeText,
+  accessibilityLabel,
+  placeholder,
+}: SearchFieldProps) => {
+  const theme = useAppTheme();
+  const [focused, setFocused] = useState(false);
+  return (
+    <View
+      style={{
+        minHeight: theme.layout.minTouchTarget,
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: theme.spacing.xs,
+        paddingHorizontal: theme.spacing.sm,
+        borderWidth: focused ? 2 : 1,
+        borderColor: focused ? theme.colors.primary : theme.colors.border,
+        borderRadius: theme.radii.field,
+        backgroundColor: theme.colors.surface,
+      }}
+    >
+      <Ionicons name="search" size={20} color={theme.colors.textMuted} />
+      <TextInput
+        accessibilityLabel={accessibilityLabel}
+        placeholder={placeholder}
+        value={value}
+        onChangeText={onChangeText}
+        onFocus={() => setFocused(true)}
+        onBlur={() => setFocused(false)}
+        autoCapitalize="none"
+        autoCorrect={false}
+        returnKeyType="search"
+        clearButtonMode="while-editing"
+        placeholderTextColor={theme.colors.textMuted}
+        selectionColor={theme.colors.primary}
+        style={[
+          theme.typography.body,
+          {
+            flex: 1,
+            minWidth: 0,
+            height: theme.layout.minTouchTarget,
+            color: theme.colors.text,
+            outlineWidth: 0,
+          },
+        ]}
+      />
+      {value ? (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={`Clear ${accessibilityLabel.toLocaleLowerCase()}`}
+          hitSlop={8}
+          onPress={() => onChangeText('')}
+          style={({ pressed }) => ({ opacity: pressed ? 0.6 : 1 })}
+        >
+          <Ionicons name="close-circle" size={20} color={theme.colors.textMuted} />
+        </Pressable>
+      ) : null}
+    </View>
+  );
+};
 
 interface FormFieldRenderProps {
   readonly inputId: string;

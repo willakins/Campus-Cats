@@ -3,6 +3,7 @@ const base = require('./jest.config');
 module.exports = {
   ...base,
   collectCoverage: false,
+  setupFiles: ['<rootDir>/test/support/emulatorEnvironment.js'],
   setupFilesAfterEnv: [],
   testEnvironment: 'node',
   testEnvironmentOptions: {

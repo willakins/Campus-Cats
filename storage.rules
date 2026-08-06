@@ -6,8 +6,14 @@ service firebase.storage {
       return request.auth != null;
     }
 
-    function role() {
+    function isActiveUser() {
       return signedIn()
+        && (!('banned' in firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data)
+          || firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data.banned != true);
+    }
+
+    function role() {
+      return isActiveUser()
         ? firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data.role
         : -1;
     }
@@ -16,37 +22,66 @@ service firebase.storage {
       return role() >= 1;
     }
 
+    function isPresident() {
+      return role() == 3;
+    }
+
     function ownsSighting(sightingId) {
-      return signedIn()
+      return isActiveUser()
         && (
           resource.metadata.ownerId == request.auth.uid
           || (
             firestore.exists(/databases/(default)/documents/cat-sightings/$(sightingId))
-            && firestore.get(/databases/(default)/documents/cat-sightings/$(sightingId)).data.createdBy.id == request.auth.uid
+            && firestore.exists(/databases/(default)/documents/content-contributors/$(('sighting__' + sightingId)))
+            && firestore.get(/databases/(default)/documents/content-contributors/$(('sighting__' + sightingId))).data.user.id == request.auth.uid
           )
         );
     }
 
     match /cat-sightings/{sightingId}/{fileName} {
-      allow read: if signedIn();
-      allow create: if signedIn()
+      allow read: if isActiveUser();
+      allow create: if isActiveUser()
         && request.resource.metadata.ownerId == request.auth.uid;
       allow update, delete: if ownsSighting(sightingId);
     }
 
+    match /public-profiles/{userId}/{fileName} {
+      allow read: if isActiveUser();
+      allow create: if isActiveUser()
+        && request.auth.uid == userId
+        && request.resource.metadata.ownerId == request.auth.uid
+        && request.resource.size <= 10 * 1024 * 1024
+        && request.resource.contentType.matches('image/.*');
+      allow update, delete: if isActiveUser()
+        && request.auth.uid == userId
+        && resource.metadata.ownerId == request.auth.uid
+        && (request.resource == null
+          || (request.resource.size <= 10 * 1024 * 1024
+            && request.resource.metadata.ownerId == request.auth.uid
+            && request.resource.contentType.matches('image/.*')));
+    }
+
     match /catalog/{entryId}/{fileName} {
-      allow read: if signedIn();
+      allow read: if isActiveUser();
       allow write: if isAdmin();
     }
 
     match /stations/{stationId}/{fileName} {
-      allow read: if signedIn();
+      allow read: if isActiveUser();
       allow write: if isAdmin();
     }
 
     match /announcements/{announcementId}/{fileName} {
-      allow read: if signedIn();
+      allow read: if isActiveUser();
       allow write: if isAdmin();
+    }
+
+    match /app-branding/{fileName} {
+      allow read: if true;
+      allow create, update: if isPresident()
+        && request.resource.size <= 10 * 1024 * 1024
+        && request.resource.contentType.matches('image/.*');
+      allow delete: if isPresident();
     }
 
     match /{allPaths=**} {

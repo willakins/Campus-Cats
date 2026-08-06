@@ -15,35 +15,33 @@ jest.mock('../../providers', () => ({
 
 jest.mock('@expo/vector-icons', () => ({ Ionicons: () => null }));
 
-jest.mock('../../app/(app)/(tabs)/index', () => () => null);
-jest.mock('../../app/(app)/(tabs)/announcements', () => () => null);
-jest.mock('../../app/(app)/(tabs)/catalog', () => () => null);
-jest.mock('../../app/(app)/(tabs)/settings', () => () => null);
-jest.mock('../../app/(app)/(tabs)/stations', () => () => null);
-
-jest.mock('@react-navigation/bottom-tabs', () => {
+jest.mock('expo-router', () => {
   const mockReact = require('react');
   const { View: MockView, Text: MockText } = require('react-native');
+  const MockScreen = ({ options }: { options: { tabBarLabel: string } }) =>
+    mockReact.createElement(
+      MockView,
+      {
+        accessible: true,
+        accessibilityRole: 'tab',
+        accessibilityLabel: options.tabBarLabel,
+      },
+      mockReact.createElement(MockText, null, options.tabBarLabel),
+    );
+  const MockTabs = ({ children }: React.PropsWithChildren) =>
+    mockReact.createElement(MockView, null, children);
+  const MockProtected = ({ guard, children }: React.PropsWithChildren<{ guard: boolean }>) =>
+    guard ? children : null;
+  MockTabs.Screen = MockScreen;
+  MockTabs.Protected = MockProtected;
+
   return {
-    createBottomTabNavigator: () => ({
-      Navigator: ({ children }: React.PropsWithChildren) =>
-        mockReact.createElement(MockView, null, children),
-      Screen: ({ options }: { options: { tabBarLabel: string } }) =>
-        mockReact.createElement(
-          MockView,
-          {
-            accessible: true,
-            accessibilityRole: 'tab',
-            accessibilityLabel: options.tabBarLabel,
-          },
-          mockReact.createElement(MockText, null, options.tabBarLabel),
-        ),
-    }),
+    Tabs: MockTabs,
   };
 });
 
-const renderTabs = () =>
-  render(
+const renderTabs = async () =>
+  await render(
     <SafeAreaProvider
       initialMetrics={{
         frame: { x: 0, y: 0, width: 390, height: 844 },
@@ -61,8 +59,8 @@ describe('bottom navigation', () => {
     mockRole = Role.Member;
   });
 
-  it('shows labeled tabs in the existing route order', () => {
-    renderTabs();
+  it('shows labeled tabs in the existing route order', async () => {
+    await renderTabs();
 
     expect(screen.getAllByRole('tab').map((tab) => tab.props.accessibilityLabel)).toEqual([
       'Map',
@@ -72,9 +70,9 @@ describe('bottom navigation', () => {
     ]);
   });
 
-  it('adds Stations in its existing position for administrators', () => {
-    mockRole = Role.Admin;
-    renderTabs();
+  it('adds Stations in its existing position for administrators', async () => {
+    mockRole = Role.Officer;
+    await renderTabs();
 
     expect(screen.getAllByRole('tab').map((tab) => tab.props.accessibilityLabel)).toEqual([
       'Map',

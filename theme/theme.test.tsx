@@ -6,6 +6,7 @@ import { render, screen } from '@testing-library/react-native';
 import {
   AppThemeProvider,
   createElevation,
+  createBrandedTheme,
   darkTheme,
   lightTheme,
   resolveAppTheme,
@@ -42,7 +43,7 @@ const MotionProbe = () => {
 };
 
 describe('Campus Cats themes', () => {
-  it('exposes the approved field-guide palettes and feature accents', () => {
+  it('exposes the approved field-guide palettes and feature accents', async () => {
     expect(lightTheme.colors).toMatchObject({
       background: '#FFF9F0',
       surface: '#FFFFFF',
@@ -75,21 +76,32 @@ describe('Campus Cats themes', () => {
     expect(contrastRatio(foreground, background)).toBeGreaterThanOrEqual(4.5);
   });
 
-  it('follows a dark system scheme and defaults safely to light', () => {
+  it('follows a dark system scheme and defaults safely to light', async () => {
     expect(resolveAppTheme('dark')).toBe(darkTheme);
     expect(resolveAppTheme('light')).toBe(lightTheme);
     expect(resolveAppTheme(null)).toBe(lightTheme);
   });
 
-  it('uses web-native box shadows without deprecated React Native shadow props', () => {
+  it('uses web-native box shadows without deprecated React Native shadow props', async () => {
     expect(createElevation(false, lightTheme.colors, 'web')).toEqual({
       card: { boxShadow: '0 4px 14px #18314F1A' },
       floating: { boxShadow: '0 8px 24px #18314F2E' },
     });
   });
 
-  it('makes the resolved theme available to rendered children', () => {
-    render(
+  it('derives accessible light and dark themes from president-selected brand colors', () => {
+    const brand = { primaryColor: '#75AADB', accentColor: '#F5A623' };
+    const light = createBrandedTheme(false, brand);
+    const dark = createBrandedTheme(true, brand);
+
+    expect(contrastRatio(light.colors.primary, light.colors.background)).toBeGreaterThanOrEqual(4.5);
+    expect(contrastRatio(light.colors.onPrimary, light.colors.primary)).toBeGreaterThanOrEqual(4.5);
+    expect(contrastRatio(dark.colors.primary, dark.colors.background)).toBeGreaterThanOrEqual(4.5);
+    expect(contrastRatio(dark.colors.onPrimary, dark.colors.primary)).toBeGreaterThanOrEqual(4.5);
+  });
+
+  it('makes the resolved theme available to rendered children', async () => {
+    await render(
       <AppThemeProvider colorScheme="dark">
         <ThemeProbe />
       </AppThemeProvider>,
@@ -99,7 +111,7 @@ describe('Campus Cats themes', () => {
 
   it('follows the platform Reduce Motion preference', async () => {
     jest.spyOn(AccessibilityInfo, 'isReduceMotionEnabled').mockResolvedValue(true);
-    render(
+    await render(
       <AppThemeProvider colorScheme="light">
         <MotionProbe />
       </AppThemeProvider>,

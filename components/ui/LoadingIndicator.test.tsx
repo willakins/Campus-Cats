@@ -6,8 +6,8 @@ import { AppThemeProvider } from '../../theme';
 import { LoadingIndicator } from './LoadingIndicator';
 
 describe('LoadingIndicator', () => {
-  it('announces a stable default loading state', () => {
-    render(
+  it('announces a stable default loading state', async () => {
+    await render(
       <AppThemeProvider colorScheme="dark">
         <LoadingIndicator />
       </AppThemeProvider>,
@@ -16,8 +16,8 @@ describe('LoadingIndicator', () => {
     expect(screen.getByRole('progressbar', { name: 'Getting things ready…' })).toBeOnTheScreen();
   });
 
-  it('accepts a task-specific loading label', () => {
-    render(
+  it('accepts a task-specific loading label', async () => {
+    await render(
       <AppThemeProvider colorScheme="light">
         <LoadingIndicator label="Loading announcement" />
       </AppThemeProvider>,

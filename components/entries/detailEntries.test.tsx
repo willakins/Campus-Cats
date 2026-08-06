@@ -11,6 +11,7 @@ import {
   parseAnnouncement,
   parseCatalogEntry,
   parseSighting,
+  parsePublicProfile,
   parseStation,
   parseUser,
 } from '../../core/domain';
@@ -126,29 +127,64 @@ const licensedPhoto: ExternalMediaAsset = {
   licenseUrl: 'https://creativecommons.org/licenses/by/4.0/',
 };
 
-const renderThemed = (content: React.ReactElement) =>
-  render(<AppThemeProvider colorScheme="light">{content}</AppThemeProvider>);
+const renderThemed = async (content: React.ReactElement) =>
+  await render(<AppThemeProvider colorScheme="light">{content}</AppThemeProvider>);
 
 describe('detail entries', () => {
-  it('pairs sighting statuses with labels and preserves contributor identity', () => {
-    renderThemed(<SightingEntry sighting={sighting} media={[]} />);
+  it('pairs sighting statuses with labels and preserves contributor identity', async () => {
+    await renderThemed(
+      <SightingEntry
+        sighting={sighting}
+        media={[]}
+        reporterProfile={parsePublicProfile({
+          id: 'member-1',
+          displayName: 'Cat Watcher',
+          bio: '',
+          profilePhotoUrl: '',
+          role: Role.Member,
+          achievementIds: ['first-sighting'],
+          selectedTitleId: 'first-sighting',
+        })}
+      />,
+    );
 
     expect(screen.getByText('Was fed')).toBeOnTheScreen();
     expect(screen.getByText('Health concern')).toBeOnTheScreen();
-    expect(screen.getByText('member-1')).toBeOnTheScreen();
+    expect(screen.getByText('Cat Watcher')).toBeOnTheScreen();
+    expect(screen.getByText('cat lover')).toBeOnTheScreen();
   });
 
   it('reveals catalog field notes without hiding credits', async () => {
     const user = userEvent.setup();
-    renderThemed(<CatalogEntryElement entry={catalogEntry} media={[]} sightings={[sighting]} />);
+    await renderThemed(<CatalogEntryElement entry={catalogEntry} media={[]} sightings={[sighting]} />);
 
     await user.press(screen.getByRole('button', { name: 'Show all field notes' }));
     expect(screen.getByText('Orange tabby')).toBeOnTheScreen();
     expect(screen.getByText('Campus Cats volunteers')).toBeOnTheScreen();
   });
 
-  it('renders imported sightings as attributed read-only source records', () => {
-    renderThemed(
+  it('shows the favorite count and exposes a single-account favorite action', async () => {
+    const onToggleFavorite = jest.fn();
+    const user = userEvent.setup();
+    await renderThemed(
+      <CatalogEntryElement
+        entry={catalogEntry}
+        media={[]}
+        sightings={[]}
+        heartCount={4}
+        isFavorite
+        onToggleFavorite={onToggleFavorite}
+      />,
+    );
+
+    expect(screen.getByText('4 hearts')).toBeOnTheScreen();
+    expect(screen.getByText(/Each account can choose one favorite cat/)).toBeOnTheScreen();
+    await user.press(screen.getByRole('button', { name: 'Remove as favorite' }));
+    expect(onToggleFavorite).toHaveBeenCalledTimes(1);
+  });
+
+  it('renders imported sightings as attributed read-only source records', async () => {
+    await renderThemed(
       <SightingEntry sighting={importedSighting} media={[licensedPhoto]} />,
     );
 
@@ -163,7 +199,7 @@ describe('detail entries', () => {
 
   it('keeps unavailable imported catalog facts visibly unknown', async () => {
     const user = userEvent.setup();
-    renderThemed(
+    await renderThemed(
       <CatalogEntryElement entry={importedCatalog} media={[]} sightings={[]} />,
     );
 
@@ -173,8 +209,8 @@ describe('detail entries', () => {
     expect(screen.getByRole('link', { name: 'View in the Georgia Tech Cats guide' })).toBeOnTheScreen();
   });
 
-  it('renders explicit station status and announcement attribution', () => {
-    renderThemed(
+  it('renders explicit station status and announcement attribution', async () => {
+    await renderThemed(
       <>
         <StationEntry station={station} status={{ isStocked: false, daysRemaining: -2 }} media={[]} />
         <AnnouncementEntry announcement={announcement} media={[]} />

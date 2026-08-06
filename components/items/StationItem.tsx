@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Image, View } from 'react-native';
+import { View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
 import { useRouter } from 'expo-router';
@@ -7,22 +7,35 @@ import { appModules } from '@/composition/appModules';
 import { Station, StationStockStatus } from '@/core/domain';
 import { StoredMediaAsset } from '@/core/ports';
 import { useAppTheme } from '@/theme';
-import { AppText, Card, StatusPill } from '../design';
+import { AppText, Card, Skeleton, StatusPill } from '../design';
+import { ProgressiveImage } from '../ui/ProgressiveImage';
 
 interface StationItemProps {
   readonly station: Station;
   readonly status: StationStockStatus;
 }
 
-export const StationItem: React.FC<StationItemProps> = ({ station, status }) => {
+export const StationItem = React.memo(function StationItem({
+  station,
+  status,
+}: StationItemProps) {
   const router = useRouter();
   const theme = useAppTheme();
   const [profile, setProfile] = useState<StoredMediaAsset>();
+  const [mediaLoading, setMediaLoading] = useState(true);
 
   useEffect(() => {
+    let active = true;
+    setMediaLoading(true);
     void appModules.stations.media(station.id).then((result) => {
-      if (result.ok) setProfile(result.value.find(({ role }) => role === 'profile'));
+      if (active && result.ok) {
+        setProfile(result.value.find(({ role }) => role === 'profile'));
+      }
+      if (active) setMediaLoading(false);
     });
+    return () => {
+      active = false;
+    };
   }, [station.id]);
 
   return (
@@ -34,10 +47,16 @@ export const StationItem: React.FC<StationItemProps> = ({ station, status }) => 
       }
     >
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: theme.spacing.md }}>
-        {profile ? (
-          <Image
+        {mediaLoading ? (
+          <Skeleton
+            label={`Loading ${station.name} photo`}
+            width={88}
+            height={88}
+          />
+        ) : profile ? (
+          <ProgressiveImage
             accessibilityLabel={`${station.name} photo`}
-            source={{ uri: profile.url }}
+            uri={profile.url}
             style={{ width: 88, height: 88, borderRadius: theme.radii.field }}
           />
         ) : (
@@ -69,6 +88,6 @@ export const StationItem: React.FC<StationItemProps> = ({ station, status }) => 
       </View>
     </Card>
   );
-};
+});
 
 export default StationItem;

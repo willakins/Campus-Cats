@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Pressable, View, ViewProps } from 'react-native';
+import { ActivityIndicator, Pressable, View, ViewProps } from 'react-native';
 
 import { Ionicons } from '@expo/vector-icons';
 
@@ -111,9 +111,10 @@ interface StatusPillProps extends ViewProps {
   readonly label: string;
   readonly tone: Tone;
   readonly icon?: React.ComponentProps<typeof Ionicons>['name'];
+  readonly loading?: boolean;
 }
 
-export const StatusPill = ({ label, tone, icon, style, ...props }: StatusPillProps) => {
+export const StatusPill = ({ label, tone, icon, loading = false, style, ...props }: StatusPillProps) => {
   const theme = useAppTheme();
   const [backgroundColor, foreground] = toneColors(tone, theme.colors);
   return (
@@ -135,7 +136,11 @@ export const StatusPill = ({ label, tone, icon, style, ...props }: StatusPillPro
         style,
       ]}
     >
-      {icon ? <Ionicons name={icon} size={16} color={foreground} /> : null}
+      {loading ? (
+        <ActivityIndicator size="small" color={foreground} />
+      ) : icon ? (
+        <Ionicons name={icon} size={16} color={foreground} />
+      ) : null}
       <AppText variant="label" style={{ color: foreground }}>
         {label}
       </AppText>
@@ -193,6 +198,42 @@ export const AccessDeniedState = ({ message }: { message: string }) => (
   <StateView title="Access restricted" message={message} icon="lock-closed-outline" tone="warning" />
 );
 
+export const AccessBanner = ({
+  title,
+  message,
+}: {
+  title: string;
+  message: string;
+}) => {
+  const theme = useAppTheme();
+  return (
+    <View
+      accessible
+      accessibilityLabel={`${title}. ${message}`}
+      style={{
+        padding: theme.spacing.sm,
+        borderRadius: theme.radii.field,
+        backgroundColor: theme.colors.infoSurface,
+        flexDirection: 'row',
+        alignItems: 'flex-start',
+        gap: theme.spacing.xs,
+      }}
+    >
+      <Ionicons
+        name="shield-checkmark-outline"
+        size={20}
+        color={theme.colors.info}
+      />
+      <View style={{ flex: 1, gap: theme.spacing.xxs }}>
+        <AppText variant="label" style={{ color: theme.colors.info }}>
+          {title}
+        </AppText>
+        <AppText style={{ color: theme.colors.text }}>{message}</AppText>
+      </View>
+    </View>
+  );
+};
+
 export const FeedbackBanner = ({
   message,
   tone = 'info',
@@ -219,21 +260,5 @@ export const FeedbackBanner = ({
       <Ionicons name={tone === 'danger' ? 'alert-circle' : 'information-circle'} size={20} color={foreground} />
       <AppText style={{ color: foreground, flex: 1 }}>{message}</AppText>
     </View>
-  );
-};
-
-export const Skeleton = ({ label = 'Loading content' }: { label?: string }) => {
-  const theme = useAppTheme();
-  return (
-    <View
-      accessible
-      accessibilityLabel={label}
-      accessibilityRole="progressbar"
-      style={{
-        minHeight: 120,
-        borderRadius: theme.radii.card,
-        backgroundColor: theme.colors.surfaceSubtle,
-      }}
-    />
   );
 };

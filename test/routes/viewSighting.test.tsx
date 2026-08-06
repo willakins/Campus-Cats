@@ -14,7 +14,10 @@ import { AppThemeProvider } from '../../theme';
 const mockPush = jest.fn();
 const mockGet = jest.fn();
 const mockMedia = jest.fn();
+const mockProfileGet = jest.fn();
 let mockUserId = 'member-1';
+let mockRole: Role = Role.Member;
+let mockAnonymous = true;
 
 jest.mock('expo-router', () => {
   const mockReact = require('react');
@@ -32,11 +35,17 @@ jest.mock('../../composition/appModules', () => ({
       get: (...args: unknown[]) => mockGet(...args),
       media: (...args: unknown[]) => mockMedia(...args),
     },
+    profiles: { getOrSync: (...args: unknown[]) => mockProfileGet(...args) },
   },
 }));
 
 jest.mock('../../providers', () => ({
-  useAuth: () => ({ user: { id: mockUserId, email: 'member@gatech.edu', role: 0 } }),
+  useAuth: () => ({
+    user: { id: mockUserId, email: 'member@gatech.edu', role: mockRole },
+  }),
+  useAppSettings: () => ({
+    settings: { sightingsAnonymous: mockAnonymous },
+  }),
 }));
 
 jest.mock('@expo/vector-icons', () => ({
@@ -45,15 +54,38 @@ jest.mock('@expo/vector-icons', () => ({
 
 jest.mock('../../components/entries/SightingEntry', () => {
   const mockReact = require('react');
-  const { Text: MockText } = require('react-native');
+  const { Pressable: MockPressable, Text: MockText } = require('react-native');
   return {
-    SightingEntry: ({ sighting }: { sighting: { name: string } }) =>
-      mockReact.createElement(MockText, null, sighting.name),
+    SightingEntry: ({
+      sighting,
+      onReporterPress,
+      showContributor,
+    }: {
+      sighting: { name: string };
+      onReporterPress?: () => void;
+      showContributor?: boolean;
+    }) =>
+      mockReact.createElement(
+        mockReact.Fragment,
+        null,
+        mockReact.createElement(MockText, null, sighting.name),
+        showContributor && onReporterPress
+          ? mockReact.createElement(
+              MockPressable,
+              {
+                accessibilityRole: 'button',
+                accessibilityLabel: 'View reporter profile',
+                onPress: onReporterPress,
+              },
+              mockReact.createElement(MockText, null, 'Reporter'),
+            )
+          : null,
+      ),
   };
 });
 
-const renderSighting = () =>
-  render(
+const renderSighting = async () =>
+  await render(
     <AppThemeProvider colorScheme="light">
       <ViewSighting />
     </AppThemeProvider>,
@@ -95,27 +127,71 @@ const importedSighting: InaturalistSightingRecord = {
 describe('view sighting route', () => {
   beforeEach(() => {
     mockPush.mockReset();
+    mockProfileGet.mockClear();
     mockUserId = 'member-1';
+    mockRole = Role.Member;
+    mockAnonymous = true;
     mockGet.mockResolvedValue({ ok: true, value: sighting, warnings: [] });
     mockMedia.mockResolvedValue({ ok: true, value: [], warnings: [] });
+    mockProfileGet.mockResolvedValue({
+      ok: false,
+      error: { code: 'not_found', message: 'Member profile not found' },
+    });
+  });
+
+  it('renders the page header and detail geometry before data resolves', async () => {
+    mockGet.mockImplementation(() => new Promise(() => undefined));
+    await renderSighting();
+
+    expect(screen.getByText('Sighting details')).toBeOnTheScreen();
+    expect(
+      screen.getByRole('progressbar', { name: 'Loading sighting' }),
+    ).toBeOnTheScreen();
   });
 
   it('loads by route ID and lets the creator open the editor', async () => {
     const user = userEvent.setup();
-    renderSighting();
+    await renderSighting();
 
     expect(await screen.findByText('Goldie')).toBeOnTheScreen();
     await user.press(screen.getByRole('button', { name: 'Edit sighting' }));
-    expect(mockGet).toHaveBeenCalledWith('sighting-1');
+    expect(mockGet).toHaveBeenCalledWith(
+      expect.objectContaining({ id: 'member-1' }),
+      'sighting-1',
+    );
     expect(mockPush).toHaveBeenCalledWith({
       pathname: '/sighting/edit-sighting',
       params: { id: 'sighting-1' },
     });
   });
 
+  it('opens the Campus Cats reporter’s public profile', async () => {
+    mockRole = Role.Officer;
+    const user = userEvent.setup();
+    await renderSighting();
+
+    await user.press(
+      await screen.findByRole('button', { name: 'View reporter profile' }),
+    );
+    expect(mockPush).toHaveBeenCalledWith({
+      pathname: '/profile/view-profile',
+      params: { id: 'member-1' },
+    });
+  });
+
+  it('keeps the reporter hidden from a Member while preserving edit access', async () => {
+    await renderSighting();
+
+    expect(await screen.findByText('Goldie')).toBeOnTheScreen();
+    expect(screen.getByRole('button', { name: 'Edit sighting' })).toBeOnTheScreen();
+    expect(screen.queryByRole('button', { name: 'View reporter profile' }))
+      .not.toBeOnTheScreen();
+    expect(mockProfileGet).not.toHaveBeenCalled();
+  });
+
   it('does not offer editing to a different user', async () => {
     mockUserId = 'member-2';
-    renderSighting();
+    await renderSighting();
 
     expect(await screen.findByText('Goldie')).toBeOnTheScreen();
     expect(screen.queryByRole('button', { name: 'Edit sighting' })).not.toBeOnTheScreen();
@@ -127,7 +203,7 @@ describe('view sighting route', () => {
       value: importedSighting,
       warnings: [],
     });
-    renderSighting();
+    await renderSighting();
 
     expect(await screen.findByText('Mimi')).toBeOnTheScreen();
     expect(screen.queryByRole('button', { name: 'Edit sighting' })).not.toBeOnTheScreen();
@@ -138,7 +214,7 @@ describe('view sighting route', () => {
       ok: false,
       error: { code: 'not_found', message: 'Sighting not found' },
     });
-    renderSighting();
+    await renderSighting();
 
     expect(await screen.findByText('Sighting not found')).toBeOnTheScreen();
   });

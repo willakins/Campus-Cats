@@ -1,14 +1,15 @@
 import React, { useMemo, useState } from 'react';
-import { Image, Linking, Pressable, ScrollView, View } from 'react-native';
+import { Linking, Pressable, ScrollView, View } from 'react-native';
 
 import { Ionicons } from '@expo/vector-icons';
-import { Marker } from 'react-native-maps';
-
 import { Coordinates } from '../../core/domain';
 import { DisplayMediaAsset, isExternalMediaAsset } from '../../core/ports';
 import { useAppTheme } from '../../theme';
 import { campusMapDarkStyle } from '../mapStyles';
+import { createCampusCamera } from '../mapViewport';
+import { MapMarker } from '../ui/MapMarker';
 import { MapView } from '../ui/MapView';
+import { ProgressiveImage } from '../ui/ProgressiveImage';
 import { AppText, Card } from '../design';
 
 interface DetailHeroProps {
@@ -42,9 +43,9 @@ export const DetailHero = ({ title, media }: DetailHeroProps) => {
         }}
       >
         {selected ? (
-          <Image
+          <ProgressiveImage
             accessibilityLabel={`${title} photo ${selectedIndex + 1} of ${orderedMedia.length}`}
-            source={{ uri: selected.url }}
+            uri={selected.url}
             resizeMode="cover"
             style={{ width: '100%', height: '100%' }}
           />
@@ -78,10 +79,10 @@ export const DetailHero = ({ title, media }: DetailHeroProps) => {
                 opacity: pressed ? 0.8 : 1,
               })}
             >
-              <Image
-                source={{
-                  uri: isExternalMediaAsset(asset) ? asset.thumbnailUrl : asset.url,
-                }}
+              <ProgressiveImage
+                accessibilityLabel={`${title} thumbnail ${index + 1}`}
+                loadingLabel={`Loading ${title} thumbnail ${index + 1}`}
+                uri={isExternalMediaAsset(asset) ? asset.thumbnailUrl : asset.url}
                 resizeMode="cover"
                 style={{ width: '100%', height: '100%', borderRadius: theme.radii.field - 4 }}
               />
@@ -140,7 +141,7 @@ export const MetadataRow = ({ label, value }: { label: string; value: string }) 
   );
 };
 
-interface MapMarker {
+interface MapMarkerData {
   readonly id: string;
   readonly location: Coordinates;
   readonly title?: string;
@@ -153,7 +154,7 @@ export const MapInset = ({
   center,
 }: {
   label: string;
-  markers: readonly MapMarker[];
+  markers: readonly MapMarkerData[];
   center?: Coordinates;
 }) => {
   const theme = useAppTheme();
@@ -167,10 +168,10 @@ export const MapInset = ({
         style={{ flex: 1 }}
         userInterfaceStyle={theme.dark ? 'dark' : 'light'}
         customMapStyle={theme.dark ? [...campusMapDarkStyle] : undefined}
-        initialRegion={{ ...mapCenter, latitudeDelta: 0.01, longitudeDelta: 0.01 }}
+        initialCamera={createCampusCamera(mapCenter)}
       >
         {markers.map((marker) => (
-          <Marker
+          <MapMarker
             key={marker.id}
             coordinate={marker.location}
             title={marker.title}

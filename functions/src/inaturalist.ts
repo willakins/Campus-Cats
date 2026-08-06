@@ -506,10 +506,11 @@ export function mapObservation(
     throw new Error('observation.quality_grade is invalid');
   }
   const observerData = record(data.user, 'observation.user');
+  const observerDisplayName = optionalString(observerData.name)?.trim();
   const observer = {
     id: positiveInteger(observerData.id, 'observation.user.id'),
     login: requiredString(observerData.login, 'observation.user.login'),
-    displayName: optionalString(observerData.name),
+    ...(observerDisplayName ? {displayName: observerDisplayName} : {}),
   };
   const observationFieldValue = observationCatField(data.ofvs);
   const normalizedField = observationFieldValue

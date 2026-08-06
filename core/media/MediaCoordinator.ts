@@ -25,6 +25,7 @@ export interface ReconcileMediaRequest {
 
 export interface ReconcileGalleryRequest {
   readonly folder: string;
+  readonly ownerId?: string;
   readonly gallery: readonly MediaSelection[];
   readonly persist: (gallery: readonly StoredMediaAsset[]) => Promise<void>;
 }
@@ -160,6 +161,7 @@ export class MediaCoordinator {
             id: mediaAssetId(`${request.folder}/${filename}`),
             localUri: selection.localUri,
             role: 'gallery',
+            ownerId: request.ownerId,
           });
           uploaded.push(asset);
           return asset;

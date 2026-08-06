@@ -6,10 +6,12 @@ import {
   Role,
   SequenceIdGenerator,
   createFirestoreCodecs,
+  DEFAULT_APP_SETTINGS,
   parseUser,
 } from '../../core/domain';
 import { MediaCoordinator, localMedia, storedMedia } from '../../core/media';
 import { SightingsModule, filterSightingsByAge } from './SightingsModule';
+import { ContentContributors } from '../appSettings';
 
 const member = parseUser({
   id: 'member-1',
@@ -21,6 +23,11 @@ const otherMember = parseUser({
   email: 'other@gatech.edu',
   role: Role.Member,
 });
+const officer = parseUser({
+  id: 'officer-1',
+  email: 'officer@gatech.edu',
+  role: Role.Officer,
+});
 
 function buildModule(ids: readonly string[] = ['sighting-1', 'profile-1']) {
   const documents = new InMemoryDocumentStore();
@@ -28,11 +35,17 @@ function buildModule(ids: readonly string[] = ['sighting-1', 'profile-1']) {
   const generator = new SequenceIdGenerator(ids);
   const imports = new InMemoryInaturalistReader();
   const codecs = createFirestoreCodecs({ fromDate: (date) => date });
+  const contributors = new ContentContributors({
+    documents,
+    settings: { getSettings: async () => DEFAULT_APP_SETTINGS },
+    codec: codecs.contentContributor,
+  });
   const module = new SightingsModule({
     documents,
     media,
     mediaCoordinator: new MediaCoordinator(media, generator),
     ids: generator,
+    contributors,
     codecs,
     imports: { reader: imports, codec: codecs.inaturalistObservation },
   });
@@ -71,6 +84,43 @@ describe('SightingsModule', () => {
     expect(media.ids()).toEqual([
       'cat-sightings/sighting-1/profile-profile-1.jpg',
     ]);
+  });
+
+  it('stores contributor identity separately and redacts it from members by default', async () => {
+    const { module, documents } = buildModule();
+    await module.create(member, validDraft);
+
+    expect(
+      (await documents.get('cat-sightings', 'sighting-1'))?.data,
+    ).not.toHaveProperty('createdBy');
+    await expect(module.get(otherMember, 'sighting-1')).resolves.toMatchObject({
+      ok: true,
+      value: { createdBy: undefined },
+    });
+    await expect(module.get(member, 'sighting-1')).resolves.toMatchObject({
+      ok: true,
+      value: { createdBy: { id: 'member-1' } },
+    });
+    await expect(module.get(officer, 'sighting-1')).resolves.toMatchObject({
+      ok: true,
+      value: { createdBy: { id: 'member-1' } },
+    });
+  });
+
+  it('includes contributor identity in officer lists and officer reporter queries', async () => {
+    const { module } = buildModule();
+    await module.create(member, validDraft);
+
+    await expect(module.list(officer)).resolves.toMatchObject({
+      ok: true,
+      value: [{ id: 'sighting-1', createdBy: { id: member.id } }],
+    });
+    await expect(
+      module.listByReporter(officer, member.id),
+    ).resolves.toMatchObject({
+      ok: true,
+      value: [{ id: 'sighting-1', createdBy: undefined }],
+    });
   });
 
   it('combines visible imported observations with local sightings', async () => {
@@ -114,6 +164,7 @@ describe('SightingsModule', () => {
       moderation: { hidden: false, reason: '' },
     });
     imports.observations.set('321', codecs.inaturalistObservation.encode(imported));
+    imports.observations.set('malformed', { visible: true });
 
     await expect(module.list()).resolves.toMatchObject({
       ok: true,
@@ -121,6 +172,7 @@ describe('SightingsModule', () => {
         { source: 'campus-cats', name: 'Goldie' },
         { source: 'inaturalist', id: 'inat-observation-321', name: 'Mimi' },
       ],
+      warnings: [{ code: 'partial_completion' }],
     });
     await expect(module.get('inat-observation-321')).resolves.toMatchObject({
       ok: true,
@@ -141,6 +193,45 @@ describe('SightingsModule', () => {
       ok: true,
       value: [{ source: 'campus-cats' }],
       warnings: [{ code: 'partial_completion' }],
+    });
+  });
+
+  it('queries one reporter’s local sightings and sorts them newest first', async () => {
+    const { module } = buildModule([
+      'older-sighting',
+      'older-photo',
+      'newer-sighting',
+      'newer-photo',
+      'other-sighting',
+      'other-photo',
+    ]);
+    await module.create(member, validDraft);
+    await module.create(member, {
+      ...validDraft,
+      name: 'New report',
+      date: new Date('2025-04-12T12:00:00.000Z'),
+    });
+    await module.create(otherMember, {
+      ...validDraft,
+      name: 'Someone else’s report',
+    });
+
+    await expect(module.listByReporter(member, member.id)).resolves.toMatchObject({
+      ok: true,
+      value: [
+        { id: 'newer-sighting', name: 'New report' },
+        { id: 'older-sighting', name: 'Goldie' },
+      ],
+    });
+  });
+
+  it('maps reporter query failures to a typed outcome', async () => {
+    const { module, documents } = buildModule();
+    documents.failNext('listWhereEqual', new Error('offline'));
+
+    await expect(module.listByReporter(member, member.id)).resolves.toMatchObject({
+      ok: false,
+      error: { code: 'dependency_failure' },
     });
   });
 
@@ -341,7 +432,7 @@ describe('SightingsModule', () => {
 
     const documentFailure = buildModule();
     await documentFailure.module.create(member, validDraft);
-    documentFailure.documents.failNext('remove', new Error('offline'));
+    documentFailure.documents.failNext('commit', new Error('offline'));
     await expect(documentFailure.module.remove(member, 'sighting-1')).resolves.toMatchObject({
       ok: false,
       error: { code: 'partial_failure' },

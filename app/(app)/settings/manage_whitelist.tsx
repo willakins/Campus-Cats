@@ -6,17 +6,23 @@ import { useFocusEffect, useRouter } from 'expo-router';
 import {
   AccessDeniedState,
   AppHeader,
+  AppText,
+  CardListSkeleton,
   EmptyState,
   ErrorState,
   FeedbackBanner,
   Screen,
+  SearchField,
+  SegmentedControl,
 } from '@/components/design';
 import { WhitelistItem } from '@/components/items/WhitelistItem';
-import { LoadingIndicator } from '@/components/ui/LoadingIndicator';
+import { virtualizedListPerformanceProps } from '@/components/collections/virtualizedListPerformance';
 import { appModules } from '@/composition/appModules';
 import { WhitelistApplication, canManageFeature, parseUser } from '@/core/domain';
 import { useAuth } from '@/providers';
 import { useAppTheme } from '@/theme';
+
+type ApplicationFilter = 'all' | 'code-word' | 'no-code-word';
 
 const ManageWhitelist = () => {
   const router = useRouter();
@@ -28,6 +34,8 @@ const ManageWhitelist = () => {
   const [loading, setLoading] = useState(authorized);
   const [error, setError] = useState<string>();
   const [applications, setApplications] = useState<readonly WhitelistApplication[]>([]);
+  const [query, setQuery] = useState('');
+  const [filter, setFilter] = useState<ApplicationFilter>('all');
 
   const load = useCallback(() => {
     if (!authorized) return;
@@ -41,6 +49,26 @@ const ManageWhitelist = () => {
   }, [actor.id, authorized]);
   useFocusEffect(load);
 
+  const normalizedQuery = query.trim().toLocaleLowerCase();
+  const visibleApplications = applications
+    .filter((application) => {
+      const hasCodeWord = Boolean(application.codeWord.trim());
+      const matchesFilter = filter === 'all' ||
+        (filter === 'code-word' && hasCodeWord) ||
+        (filter === 'no-code-word' && !hasCodeWord);
+      const matchesQuery = !normalizedQuery || [
+        application.name,
+        application.email,
+        application.graduationYear,
+        application.codeWord,
+      ].some((value) => value.toLocaleLowerCase().includes(normalizedQuery));
+      return matchesFilter && matchesQuery;
+    })
+    .sort((left, right) =>
+      left.graduationYear.localeCompare(right.graduationYear) ||
+      left.name.localeCompare(right.name),
+    );
+
   return (
     <Screen>
       <AppHeader
@@ -49,16 +77,39 @@ const ManageWhitelist = () => {
         onBack={() => router.back()}
       />
       {!authorized ? (
-        <AccessDeniedState message="Only administrators may review membership applications." />
+        <AccessDeniedState message="Only officers may review membership applications." />
       ) : loading ? (
-        <LoadingIndicator label="Loading whitelist applications" />
+        <CardListSkeleton
+          label="Loading whitelist applications"
+          layout="actions"
+        />
       ) : error ? (
         <ErrorState title="Could not load applications" message={error} onRetry={load} />
       ) : (
         <View style={{ flex: 1, gap: theme.spacing.sm }}>
+          <SearchField
+            accessibilityLabel="Search whitelist applications"
+            placeholder="Search name, email, year, or code word"
+            value={query}
+            onChangeText={setQuery}
+          />
+          <SegmentedControl
+            label="Whitelist application filter"
+            value={filter}
+            options={[
+              { value: 'all', label: 'All' },
+              { value: 'code-word', label: 'Has code word' },
+              { value: 'no-code-word', label: 'No code word' },
+            ]}
+            onChange={setFilter}
+          />
+          <AppText color="muted" variant="caption" accessibilityLiveRegion="polite">
+            {visibleApplications.length} pending {visibleApplications.length === 1 ? 'application' : 'applications'}
+          </AppText>
           {busy ? <FeedbackBanner message="Updating application…" tone="info" /> : null}
           <FlatList
-            data={applications}
+            {...virtualizedListPerformanceProps}
+            data={visibleApplications}
             keyExtractor={({ id }) => id}
             renderItem={({ item }) => (
               <WhitelistItem
@@ -71,8 +122,12 @@ const ManageWhitelist = () => {
             contentContainerStyle={{ gap: theme.spacing.sm, paddingBottom: theme.spacing.xl }}
             ListEmptyComponent={(
               <EmptyState
-                title="No pending applications"
-                message="New membership requests will appear here for review."
+                title={query || filter !== 'all'
+                  ? 'No matching applications'
+                  : 'No pending applications'}
+                message={query || filter !== 'all'
+                  ? 'Try another search or application filter.'
+                  : 'New membership requests will appear here for review.'}
               />
             )}
           />

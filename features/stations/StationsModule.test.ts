@@ -10,7 +10,7 @@ import {
 import { MediaCoordinator, storedMedia } from '../../core/media';
 import { StationsModule } from './StationsModule';
 
-const admin = parseUser({ id: 'admin-1', email: 'admin@gatech.edu', role: Role.Admin });
+const admin = parseUser({ id: 'admin-1', email: 'admin@gatech.edu', role: Role.Officer });
 const member = parseUser({
   id: 'member-1',
   email: 'member@gatech.edu',

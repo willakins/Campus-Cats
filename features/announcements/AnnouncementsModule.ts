@@ -219,7 +219,7 @@ export class AnnouncementsModule {
 function mutationDenied(actor: User | undefined): Outcome<never> | undefined {
   if (!actor) return failure('unauthenticated', 'Sign in to manage announcements');
   if (!canManageFeature(actor.role)) {
-    return failure('forbidden', 'Only administrators may manage announcements');
+    return failure('forbidden', 'Only officers may manage announcements');
   }
   return undefined;
 }

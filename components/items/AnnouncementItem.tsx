@@ -7,7 +7,9 @@ import { Announcement } from '@/core/domain';
 import { useAppTheme } from '@/theme';
 import { AppText, Card } from '../design';
 
-export const AnnouncementItem: React.FC<Announcement> = (announcement) => {
+export const AnnouncementItem = React.memo(function AnnouncementItem(
+  announcement: Announcement,
+) {
   const router = useRouter();
   const theme = useAppTheme();
 
@@ -38,6 +40,6 @@ export const AnnouncementItem: React.FC<Announcement> = (announcement) => {
       </View>
     </Card>
   );
-};
+});
 
 export default AnnouncementItem;

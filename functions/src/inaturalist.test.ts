@@ -127,6 +127,20 @@ describe('iNaturalist mappers', () => {
     assert.match(result.photos[0].thumbnailUrl, /\/small\.jpg$/);
   });
 
+  it('omits blank observer display names', () => {
+    const result = mapObservation(
+      {
+        ...observation,
+        user: { ...observation.user, name: '   ' },
+      },
+      new Map(),
+      now,
+      'run-1',
+    );
+
+    assert.deepEqual(result.observer, { id: 42, login: 'observer' });
+  });
+
   it('retains every supported Creative Commons photo license', () => {
     const licenses = [
       'cc0',

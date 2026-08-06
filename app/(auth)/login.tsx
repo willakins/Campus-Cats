@@ -11,7 +11,10 @@ const LoginScreen = () => {
   const router = useRouter();
   const { login } = useAuth();
   const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string>();
+  const [feedback, setFeedback] = useState<{
+    message: string;
+    tone: 'info' | 'danger';
+  }>();
   const [formData, setFormData] = useState({ email: '', password: '' });
   const handleChange = (field: 'email' | 'password', value: string) => {
     setFormData((current) => ({ ...current, [field]: value }));
@@ -21,13 +24,16 @@ const LoginScreen = () => {
     if (busy) return;
     try {
       setBusy(true);
-      setError(undefined);
+      setFeedback(undefined);
       await login(formData.email, formData.password);
       const token = await registerForPushNotificationsAsync();
       if (token) await appModules.session.registerPushToken(token);
       router.replace('/(app)/(tabs)');
     } catch (error) {
-      setError(error instanceof Error ? error.message : 'Consider using SSO.');
+      setFeedback({
+        message: error instanceof Error ? error.message : 'Consider using SSO.',
+        tone: 'danger',
+      });
     } finally {
       setBusy(false);
     }
@@ -65,13 +71,24 @@ const LoginScreen = () => {
         secureTextEntry
         onChangeText={(text) => handleChange('password', text)}
       />
-      {error ? <FeedbackBanner message={error} tone="danger" /> : null}
+      <Button
+        label="Forgot password?"
+        icon="mail-outline"
+        variant="tertiary"
+        fullWidth
+        disabled={busy}
+        onPress={() => router.navigate('/forgot-password')}
+      />
+      {feedback ? (
+        <FeedbackBanner message={feedback.message} tone={feedback.tone} />
+      ) : null}
       <Button
         label="Sign in with email"
         variant="secondary"
         fullWidth
         loading={busy}
         loadingLabel="Signing in…"
+        disabled={busy}
         onPress={() => void loginWhitelistUser()}
       />
       <Button

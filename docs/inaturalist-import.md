@@ -78,7 +78,7 @@ records. Reappearing records reactivate unless an officer has hidden them. Upser
 preserve moderation, catalog overrides, persisted links, and the original import time.
 Imported observations never trigger announcement notifications.
 
-Administrators can inspect status, run a manual retry, review ambiguity, and
+Officers can inspect status, run a manual retry, review ambiguity, and
 hide/restore records from **More → iNaturalist Sync**. Hiding requires an audit reason.
 Imported data remains stored when hidden or removed upstream. Clients cannot write the
 import collections directly; synchronization, moderation, overrides, and linking use

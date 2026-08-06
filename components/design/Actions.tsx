@@ -186,3 +186,31 @@ export const IconButton = ({
     </Pressable>
   );
 };
+
+export interface FloatingActionButtonProps
+  extends Omit<IconButtonProps, 'icon' | 'variant'> {
+  readonly icon?: IconName;
+}
+
+export const FloatingActionButton = ({
+  icon = 'add',
+  style,
+  ...props
+}: FloatingActionButtonProps) => {
+  const theme = useAppTheme();
+  return (
+    <IconButton
+      {...props}
+      icon={icon}
+      variant="primary"
+      style={[
+        theme.elevation.floating,
+        {
+          width: 56,
+          height: 56,
+        },
+        style,
+      ]}
+    />
+  );
+};

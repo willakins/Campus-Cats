@@ -2,9 +2,15 @@ import { useCallback, useState } from 'react';
 
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 
-import { AppHeader, Button, ErrorState, FeedbackBanner, Screen } from '@/components/design';
+import {
+  AppHeader,
+  Button,
+  DetailSkeleton,
+  ErrorState,
+  FeedbackBanner,
+  Screen,
+} from '@/components/design';
 import { AnnouncementEntry } from '@/components/entries/AnnouncementEntry';
-import { LoadingIndicator } from '@/components/ui/LoadingIndicator';
 import { appModules } from '@/composition/appModules';
 import { Announcement, canManageFeature } from '@/core/domain';
 import { StoredMediaAsset } from '@/core/ports';
@@ -47,8 +53,6 @@ const ViewAnnouncement = () => {
     }, [id]),
   );
 
-  if (loading) return <LoadingIndicator label="Loading announcement" />;
-
   return (
     <Screen
       scroll
@@ -68,7 +72,9 @@ const ViewAnnouncement = () => {
     >
       <AppHeader title="Announcement" eyebrow="Campus Cats update" onBack={() => router.back()} />
       {mediaError ? <FeedbackBanner message={mediaError} tone="warning" /> : null}
-      {announcement ? (
+      {loading ? (
+        <DetailSkeleton label="Loading announcement" />
+      ) : announcement ? (
         <AnnouncementEntry announcement={announcement} media={media} />
       ) : (
         <ErrorState title="Announcement unavailable" message={error || 'Announcement not found'} />

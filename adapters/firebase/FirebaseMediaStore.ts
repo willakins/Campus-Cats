@@ -37,12 +37,16 @@ export class FirebaseMediaStore implements MediaStore {
 
   async upload(upload: MediaUpload): Promise<StoredMediaAsset> {
     const object = ref(this.storage, upload.id);
+    const blob = await this.loadBlob(upload.localUri);
     await uploadBytes(
       object,
-      await this.loadBlob(upload.localUri),
-      upload.ownerId
-        ? { customMetadata: { ownerId: upload.ownerId } }
-        : undefined,
+      blob,
+      {
+        contentType: blob.type || 'image/jpeg',
+        ...(upload.ownerId
+          ? { customMetadata: { ownerId: upload.ownerId } }
+          : {}),
+      },
     );
     return {
       id: mediaAssetId(object.fullPath),

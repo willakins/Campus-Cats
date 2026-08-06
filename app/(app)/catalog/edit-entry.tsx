@@ -3,9 +3,8 @@ import { Alert } from 'react-native';
 
 import { useLocalSearchParams, useRouter } from 'expo-router';
 
-import { AppHeader, ErrorState, Screen } from '@/components/design';
+import { AppHeader, ErrorState, FormSkeleton, Screen } from '@/components/design';
 import { FormScreen } from '@/components/forms';
-import { LoadingIndicator } from '@/components/ui/LoadingIndicator';
 import { appModules } from '@/composition/appModules';
 import {
   Cat,
@@ -68,7 +67,7 @@ const EditEntry = () => {
       setLoadError('Missing catalog entry ID');
       return;
     }
-    void Promise.all([appModules.catalog.get(id), appModules.catalog.media(id)]).then(
+    void Promise.all([appModules.catalog.get(parseUser(user), id), appModules.catalog.media(id)]).then(
       ([entryResult, mediaResult]) => {
         if (!entryResult.ok) {
           setLoadError(entryResult.error.message);
@@ -106,7 +105,7 @@ const EditEntry = () => {
         } else setError(mediaResult.error.message);
       },
     );
-  }, [id]);
+  }, [id, user.id, user.role]);
   const cat = (): Cat => ({ ...formData, currentStatus: statusValue, furLength: furValue, tnr: tnrValue, sex: sexValue });
   const selectionFor = (uri: string) => {
     const stored = storedAssets.find((asset) => asset.url === uri);
@@ -211,7 +210,18 @@ const EditEntry = () => {
     );
   };
 
-  if (!entry && !loadError) return <LoadingIndicator label="Loading catalog form" />;
+  if (!entry && !loadError) {
+    return (
+      <Screen scroll>
+        <AppHeader
+          title="Edit catalog entry"
+          eyebrow="Campus field guide"
+          onBack={() => router.back()}
+        />
+        <FormSkeleton label="Loading catalog form" fields={6} />
+      </Screen>
+    );
+  }
   if (!entry) {
     return (
       <Screen>

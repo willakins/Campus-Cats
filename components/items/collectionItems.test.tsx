@@ -28,7 +28,7 @@ jest.mock('../../composition/appModules', () => ({
   },
 }));
 
-const actor = parseUser({ id: 'admin-1', email: 'admin@gatech.edu', role: Role.Admin });
+const actor = parseUser({ id: 'admin-1', email: 'admin@gatech.edu', role: Role.Officer });
 const announcement = parseAnnouncement({
   id: 'announcement-1',
   title: 'Volunteer workday',
@@ -67,8 +67,8 @@ const station = parseStation({
   createdBy: actor,
 });
 
-const renderThemed = (content: React.ReactElement) =>
-  render(<AppThemeProvider colorScheme="light">{content}</AppThemeProvider>);
+const renderThemed = async (content: React.ReactElement) =>
+  await render(<AppThemeProvider colorScheme="light">{content}</AppThemeProvider>);
 
 describe('collection cards', () => {
   beforeEach(() => {
@@ -79,7 +79,7 @@ describe('collection cards', () => {
 
   it('keeps announcement attribution visible and routes by ID', async () => {
     const user = userEvent.setup();
-    renderThemed(<AnnouncementItem {...announcement} />);
+    await renderThemed(<AnnouncementItem {...announcement} />);
 
     expect(screen.getByText('By Campus Cats Team')).toBeOnTheScreen();
     await user.press(screen.getByRole('button', { name: 'Read announcement: Volunteer workday' }));
@@ -91,7 +91,7 @@ describe('collection cards', () => {
 
   it('provides a catalog photo fallback and routes by ID', async () => {
     const user = userEvent.setup();
-    renderThemed(<CatalogItem {...catalogEntry} />);
+    await renderThemed(<CatalogItem {...catalogEntry} />);
 
     expect(screen.getByText('No profile photo')).toBeOnTheScreen();
     await waitFor(() => expect(mockCatalogMedia).toHaveBeenCalledWith('catalog-1'));
@@ -102,9 +102,33 @@ describe('collection cards', () => {
     });
   });
 
+  it('keeps favorite selection separate from profile navigation', async () => {
+    const onToggleFavorite = jest.fn();
+    const user = userEvent.setup();
+    await renderThemed(
+      <CatalogItem
+        {...catalogEntry}
+        sightingCount={3}
+        heartCount={2}
+        isFavorite={false}
+        onToggleFavorite={onToggleFavorite}
+      />,
+    );
+
+    expect(screen.getByText('3 sightings')).toBeOnTheScreen();
+    expect(screen.getByText('2 hearts')).toBeOnTheScreen();
+    await user.press(
+      screen.getByRole('button', {
+        name: 'Choose Goldie as your favorite cat',
+      }),
+    );
+    expect(onToggleFavorite).toHaveBeenCalledTimes(1);
+    expect(mockPush).not.toHaveBeenCalled();
+  });
+
   it('pairs station status color with text and routes by ID', async () => {
     const user = userEvent.setup();
-    renderThemed(
+    await renderThemed(
       <StationItem
         station={station}
         status={{ isStocked: true, daysRemaining: 7 }}

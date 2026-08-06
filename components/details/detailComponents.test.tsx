@@ -27,7 +27,7 @@ const media = [
 describe('detail components', () => {
   it('uses a 4:3 hero and lets users select gallery photos by name', async () => {
     const user = userEvent.setup();
-    render(
+    await render(
       <AppThemeProvider colorScheme="dark">
         <DetailHero title="Goldie" media={media} />
       </AppThemeProvider>,
@@ -38,8 +38,8 @@ describe('detail components', () => {
     expect(screen.getByLabelText('Goldie photo 2 of 2')).toBeOnTheScreen();
   });
 
-  it('groups field notes and presents metadata labels with values', () => {
-    render(
+  it('groups field notes and presents metadata labels with values', async () => {
+    await render(
       <AppThemeProvider colorScheme="light">
         <FieldNoteSection title="Field notes" icon="document-text-outline">
           <MetadataRow label="Area" value="Library" />

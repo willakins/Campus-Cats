@@ -16,7 +16,7 @@ import { AnnouncementsModule } from './AnnouncementsModule';
 const admin = parseUser({
   id: 'admin-1',
   email: 'admin@gatech.edu',
-  role: Role.Admin,
+  role: Role.Officer,
 });
 const member = parseUser({
   id: 'member-1',
@@ -36,7 +36,14 @@ function buildModule(effects?: Partial<CallableEffects>) {
     emailWhitelistCredentials: jest.fn(),
     removeProvisionedUser: jest.fn(),
     updateUserRole: jest.fn(),
+    addDisciplinaryNotice: jest.fn(),
+    setUserBanned: jest.fn(),
+    transferPresidency: jest.fn(),
     removeUser: jest.fn(),
+    syncPublicProfile: jest.fn(),
+    updatePublicProfile: jest.fn(),
+    selectProfileTitle: jest.fn(),
+    migrateContributorPrivacy: jest.fn(),
     ...effects,
   };
   const ids = new SequenceIdGenerator([

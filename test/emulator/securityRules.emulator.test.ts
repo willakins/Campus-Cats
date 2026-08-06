@@ -10,13 +10,16 @@ import {
 import { deleteObject, getMetadata, ref, uploadBytes } from 'firebase/storage';
 import {
   collection,
+  deleteDoc,
   doc,
   getDoc,
   getDocs,
   query,
   setDoc,
+  Timestamp,
   updateDoc,
   where,
+  writeBatch,
 } from 'firebase/firestore';
 
 import {
@@ -57,6 +60,11 @@ describe('Firebase authorization matrix', () => {
           email: 'other@gatech.edu',
           role: 0,
         }),
+        setDoc(doc(firestore, 'users', 'banned-1'), {
+          email: 'banned@gatech.edu',
+          role: 0,
+          banned: true,
+        }),
         setDoc(doc(firestore, 'users', 'admin-1'), {
           email: 'admin@gatech.edu',
           role: 1,
@@ -64,6 +72,30 @@ describe('Firebase authorization matrix', () => {
         setDoc(doc(firestore, 'users', 'super-1'), {
           email: 'super@gatech.edu',
           role: 2,
+        }),
+        setDoc(doc(firestore, 'users', 'president-1'), {
+          email: 'president@gatech.edu',
+          role: 3,
+        }),
+        setDoc(doc(firestore, 'users', 'developer-1'), {
+          email: 'developer@gatech.edu',
+          role: 4,
+        }),
+        setDoc(doc(firestore, 'public-profiles', 'member-1'), {
+          displayName: 'Member One',
+          bio: 'Campus cat watcher',
+          profilePhotoUrl: '',
+          role: 0,
+          achievementIds: [],
+          selectedTitleId: '',
+        }),
+        setDoc(doc(firestore, 'public-profiles', 'member-2'), {
+          displayName: 'Member Two',
+          bio: '',
+          profilePhotoUrl: '',
+          role: 0,
+          achievementIds: ['first-sighting'],
+          selectedTitleId: 'first-sighting',
         }),
         setDoc(doc(firestore, 'announcements', 'announcement-1'), {
           title: 'Update',
@@ -137,18 +169,271 @@ describe('Firebase authorization matrix', () => {
     const sighting = doc(member, 'cat-sightings', 'sighting-1');
 
     await assertSucceeds(getDoc(doc(member, 'announcements', 'announcement-1')));
-    await assertSucceeds(
-      setDoc(sighting, {
-        name: 'Goldie',
-        createdBy: { id: 'member-1' },
-      }),
+    const createSighting = writeBatch(member);
+    createSighting.set(sighting, { name: 'Goldie' });
+    createSighting.set(
+      doc(member, 'content-contributors', 'sighting__sighting-1'),
+      {
+        kind: 'sighting',
+        contentId: 'sighting-1',
+        user: { id: 'member-1', email: 'member@gatech.edu', role: 0 },
+      },
     );
+    await assertSucceeds(createSighting.commit());
     await assertSucceeds(updateDoc(sighting, { name: 'Goldie Cat' }));
     await assertFails(
       updateDoc(doc(other, 'cat-sightings', 'sighting-1'), { name: 'Stolen' }),
     );
     await assertFails(
+      setDoc(
+        doc(other, 'content-contributors', 'sighting__sighting-1'),
+        {
+          kind: 'sighting',
+          contentId: 'sighting-1',
+          user: { id: 'member-2', email: 'other@gatech.edu', role: 0 },
+        },
+      ),
+    );
+    await assertFails(
+      setDoc(
+        doc(other, 'content-contributors', 'sighting__orphaned'),
+        {
+          kind: 'sighting',
+          contentId: 'orphaned',
+          user: { id: 'member-2', email: 'other@gatech.edu', role: 0 },
+        },
+      ),
+    );
+    await assertFails(
       setDoc(doc(member, 'catalog', 'cat-1'), { name: 'Goldie' }),
+    );
+    await assertFails(deleteDoc(sighting));
+    const deleteSighting = writeBatch(member);
+    deleteSighting.delete(sighting);
+    deleteSighting.delete(
+      doc(member, 'content-contributors', 'sighting__sighting-1'),
+    );
+    await assertSucceeds(deleteSighting.commit());
+  });
+
+  it('lets only the President manage public branding and privacy settings', async () => {
+    const anonymous = environment.unauthenticatedContext().firestore();
+    const president = environment.authenticatedContext('president-1', {
+      email: 'president@gatech.edu',
+    }).firestore();
+    const developer = environment.authenticatedContext('developer-1', {
+      email: 'developer@gatech.edu',
+    }).firestore();
+    const settings = doc(president, 'app-settings', 'public');
+    const value = {
+      logoUrl: '',
+      primaryColor: '#18314F',
+      accentColor: '#B58A16',
+      sightingsAnonymous: true,
+    };
+
+    await assertSucceeds(setDoc(settings, value));
+    await assertSucceeds(getDoc(doc(anonymous, 'app-settings', 'public')));
+    await assertFails(
+      setDoc(doc(developer, 'app-settings', 'public'), {
+        ...value,
+        sightingsAnonymous: false,
+      }),
+    );
+    await assertFails(
+      updateDoc(settings, { primaryColor: 'navy' }),
+    );
+  });
+
+  it('keeps contributor records officer-only while anonymity is enabled', async () => {
+    const member = environment.authenticatedContext('member-1', {
+      email: 'member@gatech.edu',
+    }).firestore();
+    const other = environment.authenticatedContext('member-2', {
+      email: 'other@gatech.edu',
+    }).firestore();
+    const admin = environment.authenticatedContext('admin-1', {
+      email: 'admin@gatech.edu',
+    }).firestore();
+    const president = environment.authenticatedContext('president-1', {
+      email: 'president@gatech.edu',
+    }).firestore();
+    const contributor = doc(
+      member,
+      'content-contributors',
+      'sighting__private-sighting',
+    );
+    const batch = writeBatch(member);
+    batch.set(doc(member, 'cat-sightings', 'private-sighting'), {
+      name: 'Goldie',
+    });
+    batch.set(contributor, {
+      kind: 'sighting',
+      contentId: 'private-sighting',
+      user: { id: 'member-1', email: 'member@gatech.edu', role: 0 },
+    });
+    await assertSucceeds(batch.commit());
+
+    await assertSucceeds(getDoc(contributor));
+    await assertSucceeds(
+      getDoc(
+        doc(admin, 'content-contributors', 'sighting__private-sighting'),
+      ),
+    );
+    await assertFails(
+      getDoc(
+        doc(other, 'content-contributors', 'sighting__private-sighting'),
+      ),
+    );
+
+    await assertSucceeds(
+      setDoc(doc(president, 'app-settings', 'public'), {
+        logoUrl: '',
+        primaryColor: '#18314F',
+        accentColor: '#B58A16',
+        sightingsAnonymous: false,
+      }),
+    );
+    await assertSucceeds(
+      getDoc(
+        doc(other, 'content-contributors', 'sighting__private-sighting'),
+      ),
+    );
+  });
+
+  it('lets banned accounts read only their own status while denying app data and media', async () => {
+    const bannedContext = environment.authenticatedContext('banned-1', {
+      email: 'banned@gatech.edu',
+    });
+    const bannedFirestore = bannedContext.firestore();
+    const bannedStorage = bannedContext.storage();
+
+    const profile = await assertSucceeds(
+      getDoc(doc(bannedFirestore, 'users', 'banned-1')),
+    );
+    expect(profile.data()?.banned).toBe(true);
+    await assertFails(
+      getDoc(doc(bannedFirestore, 'announcements', 'announcement-1')),
+    );
+    await assertFails(
+      setDoc(doc(bannedFirestore, 'cat-sightings', 'banned-sighting'), {
+        name: 'Blocked',
+        createdBy: { id: 'banned-1' },
+      }),
+    );
+    await assertFails(
+      updateDoc(doc(bannedFirestore, 'users', 'banned-1'), {
+        expoPushToken: 'ExponentPushToken[banned]',
+      }),
+    );
+    await assertFails(
+      uploadBytes(
+        ref(bannedStorage, 'cat-sightings/banned-sighting/photo.jpg'),
+        new Uint8Array([1]),
+        { customMetadata: { ownerId: 'banned-1' } },
+      ),
+    );
+  });
+
+  it('lets each account store exactly one validated favorite and read heart counts', async () => {
+    const member = environment.authenticatedContext('member-1', {
+      email: 'member@gatech.edu',
+    }).firestore();
+    const other = environment.authenticatedContext('member-2', {
+      email: 'other@gatech.edu',
+    }).firestore();
+    const admin = environment.authenticatedContext('admin-1', {
+      email: 'admin@gatech.edu',
+    }).firestore();
+    const anonymous = environment.unauthenticatedContext().firestore();
+    const favorite = doc(member, 'catalog-favorites', 'member-1');
+    const now = Timestamp.fromDate(new Date('2026-08-05T12:00:00.000Z'));
+
+    await assertSucceeds(
+      setDoc(favorite, { catalogId: 'cat-1', createdAt: now }),
+    );
+    await assertSucceeds(
+      setDoc(favorite, {
+        catalogId: 'inat-guide-2113386',
+        createdAt: now,
+      }),
+    );
+    const stored = await assertSucceeds(getDoc(favorite));
+    expect(stored.data()?.catalogId).toBe('inat-guide-2113386');
+
+    await assertSucceeds(
+      setDoc(doc(other, 'catalog-favorites', 'member-2'), {
+        catalogId: 'inat-guide-2113386',
+        createdAt: now,
+      }),
+    );
+    const visibleFavorites = await assertSucceeds(
+      getDocs(collection(member, 'catalog-favorites')),
+    );
+    expect(visibleFavorites.size).toBe(2);
+
+    await assertFails(
+      setDoc(doc(member, 'catalog-favorites', 'member-2'), {
+        catalogId: 'cat-1',
+        createdAt: now,
+      }),
+    );
+    await assertFails(
+      setDoc(favorite, {
+        catalogId: 'cat-1',
+        createdAt: now,
+        userId: 'member-1',
+      }),
+    );
+    await assertFails(
+      setDoc(favorite, { catalogId: '', createdAt: now }),
+    );
+    await assertFails(
+      setDoc(favorite, { catalogId: 'cat-1', createdAt: 'today' }),
+    );
+    await assertFails(
+      setDoc(doc(admin, 'catalog-favorites', 'member-1'), {
+        catalogId: 'cat-1',
+        createdAt: now,
+      }),
+    );
+    await assertFails(getDocs(collection(anonymous, 'catalog-favorites')));
+    await assertFails(
+      setDoc(doc(anonymous, 'catalog-favorites', 'anonymous'), {
+        catalogId: 'cat-1',
+        createdAt: now,
+      }),
+    );
+
+    await assertSucceeds(deleteDoc(favorite));
+    expect((await assertSucceeds(getDoc(favorite))).exists()).toBe(false);
+  });
+
+  it('shares public profiles without exposing private user documents or client writes', async () => {
+    const member = environment.authenticatedContext('member-1', {
+      email: 'member@gatech.edu',
+    }).firestore();
+    const banned = environment.authenticatedContext('banned-1', {
+      email: 'banned@gatech.edu',
+    }).firestore();
+    const anonymous = environment.unauthenticatedContext().firestore();
+
+    const otherProfile = await assertSucceeds(
+      getDoc(doc(member, 'public-profiles', 'member-2')),
+    );
+    expect(otherProfile.data()?.displayName).toBe('Member Two');
+    await assertSucceeds(getDocs(collection(member, 'public-profiles')));
+    await assertFails(getDoc(doc(member, 'users', 'member-2')));
+    await assertFails(
+      updateDoc(doc(member, 'public-profiles', 'member-1'), {
+        displayName: 'Changed from client',
+      }),
+    );
+    await assertFails(
+      getDoc(doc(banned, 'public-profiles', 'member-1')),
+    );
+    await assertFails(
+      getDoc(doc(anonymous, 'public-profiles', 'member-1')),
     );
   });
 
@@ -177,6 +462,25 @@ describe('Firebase authorization matrix', () => {
         name: 'Officer',
         email: 'officer@gatech.edu',
       }),
+    );
+  });
+
+  it('preserves officer data access for the developer role', async () => {
+    const developer = environment.authenticatedContext('developer-1', {
+      email: 'developer@gatech.edu',
+    }).firestore();
+
+    await assertSucceeds(
+      setDoc(doc(developer, 'contact-info', 'developer-contact'), {
+        name: 'Developer',
+        email: 'developer@gatech.edu',
+      }),
+    );
+    await assertSucceeds(
+      getDoc(doc(developer, 'integration-state', 'inaturalist')),
+    );
+    await assertFails(
+      updateDoc(doc(developer, 'users', 'developer-1'), { role: 2 }),
     );
   });
 
@@ -272,5 +576,87 @@ describe('Firebase authorization matrix', () => {
       ),
     );
     await assertSucceeds(deleteObject(owned));
+  });
+
+  it('lets only the President publish a validated public login logo', async () => {
+    const presidentStorage = environment.authenticatedContext('president-1', {
+      email: 'president@gatech.edu',
+    }).storage();
+    const developerStorage = environment.authenticatedContext('developer-1', {
+      email: 'developer@gatech.edu',
+    }).storage();
+    const anonymousStorage = environment.unauthenticatedContext().storage();
+    const logo = ref(presidentStorage, 'app-branding/profile-logo.png');
+
+    await assertSucceeds(
+      uploadBytes(logo, new Uint8Array([1]), { contentType: 'image/png' }),
+    );
+    await assertSucceeds(
+      getMetadata(ref(anonymousStorage, 'app-branding/profile-logo.png')),
+    );
+    await assertFails(
+      uploadBytes(
+        ref(developerStorage, 'app-branding/developer-logo.png'),
+        new Uint8Array([1]),
+        { contentType: 'image/png' },
+      ),
+    );
+    await assertFails(
+      uploadBytes(
+        ref(presidentStorage, 'app-branding/not-an-image.txt'),
+        new Uint8Array([1]),
+        { contentType: 'text/plain' },
+      ),
+    );
+  });
+
+  it('lets active users manage only their own public profile picture', async () => {
+    const memberStorage = environment.authenticatedContext('member-1', {
+      email: 'member@gatech.edu',
+    }).storage();
+    const otherStorage = environment.authenticatedContext('member-2', {
+      email: 'other@gatech.edu',
+    }).storage();
+    const bannedStorage = environment.authenticatedContext('banned-1', {
+      email: 'banned@gatech.edu',
+    }).storage();
+    const profilePhoto = ref(
+      memberStorage,
+      'public-profiles/member-1/profile.jpg',
+    );
+
+    await assertSucceeds(
+      uploadBytes(profilePhoto, new Blob([new Uint8Array([1])], { type: 'image/jpeg' }), {
+        customMetadata: { ownerId: 'member-1' },
+      }),
+    );
+    await assertSucceeds(getMetadata(profilePhoto));
+    await assertFails(
+      uploadBytes(
+        ref(memberStorage, 'public-profiles/member-1/not-an-image.txt'),
+        new Blob(['not an image'], { type: 'text/plain' }),
+        { customMetadata: { ownerId: 'member-1' } },
+      ),
+    );
+    await assertFails(
+      uploadBytes(
+        ref(memberStorage, 'public-profiles/member-1/wrong-owner.jpg'),
+        new Blob([new Uint8Array([1])], { type: 'image/jpeg' }),
+        { customMetadata: { ownerId: 'member-2' } },
+      ),
+    );
+    await assertFails(
+      deleteObject(
+        ref(otherStorage, 'public-profiles/member-1/profile.jpg'),
+      ),
+    );
+    await assertFails(
+      uploadBytes(
+        ref(bannedStorage, 'public-profiles/banned-1/profile.jpg'),
+        new Blob([new Uint8Array([1])], { type: 'image/jpeg' }),
+        { customMetadata: { ownerId: 'banned-1' } },
+      ),
+    );
+    await assertSucceeds(deleteObject(profilePhoto));
   });
 });

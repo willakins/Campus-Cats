@@ -1,5 +1,5 @@
 import { InMemorySession } from '../../adapters/inMemory/InMemorySession';
-import { Role, parseUser } from '../../core/domain';
+import { Role, parseManagedUser, parseUser } from '../../core/domain';
 import { SessionModule } from './SessionModule';
 
 const member = parseUser({
@@ -105,6 +105,56 @@ describe('SessionModule', () => {
     await expect(module.registerPushToken('   ')).resolves.toMatchObject({
       ok: false,
       error: { code: 'validation' },
+    });
+  });
+
+  it('refuses banned accounts with a specific sign-in error', async () => {
+    const bannedMember = parseManagedUser({ ...member, banned: true });
+    const session = new InMemorySession();
+    session.addEmailAccount('member@example.com', 'password', bannedMember);
+    const module = new SessionModule({ session });
+
+    await expect(
+      module.signInWithEmail('member@example.com', 'password'),
+    ).resolves.toMatchObject({
+      ok: false,
+      error: {
+        code: 'forbidden',
+        message: 'This account has been banned from Campus Cats.',
+      },
+    });
+    await expect(module.restore()).resolves.toEqual({
+      ok: true,
+      value: undefined,
+      warnings: [],
+    });
+  });
+
+  it('requests a password reset for a normalized valid email', async () => {
+    const session = new InMemorySession();
+    const module = new SessionModule({ session });
+
+    await expect(
+      module.requestPasswordReset('  Member@Example.com  '),
+    ).resolves.toEqual({ ok: true, value: undefined, warnings: [] });
+    expect(session.operations).toContain('password-reset:member@example.com');
+  });
+
+  it('validates password-reset emails and maps delivery failures', async () => {
+    const session = new InMemorySession();
+    const module = new SessionModule({ session });
+
+    await expect(module.requestPasswordReset('not-an-email')).resolves.toMatchObject({
+      ok: false,
+      error: { code: 'validation' },
+    });
+
+    session.failNext('requestPasswordReset', new Error('offline'));
+    await expect(
+      module.requestPasswordReset('member@example.com'),
+    ).resolves.toMatchObject({
+      ok: false,
+      error: { code: 'dependency_failure' },
     });
   });
 

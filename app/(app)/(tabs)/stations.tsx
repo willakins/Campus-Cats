@@ -4,16 +4,20 @@ import { FlatList, View } from 'react-native';
 import { useFocusEffect, useRouter } from 'expo-router';
 
 import {
+  AccessBanner,
   AccessDeniedState,
   AppHeader,
-  Button,
+  AppText,
+  CardListSkeleton,
   EmptyState,
   ErrorState,
+  FloatingActionButton,
   Screen,
+  SearchField,
   SegmentedControl,
-  Skeleton,
 } from '@/components/design';
 import { StationItem } from '@/components/items/StationItem';
+import { virtualizedListPerformanceProps } from '@/components/collections/virtualizedListPerformance';
 import { appModules } from '@/composition/appModules';
 import { canManageFeature, Station } from '@/core/domain';
 import { useAuth } from '@/providers';
@@ -28,6 +32,7 @@ const Stations = () => {
   const isAdmin = canManageFeature(user.role);
   const [stations, setStations] = useState<readonly Station[]>([]);
   const [filter, setFilter] = useState<StationFilter>('All');
+  const [query, setQuery] = useState('');
   const [loading, setLoading] = useState(isAdmin);
   const [error, setError] = useState<string>();
 
@@ -56,46 +61,70 @@ const Stations = () => {
     );
   }
 
+  const normalizedQuery = query.trim().toLocaleLowerCase();
   const filteredStations = stations.filter((station) => {
     const { isStocked } = appModules.stations.stockStatus(station);
     if (filter === 'Stocked') return isStocked;
     if (filter === 'Unstocked') return !isStocked;
     return true;
-  });
+  }).filter((station) =>
+    !normalizedQuery ||
+    station.name.toLocaleLowerCase().includes(normalizedQuery) ||
+    station.knownCats.toLocaleLowerCase().includes(normalizedQuery),
+  );
 
   return (
     <Screen
-      footer={(
-        <Button
-          label="Create station"
-          icon="add"
-          fullWidth
+      floatingAction={(
+        <FloatingActionButton
+          accessibilityLabel="Create station"
+          accessibilityHint="Opens the new feeding station form"
           onPress={() => router.push('/stations/create-station')}
         />
       )}
     >
       <AppHeader title="Feeding stations" eyebrow="Officer operations" />
       <View style={{ gap: theme.spacing.md, flex: 1 }}>
+        <AccessBanner
+          title="Officer-only area"
+          message="Only officers can view, create, or update station locations and stocking details."
+        />
+        <SearchField
+          accessibilityLabel="Search feeding stations"
+          placeholder="Search stations or known cats"
+          value={query}
+          onChangeText={setQuery}
+        />
         <SegmentedControl
           label="Station stock filter"
           value={filter}
           options={[
+            { value: 'All', label: 'All' },
             { value: 'Stocked', label: 'Stocked' },
             { value: 'Unstocked', label: 'Unstocked' },
-            { value: 'All', label: 'All' },
           ]}
           onChange={setFilter}
         />
+        {!loading && !error ? (
+          <AppText color="muted" variant="caption" accessibilityLiveRegion="polite">
+            {filteredStations.length} {filteredStations.length === 1 ? 'station' : 'stations'}
+          </AppText>
+        ) : null}
         {loading ? (
-          <View style={{ gap: theme.spacing.md }}>
-            <Skeleton label="Loading feeding stations" />
-            <Skeleton label="Loading another feeding station" />
-          </View>
+          <CardListSkeleton
+            label="Loading feeding stations"
+            layout="leading"
+          />
         ) : (
           <FlatList
+            {...virtualizedListPerformanceProps}
             data={error ? [] : filteredStations}
             keyExtractor={(station) => station.id}
-            contentContainerStyle={{ flexGrow: 1, gap: theme.spacing.md, paddingBottom: theme.spacing.md }}
+            contentContainerStyle={{
+              flexGrow: 1,
+              gap: theme.spacing.md,
+              paddingBottom: theme.spacing.huge * 2,
+            }}
             renderItem={({ item }) => (
               <StationItem station={item} status={appModules.stations.stockStatus(item)} />
             )}
@@ -103,8 +132,8 @@ const Stations = () => {
               <ErrorState title="Stations are unavailable" message={error} onRetry={() => void load()} />
             ) : (
               <EmptyState
-                title={filter === 'All' ? 'No stations yet' : `No ${filter.toLowerCase()} stations`}
-                message="Try another filter or add a feeding station."
+                title={query ? 'No matching stations' : filter === 'All' ? 'No stations yet' : `No ${filter.toLowerCase()} stations`}
+                message={query ? 'Try another search or stock filter.' : 'Try another filter or add a feeding station.'}
               />
             )}
           />

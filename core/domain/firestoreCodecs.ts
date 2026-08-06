@@ -1,17 +1,21 @@
 import {
   Announcement,
   CatalogEntry,
+  CatalogFavorite,
   Contact,
+  ManagedUser,
+  PublicProfile,
   Sighting,
   Station,
-  User,
   WhitelistApplication,
   parseAnnouncement,
   parseCatalogEntry,
+  parseCatalogFavorite,
   parseContact,
+  parseManagedUser,
+  parsePublicProfile,
   parseSighting,
   parseStation,
-  parseUser,
   parseWhitelistApplication,
 } from './models';
 import {
@@ -22,19 +26,33 @@ import {
   parseImportedObservation,
   parseInaturalistSyncStatus,
 } from './inaturalist';
+import {
+  AppSettings,
+  parseStoredAppSettings,
+} from './appSettings';
+import {
+  ContentContributor,
+  parseContentContributor,
+} from './contributors';
 
 export const COLLECTIONS = {
   sightings: 'cat-sightings',
   catalog: 'catalog',
+  catalogFavorites: 'catalog-favorites',
   stations: 'stations',
   announcements: 'announcements',
   contacts: 'contact-info',
   users: 'users',
+  publicProfiles: 'public-profiles',
   whitelist: 'whitelist',
   inaturalistObservations: 'inaturalist-observations',
   inaturalistCatalog: 'inaturalist-guide-profiles',
   integrationState: 'integration-state',
+  appSettings: 'app-settings',
+  contentContributors: 'content-contributors',
 } as const;
+
+export const APP_SETTINGS_DOCUMENT_ID = 'public';
 
 export interface TimestampFactory<EncodedDate = unknown> {
   fromDate(value: Date): EncodedDate;
@@ -70,9 +88,44 @@ function decodeDate(value: unknown): Date {
 export function createFirestoreCodecs<EncodedDate>(
   timestamps: TimestampFactory<EncodedDate>,
 ) {
-  const user: FirestoreCodec<User> = {
-    decode: (id, value) => parseUser({ id, ...record(value) }),
-    encode: ({ email, role }) => ({ email, role }),
+  const user: FirestoreCodec<ManagedUser> = {
+    decode: (id, value) => {
+      const data = record(value);
+      const notices = data.disciplinaryNotices ?? [];
+      if (!Array.isArray(notices)) {
+        throw new Error('Expected disciplinary notices to be an array');
+      }
+      return parseManagedUser({
+        id,
+        ...data,
+        banned: data.banned ?? false,
+        disciplinaryNotices: notices.map((value) => {
+          const notice = record(value);
+          return {
+            ...notice,
+            createdAt: decodeDate(notice.createdAt),
+          };
+        }),
+      });
+    },
+    encode: ({ email, role, banned, disciplinaryNotices }) => ({
+      email,
+      role,
+      banned,
+      disciplinaryNotices: disciplinaryNotices.map((notice) => ({
+        ...notice,
+        createdAt: timestamps.fromDate(notice.createdAt),
+      })),
+    }),
+  };
+
+  const publicProfile: FirestoreCodec<PublicProfile> = {
+    decode: (id, value) =>
+      parsePublicProfile({
+        id,
+        ...record(value),
+      }),
+    encode: ({ id: _id, ...value }) => value,
   };
 
   const sighting: FirestoreCodec<Sighting> = {
@@ -90,7 +143,7 @@ export function createFirestoreCodecs<EncodedDate>(
         timeOfDay: data.timeofDay,
       });
     },
-    encode: ({ id: _id, date, timeOfDay, ...value }) => ({
+    encode: ({ id: _id, date, timeOfDay, createdBy: _createdBy, ...value }) => ({
       ...value,
       spotted_time: timestamps.fromDate(date),
       timeofDay: timeOfDay,
@@ -106,7 +159,22 @@ export function createFirestoreCodecs<EncodedDate>(
         createdAt: decodeDate(data.createdAt),
       });
     },
-    encode: ({ id: _id, createdAt, ...value }) => ({
+    encode: ({ id: _id, createdAt, createdBy: _createdBy, ...value }) => ({
+      ...value,
+      createdAt: timestamps.fromDate(createdAt),
+    }),
+  };
+
+  const catalogFavorite: FirestoreCodec<CatalogFavorite> = {
+    decode: (id, value) => {
+      const data = record(value);
+      return parseCatalogFavorite({
+        userId: id,
+        catalogId: data.catalogId,
+        createdAt: decodeDate(data.createdAt),
+      });
+    },
+    encode: ({ userId: _userId, createdAt, ...value }) => ({
       ...value,
       createdAt: timestamps.fromDate(createdAt),
     }),
@@ -151,6 +219,16 @@ export function createFirestoreCodecs<EncodedDate>(
   const contact: FirestoreCodec<Contact> = {
     decode: (id, value) => parseContact({ id, ...record(value) }),
     encode: ({ id: _id, ...value }) => value,
+  };
+
+  const appSettings: FirestoreCodec<AppSettings> = {
+    decode: (_id, value) => parseStoredAppSettings(record(value)),
+    encode: (value) => ({ ...value }),
+  };
+
+  const contentContributor: FirestoreCodec<ContentContributor> = {
+    decode: (_id, value) => parseContentContributor(record(value)),
+    encode: (value) => ({ ...value }),
   };
 
   const inaturalistObservation: FirestoreCodec<ImportedObservation> = {
@@ -305,12 +383,16 @@ export function createFirestoreCodecs<EncodedDate>(
 
   return {
     user,
+    publicProfile,
     sighting,
     catalog,
+    catalogFavorite,
     station,
     announcement,
     whitelist,
     contact,
+    appSettings,
+    contentContributor,
     inaturalistObservation,
     inaturalistCatalog,
     inaturalistStatus,

@@ -6,7 +6,7 @@ contributor.
 
 ## Development workflow
 
-1. Use Node 22 and install exact dependencies with `npm ci`.
+1. Use Node 22.23.2 with npm 10 and install exact dependencies with `npm ci`.
 2. Create a focused branch and keep changes within the issue's stated scope.
 3. Add or update public-boundary behavior tests before changing behavior.
 4. Run `npm run quality` and `npm run test:coverage`.

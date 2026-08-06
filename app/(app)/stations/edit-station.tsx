@@ -3,9 +3,8 @@ import { Alert } from 'react-native';
 
 import { useLocalSearchParams, useRouter } from 'expo-router';
 
-import { AppHeader, ErrorState, Screen } from '@/components/design';
+import { AppHeader, ErrorState, FormSkeleton, Screen } from '@/components/design';
 import { FormScreen } from '@/components/forms';
-import { LoadingIndicator } from '@/components/ui/LoadingIndicator';
 import { appModules } from '@/composition/appModules';
 import { parseUser, Station } from '@/core/domain';
 import { localMedia, storedMedia } from '@/core/media';
@@ -105,7 +104,18 @@ const EditStation = () => {
     ]);
   };
 
-  if (!station && !loadError) return <LoadingIndicator label="Loading station form" />;
+  if (!station && !loadError) {
+    return (
+      <Screen scroll>
+        <AppHeader
+          title="Edit station"
+          eyebrow="Officer operations"
+          onBack={() => router.back()}
+        />
+        <FormSkeleton label="Loading station form" fields={5} />
+      </Screen>
+    );
+  }
   if (!station) {
     return (
       <Screen>

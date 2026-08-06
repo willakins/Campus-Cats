@@ -11,7 +11,13 @@ const validDate = z.date().refine((date) => !Number.isNaN(date.getTime()), {
   message: 'Expected a valid date',
 });
 const requiredText = z.string().trim().min(1);
-const optionalText = z.string().trim().min(1).optional();
+const optionalText = z.preprocess(
+  (value) =>
+    typeof value === 'string' && value.trim().length === 0
+      ? undefined
+      : value,
+  z.string().trim().min(1).optional(),
+);
 const mediaIdSchema = z.custom<MediaAssetId>(
   (value) => typeof value === 'string' && value.trim().length > 0,
   'Expected a media asset ID',
@@ -194,7 +200,7 @@ export interface InaturalistCatalogRecord {
   readonly moderation: ImportModeration;
   readonly localContribution?: Readonly<{
     createdAt: Date;
-    createdBy: User;
+    createdBy?: User;
     credits: string;
   }>;
 }

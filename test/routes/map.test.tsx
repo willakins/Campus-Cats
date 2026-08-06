@@ -13,6 +13,7 @@ import { AppThemeProvider } from '../../theme';
 
 const mockList = jest.fn();
 const mockPush = jest.fn();
+const mockSightingMapProps = jest.fn();
 
 jest.mock('expo-router', () => {
   const mockReact = require('react');
@@ -31,23 +32,27 @@ jest.mock('../../components/SightingMapView', () => {
   const mockReact = require('react');
   const { Pressable: MockPressable, Text: MockText, View: MockView } = require('react-native');
   return {
-    SightingMapView: ({ list, onPerMarkerPress }: {
+    SightingMapView: ({ list, onPerMarkerPress, ...props }: {
       list: readonly { id: string; name: string }[];
       onPerMarkerPress: (item: { id: string; name: string }) => void;
-    }) => mockReact.createElement(
-      MockView,
-      { testID: 'sighting-map' },
-      list.map((item) => mockReact.createElement(
-        MockPressable,
-        {
-          key: item.id,
-          accessibilityRole: 'button',
-          accessibilityLabel: `View sighting: ${item.name}`,
-          onPress: () => onPerMarkerPress(item),
-        },
-        mockReact.createElement(MockText, null, item.name),
-      )),
-    ),
+      [key: string]: unknown;
+    }) => {
+      mockSightingMapProps({ list, ...props });
+      return mockReact.createElement(
+        MockView,
+        { testID: 'sighting-map' },
+        list.map((item) => mockReact.createElement(
+          MockPressable,
+          {
+            key: item.id,
+            accessibilityRole: 'button',
+            accessibilityLabel: `View sighting: ${item.name}`,
+            onPress: () => onPerMarkerPress(item),
+          },
+          mockReact.createElement(MockText, null, item.name),
+        )),
+      );
+    },
   };
 });
 
@@ -97,8 +102,8 @@ const importedWithoutCoordinates: InaturalistSightingRecord = {
   location: null,
 };
 
-const renderMap = () =>
-  render(
+const renderMap = async () =>
+  await render(
     <AppThemeProvider colorScheme="dark">
       <HomeScreen />
     </AppThemeProvider>,
@@ -112,7 +117,7 @@ describe('sightings map route', () => {
   it('shows a result count, filters markers, and navigates by ID', async () => {
     mockList.mockResolvedValue({ ok: true, value: [recent, old], warnings: [] });
     const user = userEvent.setup();
-    renderMap();
+    await renderMap();
 
     expect(await screen.findByText('2 sightings')).toBeOnTheScreen();
     await user.press(screen.getByRole('button', { name: '7D' }));
@@ -131,9 +136,10 @@ describe('sightings map route', () => {
       error: { code: 'dependency_failure', message: 'Could not load sightings' },
     });
     const user = userEvent.setup();
-    renderMap();
+    await renderMap();
 
     expect(await screen.findByRole('alert', { name: 'Could not load sightings' })).toBeOnTheScreen();
+    expect(screen.queryByText('Report a sighting')).not.toBeOnTheScreen();
     await user.press(screen.getByRole('button', { name: 'Report a sighting' }));
     expect(mockPush).toHaveBeenCalledWith('/sighting/create-sighting');
   });
@@ -145,7 +151,7 @@ describe('sightings map route', () => {
       warnings: [],
     });
     const user = userEvent.setup();
-    renderMap();
+    await renderMap();
 
     expect(await screen.findByText('2 sightings')).toBeOnTheScreen();
     expect(screen.queryByText('Private location')).not.toBeOnTheScreen();
@@ -158,10 +164,25 @@ describe('sightings map route', () => {
 
   it('shows loading status without removing the map geometry', async () => {
     mockList.mockImplementation(() => new Promise(() => undefined));
-    renderMap();
+    await renderMap();
 
     expect(screen.getByTestId('sighting-map')).toBeOnTheScreen();
     expect(screen.getByText('Loading sightings')).toBeOnTheScreen();
     await waitFor(() => expect(mockList).toHaveBeenCalledTimes(1));
+  });
+
+  it('starts at a campus-level view centered on Georgia Tech', async () => {
+    mockList.mockResolvedValue({ ok: true, value: [], warnings: [] });
+    await renderMap();
+
+    expect(mockSightingMapProps).toHaveBeenCalledWith(expect.objectContaining({
+      initialCamera: {
+        center: { latitude: 33.776077, longitude: -84.396199 },
+        heading: 0,
+        pitch: 0,
+        altitude: 1000,
+        zoom: 16,
+      },
+    }));
   });
 });

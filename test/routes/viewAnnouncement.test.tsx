@@ -9,7 +9,7 @@ import { AppThemeProvider } from '../../theme';
 const mockPush = jest.fn();
 const mockGet = jest.fn();
 const mockMedia = jest.fn();
-let mockRole: Role = Role.Admin;
+let mockRole: Role = Role.Officer;
 
 jest.mock('expo-router', () => {
   const mockReact = require('react');
@@ -47,8 +47,8 @@ jest.mock('../../components/entries/AnnouncementEntry', () => {
   };
 });
 
-const renderAnnouncement = () =>
-  render(
+const renderAnnouncement = async () =>
+  await render(
     <AppThemeProvider colorScheme="light">
       <ViewAnnouncement />
     </AppThemeProvider>,
@@ -62,7 +62,7 @@ const announcement = parseAnnouncement({
   createdBy: parseUser({
     id: 'admin-1',
     email: 'admin@gatech.edu',
-    role: Role.Admin,
+    role: Role.Officer,
   }),
   authorAlias: 'Campus Cats Team',
 });
@@ -70,14 +70,24 @@ const announcement = parseAnnouncement({
 describe('view announcement route', () => {
   beforeEach(() => {
     mockPush.mockReset();
-    mockRole = Role.Admin;
+    mockRole = Role.Officer;
     mockGet.mockResolvedValue({ ok: true, value: announcement, warnings: [] });
     mockMedia.mockResolvedValue({ ok: true, value: [], warnings: [] });
   });
 
+  it('renders the page header and detail geometry before data resolves', async () => {
+    mockGet.mockImplementation(() => new Promise(() => undefined));
+    await renderAnnouncement();
+
+    expect(screen.getByText('Announcement')).toBeOnTheScreen();
+    expect(
+      screen.getByRole('progressbar', { name: 'Loading announcement' }),
+    ).toBeOnTheScreen();
+  });
+
   it('loads by route ID and passes that ID to the editor', async () => {
     const user = userEvent.setup();
-    renderAnnouncement();
+    await renderAnnouncement();
 
     expect(await screen.findByText('Feeding station workday')).toBeOnTheScreen();
     await user.press(screen.getByRole('button', { name: 'Edit announcement' }));
@@ -90,7 +100,7 @@ describe('view announcement route', () => {
 
   it('does not offer editing to members', async () => {
     mockRole = Role.Member;
-    renderAnnouncement();
+    await renderAnnouncement();
 
     expect(await screen.findByText('Feeding station workday')).toBeOnTheScreen();
     expect(screen.queryByRole('button', { name: 'Edit announcement' })).not.toBeOnTheScreen();
@@ -101,7 +111,7 @@ describe('view announcement route', () => {
       ok: false,
       error: { code: 'not_found', message: 'Announcement not found' },
     });
-    renderAnnouncement();
+    await renderAnnouncement();
 
     expect(await screen.findByText('Announcement not found')).toBeOnTheScreen();
   });
