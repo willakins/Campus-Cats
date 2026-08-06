@@ -121,7 +121,8 @@
         if (!bridge) {
           render({
             state: 'error',
-            message: 'Georgia Tech SSO could not load. Please try again.',
+            message:
+              'Georgia Tech SSO needs an internet connection. Reconnect and try again.',
             canRetry: true,
           });
           return;

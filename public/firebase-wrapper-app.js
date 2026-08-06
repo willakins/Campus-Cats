@@ -9,6 +9,8 @@
   const stateKey = 'campus-cats:saml-redirect';
   const emptyCredentialMessage =
     'Georgia Tech SSO did not return a credential. Please try again.';
+  const networkFailureMessage =
+    'Georgia Tech SSO needs an internet connection. Reconnect and try again.';
 
   const renderFailure = (render, message, canRetry = true) => {
     render({ state: 'error', message, canRetry });
@@ -26,6 +28,15 @@
         'Georgia Tech SSO is not configured for this web app.',
         false,
       );
+      return;
+    }
+
+    if (
+      !firebase ||
+      typeof firebase.initializeApp !== 'function' ||
+      typeof firebase.auth?.SAMLAuthProvider !== 'function'
+    ) {
+      renderFailure(render, networkFailureMessage);
       return;
     }
 
@@ -73,6 +84,8 @@
       const message =
         error instanceof Error && error.message === emptyCredentialMessage
           ? emptyCredentialMessage
+          : error && error.code === 'auth/network-request-failed'
+            ? networkFailureMessage
           : 'Georgia Tech SSO could not start. Check the Firebase Web App configuration and try again.';
       renderFailure(render, message);
     }
