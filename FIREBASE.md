@@ -44,6 +44,12 @@ Community event media, survey-response privacy, community voting, and the releas
 Firestore collections are documented in the
 [Community engagement guide](docs/community-engagement.md).
 
+University catalog synchronization, first-club verification, Georgia Tech backfill,
+recovery, and rollout order are documented in the
+[University onboarding operations guide](docs/university-onboarding.md). Configure
+those server resources before deploying a client that removes the anonymous tenant
+fallback.
+
 Do not run a deploy command from a refactor or contributor branch.
 
 ## Before deploying
@@ -88,5 +94,17 @@ npx firebase-tools deploy --only functions:submitCommunityNomination,functions:s
 ```bash
 npx firebase-tools deploy --only firestore:indexes
 ```
+
+## Deploy university onboarding
+
+Follow the full staged procedure in the university onboarding guide. The backend
+Functions are:
+
+```bash
+npx firebase-tools deploy --only functions:searchUniversities,functions:getUniversity,functions:requestClubSetup,functions:verifyClubSetup,functions:syncUniversityCatalogDaily
+```
+
+The catalog search composite index must be ready before running the first production
+synchronization.
 
 Firebase deployments change shared backend behavior. Test rule changes against a development project or the Firebase Emulator Suite before applying them to a live environment.

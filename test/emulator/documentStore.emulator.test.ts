@@ -34,12 +34,14 @@ describe('Firebase document adapter', () => {
         role: 2,
         clubId: 'campus-cats',
         platformAdmin: false,
+        banned: false,
       });
       await setDoc(doc(context.firestore(), 'clubs', 'campus-cats'), {
         name: 'Campus Cats',
         timezone: 'America/New_York',
         billingEmail: 'billing@example.com',
         billingEnforcementEnabled: false,
+        maintenanceMode: false,
         accessState: 'enabled',
       });
     });
@@ -61,7 +63,12 @@ describe('Firebase document adapter', () => {
             })
             .firestore() as unknown as Firestore,
         ),
-        new FirebaseTenantScope(),
+        tenantScope(),
       ),
   );
 });
+const tenantScope = () => {
+  const scope = new FirebaseTenantScope();
+  scope.setAuthenticatedClub('campus-cats');
+  return scope;
+};

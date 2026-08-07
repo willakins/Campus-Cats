@@ -1,7 +1,9 @@
 import sgMail from '@sendgrid/mail';
 import { getApps, initializeApp } from 'firebase-admin/app';
-import { getAuth, UserRecord } from 'firebase-admin/auth';
-import { Timestamp, getFirestore } from 'firebase-admin/firestore';
+import { getAuth } from 'firebase-admin/auth';
+import { getFirestore } from 'firebase-admin/firestore';
+
+import { ClubProvisioningService } from '../clubProvisioning';
 
 interface Options {
   readonly name: string;
@@ -21,158 +23,36 @@ async function main(): Promise<void> {
   }
 
   if (getApps().length === 0) initializeApp();
-  const auth = getAuth();
-  const firestore = getFirestore();
-  let authUser: UserRecord;
-  let createdAuthUser = false;
-  let profileProvisioned = false;
-  try {
-    authUser = await auth.getUserByEmail(options.presidentEmail);
-  } catch (error) {
-    if (!hasCode(error, 'auth/user-not-found')) throw error;
-    authUser = await auth.createUser({
-      email: options.presidentEmail,
-      emailVerified: false,
-      disabled: false,
-    });
-    createdAuthUser = true;
-  }
-
-  try {
-    const userReference = firestore.collection('users').doc(authUser.uid);
-    const clubReference = firestore.collection('clubs').doc(options.slug);
-    const accessReference = clubReference.collection('access').doc('public');
-    await firestore.runTransaction(async (transaction) => {
-      const presidents = firestore
-        .collection('users')
-        .where('clubId', '==', options.slug)
-        .where('role', '==', 3);
-      const [club, user, existingPresidents] = await Promise.all([
-        transaction.get(clubReference),
-        transaction.get(userReference),
-        transaction.get(presidents),
-      ]);
-      if (user.exists && user.data()?.clubId !== options.slug) {
-        throw new Error('The President account already belongs to another club');
-      }
-      if (
-        existingPresidents.docs.some(
-          (president) => president.id !== authUser.uid,
-        )
-      ) {
-        throw new Error('The club already has a different President');
-      }
-      if (club.exists) {
-        const data = club.data();
-        if (
-          data?.name !== options.name ||
-          data?.timezone !== options.timezone ||
-          data?.billingEmail !== options.billingEmail
-        ) {
-          throw new Error('The club slug already exists with different details');
-        }
-      } else {
-        transaction.create(clubReference, {
-          name: options.name,
-          slug: options.slug,
-          timezone: options.timezone,
-          billingEmail: options.billingEmail,
-          billingEnforcementEnabled: true,
-          accessState: 'pending_setup',
-          paymentStanding: 'current',
-          collectionMethod: 'manual',
-          createdAt: Timestamp.now(),
-          updatedAt: Timestamp.now(),
-        });
-        transaction.create(
-          firestore.collection('billing-accounts').doc(options.slug),
-          {
-            collectionMethod: 'manual',
-            createdAt: Timestamp.now(),
-            updatedAt: Timestamp.now(),
-          },
-        );
-      }
-      transaction.set(
-        userReference,
-        {
-          email: options.presidentEmail,
-          role: 3,
-          clubId: options.slug,
-          platformAdmin: false,
-          banned: false,
-          disciplinaryNotices: [],
-          updatedAt: Timestamp.now(),
-        },
-        { merge: true },
-      );
-      transaction.set(
-        clubReference,
-        { presidentUserId: authUser.uid, updatedAt: Timestamp.now() },
-        { merge: true },
-      );
-      transaction.set(
-        clubReference.collection('public-profiles').doc(authUser.uid),
-        {
-          displayName: displayName(options.presidentEmail),
-          bio: '',
-          profilePhotoUrl: '',
-          role: 3,
-          achievementIds: ['president'],
-          selectedTitleId: 'president',
-          clubId: options.slug,
-        },
-        { merge: true },
-      );
-      transaction.set(
-        accessReference,
-        {
-          clubId: options.slug,
-          clubName: options.name,
-          timezone: options.timezone,
-          billingEnforcementEnabled: true,
-          maintenanceMode: false,
-          accessState: 'pending_setup',
-          paymentStanding: 'current',
-          collectionMethod: 'manual',
-          updatedAt: Timestamp.now(),
-        },
-        { merge: true },
-      );
-    });
-    profileProvisioned = true;
-
-    const link = await auth.generatePasswordResetLink(options.presidentEmail, {
-      url: `${options.webOrigin}/login`,
-    });
-    sgMail.setApiKey(sendgridKey);
-    await sgMail.send({
-      to: options.presidentEmail,
-      from: fromEmail,
-      subject: `Set up ${options.name} on Campus Cats`,
-      text: [
-        `You have been invited as the President of ${options.name} on Campus Cats.`,
-        'Set your password using the secure link below, then sign in on the web to choose monthly invoices or automatic payments.',
-        link,
-        '',
-        'Questions? Contact willakins23@gmail.com.',
-      ].join('\n\n'),
-    });
-    await clubReference.set(
-      {
-        presidentInvitationSentAt: Timestamp.now(),
-        presidentUserId: authUser.uid,
-        updatedAt: Timestamp.now(),
-      },
-      { merge: true },
-    );
-    process.stdout.write(`Created club ${options.slug} and invited ${options.presidentEmail}.\n`);
-  } catch (error) {
-    if (createdAuthUser && !profileProvisioned) {
-      await auth.deleteUser(authUser.uid).catch(() => undefined);
-    }
-    throw error;
-  }
+  const service = new ClubProvisioningService({
+    auth: getAuth(),
+    firestore: getFirestore(),
+    webOrigin: () => options.webOrigin,
+    sendPasswordSetup: async (emailAddress, clubName, link) => {
+      sgMail.setApiKey(sendgridKey);
+      await sgMail.send({
+        to: emailAddress,
+        from: fromEmail,
+        subject: `Set up ${clubName} on Campus Cats`,
+        text: [
+          `You have been invited as the President of ${clubName} on Campus Cats.`,
+          'Set your password using the secure link below, then sign in on the web to choose monthly invoices or automatic payments.',
+          link,
+          '',
+          'Questions? Contact willakins23@gmail.com.',
+        ].join('\n\n'),
+      });
+    },
+  });
+  await service.provision({
+    clubId: options.slug,
+    clubName: options.name,
+    timezone: options.timezone,
+    presidentEmail: options.presidentEmail,
+    billingEmail: options.billingEmail,
+    primaryColor: '#18314F',
+    accentColor: '#B58A16',
+  });
+  process.stdout.write(`Created club ${options.slug} and invited ${options.presidentEmail}.\n`);
 }
 
 function parseOptions(args: readonly string[]): Options {
@@ -229,17 +109,6 @@ function origin(value: string): string {
     throw new Error('web-origin must use HTTPS');
   }
   return parsed.origin;
-}
-
-function displayName(emailAddress: string): string {
-  return (emailAddress.split('@')[0]?.trim() || 'Campus Cats President').slice(
-    0,
-    60,
-  );
-}
-
-function hasCode(error: unknown, code: string): boolean {
-  return typeof error === 'object' && error !== null && 'code' in error && error.code === code;
 }
 
 function usage(): never {

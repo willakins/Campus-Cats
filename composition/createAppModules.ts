@@ -15,6 +15,8 @@ import {
   SessionPort,
   SurveySubmissionGateway,
   WhitelistSubmissionPort,
+  UniversityOnboardingPort,
+  UniversitySelectionStore,
 } from '../core/ports';
 import { AnnouncementsModule } from '../features/announcements';
 import {
@@ -38,6 +40,7 @@ import { StationsModule } from '../features/stations';
 import { SurveysModule } from '../features/surveys';
 import { UsersModule } from '../features/users';
 import { WhitelistModule } from '../features/whitelist';
+import { UniversityOnboardingModule } from '../features/universityOnboarding';
 
 export interface AppBackend {
   readonly documents: DocumentStore;
@@ -56,6 +59,8 @@ export interface AppBackend {
   readonly surveySubmissions: SurveySubmissionGateway;
   readonly communityVoting: CommunityVotingGateway;
   readonly whitelistSubmissions: WhitelistSubmissionPort;
+  readonly universityOnboarding: UniversityOnboardingPort;
+  readonly universitySelections: UniversitySelectionStore;
   readonly codecs: ApplicationCodecs;
 }
 
@@ -88,6 +93,7 @@ export interface AppModules {
   readonly surveys: SurveysModule;
   readonly users: UsersModule;
   readonly whitelist: WhitelistModule;
+  readonly universityOnboarding: UniversityOnboardingModule;
 }
 
 export function createAppModules(
@@ -109,6 +115,8 @@ export function createAppModules(
     session,
     surveySubmissions,
     whitelistSubmissions,
+    universityOnboarding,
+    universitySelections,
   } = infrastructure;
   const mediaCoordinator = () => new MediaCoordinator(media, ids);
   const appSettings = new AppSettingsModule({
@@ -226,6 +234,10 @@ export function createAppModules(
       passwords,
       submissions: whitelistSubmissions,
       codecs,
+    }),
+    universityOnboarding: new UniversityOnboardingModule({
+      gateway: universityOnboarding,
+      selections: universitySelections,
     }),
   });
 }

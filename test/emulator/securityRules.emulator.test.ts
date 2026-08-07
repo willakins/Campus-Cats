@@ -116,12 +116,14 @@ describe('Firebase authorization matrix', () => {
           role: 0,
           clubId: CLUB_ID,
           platformAdmin: false,
+          banned: false,
         }),
         setDoc(doc(firestore, 'users', 'member-2'), {
           email: 'other@gatech.edu',
           role: 0,
           clubId: CLUB_ID,
           platformAdmin: false,
+          banned: false,
         }),
         setDoc(doc(firestore, 'users', 'banned-1'), {
           email: 'banned@gatech.edu',
@@ -135,24 +137,28 @@ describe('Firebase authorization matrix', () => {
           role: 1,
           clubId: CLUB_ID,
           platformAdmin: false,
+          banned: false,
         }),
         setDoc(doc(firestore, 'users', 'super-1'), {
           email: 'super@gatech.edu',
           role: 2,
           clubId: CLUB_ID,
           platformAdmin: false,
+          banned: false,
         }),
         setDoc(doc(firestore, 'users', 'president-1'), {
           email: 'president@gatech.edu',
           role: 3,
           clubId: CLUB_ID,
           platformAdmin: false,
+          banned: false,
         }),
         setDoc(doc(firestore, 'users', 'developer-1'), {
           email: 'developer@gatech.edu',
           role: 1,
           clubId: CLUB_ID,
           platformAdmin: true,
+          banned: false,
         }),
         setDoc(doc(firestore, 'public-profiles', 'member-1'), {
           displayName: 'Member One',
@@ -232,6 +238,20 @@ describe('Firebase authorization matrix', () => {
         email: 'officer@gatech.edu',
       }),
     );
+    for (const collectionName of [
+      'universities',
+      'university-overrides',
+      'university-clubs',
+      'university-club-claims',
+      'club-onboarding-requests',
+      'club-onboarding-rate-limits',
+    ]) {
+      const protectedRecord = firebaseDoc(firestore, collectionName, 'protected');
+      await assertFails(getDoc(protectedRecord));
+      await assertFails(setDoc(protectedRecord, {
+        tokenHash: 'must-not-be-client-writable',
+      }));
+    }
   });
 
   it('isolates clubs and limits suspended members to identity and access state', async () => {
@@ -243,6 +263,7 @@ describe('Firebase authorization matrix', () => {
           timezone: 'America/Chicago',
           billingEmail: 'billing@other.example',
           billingEnforcementEnabled: false,
+          maintenanceMode: false,
           accessState: 'enabled',
           paymentStanding: 'current',
           collectionMethod: 'manual',
@@ -252,6 +273,7 @@ describe('Firebase authorization matrix', () => {
           role: 0,
           clubId: 'other-club',
           platformAdmin: false,
+          banned: false,
         }),
         setDoc(
           firebaseDoc(
@@ -449,7 +471,7 @@ describe('Firebase authorization matrix', () => {
     );
   });
 
-  it('keeps legacy sightings readable until contributor privacy is initialized', async () => {
+  it('keeps legacy sightings readable when public attribution is enabled', async () => {
     await environment.withSecurityRulesDisabled(async (context) => {
       const firestore = context.firestore();
       await Promise.all([
@@ -468,6 +490,12 @@ describe('Firebase authorization matrix', () => {
             email: 'member@gatech.edu',
             role: 0,
           },
+        }),
+        setDoc(doc(firestore, 'app-settings', 'public'), {
+          logoUrl: '',
+          primaryColor: '#18314F',
+          accentColor: '#B58A16',
+          sightingsAnonymous: false,
         }),
       ]);
     });
@@ -1222,6 +1250,7 @@ describe('Firebase authorization matrix', () => {
 
     await assertSucceeds(
       uploadBytes(owned, new Uint8Array([1]), {
+        contentType: 'image/jpeg',
         customMetadata: { ownerId: 'member-1' },
       }),
     );
@@ -1240,12 +1269,14 @@ describe('Firebase authorization matrix', () => {
       uploadBytes(
         ref(memberStorage, 'catalog/cat-1/profile.jpg'),
         new Uint8Array([1]),
+        { contentType: 'image/jpeg' },
       ),
     );
     await assertSucceeds(
       uploadBytes(
         ref(adminStorage, 'catalog/cat-1/profile.jpg'),
         new Uint8Array([1]),
+        { contentType: 'image/jpeg' },
       ),
     );
     await assertSucceeds(deleteObject(owned));

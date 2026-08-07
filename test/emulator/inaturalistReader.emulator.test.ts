@@ -35,12 +35,14 @@ describe('Firebase iNaturalist reader adapter', () => {
           role: 1,
           clubId: 'campus-cats',
           platformAdmin: false,
+          banned: false,
         }),
         setDoc(doc(firestore, 'clubs', 'campus-cats'), {
           name: 'Campus Cats',
           timezone: 'America/New_York',
           billingEmail: 'billing@example.com',
           billingEnforcementEnabled: false,
+          maintenanceMode: false,
           accessState: 'enabled',
         }),
         setDoc(doc(firestore, 'clubs', 'campus-cats', 'inaturalist-observations', '1001'), {
@@ -80,7 +82,12 @@ describe('Firebase iNaturalist reader adapter', () => {
             email: 'admin@gatech.edu',
           })
           .firestore() as unknown as Firestore,
-        new FirebaseTenantScope(),
+        tenantScope(),
       ),
   );
 });
+const tenantScope = () => {
+  const scope = new FirebaseTenantScope();
+  scope.setAuthenticatedClub('campus-cats');
+  return scope;
+};

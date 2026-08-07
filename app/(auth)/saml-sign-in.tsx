@@ -1,15 +1,16 @@
 import { useEffect, useRef, useState } from 'react';
-import { useRouter } from 'expo-router';
+import { Redirect, useRouter } from 'expo-router';
 
 import { AuthScaffold } from '@/components/auth';
 import { Button, FeedbackBanner } from '@/components/design';
 import { appModules } from '@/composition/appModules';
-import { useAuth } from '@/providers';
+import { useAuth, useUniversitySelection } from '@/providers';
 import { registerForPushNotificationsAsync } from '@/utils/notifications';
 
 const SamlSignIn = () => {
   const router = useRouter();
   const { samlSignIn } = useAuth();
+  const { university } = useUniversitySelection();
   const [busy, setBusy] = useState(false);
   const [feedback, setFeedback] = useState<{ message: string; tone: 'info' | 'danger' }>();
 
@@ -40,8 +41,11 @@ const SamlSignIn = () => {
   signInRef.current = signIn;
 
   useEffect(() => {
+    if (!university?.club?.saml) return;
     void signInRef.current();
-  }, []);
+  }, [university?.club?.saml]);
+
+  if (!university?.club?.saml) return <Redirect href="/login" />;
 
   return (
     <AuthScaffold

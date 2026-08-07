@@ -7,11 +7,13 @@ import CreateAccount from '../../app/(auth)/create-account';
 import ForgotPassword from '../../app/(auth)/forgot-password';
 import SamlSignIn from '../../app/(auth)/saml-sign-in';
 import Whitelist from '../../app/(auth)/whitelist';
+import type { UniversitySearchResult } from '../../core/domain';
 import { AppThemeProvider } from '../../theme';
 
 const mockNavigate = jest.fn();
 const mockReplace = jest.fn();
 const mockBack = jest.fn();
+const mockRedirect = jest.fn();
 const mockLogin = jest.fn();
 const mockCreateAccount = jest.fn();
 const mockSamlSignIn = jest.fn();
@@ -19,9 +21,31 @@ const mockRequestPasswordReset = jest.fn();
 const mockSubmitWhitelist = jest.fn();
 const mockRegisterPushToken = jest.fn();
 const mockRequestPushToken = jest.fn();
+const mockClearUniversity = jest.fn();
+
+const mockGeorgiaTech: UniversitySearchResult = {
+  id: '139755',
+  name: 'Georgia Institute of Technology-Main Campus',
+  city: 'Atlanta',
+  state: 'GA',
+  emailDomains: ['gatech.edu'],
+  timezone: 'America/New_York',
+  status: 'mapped',
+  club: {
+    id: 'campus-cats',
+    name: 'Campus Cats',
+    emailEnabled: true,
+    saml: { provider: 'gt-sso', label: 'Georgia Tech SSO' },
+  },
+};
+let mockSelectedUniversity: UniversitySearchResult = mockGeorgiaTech;
 
 jest.mock('expo-router', () => ({
   useRouter: () => ({ navigate: mockNavigate, replace: mockReplace, back: mockBack }),
+  Redirect: ({ href }: { href: string }) => {
+    mockRedirect(href);
+    return null;
+  },
 }));
 
 jest.mock('../../providers', () => ({
@@ -30,6 +54,10 @@ jest.mock('../../providers', () => ({
     createAccount: (...args: unknown[]) => mockCreateAccount(...args),
     samlSignIn: (...args: unknown[]) => mockSamlSignIn(...args),
     requestPasswordReset: (...args: unknown[]) => mockRequestPasswordReset(...args),
+  }),
+  useUniversitySelection: () => ({
+    university: mockSelectedUniversity,
+    clearUniversity: (...args: unknown[]) => mockClearUniversity(...args),
   }),
 }));
 
@@ -52,6 +80,7 @@ const renderThemed = async (content: React.ReactElement) =>
 describe('authentication routes', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    mockSelectedUniversity = mockGeorgiaTech;
     mockLogin.mockResolvedValue({ id: 'member-1' });
     mockCreateAccount.mockResolvedValue({ id: 'member-1' });
     mockSamlSignIn.mockResolvedValue({ status: 'cancelled' });
@@ -59,6 +88,7 @@ describe('authentication routes', () => {
     mockSubmitWhitelist.mockResolvedValue({ ok: true, value: {}, warnings: [] });
     mockRequestPushToken.mockResolvedValue(null);
     mockRegisterPushToken.mockResolvedValue({ ok: true, value: undefined, warnings: [] });
+    mockClearUniversity.mockResolvedValue(undefined);
   });
 
   it('presents SSO first and completes email sign-in with busy-state protection', async () => {
@@ -79,6 +109,30 @@ describe('authentication routes', () => {
     finishLogin?.();
     await waitFor(() => expect(mockReplace).toHaveBeenCalledWith('/(app)/(tabs)'));
     expect(mockLogin).toHaveBeenCalledWith('student@gatech.edu', 'catscats');
+  });
+
+  it('brands a newly provisioned club without offering Georgia Tech SSO', async () => {
+    mockSelectedUniversity = {
+      id: '139658',
+      name: 'Emory University',
+      city: 'Atlanta',
+      state: 'GA',
+      emailDomains: ['emory.edu'],
+      timezone: 'America/New_York',
+      status: 'mapped',
+      club: {
+        id: 'club-139658',
+        name: 'Emory Campus Cats',
+        emailEnabled: true,
+      },
+    };
+
+    await renderThemed(<LoginScreen />);
+
+    expect(screen.getByText('Welcome to Emory Campus Cats')).toBeOnTheScreen();
+    expect(screen.getByText(/Emory University/)).toBeOnTheScreen();
+    expect(screen.queryByText(/SSO/)).not.toBeOnTheScreen();
+    expect(screen.getByRole('button', { name: 'Sign in with email' })).toBeEnabled();
   });
 
   it('shows email failures inline and keeps secondary routes available', async () => {
@@ -161,6 +215,22 @@ describe('authentication routes', () => {
 
     expect(await screen.findByRole('alert', { name: 'You appear to be offline.' })).toBeOnTheScreen();
     expect(screen.getByRole('button', { name: 'Retry Georgia Tech SSO' })).toBeEnabled();
+  });
+
+  it('blocks the SAML route when the selected club does not advertise SSO', async () => {
+    mockSelectedUniversity = {
+      ...mockGeorgiaTech,
+      club: {
+        id: 'club-139658',
+        name: 'Emory Campus Cats',
+        emailEnabled: true,
+      },
+    };
+
+    await renderThemed(<SamlSignIn />);
+
+    expect(mockRedirect).toHaveBeenCalledWith('/login');
+    expect(mockSamlSignIn).not.toHaveBeenCalled();
   });
 
   it('protects whitelist submission and presents validation failures inline', async () => {

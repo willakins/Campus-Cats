@@ -4,12 +4,13 @@ import { useRouter } from 'expo-router';
 import { AuthScaffold, AuthTextField } from '@/components/auth';
 import { AppText, Button, FeedbackBanner } from '@/components/design';
 import { appModules } from '@/composition/appModules';
-import { useAuth } from '@/providers';
+import { useAuth, useUniversitySelection } from '@/providers';
 import { registerForPushNotificationsAsync } from '@/utils/notifications';
 
 const LoginScreen = () => {
   const router = useRouter();
   const { login } = useAuth();
+  const { university, clearUniversity } = useUniversitySelection();
   const [busy, setBusy] = useState(false);
   const [feedback, setFeedback] = useState<{
     message: string;
@@ -41,19 +42,27 @@ const LoginScreen = () => {
 
   return (
     <AuthScaffold
-      title="Welcome to Campus Cats"
-      subtitle="A field guide and volunteer hub for Georgia Tech's community cats."
+      title={`Welcome to ${university?.club?.name ?? 'Campus Cats'}`}
+      subtitle={
+        university
+          ? `A field guide and volunteer hub for ${university.name}.`
+          : 'A field guide and volunteer hub for community cats.'
+      }
     >
-      <Button
-        label="Sign in with Georgia Tech SSO"
-        icon="school-outline"
-        fullWidth
-        disabled={busy}
-        onPress={() => router.navigate('/saml-sign-in')}
-      />
-      <AppText variant="caption" color="muted" style={{ textAlign: 'center' }}>
-        Or use an approved community account
-      </AppText>
+      {university?.club?.saml ? (
+        <>
+          <Button
+            label={`Sign in with ${university.club.saml.label}`}
+            icon="school-outline"
+            fullWidth
+            disabled={busy}
+            onPress={() => router.navigate('/saml-sign-in')}
+          />
+          <AppText variant="caption" color="muted" style={{ textAlign: 'center' }}>
+            Or use an approved community account
+          </AppText>
+        </>
+      ) : null}
       <AuthTextField
         label="Email"
         value={formData.email}
@@ -97,6 +106,17 @@ const LoginScreen = () => {
         fullWidth
         disabled={busy}
         onPress={() => router.navigate('/whitelist')}
+      />
+      <Button
+        label="Change university"
+        variant="tertiary"
+        fullWidth
+        disabled={busy}
+        onPress={() => {
+          void clearUniversity().then(() =>
+            router.replace('/university-search' as never),
+          );
+        }}
       />
     </AuthScaffold>
   );

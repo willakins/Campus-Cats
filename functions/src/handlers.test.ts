@@ -497,10 +497,21 @@ describe('callable handlers', () => {
   });
 
   it('validates and de-duplicates public whitelist submissions', async () => {
-    const { dependencies } = buildDependencies();
+    const selectedClubs: string[] = [];
+    const { dependencies } = buildDependencies({
+      async findWhitelistByEmail(_email, clubId) {
+        selectedClubs.push(`find:${clubId}`);
+        return false;
+      },
+      async createWhitelistApplication(_application, clubId) {
+        selectedClubs.push(`create:${clubId}`);
+        return { created: true, id: 'application-1' };
+      },
+    });
     const created = await handleSubmitWhitelistApplication(
       {
         data: {
+          clubId: 'club-139658',
           name: 'Alex Applicant',
           graduationYear: '2025',
           email: 'Alex@Example.com',
@@ -510,6 +521,7 @@ describe('callable handlers', () => {
       dependencies,
     );
     assert.deepEqual(created, { status: 'created', id: 'application-1' });
+    assert.deepEqual(selectedClubs, ['find:club-139658', 'create:club-139658']);
     await rejectsWithCode(
       () =>
         handleSubmitWhitelistApplication(
