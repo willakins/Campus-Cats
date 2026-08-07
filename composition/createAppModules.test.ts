@@ -7,6 +7,8 @@ import {
 } from '../adapters/inMemory/InMemoryInaturalist';
 import { InMemoryMediaStore } from '../adapters/inMemory/InMemoryMediaStore';
 import { InMemorySession } from '../adapters/inMemory/InMemorySession';
+import { InMemoryUniversityOnboarding } from '../adapters/inMemory/InMemoryUniversityOnboarding';
+import { InMemoryUniversitySelectionStore } from '../adapters/inMemory/InMemoryUniversitySelectionStore';
 import {
   FixedClock,
   Role,
@@ -88,6 +90,8 @@ describe('createAppModules', () => {
       whitelistSubmissions: {
         submit: async () => ({ status: 'created', id: 'application-1' }),
       },
+      universityOnboarding: new InMemoryUniversityOnboarding(),
+      universitySelections: new InMemoryUniversitySelectionStore(),
       images: new InMemoryImageSelection(),
       passwords: { generate: () => 'deterministic-password' },
       ids: new SequenceIdGenerator(['contact-1']),

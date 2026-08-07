@@ -45,6 +45,7 @@ export class FirebaseSession implements SessionPort {
       (authenticated) => {
         unsubscribeProfile();
         if (!authenticated) {
+          this.tenantScope?.clearAuthenticatedClub();
           onChange(undefined);
           return;
         }
@@ -62,11 +63,12 @@ export class FirebaseSession implements SessionPort {
                 ...snapshot.data(),
               });
               if (profile.banned) {
+                this.tenantScope?.clearAuthenticatedClub();
                 onChange(undefined);
                 void signOut(this.auth).catch(onError);
                 return;
               }
-              this.tenantScope?.setClubId(profile.clubId);
+              this.tenantScope?.setAuthenticatedClub(profile.clubId);
               onChange(profile);
             } catch (error) {
               onError(error);
@@ -142,7 +144,7 @@ export class FirebaseSession implements SessionPort {
 
   async signOut(): Promise<void> {
     await signOut(this.auth);
-    this.tenantScope?.reset();
+    this.tenantScope?.clearAuthenticatedClub();
   }
 
   async registerPushToken(token: string): Promise<void> {
@@ -162,7 +164,7 @@ export class FirebaseSession implements SessionPort {
       throw new UnprovisionedAccountError();
     }
     const profile = parseManagedUser({ id: snapshot.id, ...snapshot.data() });
-    this.tenantScope?.setClubId(profile.clubId);
+    this.tenantScope?.setAuthenticatedClub(profile.clubId);
     return profile;
   }
 

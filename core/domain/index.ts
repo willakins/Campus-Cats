@@ -12,3 +12,4 @@ export * from './contributors';
 export * from './community';
 export * from './communityVoting';
 export * from './clubBilling';
+export * from './universityOnboarding';

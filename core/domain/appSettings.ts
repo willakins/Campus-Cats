@@ -1,9 +1,14 @@
 import { z } from 'zod';
 
-const hexColorSchema = z
+const HEX_COLOR_PATTERN = /^#[0-9A-Fa-f]{6}$/;
+
+export const isHexColor = (value: string): boolean =>
+  HEX_COLOR_PATTERN.test(value.trim());
+
+export const hexColorSchema = z
   .string()
   .trim()
-  .regex(/^#[0-9A-Fa-f]{6}$/, 'Use a six-digit hex color such as #18314F')
+  .refine(isHexColor, 'Use a six-digit hex color such as #18314F')
   .transform((value) => value.toUpperCase());
 
 export const appSettingsSchema = z.object({
