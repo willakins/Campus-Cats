@@ -23,9 +23,11 @@ import { FirebaseSession } from './FirebaseSession';
 import { FirebaseTenantScope } from './FirebaseTenantScope';
 import { FirebaseSurveySubmissionGateway } from './FirebaseSurveySubmissionGateway';
 import { FirebaseWhitelistSubmission } from './FirebaseWhitelistSubmission';
+import { FirebaseUniversityOnboarding } from './FirebaseUniversityOnboarding';
 import { firebaseBillingPresentation } from './firebaseBillingPresentation';
 import { TenantDocumentStore } from './TenantDocumentStore';
 import { TenantMediaStore } from './TenantMediaStore';
+import { AsyncStorageUniversitySelection } from '../expo/AsyncStorageUniversitySelection';
 
 const firebaseDates = {
   encode: (value: Date) => Timestamp.fromDate(value),
@@ -69,7 +71,9 @@ export function createFirebaseBackend(): AppBackend {
     ),
     surveySubmissions: new FirebaseSurveySubmissionGateway(functions),
     communityVoting: new FirebaseCommunityVotingGateway(functions),
-    whitelistSubmissions: new FirebaseWhitelistSubmission(functions),
+    whitelistSubmissions: new FirebaseWhitelistSubmission(functions, tenantScope),
+    universityOnboarding: new FirebaseUniversityOnboarding(functions),
+    universitySelections: new AsyncStorageUniversitySelection(tenantScope),
     codecs: createPersistenceCodecs(firebaseDates),
   };
 }

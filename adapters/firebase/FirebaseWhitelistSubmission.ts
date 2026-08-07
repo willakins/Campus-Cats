@@ -5,17 +5,24 @@ import {
   WhitelistSubmissionPort,
   WhitelistSubmissionResult,
 } from '../../core/ports';
+import { FirebaseTenantScope } from './FirebaseTenantScope';
 
 export class FirebaseWhitelistSubmission implements WhitelistSubmissionPort {
-  constructor(private readonly functions: Functions) {}
+  constructor(
+    private readonly functions: Functions,
+    private readonly tenantScope: FirebaseTenantScope,
+  ) {}
 
   async submit(
     application: WhitelistSubmission,
   ): Promise<WhitelistSubmissionResult> {
     const result = await httpsCallable<
-      WhitelistSubmission,
+      WhitelistSubmission & { readonly clubId: string },
       WhitelistSubmissionResult
-    >(this.functions, 'submitWhitelistApplication')(application);
+    >(this.functions, 'submitWhitelistApplication')({
+      ...application,
+      clubId: this.tenantScope.clubId,
+    });
     return result.data;
   }
 }

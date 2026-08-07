@@ -9,6 +9,7 @@ import {
   AppSettingsProvider,
   AuthProvider,
   ClubProvider,
+  UniversitySelectionProvider,
   useAppSettings,
 } from '@/providers';
 import { AppThemeProvider, useAppTheme } from '@/theme';
@@ -42,13 +43,15 @@ const BrandedApplication = () => {
 const RootLayout = () => {
   return (
     <SafeAreaProvider>
-      <AuthProvider>
-        <ClubProvider>
-          <AppSettingsProvider>
-            <BrandedApplication />
-          </AppSettingsProvider>
-        </ClubProvider>
-      </AuthProvider>
+      <UniversitySelectionProvider>
+        <AuthProvider>
+          <ClubProvider>
+            <AppSettingsProvider>
+              <BrandedApplication />
+            </AppSettingsProvider>
+          </ClubProvider>
+        </AuthProvider>
+      </UniversitySelectionProvider>
     </SafeAreaProvider>
   );
 };

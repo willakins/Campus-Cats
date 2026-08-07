@@ -66,9 +66,10 @@ export interface HandlerDependencies {
   ): Promise<void>;
   transferPresidency(actorId: string, successorId: string): Promise<void>;
   sendWhitelistCredentials(email: string, password: string): Promise<void>;
-  findWhitelistByEmail(email: string): Promise<boolean>;
+  findWhitelistByEmail(email: string, clubId: string): Promise<boolean>;
   createWhitelistApplication(
     application: WhitelistApplication,
+    clubId: string,
   ): Promise<{ readonly created: boolean; readonly id: string }>;
   getPublicProfile(id: string, clubId: string): Promise<PublicProfile | undefined>;
   putPublicProfile(
@@ -453,12 +454,15 @@ export async function handleTransferPresidency(
 }
 
 export async function handleSubmitWhitelistApplication(
-  request: HandlerRequest<Partial<WhitelistApplication>>,
+  request: HandlerRequest<Partial<WhitelistApplication> & { readonly clubId?: unknown }>,
   dependencies: HandlerDependencies,
 ): Promise<
   | { readonly status: 'created'; readonly id: string }
   | { readonly status: 'conflict' }
 > {
+  const clubId = request.data.clubId === undefined
+    ? 'campus-cats'
+    : requiredClubId(request.data.clubId);
   const application: WhitelistApplication = {
     name: requiredString(request.data.name, 'name'),
     graduationYear: requiredString(
@@ -471,13 +475,21 @@ export async function handleSubmitWhitelistApplication(
         ? ''
         : stringValue(request.data.codeWord, 'codeWord'),
   };
-  if (await dependencies.findWhitelistByEmail(application.email)) {
+  if (await dependencies.findWhitelistByEmail(application.email, clubId)) {
     return { status: 'conflict' };
   }
-  const result = await dependencies.createWhitelistApplication(application);
+  const result = await dependencies.createWhitelistApplication(application, clubId);
   return result.created
     ? { status: 'created', id: result.id }
     : { status: 'conflict' };
+}
+
+function requiredClubId(value: unknown): string {
+  const clubId = requiredString(value, 'clubId');
+  if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(clubId) || clubId.length > 120) {
+    throw new HandlerError('invalid-argument', 'Select a valid university club');
+  }
+  return clubId;
 }
 
 async function requireAdmin(

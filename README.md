@@ -5,7 +5,7 @@
 <h1 align="center">Campus Cats</h1>
 
 <p align="center">
-  A cross-platform operations hub for the community caring for Georgia Tech's campus cats.
+  A cross-platform operations hub for university communities caring for campus cats.
 </p>
 
 <p align="center">
@@ -34,7 +34,8 @@ Campus Cats brings those workflows into one mobile experience. Members can recor
 | **Feeding stations**           | Track station locations and restocking information, with stocked/unstocked filtering for faster coordination.                                   |
 | **Announcements**              | Give officers a central place to publish updates and send push notifications to members.                                                        |
 | **Community engagement**       | Group announcements, image-backed events, clearly labeled surveys, response history, and future chat in one Community tab.                     |
-| **Community access**           | Support Georgia Tech SSO, an alumni whitelist workflow, and Firebase-backed authentication.                                                     |
+| **Community access**           | Discover a university club, retain Georgia Tech SSO, and provide tenant-aware email access workflows.                                          |
+| **Club onboarding**            | Search a verified U.S. university directory and securely invite a school-domain President to launch a branded club.                            |
 | **Role-aware administration**  | Separate club roles from global platform administration, with an atomic presidential succession workflow.                                    |
 | **iNaturalist integration**    | Bring public Georgia Tech project sightings and guide profiles into the existing map and catalog through a daily, attributed, read-only import. |
 | **Subscription billing**       | Give each club isolated data, usage-based Stripe billing, hosted invoices, and President-managed payment controls.                             |
@@ -108,6 +109,7 @@ The interface can be explored locally, but authentication, maps, notifications, 
 - [iNaturalist import and operations](docs/inaturalist-import.md)
 - [App Billing operations](docs/billing.md)
 - [Club subscriptions and tenant migration](docs/billing-operations.md)
+- [University onboarding operations](docs/university-onboarding.md)
 - [App settings and contributor privacy](docs/app-settings.md)
 - [Community engagement](docs/community-engagement.md)
 - [Testing guide](docs/testing.md)
