@@ -41,6 +41,8 @@ export const userSchema = z.object({
   id: userIdSchema,
   email: z.string().trim().email(),
   role: roleSchema,
+  clubId: z.string().trim().min(1).max(120).default('campus-cats'),
+  platformAdmin: z.boolean().default(false),
 });
 
 export const disciplinaryNoticeSchema = z.object({

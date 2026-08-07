@@ -5,6 +5,7 @@ import { getApps, initializeApp } from 'firebase-admin/app';
 import { getAuth } from 'firebase-admin/auth';
 import { FieldValue, Timestamp, getFirestore } from 'firebase-admin/firestore';
 import { getStorage } from 'firebase-admin/storage';
+import Stripe from 'stripe';
 import { logger } from 'firebase-functions/logger';
 import { defineSecret, defineString } from 'firebase-functions/params';
 import {
@@ -14,6 +15,11 @@ import {
   onRequest,
 } from 'firebase-functions/v2/https';
 import { onSchedule } from 'firebase-functions/v2/scheduler';
+import {
+  onDocumentWritten,
+  onDocumentWrittenWithAuthContext,
+} from 'firebase-functions/v2/firestore';
+import { onObjectFinalized } from 'firebase-functions/v2/storage';
 
 import {
   HandlerDependencies,
@@ -37,6 +43,17 @@ import {
   handleUpdatePublicProfile,
 } from './handlers';
 import { createGoogleCloudBillingReader } from './billing';
+import { CustomerBillingService } from './customerBilling';
+import {
+  handleCreateClubBillingPortalSession,
+  handleCreateClubBillingSetupSession,
+  handleGetClubBillingSummary,
+  handlePayClubOutstandingInvoice,
+  handleResumeClubSubscription,
+  handleScheduleClubCancellation,
+  handleSetClubCollectionMethod,
+  handleUpdateClubBillingEmail,
+} from './customerBillingHandlers';
 import { deleteAuthUserIfPresent } from './firebaseAuth';
 import { FirebaseInaturalistRepository } from './firebaseInaturalist';
 import { FirebaseInaturalistAccountLinkRepository } from './firebaseInaturalistAccountLinks';
@@ -73,10 +90,32 @@ import {
   handleSubmitCommunityNomination,
   notifyStartedPresidentialVotes,
 } from './communityVoting';
+import { handleSignedStripeWebhook } from './stripeWebhook';
 
 if (getApps().length === 0) initializeApp();
 
 const SENDGRID_API_KEY = defineSecret('SENDGRID_API_KEY');
+const STRIPE_SECRET_KEY = defineSecret('STRIPE_SECRET_KEY');
+const STRIPE_WEBHOOK_SECRET = defineSecret('STRIPE_WEBHOOK_SECRET');
+const STRIPE_ACTIVITY_PRICE_LOOKUP_KEY = defineString(
+  'STRIPE_ACTIVITY_PRICE_LOOKUP_KEY',
+);
+const STRIPE_MEDIA_PRICE_LOOKUP_KEY = defineString(
+  'STRIPE_MEDIA_PRICE_LOOKUP_KEY',
+);
+const STRIPE_ACTIVITY_METER_EVENT = defineString(
+  'STRIPE_ACTIVITY_METER_EVENT',
+  { default: 'activity_units' },
+);
+const STRIPE_MEDIA_METER_EVENT = defineString('STRIPE_MEDIA_METER_EVENT', {
+  default: 'media_bytes',
+});
+const STRIPE_AUTOMATIC_TAX = defineString('STRIPE_AUTOMATIC_TAX', {
+  default: 'true',
+});
+const BILLING_WEB_APP_ORIGIN = defineString('BILLING_WEB_APP_ORIGIN', {
+  default: 'https://campuscats-d7a5e.web.app',
+});
 const INATURALIST_OAUTH_CLIENT_SECRET = defineSecret(
   'INATURALIST_OAUTH_CLIENT_SECRET',
 );
@@ -93,10 +132,11 @@ const firestore = getFirestore();
 const auth = getAuth();
 const storage = getStorage();
 const billingReader = createGoogleCloudBillingReader();
-const inaturalistRepository = new FirebaseInaturalistRepository(firestore);
 const inaturalistGateway = new InaturalistHttpGateway();
 const inaturalistAccountRepository =
   new FirebaseInaturalistAccountLinkRepository(firestore);
+const tenantCollection = (clubId: string, collectionName: string) =>
+  firestore.collection('clubs').doc(clubId).collection(collectionName);
 const inaturalistAccountConfig = {
   get clientId() {
     return INATURALIST_OAUTH_CLIENT_ID.value();
@@ -119,7 +159,45 @@ const inaturalistAccountDependencies: InaturalistAccountLinkingDependencies = {
   getUser: (id) => dependencies.getUser(id),
 };
 
-const publicProfileDefaults = (email: string, role: number) => ({
+const customerBillingService = () =>
+  new CustomerBillingService({
+    firestore,
+    stripe: new Stripe(STRIPE_SECRET_KEY.value()),
+    config: {
+      activityPriceLookupKey: STRIPE_ACTIVITY_PRICE_LOOKUP_KEY.value(),
+      mediaPriceLookupKey: STRIPE_MEDIA_PRICE_LOOKUP_KEY.value(),
+      activityMeterEventName: STRIPE_ACTIVITY_METER_EVENT.value(),
+      mediaMeterEventName: STRIPE_MEDIA_METER_EVENT.value(),
+      automaticTax: STRIPE_AUTOMATIC_TAX.value() !== 'false',
+      webAppOrigin: BILLING_WEB_APP_ORIGIN.value(),
+    },
+    notify: async (club, subject, message) => {
+      const presidents = await firestore
+        .collection('users')
+        .where('clubId', '==', club.id)
+        .where('role', '==', 3)
+        .get();
+      const recipients = [
+        club.billingEmail,
+        ...presidents.docs.map((document) => document.data().email),
+      ].filter(
+        (email, index, all): email is string =>
+          typeof email === 'string' &&
+          email.includes('@') &&
+          all.indexOf(email) === index,
+      );
+      if (!recipients.length) return;
+      sgMail.setApiKey(SENDGRID_API_KEY.value());
+      await sgMail.send({
+        to: recipients,
+        from: 'gtcampuscats@gmail.com',
+        subject,
+        text: `${message}\n\nQuestions? Contact willakins23@gmail.com.`,
+      });
+    },
+  });
+
+const publicProfileDefaults = (email: string, role: number, clubId: string) => ({
   displayName: (email.split('@')[0]?.trim() || 'Campus Cats member').slice(
     0,
     60,
@@ -129,6 +207,7 @@ const publicProfileDefaults = (email: string, role: number) => ({
   role,
   achievementIds: [],
   selectedTitleId: '',
+  clubId,
 });
 
 const validProfileAchievementIds: readonly PublicProfile['achievementIds'][number][] = [
@@ -149,6 +228,7 @@ const mergeProfileAchievements = (
 function publicProfileFromData(
   id: string,
   data: Record<string, unknown> | undefined,
+  expectedClubId?: string,
 ): PublicProfile {
   if (
     typeof data?.displayName !== 'string' ||
@@ -179,6 +259,11 @@ function publicProfileFromData(
     )
       ? (data.selectedTitleId as (typeof achievementIds)[number])
       : '';
+  const clubId =
+    typeof data.clubId === 'string' ? data.clubId : expectedClubId;
+  if (!clubId || (expectedClubId && clubId !== expectedClubId)) {
+    throw new HandlerError('not-found', 'Member profile not found');
+  }
   return {
     id,
     displayName: data.displayName,
@@ -187,6 +272,7 @@ function publicProfileFromData(
     role: data.role,
     achievementIds,
     selectedTitleId,
+    clubId,
   };
 }
 
@@ -205,22 +291,72 @@ const dependencies: HandlerDependencies = {
     ) {
       throw new HandlerError('internal', 'Stored user profile is invalid');
     }
+    const clubId =
+      typeof data.clubId === 'string' ? data.clubId : 'campus-cats';
+    const club = await firestore.collection('clubs').doc(clubId).get();
+    const clubData = club.data();
+    const now = new Date();
+    const graceEndsAt = clubData?.graceEndsAt instanceof Timestamp
+      ? clubData.graceEndsAt.toDate()
+      : undefined;
+    const scheduledEndAt = clubData?.scheduledEndAt instanceof Timestamp
+      ? clubData.scheduledEndAt.toDate()
+      : undefined;
+    const hasAccess =
+      clubData?.maintenanceMode !== true &&
+      (
+        clubData?.billingEnforcementEnabled !== true ||
+        (
+          clubData?.accessState === 'enabled' &&
+          (!graceEndsAt || now < graceEndsAt) &&
+          (!scheduledEndAt || now < scheduledEndAt)
+        )
+      );
+    if (!hasAccess) return undefined;
     return {
       id: snapshot.id,
       email: data.email,
       role: data.role,
+      clubId,
+      platformAdmin: data.platformAdmin === true,
       banned: data.banned === true,
+    };
+  },
+
+  async getPlatformAdmin(id) {
+    const snapshot = await firestore.collection('users').doc(id).get();
+    const data = snapshot.data();
+    if (
+      !snapshot.exists ||
+      data?.banned === true ||
+      data?.platformAdmin !== true ||
+      typeof data.email !== 'string' ||
+      (data.role !== 0 &&
+        data.role !== 1 &&
+        data.role !== 2 &&
+        data.role !== 3 &&
+        data.role !== 4)
+    ) {
+      return undefined;
+    }
+    return {
+      id: snapshot.id,
+      email: data.email,
+      role: data.role,
+      clubId: typeof data.clubId === 'string' ? data.clubId : 'campus-cats',
+      platformAdmin: true,
+      banned: false,
     };
   },
 
   getBillingSummary: () => billingReader.getSummary(),
 
-  async migrateContributorPrivacy() {
+  async migrateContributorPrivacy(clubId) {
     const migrateCollection = async (
       collectionName: 'cat-sightings' | 'catalog',
       kind: 'sighting' | 'catalog',
     ): Promise<number> => {
-      const snapshot = await firestore.collection(collectionName).get();
+      const snapshot = await tenantCollection(clubId, collectionName).get();
       const legacy = snapshot.docs.flatMap((document) => {
         const contributor = document.data().createdBy;
         if (
@@ -243,7 +379,7 @@ const dependencies: HandlerDependencies = {
         const batch = firestore.batch();
         for (const { document, contributor } of legacy.slice(offset, offset + 200)) {
           batch.set(
-            firestore.collection('content-contributors').doc(`${kind}__${document.id}`),
+            tenantCollection(clubId, 'content-contributors').doc(`${kind}__${document.id}`),
             { kind, contentId: document.id, user: contributor },
           );
           batch.update(document.ref, { createdBy: FieldValue.delete() });
@@ -260,8 +396,11 @@ const dependencies: HandlerDependencies = {
     return { sightings, catalog };
   },
 
-  async listPushTokens() {
-    const snapshot = await firestore.collection('users').get();
+  async listPushTokens(clubId) {
+    const snapshot = await firestore
+      .collection('users')
+      .where('clubId', '==', clubId)
+      .get();
     return snapshot.docs
       .map((document) => document.data())
       .filter((profile) => profile.banned !== true)
@@ -297,33 +436,35 @@ const dependencies: HandlerDependencies = {
     batch.set(firestore.collection('users').doc(user.id), {
       email: user.email,
       role: user.role,
+      clubId: user.clubId,
+      platformAdmin: user.platformAdmin === true,
       banned: false,
       disciplinaryNotices: [],
     });
     batch.set(
-      firestore.collection('public-profiles').doc(user.id),
-      publicProfileDefaults(user.email, user.role),
+      tenantCollection(user.clubId, 'public-profiles').doc(user.id),
+      publicProfileDefaults(user.email, user.role, user.clubId),
     );
     await batch.commit();
   },
 
   async deleteUser(id) {
+    const user = await firestore.collection('users').doc(id).get();
+    const clubId = typeof user.data()?.clubId === 'string'
+      ? user.data()!.clubId
+      : 'campus-cats';
     await inaturalistAccountRepository.unlink(id);
     const batch = firestore.batch();
     batch.delete(firestore.collection('users').doc(id));
-    batch.delete(firestore.collection('public-profiles').doc(id));
-    batch.delete(firestore.collection('catalog-favorites').doc(id));
+    batch.delete(tenantCollection(clubId, 'public-profiles').doc(id));
+    batch.delete(tenantCollection(clubId, 'catalog-favorites').doc(id));
     await batch.commit();
   },
 
   async updateUserRole(id, role) {
     const reference = firestore.collection('users').doc(id);
-    const publicReference = firestore.collection('public-profiles').doc(id);
     await firestore.runTransaction(async (transaction) => {
-      const [snapshot, publicSnapshot] = await Promise.all([
-        transaction.get(reference),
-        transaction.get(publicReference),
-      ]);
+      const snapshot = await transaction.get(reference);
       if (!snapshot.exists) {
         throw new HandlerError('not-found', 'User not found');
       }
@@ -333,13 +474,20 @@ const dependencies: HandlerDependencies = {
           'Unban this account before changing its role',
         );
       }
+      const clubId = String(snapshot.data()?.clubId ?? 'campus-cats');
+      const publicReference = tenantCollection(clubId, 'public-profiles').doc(id);
+      const publicSnapshot = await transaction.get(publicReference);
       transaction.update(reference, { role });
       if (publicSnapshot.exists) {
         transaction.update(publicReference, { role });
       } else {
         transaction.set(
           publicReference,
-          publicProfileDefaults(String(snapshot.data()?.email ?? ''), role),
+          publicProfileDefaults(
+            String(snapshot.data()?.email ?? ''),
+            role,
+            String(snapshot.data()?.clubId ?? 'campus-cats'),
+          ),
         );
       }
     });
@@ -419,14 +567,23 @@ const dependencies: HandlerDependencies = {
   async transferPresidency(actorId, successorId) {
     const actorReference = firestore.collection('users').doc(actorId);
     const successorReference = firestore.collection('users').doc(successorId);
-    const presidencyReference = firestore.collection('system').doc('presidency');
-    const actorPublicReference = firestore.collection('public-profiles').doc(actorId);
-    const successorPublicReference = firestore
-      .collection('public-profiles')
-      .doc(successorId);
-    const presidents = firestore.collection('users').where('role', '==', 3);
-
     await firestore.runTransaction(async (transaction) => {
+      const actorForClub = await transaction.get(actorReference);
+      const clubId = typeof actorForClub.data()?.clubId === 'string'
+        ? actorForClub.data()!.clubId
+        : 'campus-cats';
+      const actorPublicReference = tenantCollection(clubId, 'public-profiles').doc(
+        actorId,
+      );
+      const successorPublicReference = tenantCollection(
+        clubId,
+        'public-profiles',
+      ).doc(successorId);
+      const presidencyReference = tenantCollection(clubId, 'system').doc('presidency');
+      const presidents = firestore
+        .collection('users')
+        .where('clubId', '==', clubId)
+        .where('role', '==', 3);
       const [
         actorSnapshot,
         successorSnapshot,
@@ -446,6 +603,9 @@ const dependencies: HandlerDependencies = {
       const actor = actorSnapshot.data();
       const successor = successorSnapshot.data();
       if (!actorSnapshot.exists || !successorSnapshot.exists) {
+        throw new HandlerError('not-found', 'Presidential participant not found');
+      }
+      if (successor?.clubId !== clubId) {
         throw new HandlerError('not-found', 'Presidential participant not found');
       }
       if (successor?.role !== 2) {
@@ -473,7 +633,7 @@ const dependencies: HandlerDependencies = {
           });
         } else {
           transaction.set(actorPublicReference, {
-            ...publicProfileDefaults(String(actor?.email ?? ''), 1),
+            ...publicProfileDefaults(String(actor?.email ?? ''), 1, clubId),
             achievementIds: ['president'],
           });
         }
@@ -499,7 +659,7 @@ const dependencies: HandlerDependencies = {
         });
       } else {
         transaction.set(successorPublicReference, {
-          ...publicProfileDefaults(String(successor?.email ?? ''), 3),
+          ...publicProfileDefaults(String(successor?.email ?? ''), 3, clubId),
           achievementIds: ['president'],
         });
       }
@@ -519,8 +679,7 @@ const dependencies: HandlerDependencies = {
   },
 
   async findWhitelistByEmail(email) {
-    const snapshot = await firestore
-      .collection('whitelist')
+    const snapshot = await tenantCollection('campus-cats', 'whitelist')
       .where('email', '==', email)
       .limit(1)
       .get();
@@ -532,7 +691,7 @@ const dependencies: HandlerDependencies = {
       .update(application.email.toLowerCase())
       .digest('hex');
     try {
-      await firestore.collection('whitelist').doc(id).create(application);
+      await tenantCollection('campus-cats', 'whitelist').doc(id).create(application);
       return { created: true, id };
     } catch (error) {
       const code =
@@ -546,18 +705,18 @@ const dependencies: HandlerDependencies = {
     }
   },
 
-  async getPublicProfile(id): Promise<PublicProfile | undefined> {
-    const snapshot = await firestore.collection('public-profiles').doc(id).get();
+  async getPublicProfile(id, clubId): Promise<PublicProfile | undefined> {
+    const snapshot = await tenantCollection(clubId, 'public-profiles').doc(id).get();
     if (!snapshot.exists) return undefined;
-    return publicProfileFromData(id, snapshot.data());
+    return publicProfileFromData(id, snapshot.data(), clubId);
   },
 
-  async putPublicProfile(profile, mode) {
-    const reference = firestore.collection('public-profiles').doc(profile.id);
+  async putPublicProfile(profile, mode, clubId) {
+    const reference = tenantCollection(clubId, 'public-profiles').doc(profile.id);
     return firestore.runTransaction(async (transaction) => {
       const snapshot = await transaction.get(reference);
       const current = snapshot.exists
-        ? publicProfileFromData(snapshot.id, snapshot.data())
+        ? publicProfileFromData(snapshot.id, snapshot.data(), clubId)
         : undefined;
       const achievementIds = mergeProfileAchievements(
         current?.achievementIds ?? [],
@@ -580,6 +739,7 @@ const dependencies: HandlerDependencies = {
         role: profile.role,
         achievementIds,
         selectedTitleId: requestedTitleId,
+        clubId,
       };
       const { id: _id, ...data } = next;
       transaction.set(reference, data);
@@ -587,14 +747,12 @@ const dependencies: HandlerDependencies = {
     });
   },
 
-  async countUserSightings(id) {
+  async countUserSightings(id, clubId) {
     const [privateContributors, legacySightings] = await Promise.all([
-      firestore
-        .collection('content-contributors')
+      tenantCollection(clubId, 'content-contributors')
         .where('user.id', '==', id)
         .get(),
-      firestore
-        .collection('cat-sightings')
+      tenantCollection(clubId, 'cat-sightings')
         .where('createdBy.id', '==', id)
         .count()
         .get(),
@@ -605,7 +763,7 @@ const dependencies: HandlerDependencies = {
     return migratedSightings + legacySightings.data().count;
   },
 
-  async verifyProfilePhoto(id, url) {
+  async verifyProfilePhoto(id, url, clubId) {
     try {
       const parsed = new URL(url);
       const match = /^\/v0\/b\/([^/]+)\/o\/(.+)$/.exec(parsed.pathname);
@@ -615,7 +773,7 @@ const dependencies: HandlerDependencies = {
       const objectPath = decodeURIComponent(match[2]);
       if (
         bucketName !== bucket.name ||
-        !objectPath.startsWith(`public-profiles/${id}/`)
+        !objectPath.startsWith(`clubs/${clubId}/public-profiles/${id}/`)
       ) {
         return false;
       }
@@ -636,10 +794,10 @@ const dependencies: HandlerDependencies = {
   },
 };
 
-const synchronizeInaturalist = () =>
+const synchronizeInaturalist = (clubId: string) =>
   executeInaturalistSync({
     gateway: inaturalistGateway,
-    repository: inaturalistRepository,
+    repository: new FirebaseInaturalistRepository(firestore, clubId),
     clock: { now: () => new Date() },
     runId: randomUUID,
   });
@@ -647,14 +805,16 @@ const synchronizeInaturalist = () =>
 const surveySubmissionDependencies: SurveySubmissionDependencies = {
   getUser: dependencies.getUser,
   async submit({ actor, surveyId, answers, responseId }) {
-    const surveyReference = firestore
-      .collection('community-surveys')
-      .doc(surveyId);
-    const responseReference = firestore
-      .collection('survey-responses')
-      .doc(responseId);
-    const receiptReference = firestore
-      .collection('survey-submission-receipts')
+    const surveyReference = tenantCollection(actor.clubId, 'community-surveys').doc(
+      surveyId,
+    );
+    const responseReference = tenantCollection(actor.clubId, 'survey-responses').doc(
+      responseId,
+    );
+    const receiptReference = tenantCollection(
+      actor.clubId,
+      'survey-submission-receipts',
+    )
       .doc(`${actor.id}__${surveyId}`);
 
     return firestore.runTransaction(async (transaction) => {
@@ -682,12 +842,16 @@ const surveySubmissionDependencies: SurveySubmissionDependencies = {
         surveyId,
         answers,
         submittedAt,
+        writeSource: 'user',
+        billingActorId: actor.id,
         ...(surveyData.anonymous === false
           ? {
               respondent: {
                 id: actor.id,
                 email: actor.email,
                 role: actor.role,
+                clubId: actor.clubId,
+                platformAdmin: actor.platformAdmin === true,
               },
             }
           : {}),
@@ -706,6 +870,7 @@ const surveySubmissionDependencies: SurveySubmissionDependencies = {
 
 const storedCommunityVote = (
   id: string,
+  clubId: string,
   data: Record<string, unknown> | undefined,
 ): StoredCommunityVote => {
   const votingStartsAt = data?.votingStartsAt;
@@ -745,6 +910,7 @@ const storedCommunityVote = (
   }
   return {
     id,
+    clubId,
     kind: data.kind,
     title: typeof data.title === 'string' ? data.title : undefined,
     votingStartsAtMillis: votingStartsAt.toMillis(),
@@ -759,23 +925,30 @@ const storedCommunityVote = (
 const communityVotingDependencies: CommunityVotingDependencies = {
   now: () => new Date(),
   getUser: dependencies.getUser,
-  async getVote(id) {
-    const snapshot = await firestore.collection('community-votes').doc(id).get();
+  async getVote(id, clubId) {
+    const snapshot = await tenantCollection(clubId, 'community-votes').doc(id).get();
     return snapshot.exists
-      ? storedCommunityVote(snapshot.id, snapshot.data())
+      ? storedCommunityVote(snapshot.id, clubId, snapshot.data())
       : undefined;
   },
   async submitNomination({ actor, vote, action, submittedAt }) {
-    const voteReference = firestore.collection('community-votes').doc(vote.id);
-    const receiptReference = firestore
-      .collection('community-vote-nomination-receipts')
+    const voteReference = tenantCollection(vote.clubId, 'community-votes').doc(
+      vote.id,
+    );
+    const receiptReference = tenantCollection(
+      vote.clubId,
+      'community-vote-nomination-receipts',
+    )
       .doc(`${actor.id}__${vote.id}`);
-    const nomineeReference = firestore
-      .collection('community-vote-nominees')
+    const nomineeReference = tenantCollection(
+      vote.clubId,
+      'community-vote-nominees',
+    )
       .doc(`${vote.id}__${actor.id}`);
-    const profileReference = firestore
-      .collection('public-profiles')
-      .doc(actor.id);
+    const profileReference = tenantCollection(
+      vote.clubId,
+      'public-profiles',
+    ).doc(actor.id);
     return firestore.runTransaction(async (transaction) => {
       const [voteSnapshot, receiptSnapshot, profileSnapshot] =
         await transaction.getAll(
@@ -794,6 +967,7 @@ const communityVotingDependencies: CommunityVotingDependencies = {
       }
       const canonical = storedCommunityVote(
         voteSnapshot.id,
+        vote.clubId,
         voteSnapshot.data(),
       );
       if (canonical.kind !== 'presidential_election') {
@@ -822,6 +996,8 @@ const communityVotingDependencies: CommunityVotingDependencies = {
           userId: actor.id,
           displayName: displayName || 'Campus Cats member',
           nominatedAt: now,
+          writeSource: 'user',
+          billingActorId: actor.id,
         });
       }
       return {
@@ -832,12 +1008,15 @@ const communityVotingDependencies: CommunityVotingDependencies = {
     });
   },
   async submitBallot({ actor, vote, optionId, ballotId, submittedAt }) {
-    const voteReference = firestore.collection('community-votes').doc(vote.id);
-    const receiptReference = firestore
-      .collection('community-vote-ballot-receipts')
+    const voteReference = tenantCollection(vote.clubId, 'community-votes').doc(
+      vote.id,
+    );
+    const receiptReference = tenantCollection(
+      vote.clubId,
+      'community-vote-ballot-receipts',
+    )
       .doc(`${actor.id}__${vote.id}`);
-    const ballotReference = firestore
-      .collection('community-vote-ballots')
+    const ballotReference = tenantCollection(vote.clubId, 'community-vote-ballots')
       .doc(ballotId);
     return firestore.runTransaction(async (transaction) => {
       const [voteSnapshot, receiptSnapshot] = await transaction.getAll(
@@ -852,6 +1031,7 @@ const communityVotingDependencies: CommunityVotingDependencies = {
       }
       const canonical = storedCommunityVote(
         voteSnapshot.id,
+        vote.clubId,
         voteSnapshot.data(),
       );
       const now = Timestamp.fromDate(submittedAt);
@@ -870,8 +1050,7 @@ const communityVotingDependencies: CommunityVotingDependencies = {
         }
       } else {
         const nominee = await transaction.get(
-          firestore
-            .collection('community-vote-nominees')
+          tenantCollection(vote.clubId, 'community-vote-nominees')
             .doc(`${vote.id}__${optionId}`),
         );
         if (!nominee.exists || nominee.data()?.voteId !== vote.id) {
@@ -885,6 +1064,8 @@ const communityVotingDependencies: CommunityVotingDependencies = {
         voteId: vote.id,
         optionId,
         submittedAt: now,
+        writeSource: 'user',
+        billingActorId: actor.id,
       });
       transaction.create(receiptReference, {
         voteId: vote.id,
@@ -896,16 +1077,14 @@ const communityVotingDependencies: CommunityVotingDependencies = {
     });
   },
   async getResults(vote) {
-    const ballots = await firestore
-      .collection('community-vote-ballots')
+    const ballots = await tenantCollection(vote.clubId, 'community-vote-ballots')
       .where('voteId', '==', vote.id)
       .get();
     const options =
       vote.kind === 'contest'
         ? vote.options
         : (
-            await firestore
-              .collection('community-vote-nominees')
+            await tenantCollection(vote.clubId, 'community-vote-nominees')
               .where('voteId', '==', vote.id)
               .get()
           ).docs.flatMap((document) => {
@@ -937,11 +1116,11 @@ const communityVotingDependencies: CommunityVotingDependencies = {
   },
 };
 
-const broadcastNotification = async (notification: {
-  readonly title: string;
-  readonly body: string;
-}) => {
-  const tokens = [...new Set(await dependencies.listPushTokens())];
+const broadcastNotification = async (
+  notification: { readonly title: string; readonly body: string },
+  clubId: string,
+) => {
+  const tokens = [...new Set(await dependencies.listPushTokens(clubId))];
   for (let offset = 0; offset < tokens.length; offset += 100) {
     await dependencies.sendPushBatch(
       tokens.slice(offset, offset + 100).map((token) => ({
@@ -957,24 +1136,30 @@ const broadcastNotification = async (notification: {
 const communityVoteNotificationDependencies: CommunityVoteStartNotificationDependencies = {
   now: () => new Date(),
   async listElectionVotes() {
-    const snapshot = await firestore
-      .collection('community-votes')
-      .where('kind', '==', 'presidential_election')
-      .get();
-    return snapshot.docs.flatMap((document) => {
-      try {
-        return [storedCommunityVote(document.id, document.data())];
-      } catch {
-        logger.warn('Skipping invalid presidential election', {
-          voteId: document.id,
+    const clubs = await firestore.collection('clubs').get();
+    const votes = await Promise.all(
+      clubs.docs.map(async (club) => {
+        const snapshot = await tenantCollection(club.id, 'community-votes')
+          .where('kind', '==', 'presidential_election')
+          .get();
+        return snapshot.docs.flatMap((document) => {
+          try {
+            return [storedCommunityVote(document.id, club.id, document.data())];
+          } catch {
+            logger.warn('Skipping invalid presidential election', {
+              clubId: club.id,
+              voteId: document.id,
+            });
+            return [];
+          }
         });
-        return [];
-      }
-    });
+      }),
+    );
+    return votes.flat();
   },
   sendNotification: broadcastNotification,
-  async markNotificationSent(voteId, sentAt) {
-    await firestore.collection('community-votes').doc(voteId).update({
+  async markNotificationSent(vote, sentAt) {
+    await tenantCollection(vote.clubId, 'community-votes').doc(vote.id).update({
       votingNotificationSentAt: Timestamp.fromDate(sentAt),
     });
   },
@@ -983,8 +1168,8 @@ const communityVoteNotificationDependencies: CommunityVoteStartNotificationDepen
 const inaturalistDependencies: InaturalistHandlerDependencies = {
   getUser: dependencies.getUser,
   runSync: synchronizeInaturalist,
-  moderate: (kind, id, hidden, reason, actorId) =>
-    inaturalistRepository.moderate(
+  moderate: (kind, id, hidden, reason, actorId, clubId) =>
+    new FirebaseInaturalistRepository(firestore, clubId).moderate(
       kind,
       id,
       hidden,
@@ -992,10 +1177,16 @@ const inaturalistDependencies: InaturalistHandlerDependencies = {
       actorId,
       new Date(),
     ),
-  updateCatalogOverrides: (id, overrides) =>
-    inaturalistRepository.updateCatalogOverrides(id, overrides),
-  linkCatalog: (id, localCatalogId) =>
-    inaturalistRepository.linkCatalog(id, localCatalogId),
+  updateCatalogOverrides: (id, overrides, clubId) =>
+    new FirebaseInaturalistRepository(firestore, clubId).updateCatalogOverrides(
+      id,
+      overrides,
+    ),
+  linkCatalog: (id, localCatalogId, clubId) =>
+    new FirebaseInaturalistRepository(firestore, clubId).linkCatalog(
+      id,
+      localCatalogId,
+    ),
 };
 
 async function execute<T>(operation: () => Promise<T>): Promise<T> {
@@ -1025,6 +1216,91 @@ export const sendWhitelistEmail = onCall(
 
 export const getBillingSummary = onCall((request) =>
   execute(() => handleGetBillingSummary(requestFor(request), dependencies)),
+);
+
+export const getClubBillingSummary = onCall(
+  { secrets: [STRIPE_SECRET_KEY, SENDGRID_API_KEY] },
+  (request) =>
+    execute(() =>
+      handleGetClubBillingSummary(requestFor(request), customerBillingService()),
+    ),
+);
+
+export const createClubBillingSetupSession = onCall(
+  { secrets: [STRIPE_SECRET_KEY, SENDGRID_API_KEY] },
+  (request) =>
+    execute(() =>
+      handleCreateClubBillingSetupSession(
+        requestFor(request),
+        customerBillingService(),
+      ),
+    ),
+);
+
+export const createClubBillingPortalSession = onCall(
+  { secrets: [STRIPE_SECRET_KEY, SENDGRID_API_KEY] },
+  (request) =>
+    execute(() =>
+      handleCreateClubBillingPortalSession(
+        requestFor(request),
+        customerBillingService(),
+      ),
+    ),
+);
+
+export const payClubOutstandingInvoice = onCall(
+  { secrets: [STRIPE_SECRET_KEY, SENDGRID_API_KEY] },
+  (request) =>
+    execute(() =>
+      handlePayClubOutstandingInvoice(
+        requestFor(request),
+        customerBillingService(),
+      ),
+    ),
+);
+
+export const setClubCollectionMethod = onCall(
+  { secrets: [STRIPE_SECRET_KEY, SENDGRID_API_KEY] },
+  (request) =>
+    execute(() =>
+      handleSetClubCollectionMethod(
+        requestFor(request),
+        customerBillingService(),
+      ),
+    ),
+);
+
+export const updateClubBillingEmail = onCall(
+  { secrets: [STRIPE_SECRET_KEY, SENDGRID_API_KEY] },
+  (request) =>
+    execute(() =>
+      handleUpdateClubBillingEmail(
+        requestFor(request),
+        customerBillingService(),
+      ),
+    ),
+);
+
+export const scheduleClubCancellation = onCall(
+  { secrets: [STRIPE_SECRET_KEY, SENDGRID_API_KEY] },
+  (request) =>
+    execute(() =>
+      handleScheduleClubCancellation(
+        requestFor(request),
+        customerBillingService(),
+      ),
+    ),
+);
+
+export const resumeClubSubscription = onCall(
+  { secrets: [STRIPE_SECRET_KEY, SENDGRID_API_KEY] },
+  (request) =>
+    execute(() =>
+      handleResumeClubSubscription(
+        requestFor(request),
+        customerBillingService(),
+      ),
+    ),
 );
 
 export const migrateContributorPrivacy = onCall((request) =>
@@ -1210,13 +1486,179 @@ export const syncInaturalistDaily = onSchedule(
     timeoutSeconds: 540,
   },
   async () => {
-    const summary = await synchronizeInaturalist();
-    logger.info('iNaturalist synchronization completed', summary);
-    if (summary.status === 'partial' || summary.status === 'failed') {
-      throw new Error(
-        `iNaturalist synchronization completed with status ${summary.status}`,
-      );
+    const clubs = await firestore.collection('clubs').get();
+    const failures: string[] = [];
+    for (const club of clubs.docs) {
+      const summary = await synchronizeInaturalist(club.id);
+      logger.info('iNaturalist synchronization completed', {
+        clubId: club.id,
+        ...summary,
+      });
+      if (summary.status === 'partial' || summary.status === 'failed') {
+        failures.push(`${club.id}:${summary.status}`);
+      }
     }
+    if (failures.length) {
+      throw new Error(`iNaturalist synchronization failures: ${failures.join(', ')}`);
+    }
+  },
+);
+
+export const stripeWebhook = onRequest(
+  { secrets: [STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET, SENDGRID_API_KEY] },
+  async (request, response) => {
+    const signature = request.header('stripe-signature');
+    if (!signature) {
+      response.status(400).send('Missing Stripe signature');
+      return;
+    }
+    try {
+      const stripe = new Stripe(STRIPE_SECRET_KEY.value());
+      await handleSignedStripeWebhook(
+        {
+          payload: request.rawBody,
+          signature,
+          secret: STRIPE_WEBHOOK_SECRET.value(),
+        },
+        stripe.webhooks,
+        (event) => customerBillingService().handleWebhook(event),
+      );
+      response.status(200).json({ received: true });
+    } catch (error) {
+      logger.error('Stripe webhook failed', error);
+      response.status(400).send('Webhook could not be processed');
+    }
+  },
+);
+
+export const meterClubActivity = onDocumentWrittenWithAuthContext(
+  {
+    document: 'clubs/{clubId}/{collectionId}/{documentId}',
+    secrets: [STRIPE_SECRET_KEY],
+  },
+  async (event) => {
+    const before = event.data?.before.exists === true;
+    const after = event.data?.after.exists === true;
+    const operation = !before && after ? 'create' : before && !after ? 'delete' : 'update';
+    const data = after ? event.data?.after.data() : event.data?.before.data();
+    const internalActorId =
+      ['survey-responses', 'community-vote-nominees', 'community-vote-ballots'].includes(
+        event.params.collectionId,
+      ) &&
+      data?.writeSource === 'user' &&
+      typeof data.billingActorId === 'string'
+        ? data.billingActorId
+        : undefined;
+    const actorId =
+      event.authType === 'unknown' && event.authId
+        ? event.authId
+        : internalActorId;
+    await customerBillingService().recordActivity({
+      eventId: event.id,
+      clubId: event.params.clubId,
+      collection: event.params.collectionId,
+      operation,
+      occurredAt: new Date(event.time),
+      initiatedBy: actorId ? 'user' : 'system',
+      ...(actorId ? { actorId } : {}),
+    });
+  },
+);
+
+export const projectClubAccess = onDocumentWritten(
+  'clubs/{clubId}',
+  async (event) => {
+    const clubId = event.params.clubId;
+    const after = event.data?.after;
+    const reference = firestore
+      .collection('clubs')
+      .doc(clubId)
+      .collection('access')
+      .doc('public');
+    if (!after?.exists) {
+      await reference.delete();
+      return;
+    }
+    const data = after.data();
+    if (!data) return;
+    await reference.set({
+      clubId,
+      clubName: data.name,
+      timezone: data.timezone,
+      billingEnforcementEnabled: data.billingEnforcementEnabled === true,
+      maintenanceMode: data.maintenanceMode === true,
+      accessState: data.accessState,
+      paymentStanding: data.paymentStanding,
+      collectionMethod: data.collectionMethod,
+      ...(data.invoiceDueAt ? { invoiceDueAt: data.invoiceDueAt } : {}),
+      ...(data.graceEndsAt ? { graceEndsAt: data.graceEndsAt } : {}),
+      ...(data.scheduledEndAt ? { scheduledEndAt: data.scheduledEndAt } : {}),
+      ...(data.suspensionReason
+        ? { suspensionReason: data.suspensionReason }
+        : {}),
+      updatedAt: Timestamp.now(),
+    });
+  },
+);
+
+export const meterClubMedia = onObjectFinalized(
+  { secrets: [STRIPE_SECRET_KEY] },
+  async (event) => {
+    const name = event.data.name;
+    const bytes = Number(event.data.size ?? 0);
+    if (
+      !name ||
+      !Number.isFinite(bytes) ||
+      bytes <= 0 ||
+      event.data.metadata?.billingInitiatedBy === 'system'
+    ) {
+      return;
+    }
+    await customerBillingService().recordMedia({
+      eventId: event.id,
+      objectName: name,
+      bytes,
+      occurredAt: new Date(event.data.timeCreated ?? event.time),
+    });
+  },
+);
+
+export const dispatchClubBillingUsage = onSchedule(
+  {
+    schedule: 'every 5 minutes',
+    retryCount: 3,
+    maxInstances: 1,
+    secrets: [STRIPE_SECRET_KEY],
+  },
+  async () => {
+    const sent = await customerBillingService().dispatchPendingUsage();
+    logger.info('Dispatched club billing usage', { sent });
+  },
+);
+
+export const reconcileClubBillingInvoices = onSchedule(
+  {
+    schedule: 'every 5 minutes',
+    retryCount: 3,
+    maxInstances: 1,
+    secrets: [STRIPE_SECRET_KEY],
+  },
+  async () => {
+    const finalized = await customerBillingService().reconcilePendingInvoices();
+    logger.info('Reconciled club billing invoices', { finalized });
+  },
+);
+
+export const enforceClubBillingDeadlines = onSchedule(
+  {
+    schedule: 'every 60 minutes',
+    retryCount: 3,
+    maxInstances: 1,
+    secrets: [STRIPE_SECRET_KEY, SENDGRID_API_KEY],
+  },
+  async () => {
+    const changed = await customerBillingService().enforceDeadlines();
+    logger.info('Enforced club billing deadlines', { changed });
   },
 );
 

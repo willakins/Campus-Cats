@@ -23,6 +23,7 @@ import {
 import { AppThemeProvider } from '../../theme';
 
 let mockRole: Role = Role.Member;
+let mockPlatformAdmin = false;
 const mockBack = jest.fn();
 const mockPush = jest.fn();
 const mockReplace = jest.fn();
@@ -51,7 +52,13 @@ jest.mock('expo-router', () => {
 
 jest.mock('../../providers', () => ({
   useAuth: () => ({
-    user: { id: 'actor-1', email: 'actor@gatech.edu', role: mockRole },
+    user: {
+      id: 'actor-1',
+      email: 'actor@gatech.edu',
+      role: mockRole,
+      clubId: 'campus-cats',
+      platformAdmin: mockPlatformAdmin,
+    },
     signOut: mockSignOut,
   }),
 }));
@@ -172,6 +179,7 @@ describe('settings and administration routes', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     mockRole = Role.Member;
+    mockPlatformAdmin = false;
     mockSignOut.mockResolvedValue(undefined);
     mockListContacts.mockResolvedValue({
       ok: true,
@@ -293,12 +301,27 @@ describe('settings and administration routes', () => {
     await user.press(screen.getByRole('button', { name: 'Manage Users' }));
     await user.press(screen.getByRole('button', { name: 'Manage Whitelist' }));
     await user.press(screen.getByRole('button', { name: 'iNaturalist Sync' }));
-    await user.press(screen.getByRole('button', { name: 'App Billing' }));
+    expect(
+      screen.queryByRole('button', { name: 'Infrastructure Costs' }),
+    ).not.toBeOnTheScreen();
     expect(mockPush).toHaveBeenNthCalledWith(1, '/settings/catalog-tags');
     expect(mockPush).toHaveBeenNthCalledWith(2, '/settings/manage_users');
     expect(mockPush).toHaveBeenNthCalledWith(3, '/settings/manage_whitelist');
     expect(mockPush).toHaveBeenNthCalledWith(4, '/settings/inaturalist');
-    expect(mockPush).toHaveBeenNthCalledWith(5, '/settings/billing');
+    expect(mockPush).toHaveBeenCalledTimes(4);
+  });
+
+  it('keeps infrastructure costs separate for platform administrators', async () => {
+    mockRole = Role.Officer;
+    mockPlatformAdmin = true;
+    const user = userEvent.setup();
+    await renderThemed(<Settings />);
+
+    await user.press(
+      screen.getByRole('button', { name: 'Infrastructure Costs' }),
+    );
+    expect(mockPush).toHaveBeenCalledWith('/settings/billing');
+    expect(screen.queryByRole('button', { name: 'Club Billing' })).not.toBeOnTheScreen();
   });
 
   it('shows app settings only to the President', async () => {
@@ -307,7 +330,9 @@ describe('settings and administration routes', () => {
     await renderThemed(<Settings />);
 
     expect(screen.getByText('President tools')).toBeOnTheScreen();
+    await user.press(screen.getByRole('button', { name: 'Club Billing' }));
     await user.press(screen.getByRole('button', { name: 'App Settings' }));
+    expect(mockPush).toHaveBeenCalledWith('/settings/club-billing');
     expect(mockPush).toHaveBeenCalledWith('/settings/app-settings');
 
     mockRole = Role.Developer;

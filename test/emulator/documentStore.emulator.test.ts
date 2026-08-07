@@ -8,6 +8,8 @@ import {
 import { doc, Firestore, setDoc } from 'firebase/firestore';
 
 import { FirebaseDocumentStore } from '../../adapters/firebase/FirebaseDocumentStore';
+import { FirebaseTenantScope } from '../../adapters/firebase/FirebaseTenantScope';
+import { TenantDocumentStore } from '../../adapters/firebase/TenantDocumentStore';
 import { documentStoreContract } from '../contracts/documentStoreContract';
 import {
   FIREBASE_TEST_PROJECT_ID,
@@ -30,6 +32,15 @@ describe('Firebase document adapter', () => {
       await setDoc(doc(context.firestore(), 'users', 'super-admin-1'), {
         email: 'admin@gatech.edu',
         role: 2,
+        clubId: 'campus-cats',
+        platformAdmin: false,
+      });
+      await setDoc(doc(context.firestore(), 'clubs', 'campus-cats'), {
+        name: 'Campus Cats',
+        timezone: 'America/New_York',
+        billingEmail: 'billing@example.com',
+        billingEnforcementEnabled: false,
+        accessState: 'enabled',
       });
     });
   });
@@ -41,13 +52,16 @@ describe('Firebase document adapter', () => {
   documentStoreContract(
     'Firebase Emulator',
     () =>
-      new FirebaseDocumentStore(
-        environment
-          .authenticatedContext('super-admin-1', {
-            role: 2,
-            email: 'admin@gatech.edu',
-          })
-          .firestore() as unknown as Firestore,
+      new TenantDocumentStore(
+        new FirebaseDocumentStore(
+          environment
+            .authenticatedContext('super-admin-1', {
+              role: 2,
+              email: 'admin@gatech.edu',
+            })
+            .firestore() as unknown as Firestore,
+        ),
+        new FirebaseTenantScope(),
       ),
   );
 });

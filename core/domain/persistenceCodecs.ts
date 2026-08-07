@@ -139,9 +139,11 @@ export function createPersistenceCodecs<EncodedDate>(
         }),
       });
     },
-    encode: ({ email, role, banned, disciplinaryNotices }) => ({
+    encode: ({ email, role, clubId, platformAdmin, banned, disciplinaryNotices }) => ({
       email,
       role,
+      clubId,
+      platformAdmin,
       banned,
       disciplinaryNotices: disciplinaryNotices.map((notice) => ({
         ...notice,

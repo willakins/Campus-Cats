@@ -7,6 +7,7 @@ import { FirebaseSession } from './FirebaseSession';
 
 jest.mock('firebase/auth', () => ({
   createUserWithEmailAndPassword: jest.fn(),
+  deleteUser: jest.fn(),
   sendPasswordResetEmail: jest.fn(),
   signInWithCredential: jest.fn(),
   signInWithEmailAndPassword: jest.fn(),

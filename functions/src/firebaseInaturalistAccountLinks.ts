@@ -95,8 +95,10 @@ export class FirebaseInaturalistAccountLinkRepository
       const accountReference = this.firestore
         .collection(ACCOUNT_LINKS)
         .doc(attempt.firebaseUid);
-      const targetPublicReference = this.firestore
-        .collection(PUBLIC_LINKS)
+      const targetPublicReference = this.tenantCollection(
+        attempt.clubId,
+        PUBLIC_LINKS,
+      )
         .doc(String(identity.inaturalistUserId));
       const [accountSnapshot, targetPublicSnapshot] = await Promise.all([
         transaction.get(accountReference),
@@ -115,7 +117,7 @@ export class FirebaseInaturalistAccountLinkRepository
       const previousId = positiveInteger(accountSnapshot.data()?.inaturalistUserId);
       const previousPublicReference =
         previousId && previousId !== identity.inaturalistUserId
-          ? this.firestore.collection(PUBLIC_LINKS).doc(String(previousId))
+          ? this.tenantCollection(attempt.clubId, PUBLIC_LINKS).doc(String(previousId))
           : undefined;
       const previousPublicSnapshot = previousPublicReference
         ? await transaction.get(previousPublicReference)
@@ -132,6 +134,7 @@ export class FirebaseInaturalistAccountLinkRepository
         transaction.delete(previousPublicReference);
       }
       transaction.set(accountReference, {
+        clubId: attempt.clubId,
         inaturalistUserId: identity.inaturalistUserId,
         login: identity.login,
         linkedAt,
@@ -185,8 +188,11 @@ export class FirebaseInaturalistAccountLinkRepository
       const accountSnapshot = await transaction.get(accountReference);
       if (!accountSnapshot.exists) return;
       const id = positiveInteger(accountSnapshot.data()?.inaturalistUserId);
+      const clubId = typeof accountSnapshot.data()?.clubId === 'string'
+        ? accountSnapshot.data()!.clubId
+        : 'campus-cats';
       const publicReference = id
-        ? this.firestore.collection(PUBLIC_LINKS).doc(String(id))
+        ? this.tenantCollection(clubId, PUBLIC_LINKS).doc(String(id))
         : undefined;
       const publicSnapshot = publicReference
         ? await transaction.get(publicReference)
@@ -197,11 +203,16 @@ export class FirebaseInaturalistAccountLinkRepository
       transaction.delete(accountReference);
     });
   }
+
+  private tenantCollection(clubId: string, name: string) {
+    return this.firestore.collection('clubs').doc(clubId).collection(name);
+  }
 }
 
 function serializeAttempt(attempt: InaturalistLinkAttempt) {
   return {
     firebaseUid: attempt.firebaseUid,
+    clubId: attempt.clubId,
     attemptId: attempt.attemptId,
     codeVerifier: attempt.codeVerifier,
     createdAt: Timestamp.fromDate(attempt.createdAt),
@@ -215,6 +226,7 @@ function deserializeAttempt(data: Record<string, unknown> | undefined) {
   const expiresAt = timestampDate(data?.expiresAt);
   if (
     typeof data?.firebaseUid !== 'string' ||
+    typeof data.clubId !== 'string' ||
     typeof data.attemptId !== 'string' ||
     typeof data.codeVerifier !== 'string' ||
     !createdAt ||
@@ -225,6 +237,7 @@ function deserializeAttempt(data: Record<string, unknown> | undefined) {
   }
   return {
     firebaseUid: data.firebaseUid,
+    clubId: data.clubId,
     attemptId: data.attemptId,
     codeVerifier: data.codeVerifier,
     createdAt,

@@ -5,6 +5,9 @@
     "test": "node --test lib/**/*.test.js",
     "test:ci": "npm run build && npm test",
     "contract:inaturalist:live": "npm run build && node lib/inaturalistContract.js",
+    "admin:create-club": "npm run build && node lib/admin/createClub.js",
+    "admin:migrate-campus-cats": "npm run build && node lib/admin/migrateCampusCatsTenant.js",
+    "admin:rollback-campus-cats": "npm run build && node lib/admin/rollbackCampusCatsTenant.js",
     "build:watch": "tsc --watch",
     "serve": "npm run build && firebase emulators:start --only functions",
     "shell": "npm run build && firebase functions:shell",
@@ -20,7 +23,8 @@
     "@google-cloud/bigquery": "^9.0.0",
     "@sendgrid/mail": "^8.1.6",
     "firebase-admin": "^14.2.0",
-    "firebase-functions": "^7.3.2"
+    "firebase-functions": "^7.3.2",
+    "stripe": "^22.4.0"
   },
   "devDependencies": {
     "@types/node": "^22.20.1",

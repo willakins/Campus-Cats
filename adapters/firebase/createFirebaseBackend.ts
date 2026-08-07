@@ -12,6 +12,7 @@ import {
 } from '../../config/firebase';
 import { ExpoSamlCredentialProvider } from './ExpoSamlCredentialProvider';
 import { FirebaseBillingReader } from './FirebaseBillingReader';
+import { FirebaseClubBilling } from './FirebaseClubBilling';
 import { FirebaseCallableEffects } from './FirebaseCallableEffects';
 import { FirebaseCommunityVotingGateway } from './FirebaseCommunityVotingGateway';
 import { FirebaseDocumentStore } from './FirebaseDocumentStore';
@@ -19,9 +20,12 @@ import { FirebaseInaturalistEffects } from './FirebaseInaturalistEffects';
 import { FirebaseInaturalistReader } from './FirebaseInaturalistReader';
 import { FirebaseMediaStore } from './FirebaseMediaStore';
 import { FirebaseSession } from './FirebaseSession';
+import { FirebaseTenantScope } from './FirebaseTenantScope';
 import { FirebaseSurveySubmissionGateway } from './FirebaseSurveySubmissionGateway';
 import { FirebaseWhitelistSubmission } from './FirebaseWhitelistSubmission';
 import { firebaseBillingPresentation } from './firebaseBillingPresentation';
+import { TenantDocumentStore } from './TenantDocumentStore';
+import { TenantMediaStore } from './TenantMediaStore';
 
 const firebaseDates = {
   encode: (value: Date) => Timestamp.fromDate(value),
@@ -35,22 +39,33 @@ const firebaseDates = {
 
 export function createFirebaseBackend(): AppBackend {
   const functions = getFunctions(app);
+  const tenantScope = new FirebaseTenantScope();
+  const documents = new TenantDocumentStore(
+    new FirebaseDocumentStore(db),
+    tenantScope,
+  );
+  const media = new TenantMediaStore(
+    new FirebaseMediaStore(storage),
+    tenantScope,
+  );
   return {
-    documents: new FirebaseDocumentStore(db),
-    media: new FirebaseMediaStore(storage),
+    documents,
+    media,
     effects: new FirebaseCallableEffects(functions),
     billing: {
       reader: new FirebaseBillingReader(functions),
       presentation: firebaseBillingPresentation,
     },
+    clubBilling: new FirebaseClubBilling(db, functions),
     inaturalist: {
-      reader: new FirebaseInaturalistReader(db),
+      reader: new FirebaseInaturalistReader(db, tenantScope),
       effects: new FirebaseInaturalistEffects(functions),
     },
     session: new FirebaseSession(
       auth,
       db,
       new ExpoSamlCredentialProvider(samlConfiguration),
+      tenantScope,
     ),
     surveySubmissions: new FirebaseSurveySubmissionGateway(functions),
     communityVoting: new FirebaseCommunityVotingGateway(functions),
