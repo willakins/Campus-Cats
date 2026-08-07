@@ -9,12 +9,18 @@ import { BillingModule } from './BillingModule';
 const admin = parseUser({
   id: 'admin-1',
   email: 'admin@gatech.edu',
-  role: Role.Officer,
+  role: Role.Member,
+  platformAdmin: true,
 });
 const member = parseUser({
   id: 'member-1',
   email: 'member@gatech.edu',
   role: Role.Member,
+});
+const officer = parseUser({
+  id: 'officer-1',
+  email: 'officer@gatech.edu',
+  role: Role.Officer,
 });
 const summary: BillingSummary = {
   status: 'ready',
@@ -70,6 +76,17 @@ describe('BillingModule', () => {
     const module = new BillingModule({ reader, presentation });
 
     await expect(module.summary(member)).resolves.toMatchObject({
+      ok: false,
+      error: { code: 'forbidden' },
+    });
+    expect(reader.calls).toBe(0);
+  });
+
+  it('does not infer platform administration from a club officer role', async () => {
+    const reader = new FakeBillingReader();
+    const module = new BillingModule({ reader, presentation });
+
+    await expect(module.summary(officer)).resolves.toMatchObject({
       ok: false,
       error: { code: 'forbidden' },
     });

@@ -17,11 +17,11 @@ import {
   parseWhitelistApplication,
 } from './index';
 
-const member = {
+const member = parseUser({
   id: 'member-1',
   email: 'member@gatech.edu',
   role: Role.Member,
-};
+});
 
 describe('canonical domain models', () => {
   it('parses immutable records for every persisted feature', () => {

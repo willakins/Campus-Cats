@@ -1,7 +1,6 @@
 import {
   Outcome,
   User,
-  canManageFeature,
   failure,
   success,
 } from '../../core/domain';
@@ -27,8 +26,11 @@ export class BillingModule {
     if (!actor) {
       return failure('unauthenticated', 'Sign in to view app billing');
     }
-    if (!canManageFeature(actor.role)) {
-      return failure('forbidden', 'Only officers may view app billing');
+    if (!actor.platformAdmin) {
+      return failure(
+        'forbidden',
+        'Only platform administrators may view app billing',
+      );
     }
 
     try {

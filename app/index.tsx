@@ -4,7 +4,8 @@ import { Redirect } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 
 import { LoadingIndicator } from '@/components/ui/LoadingIndicator';
-import { useAuth } from '@/providers';
+import { clubHasAppAccess } from '@/core/domain';
+import { useAuth, useClub } from '@/providers';
 
 // Instruct SplashScreen not to hide yet, we want to do this manually
 SplashScreen.preventAutoHideAsync().catch(() => {
@@ -19,10 +20,12 @@ SplashScreen.setOptions({
 
 const App = () => {
   const { currentUser, loading } = useAuth();
+  const club = useClub();
+  const isLoading = loading || (Boolean(currentUser) && club.loading);
 
   // Use useEffect to handle splash screen hiding
   useEffect(() => {
-    if (!loading) {
+    if (!isLoading) {
       // This tells the splash screen to hide immediately! If we call this after
       // `setIsLoading`, then we may see a blank screen while the app is
       // loading its initial state and rendering its first pixels. So instead,
@@ -30,16 +33,19 @@ const App = () => {
       // performed layout.
       SplashScreen.hide();
     }
-  }, [loading]);
+  }, [isLoading]);
 
   // Early return for loading state
   // NOTE: If we try to redirect immediately, the useEffect never has time to
   // hide the splashscreen.
-  if (loading) {
+  if (isLoading) {
     return <LoadingIndicator />;
   }
 
   if (currentUser) {
+    if (!club.access || !clubHasAppAccess(club.access)) {
+      return <Redirect href={'/subscription-required' as never} />;
+    }
     return <Redirect href="/(app)/(tabs)" />;
   } else {
     return <Redirect href="/login" />;

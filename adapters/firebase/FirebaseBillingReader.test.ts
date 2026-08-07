@@ -60,6 +60,31 @@ describe('FirebaseBillingReader', () => {
     });
   });
 
+  it('accepts empty monthly billing data with no freshness date', async () => {
+    mockCallable.mockResolvedValue({
+      data: {
+        status: 'ready',
+        projectId: 'campuscats-d7a5e',
+        exportProjectId: 'campuscats-d7a5e',
+        datasetId: 'billing_export',
+        generatedAt: '2026-08-05T12:00:00.000Z',
+        dataThrough: null,
+        months: [],
+      },
+    });
+    const reader = new FirebaseBillingReader({} as Functions);
+
+    await expect(reader.getSummary()).resolves.toEqual({
+      status: 'ready',
+      projectId: 'campuscats-d7a5e',
+      exportProjectId: 'campuscats-d7a5e',
+      datasetId: 'billing_export',
+      generatedAt: '2026-08-05T12:00:00.000Z',
+      dataThrough: undefined,
+      months: [],
+    });
+  });
+
   it('rejects malformed provider responses', async () => {
     mockCallable.mockResolvedValue({
       data: {

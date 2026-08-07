@@ -6,6 +6,8 @@ export interface ManagedUser {
   readonly id: string;
   readonly email: string;
   readonly role: Role;
+  readonly clubId: string;
+  readonly platformAdmin?: boolean;
   readonly banned?: boolean;
 }
 
@@ -24,6 +26,7 @@ export interface PublicProfile {
   readonly role: Role;
   readonly achievementIds: readonly AchievementId[];
   readonly selectedTitleId: AchievementId | '';
+  readonly clubId: string;
 }
 
 export interface WhitelistApplication {
@@ -42,8 +45,9 @@ export interface PushMessage {
 
 export interface HandlerDependencies {
   getUser(id: string): Promise<ManagedUser | undefined>;
+  getPlatformAdmin(id: string): Promise<ManagedUser | undefined>;
   getBillingSummary(): Promise<BillingSummary>;
-  listPushTokens(): Promise<readonly string[]>;
+  listPushTokens(clubId: string): Promise<readonly string[]>;
   sendPushBatch(messages: readonly PushMessage[]): Promise<void>;
   createAuthUser(email: string, password: string): Promise<string>;
   deleteAuthUser(id: string): Promise<void>;
@@ -66,14 +70,15 @@ export interface HandlerDependencies {
   createWhitelistApplication(
     application: WhitelistApplication,
   ): Promise<{ readonly created: boolean; readonly id: string }>;
-  getPublicProfile(id: string): Promise<PublicProfile | undefined>;
+  getPublicProfile(id: string, clubId: string): Promise<PublicProfile | undefined>;
   putPublicProfile(
     profile: PublicProfile,
     mode: 'sync' | 'edit' | 'title',
+    clubId: string,
   ): Promise<PublicProfile>;
-  countUserSightings(id: string): Promise<number>;
-  verifyProfilePhoto(id: string, url: string): Promise<boolean>;
-  migrateContributorPrivacy(): Promise<{
+  countUserSightings(id: string, clubId: string): Promise<number>;
+  verifyProfilePhoto(id: string, url: string, clubId: string): Promise<boolean>;
+  migrateContributorPrivacy(clubId: string): Promise<{
     readonly sightings: number;
     readonly catalog: number;
   }>;
@@ -106,7 +111,16 @@ export async function handleGetBillingSummary(
   request: HandlerRequest<Record<string, never>>,
   dependencies: HandlerDependencies,
 ): Promise<BillingSummary> {
-  await requireAdmin(request.authUid, dependencies);
+  if (!request.authUid) {
+    throw new HandlerError('unauthenticated', 'Authentication required');
+  }
+  const actor = await dependencies.getPlatformAdmin(request.authUid);
+  if (!actor) {
+    throw new HandlerError(
+      'permission-denied',
+      'Platform administrator access required',
+    );
+  }
   return dependencies.getBillingSummary();
 }
 
@@ -121,7 +135,7 @@ export async function handleMigrateContributorPrivacy(
       'Only the President may manage contributor privacy',
     );
   }
-  return dependencies.migrateContributorPrivacy();
+  return dependencies.migrateContributorPrivacy(actor.clubId);
 }
 
 export async function handleSyncPublicProfile(
@@ -140,8 +154,17 @@ export async function handleSyncPublicProfile(
   if (!profileOwner || profileOwner.banned) {
     throw new HandlerError('not-found', 'Member profile not found');
   }
-  const existing = await dependencies.getPublicProfile(profileOwner.id);
-  const sightingCount = await dependencies.countUserSightings(profileOwner.id);
+  if (profileOwner.clubId !== requestingUser.clubId) {
+    throw new HandlerError('not-found', 'Member profile not found');
+  }
+  const existing = await dependencies.getPublicProfile(
+    profileOwner.id,
+    requestingUser.clubId,
+  );
+  const sightingCount = await dependencies.countUserSightings(
+    profileOwner.id,
+    requestingUser.clubId,
+  );
   const achievementIds = mergeAchievementIds(
     existing?.achievementIds ?? [],
     progressAchievementIds({
@@ -163,8 +186,9 @@ export async function handleSyncPublicProfile(
     role: profileOwner.role,
     achievementIds,
     selectedTitleId,
+    clubId: requestingUser.clubId,
   };
-  return dependencies.putPublicProfile(profile, 'sync');
+  return dependencies.putPublicProfile(profile, 'sync', requestingUser.clubId);
 }
 
 export async function handleUpdatePublicProfile(
@@ -199,7 +223,7 @@ export async function handleUpdatePublicProfile(
   }
   if (
     profilePhotoUrl &&
-    !(await dependencies.verifyProfilePhoto(actor.id, profilePhotoUrl))
+    !(await dependencies.verifyProfilePhoto(actor.id, profilePhotoUrl, actor.clubId))
   ) {
     throw new HandlerError(
       'invalid-argument',
@@ -207,7 +231,7 @@ export async function handleUpdatePublicProfile(
     );
   }
 
-  const existing = await dependencies.getPublicProfile(actor.id);
+  const existing = await dependencies.getPublicProfile(actor.id, actor.clubId);
   const achievementIds = profilePhotoUrl
     ? mergeAchievementIds(existing?.achievementIds ?? [], ['profile-photo'])
     : [...(existing?.achievementIds ?? [])];
@@ -223,8 +247,9 @@ export async function handleUpdatePublicProfile(
     role: actor.role,
     achievementIds,
     selectedTitleId,
+    clubId: actor.clubId,
   };
-  return dependencies.putPublicProfile(profile, 'edit');
+  return dependencies.putPublicProfile(profile, 'edit', actor.clubId);
 }
 
 export async function handleSelectProfileTitle(
@@ -233,7 +258,7 @@ export async function handleSelectProfileTitle(
 ): Promise<PublicProfile> {
   const actor = await requireUser(request.authUid, dependencies);
   const achievementId = optionalAchievementId(request.data.achievementId);
-  const existing = await dependencies.getPublicProfile(actor.id);
+  const existing = await dependencies.getPublicProfile(actor.id, actor.clubId);
   if (!existing) throw new HandlerError('not-found', 'Member profile not found');
   if (achievementId && !existing.achievementIds.includes(achievementId)) {
     throw new HandlerError(
@@ -246,17 +271,19 @@ export async function handleSelectProfileTitle(
     role: actor.role,
     selectedTitleId: achievementId,
   };
-  return dependencies.putPublicProfile(profile, 'title');
+  return dependencies.putPublicProfile(profile, 'title', actor.clubId);
 }
 
 export async function handleSendAnnouncement(
   request: HandlerRequest<{ readonly title?: unknown; readonly message?: unknown }>,
   dependencies: HandlerDependencies,
 ): Promise<{ readonly success: true; readonly sent: number }> {
-  await requireAdmin(request.authUid, dependencies);
+  const actor = await requireAdmin(request.authUid, dependencies);
   const title = requiredString(request.data.title, 'title');
   const body = requiredString(request.data.message, 'message');
-  const tokens = [...new Set((await dependencies.listPushTokens()).filter(Boolean))];
+  const tokens = [
+    ...new Set((await dependencies.listPushTokens(actor.clubId)).filter(Boolean)),
+  ];
   for (let index = 0; index < tokens.length; index += 100) {
     await dependencies.sendPushBatch(
       tokens.slice(index, index + 100).map((token) => ({
@@ -285,12 +312,18 @@ export async function handleCreateWhitelistUser(
   request: HandlerRequest<{ readonly email?: unknown; readonly password?: unknown }>,
   dependencies: HandlerDependencies,
 ): Promise<{ readonly success: true; readonly uid: string }> {
-  await requireAdmin(request.authUid, dependencies);
+  const actor = await requireAdmin(request.authUid, dependencies);
   const email = validEmail(request.data.email);
   const password = requiredString(request.data.password, 'password');
   const uid = await dependencies.createAuthUser(email, password);
   try {
-    await dependencies.putUser({ id: uid, email, role: 0, banned: false });
+    await dependencies.putUser({
+      id: uid,
+      email,
+      role: 0,
+      clubId: actor.clubId,
+      banned: false,
+    });
   } catch (error) {
     try {
       await dependencies.deleteAuthUser(uid);
@@ -394,6 +427,9 @@ export async function handleTransferPresidency(
   const userId = requiredString(request.data.userId, 'userId');
   const target = await dependencies.getUser(userId);
   if (!target) throw new HandlerError('not-found', 'User not found');
+  if (actor.clubId !== target.clubId) {
+    throw new HandlerError('not-found', 'User not found');
+  }
   if (target.role !== 2) {
     throw new HandlerError(
       'invalid-argument',
@@ -472,7 +508,11 @@ function requireCanDiscipline(
   actor: ManagedUser,
   target: ManagedUser,
 ): void {
-  if (actor.id === target.id || target.role !== 0) {
+  if (
+    actor.clubId !== target.clubId ||
+    actor.id === target.id ||
+    target.role !== 0
+  ) {
     throw new HandlerError(
       'permission-denied',
       'Only member accounts can be disciplined, banned, or unbanned',
@@ -481,7 +521,11 @@ function requireCanDiscipline(
 }
 
 function requireCanManage(actor: ManagedUser, target: ManagedUser): void {
-  if (actor.id === target.id || actor.role <= target.role) {
+  if (
+    actor.clubId !== target.clubId ||
+    actor.id === target.id ||
+    actor.role <= target.role
+  ) {
     throw new HandlerError(
       'permission-denied',
       'Cannot manage yourself or a user with an equal or higher role',
@@ -494,6 +538,9 @@ function requireCanChangeRole(
   target: ManagedUser,
   nextRole: Role,
 ): void {
+  if (actor.clubId !== target.clubId) {
+    throw new HandlerError('permission-denied', 'Member belongs to another club');
+  }
   const changesOfficerStatus =
     (target.role === 0 && nextRole === 1) ||
     (target.role === 1 && nextRole === 0);

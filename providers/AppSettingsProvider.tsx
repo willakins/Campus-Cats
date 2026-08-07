@@ -8,6 +8,7 @@ import {
 
 import { appModules } from '@/composition/appModules';
 import { DEFAULT_APP_SETTINGS } from '@/core/domain';
+import { useAuth } from './AuthProvider';
 import {
   AppSettingsContext,
   AppSettingsContextValue,
@@ -16,12 +17,13 @@ import {
 export { useAppSettings } from './AppSettingsContext';
 
 export const AppSettingsProvider = ({ children }: { readonly children: ReactNode }) => {
+  const { currentUser } = useAuth();
   const [settings, setSettings] = useState(DEFAULT_APP_SETTINGS);
 
   const refreshSettings = useCallback(async () => {
     const result = await appModules.appSettings.get();
     if (result.ok) setSettings(result.value);
-  }, []);
+  }, [currentUser?.clubId]);
 
   useEffect(() => {
     void refreshSettings();

@@ -45,6 +45,23 @@ describe('createAppModules', () => {
           }),
         },
       },
+      clubBilling: {
+        observeAccess: () => () => undefined,
+        getSummary: async () => {
+          throw new Error('Not used by this composition test');
+        },
+        createSetupSession: async () => ({ url: 'https://example.com/setup' }),
+        createPortalSession: async () => ({ url: 'https://example.com/portal' }),
+        payOutstandingInvoice: async () => ({ url: 'https://example.com/invoice' }),
+        setCollectionMethod: async () => undefined,
+        updateBillingEmail: async () => undefined,
+        scheduleCancellation: async () => {
+          throw new Error('Not used by this composition test');
+        },
+        resumeSubscription: async () => {
+          throw new Error('Not used by this composition test');
+        },
+      },
       inaturalist: {
         reader: new InMemoryInaturalistReader(),
         effects: new InMemoryInaturalistEffects(),

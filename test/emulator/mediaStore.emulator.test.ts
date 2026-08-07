@@ -9,6 +9,8 @@ import { FirebaseStorage } from 'firebase/storage';
 import { doc, setDoc } from 'firebase/firestore';
 
 import { FirebaseMediaStore } from '../../adapters/firebase/FirebaseMediaStore';
+import { FirebaseTenantScope } from '../../adapters/firebase/FirebaseTenantScope';
+import { TenantMediaStore } from '../../adapters/firebase/TenantMediaStore';
 import { mediaStoreContract } from '../contracts/mediaStoreContract';
 import {
   FIREBASE_TEST_PROJECT_ID,
@@ -36,6 +38,15 @@ describe('Firebase media adapter', () => {
       await setDoc(doc(context.firestore(), 'users', 'super-admin-1'), {
         email: 'admin@gatech.edu',
         role: 2,
+        clubId: 'campus-cats',
+        platformAdmin: false,
+      });
+      await setDoc(doc(context.firestore(), 'clubs', 'campus-cats'), {
+        name: 'Campus Cats',
+        timezone: 'America/New_York',
+        billingEmail: 'billing@example.com',
+        billingEnforcementEnabled: false,
+        accessState: 'enabled',
       });
     });
   });
@@ -47,14 +58,17 @@ describe('Firebase media adapter', () => {
   mediaStoreContract(
     'Firebase Emulator',
     () =>
-      new FirebaseMediaStore(
-        environment
-          .authenticatedContext('super-admin-1', {
-            role: 2,
-            email: 'admin@gatech.edu',
-          })
-          .storage() as unknown as FirebaseStorage,
-        async () => new Blob(['cat-image'], { type: 'image/jpeg' }),
+      new TenantMediaStore(
+        new FirebaseMediaStore(
+          environment
+            .authenticatedContext('super-admin-1', {
+              role: 2,
+              email: 'admin@gatech.edu',
+            })
+            .storage() as unknown as FirebaseStorage,
+          async () => new Blob(['cat-image'], { type: 'image/jpeg' }),
+        ),
+        new FirebaseTenantScope(),
       ),
   );
 });
