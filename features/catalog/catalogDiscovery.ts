@@ -1,5 +1,8 @@
 import {
+  Cat,
   CatalogRecord,
+  CatalogTag,
+  CatalogTagAssignment,
   SightingRecord,
 } from '../../core/domain';
 
@@ -40,6 +43,7 @@ export interface CatalogListItem {
   readonly mostRecentSighting?: Date;
   readonly heartCount: number;
   readonly isFavorite: boolean;
+  readonly tags: readonly CatalogTag[];
 }
 
 export function moveCatalogFavorite(
@@ -82,7 +86,12 @@ export function buildCatalogItems(
   entries: readonly CatalogRecord[],
   sightings: readonly SightingRecord[],
   favorites: CatalogFavoriteSummary,
+  configuredTags: readonly CatalogTag[] = [],
+  assignments: readonly CatalogTagAssignment[] = [],
 ): readonly CatalogListItem[] {
+  const assignmentByCatalogId = new Map<string, CatalogTagAssignment>(
+    assignments.map((assignment) => [assignment.catalogId, assignment]),
+  );
   return entries.map((entry) => {
     const matchingSightings = sightingsForCatalogEntry(entry, sightings);
     const mostRecentSighting = matchingSightings.reduce<Date | undefined>(
@@ -98,6 +107,11 @@ export function buildCatalogItems(
       mostRecentSighting,
       heartCount: favorites.counts[entry.id] ?? 0,
       isFavorite: favorites.selectedCatalogId === entry.id,
+      tags: catalogTagsForEntry(
+        entry,
+        configuredTags,
+        assignmentByCatalogId.get(entry.id),
+      ),
     };
   });
 }
@@ -106,11 +120,20 @@ export function filterAndSortCatalog(
   items: readonly CatalogListItem[],
   search: string,
   sort: CatalogSort,
+  selectedTagIds: readonly string[] = [],
 ): readonly CatalogListItem[] {
   const query = search.trim().toLocaleLowerCase();
-  const filtered = query
-    ? items.filter(({ entry }) => searchableProfile(entry).includes(query))
+  const searchFiltered = query
+    ? items.filter(({ entry, tags }) =>
+        searchableProfile(entry, tags).includes(query),
+      )
     : items;
+  const filtered = selectedTagIds.length
+    ? searchFiltered.filter(({ tags }) => {
+        const entryTagIds = new Set<string>(tags.map(({ id }) => id));
+        return selectedTagIds.every((tagId) => entryTagIds.has(tagId));
+      })
+    : searchFiltered;
 
   return [...filtered].sort((left, right) => {
     const tieBreak = compareNames(left, right);
@@ -130,7 +153,54 @@ export function filterAndSortCatalog(
   });
 }
 
-function searchableProfile(entry: CatalogRecord): string {
+export function catalogTagsForEntry(
+  entry: CatalogRecord,
+  configuredTags: readonly CatalogTag[],
+  assignment?: CatalogTagAssignment,
+): readonly CatalogTag[] {
+  const selectedIds = new Set<string>(
+    assignment?.tagIds ?? defaultCatalogTagIdsForEntry(entry),
+  );
+  return configuredTags.filter(({ id }) => selectedIds.has(id));
+}
+
+export function defaultCatalogTagIdsForEntry(
+  entry: CatalogRecord,
+): readonly string[] {
+  return defaultCatalogTagIdsForCat(entry.cat);
+}
+
+export function defaultCatalogTagIdsForCat(cat: Readonly<{
+  currentStatus?: Cat['currentStatus'];
+  tnr?: Cat['tnr'];
+  sex?: Cat['sex'];
+  furLength?: Cat['furLength'];
+}>): readonly string[] {
+  const tags = new Set<string>();
+  const { currentStatus, tnr, sex, furLength } = cat;
+
+  if (currentStatus === 'Adopted') tags.add('adopted');
+  else if (currentStatus === 'Feral') tags.add('feral');
+  else if (currentStatus === 'Frat Cat') tags.add('frat-cat');
+  else if (currentStatus === 'Deceased') tags.add('deceased');
+
+  if (tnr === 'Yes') tags.add('tnr-complete');
+  else if (tnr === 'No') tags.add('needs-tnr');
+
+  if (sex === 'Female') tags.add('female');
+  else if (sex === 'Male') tags.add('male');
+
+  if (furLength === 'Short') tags.add('short-hair');
+  else if (furLength === 'Medium') tags.add('medium-hair');
+  else if (furLength === 'Long') tags.add('long-hair');
+
+  return [...tags];
+}
+
+function searchableProfile(
+  entry: CatalogRecord,
+  tags: readonly CatalogTag[],
+): string {
   const fields = [
     entry.cat.name,
     entry.cat.descShort,
@@ -144,6 +214,7 @@ function searchableProfile(entry: CatalogRecord): string {
     entry.cat.furPattern,
     entry.cat.tnr,
     entry.cat.sex,
+    ...tags.map(({ label }) => label),
   ];
   return fields.filter(Boolean).join(' ').toLocaleLowerCase();
 }

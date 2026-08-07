@@ -34,13 +34,10 @@ const SightingScreen = () => {
   const [sighting, setSighting] = useState<SightingRecord>();
   const [media, setMedia] = useState<readonly DisplayMediaAsset[]>([]);
   const [reporterProfile, setReporterProfile] = useState<PublicProfile>();
+  const [reporterId, setReporterId] = useState<string>();
   const [error, setError] = useState<string>();
   const [mediaError, setMediaError] = useState<string>();
   const [loading, setLoading] = useState(true);
-  const reporterId = mayViewContributor && sighting?.source === 'campus-cats'
-    ? sighting.createdBy?.id
-    : undefined;
-
   useFocusEffect(
     useCallback(() => {
       let active = true;
@@ -50,6 +47,7 @@ const SightingScreen = () => {
       setError(undefined);
       setMediaError(undefined);
       setReporterProfile(undefined);
+      setReporterId(undefined);
       if (!id) {
         setError('Missing sighting ID');
         setLoading(false);
@@ -59,21 +57,38 @@ const SightingScreen = () => {
       void Promise.all([
         sightingAttempt,
         appModules.sightings.media(id),
-        sightingAttempt.then((result) =>
-          mayViewContributor
-            && result.ok
-            && result.value.source === 'campus-cats'
-            && result.value.createdBy
-            ? appModules.profiles.getOrSync(result.value.createdBy.id)
-            : undefined,
-        ),
-      ]).then(([sightingResult, mediaResult, profileResult]) => {
+        sightingAttempt.then(async (result) => {
+          if (!result.ok) return undefined;
+          let reporterUserId: string | undefined;
+          if (result.value.source === 'campus-cats') {
+            reporterUserId = mayViewContributor
+              ? result.value.createdBy?.id
+              : undefined;
+          } else {
+            const linked = await appModules.sightings.linkedReporter(
+              actor,
+              result.value.observer.id,
+            );
+            reporterUserId = linked.ok ? linked.value : undefined;
+          }
+          if (!reporterUserId) return undefined;
+          return {
+            reporterUserId,
+            profile: await appModules.profiles.getOrSync(reporterUserId),
+          };
+        }),
+      ]).then(([sightingResult, mediaResult, reporterResult]) => {
         if (!active) return;
         if (sightingResult.ok) setSighting(sightingResult.value);
         else setError(sightingResult.error.message);
         if (mediaResult.ok) setMedia(mediaResult.value);
         else setMediaError(mediaResult.error.message);
-        if (profileResult?.ok) setReporterProfile(profileResult.value);
+        if (reporterResult) {
+          setReporterId(reporterResult.reporterUserId);
+          if (reporterResult.profile.ok) {
+            setReporterProfile(reporterResult.profile.value);
+          }
+        }
         setLoading(false);
       });
       return () => { active = false; };
@@ -110,7 +125,7 @@ const SightingScreen = () => {
           sighting={sighting}
           media={media}
           reporterProfile={reporterProfile}
-          showContributor={mayViewContributor}
+          showContributor={mayViewContributor || Boolean(reporterId)}
           onReporterPress={
             reporterId
               ? () =>

@@ -1,27 +1,19 @@
 import {
   ReactNode,
   useCallback,
-  createContext,
-  useContext,
   useEffect,
   useMemo,
   useState,
 } from 'react';
 
 import { appModules } from '@/composition/appModules';
-import { AppSettings, DEFAULT_APP_SETTINGS } from '@/core/domain';
+import { DEFAULT_APP_SETTINGS } from '@/core/domain';
+import {
+  AppSettingsContext,
+  AppSettingsContextValue,
+} from './AppSettingsContext';
 
-interface AppSettingsContextValue {
-  readonly settings: AppSettings;
-  readonly applySettings: (settings: AppSettings) => void;
-  readonly refreshSettings: () => Promise<void>;
-}
-
-const AppSettingsContext = createContext<AppSettingsContextValue>({
-  settings: DEFAULT_APP_SETTINGS,
-  applySettings: () => undefined,
-  refreshSettings: async () => undefined,
-});
+export { useAppSettings } from './AppSettingsContext';
 
 export const AppSettingsProvider = ({ children }: { readonly children: ReactNode }) => {
   const [settings, setSettings] = useState(DEFAULT_APP_SETTINGS);
@@ -46,6 +38,3 @@ export const AppSettingsProvider = ({ children }: { readonly children: ReactNode
     </AppSettingsContext.Provider>
   );
 };
-
-export const useAppSettings = (): AppSettingsContextValue =>
-  useContext(AppSettingsContext);

@@ -32,7 +32,9 @@ import {
 jest.mock('@expo/vector-icons', () => ({ Ionicons: () => null }));
 
 const renderThemed = async (content: React.ReactElement) =>
-  await render(<AppThemeProvider colorScheme="light">{content}</AppThemeProvider>);
+  await render(
+    <AppThemeProvider colorScheme="light">{content}</AppThemeProvider>,
+  );
 
 describe('Campus Cats design primitives', () => {
   it('exposes accessible button loading and disabled behavior', async () => {
@@ -48,7 +50,12 @@ describe('Campus Cats design primitives', () => {
 
     await rerender(
       <AppThemeProvider colorScheme="light">
-        <Button label="Save cat" loading loadingLabel="Saving…" onPress={onPress} />
+        <Button
+          label="Save cat"
+          loading
+          loadingLabel="Saving…"
+          onPress={onPress}
+        />
       </AppThemeProvider>,
     );
     expect(screen.getByRole('button', { name: 'Save cat' })).toBeDisabled();
@@ -70,9 +77,12 @@ describe('Campus Cats design primitives', () => {
       />,
     );
 
-    expect(screen.getByRole('button', { name: '7D' })).toHaveProp('accessibilityState', {
-      selected: true,
-    });
+    expect(screen.getByRole('button', { name: '7D' })).toHaveProp(
+      'accessibilityState',
+      {
+        selected: true,
+      },
+    );
     await user.press(screen.getByRole('button', { name: 'All' }));
     expect(onChange).toHaveBeenCalledWith('all');
   });
@@ -84,7 +94,11 @@ describe('Campus Cats design primitives', () => {
       <>
         <StatusPill tone="success" icon="checkmark-circle" label="Stocked" />
         <EmptyState title="No announcements yet" message="Check back soon." />
-        <ErrorState title="Could not load cats" message="You appear to be offline." onRetry={retry} />
+        <ErrorState
+          title="Could not load cats"
+          message="You appear to be offline."
+          onRetry={retry}
+        />
         <AccessDeniedState message="Officer access is required." />
       </>,
     );
@@ -133,7 +147,9 @@ describe('Campus Cats design primitives', () => {
     );
 
     expect(screen.getByText('Cover photo')).toBeOnTheScreen();
-    await user.press(screen.getByRole('button', { name: 'Set photo 2 as cover' }));
+    await user.press(
+      screen.getByRole('button', { name: 'Set photo 2 as cover' }),
+    );
     await user.press(screen.getByRole('button', { name: 'Remove photo 2' }));
     await user.press(screen.getByRole('button', { name: 'Add photos' }));
     expect(onPromote).toHaveBeenCalledWith('file://two.jpg');
@@ -182,10 +198,14 @@ describe('Campus Cats design primitives', () => {
     );
 
     await user.press(screen.getByRole('button', { name: 'Close gallery' }));
-    await user.press(screen.getByRole('button', { name: 'Create cat profile' }));
+    await user.press(
+      screen.getByRole('button', { name: 'Create cat profile' }),
+    );
     expect(screen.queryByText('Create cat profile')).not.toBeOnTheScreen();
     expect(onIconPress).toHaveBeenCalledTimes(2);
-    expect(screen.getByRole('button', { name: 'Delete disabled' })).toBeDisabled();
+    expect(
+      screen.getByRole('button', { name: 'Delete disabled' }),
+    ).toBeDisabled();
   });
 
   it('supports scrolling, keyboard avoidance, full-bleed content, and a sticky footer', async () => {
@@ -201,7 +221,9 @@ describe('Campus Cats design primitives', () => {
     );
 
     expect(screen.getByText('Scrollable content')).toBeOnTheScreen();
-    expect(screen.getByRole('button', { name: 'Save changes' })).toBeOnTheScreen();
+    expect(
+      screen.getByRole('button', { name: 'Save changes' }),
+    ).toBeOnTheScreen();
   });
 
   it('keeps text scalable and interactive targets at least 44 points', async () => {
@@ -212,8 +234,13 @@ describe('Campus Cats design primitives', () => {
       </>,
     );
 
-    expect(screen.getByText('Scalable field note')).toHaveProp('maxFontSizeMultiplier', 2);
-    expect(screen.getByRole('button', { name: 'Accessible target' })).toHaveStyle({
+    expect(screen.getByText('Scalable field note')).toHaveProp(
+      'maxFontSizeMultiplier',
+      2,
+    );
+    expect(
+      screen.getByRole('button', { name: 'Accessible target' }),
+    ).toHaveStyle({
       minHeight: 44,
       minWidth: 44,
     });
@@ -225,11 +252,21 @@ describe('Campus Cats design primitives', () => {
     const user = userEvent.setup();
     await renderThemed(
       <>
-        <Card><AppText>Field note</AppText></Card>
-        <Card accessibilityLabel="Open Goldie" accent="coral" onPress={openCard}>
+        <Card>
+          <AppText>Field note</AppText>
+        </Card>
+        <Card
+          accessibilityLabel="Open Goldie"
+          accent="coral"
+          onPress={openCard}
+        >
           <AppText>Goldie</AppText>
         </Card>
-        <ListRow title="Club contacts" subtitle="Reach an officer" icon="people" />
+        <ListRow
+          title="Club contacts"
+          subtitle="Reach an officer"
+          icon="people"
+        />
         <ListRow
           title="Manage users"
           onPress={openRow}
@@ -247,8 +284,19 @@ describe('Campus Cats design primitives', () => {
   });
 
   it('renders form helpers, static children, and grouped sections', async () => {
+    const editSection = jest.fn();
+    const user = userEvent.setup();
     await renderThemed(
-      <FormSection title="Basics">
+      <FormSection
+        title="Basics"
+        action={
+          <IconButton
+            icon="create-outline"
+            accessibilityLabel="Edit basics"
+            onPress={editSection}
+          />
+        }
+      >
         <FormField label="Nickname" helper="The name students know.">
           <AppText>Text input placeholder</AppText>
         </FormField>
@@ -256,6 +304,8 @@ describe('Campus Cats design primitives', () => {
     );
 
     expect(screen.getByText('Basics')).toBeOnTheScreen();
+    await user.press(screen.getByRole('button', { name: 'Edit basics' }));
+    expect(editSection).toHaveBeenCalledTimes(1);
     expect(screen.getByText('Nickname')).toBeOnTheScreen();
     expect(screen.getByText('The name students know.')).toBeOnTheScreen();
   });
@@ -280,21 +330,32 @@ describe('Campus Cats design primitives', () => {
 
     expect(screen.getByText('Featured')).toBeOnTheScreen();
     expect(
-      screen.getByLabelText('Catalog access. Only officers can create entries.'),
+      screen.getByLabelText(
+        'Catalog access. Only officers can create entries.',
+      ),
     ).not.toHaveProp('accessibilityRole', 'alert');
-    expect(screen.getByRole('alert', { name: 'Saved successfully.' })).toHaveProp(
-      'accessibilityLiveRegion',
-      'polite',
-    );
+    expect(
+      screen.getByRole('alert', { name: 'Saved successfully.' }),
+    ).toHaveProp('accessibilityLiveRegion', 'polite');
     expect(screen.getByRole('alert', { name: 'Could not save.' })).toHaveProp(
       'accessibilityLiveRegion',
       'assertive',
     );
-    expect(screen.getByRole('progressbar', { name: 'Loading content' })).toBeOnTheScreen();
-    expect(screen.getByRole('progressbar', { name: 'Loading cat cards' })).toBeOnTheScreen();
-    expect(screen.getByRole('progressbar', { name: 'Loading station cards' })).toBeOnTheScreen();
-    expect(screen.getByRole('progressbar', { name: 'Loading cat profile' })).toBeOnTheScreen();
-    expect(screen.getByRole('progressbar', { name: 'Loading cat form' })).toBeOnTheScreen();
+    expect(
+      screen.getByRole('progressbar', { name: 'Loading content' }),
+    ).toBeOnTheScreen();
+    expect(
+      screen.getByRole('progressbar', { name: 'Loading cat cards' }),
+    ).toBeOnTheScreen();
+    expect(
+      screen.getByRole('progressbar', { name: 'Loading station cards' }),
+    ).toBeOnTheScreen();
+    expect(
+      screen.getByRole('progressbar', { name: 'Loading cat profile' }),
+    ).toBeOnTheScreen();
+    expect(
+      screen.getByRole('progressbar', { name: 'Loading cat form' }),
+    ).toBeOnTheScreen();
   });
 
   it('uses the first photo as the cover when no explicit cover is supplied', async () => {

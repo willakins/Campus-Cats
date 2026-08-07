@@ -13,6 +13,7 @@ import {
 import { ExpoSamlCredentialProvider } from './ExpoSamlCredentialProvider';
 import { FirebaseBillingReader } from './FirebaseBillingReader';
 import { FirebaseCallableEffects } from './FirebaseCallableEffects';
+import { FirebaseCommunityVotingGateway } from './FirebaseCommunityVotingGateway';
 import { FirebaseDocumentStore } from './FirebaseDocumentStore';
 import { FirebaseInaturalistEffects } from './FirebaseInaturalistEffects';
 import { FirebaseInaturalistReader } from './FirebaseInaturalistReader';
@@ -52,6 +53,7 @@ export function createFirebaseBackend(): AppBackend {
       new ExpoSamlCredentialProvider(samlConfiguration),
     ),
     surveySubmissions: new FirebaseSurveySubmissionGateway(functions),
+    communityVoting: new FirebaseCommunityVotingGateway(functions),
     whitelistSubmissions: new FirebaseWhitelistSubmission(functions),
     codecs: createPersistenceCodecs(firebaseDates),
   };

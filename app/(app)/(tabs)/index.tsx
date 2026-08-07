@@ -5,8 +5,8 @@ import { useFocusEffect, useRouter } from 'expo-router';
 
 import { SightingMapView } from '@/components/SightingMapView';
 import {
+  Button,
   FeedbackBanner,
-  FloatingActionButton,
   SegmentedControl,
   StatusPill,
   Screen,
@@ -60,13 +60,17 @@ const HomeScreen = () => {
     <Screen
       fullBleed
       floatingAction={(
-        <FloatingActionButton
-          accessibilityLabel="Report a sighting"
+        <Button
+          label="Report a sighting"
+          icon="add-circle-outline"
           accessibilityHint="Opens the new sighting report form"
-          style={{
-            backgroundColor: theme.colors.coral,
-            borderColor: theme.colors.coral,
-          }}
+          style={[
+            theme.elevation.floating,
+            {
+              backgroundColor: theme.colors.coral,
+              borderColor: theme.colors.coral,
+            },
+          ]}
           onPress={() => router.push('/sighting/create-sighting')}
         />
       )}

@@ -3,8 +3,8 @@ import {
   COLLECTIONS,
   PersistenceCodec,
   ImportedObservation,
+  InaturalistPublicLink,
   IdGenerator,
-  LocalSightingRecord,
   Outcome,
   Sighting,
   SightingRecord,
@@ -56,6 +56,7 @@ interface SightingsDependencies {
   readonly imports?: {
     readonly reader: InaturalistReader;
     readonly codec: PersistenceCodec<ImportedObservation>;
+    readonly publicLinkCodec: PersistenceCodec<InaturalistPublicLink>;
   };
 }
 
@@ -134,49 +135,95 @@ export class SightingsModule {
   async listByReporter(
     actorOrUserId: User | string | undefined,
     requestedUserId?: string,
-  ): Promise<Outcome<readonly LocalSightingRecord[]>> {
+  ): Promise<Outcome<readonly SightingRecord[]>> {
     const actor = typeof actorOrUserId === 'string' ? undefined : actorOrUserId;
     const userId = typeof actorOrUserId === 'string' ? actorOrUserId : requestedUserId;
     if (!userId) return failure('validation', 'Missing member profile ID');
+    let local: readonly SightingRecord[] = [];
     try {
-      const mayView = actor?.id === userId || await this.dependencies.contributors.canView(actor);
-      if (!mayView) return success([]);
-      const [ids, legacyDocuments] = await Promise.all([
-        this.dependencies.contributors.contentIdsForUser(
-          actor,
-          'sighting',
-          userId,
-        ),
-        this.dependencies.documents.listWhereEqual(
-          COLLECTIONS.sightings,
-          'createdBy.id',
-          userId,
-        ),
-      ]);
-      const migratedDocuments = await Promise.all(
-        ids.map((id) => this.dependencies.documents.get(COLLECTIONS.sightings, id)),
-      );
-      const byId = new Map(
-        [...legacyDocuments, ...migratedDocuments.filter((document) => document !== undefined)]
-          .map((document) => [document.id, document]),
-      );
-      return success(
-        [...byId.values()]
-          .map(({ id, data }) =>
-            localSightingRecord(
-              withSightingContributor(
-                this.dependencies.codecs.sighting.decode(id, data),
-                actor?.id === userId ? actor : undefined,
-              ),
+      const mayView =
+        actor?.id === userId ||
+        (await this.dependencies.contributors.canView(actor));
+      if (mayView) {
+        const [ids, legacyDocuments] = await Promise.all([
+          this.dependencies.contributors.contentIdsForUser(
+            actor,
+            'sighting',
+            userId,
+          ),
+          this.dependencies.documents.listWhereEqual(
+            COLLECTIONS.sightings,
+            'createdBy.id',
+            userId,
+          ),
+        ]);
+        const migratedDocuments = await Promise.all(
+          ids.map((id) =>
+            this.dependencies.documents.get(COLLECTIONS.sightings, id),
+          ),
+        );
+        const byId = new Map(
+          [
+            ...legacyDocuments,
+            ...migratedDocuments.filter(
+              (document) => document !== undefined,
             ),
-          )
-          .sort((left, right) => right.date.getTime() - left.date.getTime()),
-      );
+          ].map((document) => [document.id, document]),
+        );
+        local = [...byId.values()].map(({ id, data }) =>
+          localSightingRecord(
+            withSightingContributor(
+              this.dependencies.codecs.sighting.decode(id, data),
+              actor?.id === userId ? actor : undefined,
+            ),
+          ),
+        );
+      }
     } catch {
       return failure(
         'dependency_failure',
         'Could not load the member sightings',
       );
+    }
+
+    if (!actor || !this.dependencies.imports) {
+      return success(sortSightings(local));
+    }
+    try {
+      const linkDocuments = await this.dependencies.documents.listWhereEqual(
+        COLLECTIONS.inaturalistPublicLinks,
+        'userId',
+        userId,
+      );
+      const linkedObserverIds = new Set(
+        linkDocuments.map(({ id, data }) =>
+          this.dependencies.imports?.publicLinkCodec.decode(id, data)
+            .inaturalistUserId,
+        ),
+      );
+      if (linkedObserverIds.size === 0) return success(sortSightings(local));
+      const documents = await this.dependencies.imports.reader.listObservations(
+        false,
+      );
+      const imported: SightingRecord[] = [];
+      for (const { id, data } of documents) {
+        try {
+          const observation = this.dependencies.imports.codec.decode(id, data);
+          if (linkedObserverIds.has(observation.observer.id)) {
+            imported.push(importedSightingRecord(observation));
+          }
+        } catch {
+          // Invalid imported records are already reported by the integration tools.
+        }
+      }
+      return success(sortSightings([...local, ...imported]));
+    } catch {
+      return success(sortSightings(local), [
+        {
+          code: 'partial_completion',
+          message: 'iNaturalist profile sightings are unavailable',
+        },
+      ]);
     }
   }
 
@@ -236,6 +283,36 @@ export class SightingsModule {
       );
     } catch {
       return failure('dependency_failure', 'Could not load the sighting');
+    }
+  }
+
+  async linkedReporter(
+    actor: User | undefined,
+    observerId: number,
+  ): Promise<Outcome<string | undefined>> {
+    if (!actor) return failure('unauthenticated', 'Sign in to view attribution');
+    if (!Number.isInteger(observerId) || observerId <= 0) {
+      return failure('validation', 'Invalid iNaturalist observer ID');
+    }
+    if (!this.dependencies.imports) return success(undefined);
+    try {
+      const document = await this.dependencies.documents.get(
+        COLLECTIONS.inaturalistPublicLinks,
+        String(observerId),
+      );
+      return success(
+        document
+          ? this.dependencies.imports.publicLinkCodec.decode(
+              document.id,
+              document.data,
+            ).userId
+          : undefined,
+      );
+    } catch {
+      return failure(
+        'dependency_failure',
+        'Could not load iNaturalist attribution',
+      );
     }
   }
 
@@ -417,6 +494,12 @@ export class SightingsModule {
       );
     }
   }
+}
+
+function sortSightings(values: readonly SightingRecord[]): readonly SightingRecord[] {
+  return [...values].sort(
+    (left, right) => right.date.getTime() - left.date.getTime(),
+  );
 }
 
 function withSightingContributor(

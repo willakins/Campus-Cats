@@ -8,6 +8,7 @@ import { FormScreen } from '@/components/forms';
 import { appModules } from '@/composition/appModules';
 import {
   Cat,
+  CatalogTag,
   CatalogOverride,
   CatalogRecord,
   CatStatus,
@@ -18,7 +19,10 @@ import {
 } from '@/core/domain';
 import { localMedia, storedMedia } from '@/core/media';
 import { DisplayMediaAsset, StoredMediaAsset, isExternalMediaAsset } from '@/core/ports';
-import { isSourceManagedCatalogEntry } from '@/features/catalog/catalogDiscovery';
+import {
+  defaultCatalogTagIdsForCat,
+  isSourceManagedCatalogEntry,
+} from '@/features/catalog/catalogDiscovery';
 import { CatalogForm, CatalogFormData } from '@/forms/CatalogForm';
 import { useAuth } from '@/providers';
 import { PickerConfig } from '@/types';
@@ -35,6 +39,9 @@ const EditEntry = () => {
   const [entry, setEntry] = useState<CatalogRecord>();
   const [storedAssets, setStoredAssets] = useState<readonly StoredMediaAsset[]>([]);
   const [displayAssets, setDisplayAssets] = useState<readonly DisplayMediaAsset[]>([]);
+  const [availableTags, setAvailableTags] = useState<readonly CatalogTag[]>([]);
+  const [selectedTagIds, setSelectedTagIds] = useState<readonly string[]>();
+  const [tagsReady, setTagsReady] = useState(false);
   const [photos, setPhotos] = useState<string[]>([]);
   const [profile, setProfile] = useState('');
   const [busy, setBusy] = useState(false);
@@ -68,8 +75,13 @@ const EditEntry = () => {
       setLoadError('Missing catalog entry ID');
       return;
     }
-    void Promise.all([appModules.catalog.get(parseUser(user), id), appModules.catalog.media(id)]).then(
-      ([entryResult, mediaResult]) => {
+    void Promise.all([
+      appModules.catalog.get(parseUser(user), id),
+      appModules.catalog.media(id),
+      appModules.catalogTags.list(parseUser(user)),
+      appModules.catalogTags.assignments(parseUser(user)),
+    ]).then(
+      ([entryResult, mediaResult, tagsResult, assignmentsResult]) => {
         if (!entryResult.ok) {
           setLoadError(entryResult.error.message);
           return;
@@ -94,6 +106,16 @@ const EditEntry = () => {
         setTnrValue(loaded.cat.tnr ?? 'Unknown');
         setSexValue(loaded.cat.sex ?? 'Unknown');
         setFurValue(loaded.cat.furLength ?? 'Unknown');
+        if (tagsResult.ok && assignmentsResult.ok) {
+          setAvailableTags(tagsResult.value);
+          setSelectedTagIds(
+            assignmentsResult.value.find(
+              ({ catalogId }) => catalogId === loaded.id,
+            )?.tagIds,
+          );
+          setTagsReady(true);
+        } else if (!tagsResult.ok) setError(tagsResult.error.message);
+        else if (!assignmentsResult.ok) setError(assignmentsResult.error.message);
         if (mediaResult.ok) {
           setDisplayAssets(mediaResult.value);
           setStoredAssets(
@@ -108,6 +130,9 @@ const EditEntry = () => {
     );
   }, [id, user.id, user.role]);
   const cat = (): Cat => ({ ...formData, currentStatus: statusValue, furLength: furValue, tnr: tnrValue, sex: sexValue });
+  const resolvedTagIds = (
+    selectedTagIds ?? defaultCatalogTagIdsForCat(cat())
+  ).filter((tagId) => availableTags.some(({ id: configuredId }) => configuredId === tagId));
   const selectionFor = (uri: string) => {
     const stored = storedAssets.find((asset) => asset.url === uri);
     return stored ? storedMedia(stored.id) : localMedia(uri);
@@ -122,6 +147,10 @@ const EditEntry = () => {
   };
   const save = async () => {
     if (!entry || busy) return;
+    if (!tagsReady) {
+      setError('Catalog tags could not be loaded. Please try again.');
+      return;
+    }
     if (
       (entry.source === 'campus-cats' || entry.linkedLocalCatalogId) &&
       !profile
@@ -156,6 +185,7 @@ const EditEntry = () => {
       credits: formData.credits,
       profile: selectionFor(profile),
       gallery: photos.map(selectionFor),
+      ...(entry.source === 'campus-cats' ? { tagIds: resolvedTagIds } : {}),
     };
     const result =
       entry.source === 'campus-cats'
@@ -171,11 +201,24 @@ const EditEntry = () => {
               entry.sourceId,
               overrides,
             );
-    setBusy(false);
     if (!result.ok) {
+      setBusy(false);
       setError(result.error.message);
       return;
     }
+    if (entry.source === 'inaturalist') {
+      const assignmentResult = await appModules.catalogTags.assign(
+        actor,
+        entry.id,
+        resolvedTagIds,
+      );
+      if (!assignmentResult.ok) {
+        setBusy(false);
+        setError(assignmentResult.error.message);
+        return;
+      }
+    }
+    setBusy(false);
     router.replace({ pathname: '/catalog/view-entry', params: { id: entry.id } });
   };
   const confirmDelete = () => {
@@ -255,6 +298,9 @@ const EditEntry = () => {
         onDeletePhoto={removePhoto}
         isCreate={false}
         sourceManaged={isSourceManagedCatalogEntry(entry)}
+        availableTags={availableTags}
+        selectedTagIds={resolvedTagIds}
+        onSelectedTagIdsChange={setSelectedTagIds}
       />
     </FormScreen>
   );

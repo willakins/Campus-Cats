@@ -4,6 +4,7 @@ import {
   ApplicationEffects,
   BillingProviderPresentation,
   BillingReader,
+  CommunityVotingGateway,
   DocumentStore,
   ImageSelectionPort,
   InaturalistEffects,
@@ -21,10 +22,13 @@ import {
 } from '../features/appSettings';
 import { BillingModule } from '../features/billing';
 import { CatalogModule } from '../features/catalog';
+import { CatalogTagsModule } from '../features/catalogTags';
 import { ContactsModule } from '../features/contacts';
+import { CommunityVotingModule } from '../features/communityVoting';
 import { EventsModule } from '../features/events';
 import { ImageSelectionModule } from '../features/imageSelection';
 import { InaturalistModule } from '../features/inaturalist';
+import { InaturalistAccountsModule } from '../features/inaturalistAccounts';
 import { ProfilesModule } from '../features/profiles';
 import { SessionModule } from '../features/session';
 import { SightingsModule } from '../features/sightings';
@@ -47,6 +51,7 @@ export interface AppBackend {
   };
   readonly session: SessionPort;
   readonly surveySubmissions: SurveySubmissionGateway;
+  readonly communityVoting: CommunityVotingGateway;
   readonly whitelistSubmissions: WhitelistSubmissionPort;
   readonly codecs: ApplicationCodecs;
 }
@@ -65,10 +70,13 @@ export interface AppModules {
   readonly appSettings: AppSettingsModule;
   readonly billing: BillingModule;
   readonly catalog: CatalogModule;
+  readonly catalogTags: CatalogTagsModule;
   readonly contacts: ContactsModule;
+  readonly communityVoting: CommunityVotingModule;
   readonly events: EventsModule;
   readonly imageSelection: ImageSelectionModule;
   readonly inaturalist: InaturalistModule;
+  readonly inaturalistAccounts: InaturalistAccountsModule;
   readonly profiles: ProfilesModule;
   readonly session: SessionModule;
   readonly sightings: SightingsModule;
@@ -86,6 +94,7 @@ export function createAppModules(
     clock,
     codecs,
     documents,
+    communityVoting,
     effects,
     ids,
     images,
@@ -134,7 +143,21 @@ export function createAppModules(
         codec: codecs.inaturalistCatalog,
       },
     }),
+    catalogTags: new CatalogTagsModule({ documents, ids, codecs }),
     contacts: new ContactsModule({ documents, ids, codecs }),
+    communityVoting: new CommunityVotingModule({
+      documents,
+      media,
+      mediaCoordinator: mediaCoordinator(),
+      effects,
+      gateway: communityVoting,
+      ids,
+      clock,
+      codecs: {
+        vote: codecs.communityVote,
+        nominee: codecs.communityVoteNominee,
+      },
+    }),
     events: new EventsModule({
       documents,
       media,
@@ -153,6 +176,7 @@ export function createAppModules(
         status: codecs.inaturalistStatus,
       },
     }),
+    inaturalistAccounts: new InaturalistAccountsModule({ effects }),
     profiles: new ProfilesModule({
       documents,
       media,
@@ -171,6 +195,7 @@ export function createAppModules(
       imports: {
         reader: inaturalist.reader,
         codec: codecs.inaturalistObservation,
+        publicLinkCodec: codecs.inaturalistPublicLink,
       },
     }),
     stations: new StationsModule({

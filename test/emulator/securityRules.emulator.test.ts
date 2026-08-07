@@ -476,6 +476,60 @@ describe('Firebase authorization matrix', () => {
     expect((await assertSucceeds(getDoc(favorite))).exists()).toBe(false);
   });
 
+  it('lets active members read catalog tags while only officers can configure and assign them', async () => {
+    const member = environment.authenticatedContext('member-1', {
+      email: 'member@gatech.edu',
+    }).firestore();
+    const admin = environment.authenticatedContext('admin-1', {
+      email: 'admin@gatech.edu',
+    }).firestore();
+    const anonymous = environment.unauthenticatedContext().firestore();
+    const settings = doc(admin, 'catalog-tag-settings', 'catalog');
+    const assignment = doc(admin, 'catalog-tag-assignments', 'cat-1');
+
+    await assertSucceeds(
+      setDoc(settings, {
+        tags: [
+          { id: 'feral', label: 'Feral' },
+          { id: 'medical', label: 'Needs medication' },
+        ],
+      }),
+    );
+    await assertSucceeds(
+      setDoc(assignment, { tagIds: ['feral', 'medical'] }),
+    );
+
+    await assertSucceeds(
+      getDoc(doc(member, 'catalog-tag-settings', 'catalog')),
+    );
+    await assertSucceeds(
+      getDocs(collection(member, 'catalog-tag-assignments')),
+    );
+    await assertFails(
+      setDoc(doc(member, 'catalog-tag-assignments', 'cat-1'), {
+        tagIds: ['feral'],
+      }),
+    );
+    await assertFails(
+      setDoc(doc(admin, 'catalog-tag-settings', 'not-catalog'), { tags: [] }),
+    );
+    await assertFails(setDoc(settings, { tags: 'feral' }));
+    await assertFails(setDoc(assignment, { tagIds: 'feral' }));
+    await assertFails(
+      setDoc(assignment, {
+        tagIds: Array.from({ length: 51 }, (_, index) => `tag-${index}`),
+      }),
+    );
+    await assertFails(
+      getDoc(doc(anonymous, 'catalog-tag-settings', 'catalog')),
+    );
+    await assertFails(
+      getDocs(collection(anonymous, 'catalog-tag-assignments')),
+    );
+    await assertSucceeds(deleteDoc(assignment));
+    await assertFails(deleteDoc(settings));
+  });
+
   it('shares public profiles without exposing private user documents or client writes', async () => {
     const member = environment.authenticatedContext('member-1', {
       email: 'member@gatech.edu',
@@ -596,6 +650,75 @@ describe('Firebase authorization matrix', () => {
         visible: true,
       }),
     );
+  });
+
+  it('exposes verified attribution only to active members and keeps linking data server-only', async () => {
+    await environment.withSecurityRulesDisabled(async (context) => {
+      const firestore = context.firestore();
+      await Promise.all([
+        setDoc(doc(firestore, 'inaturalist-public-links', '42'), {
+          userId: 'member-1',
+          login: 'cat_watcher',
+          linkedAt: Timestamp.fromDate(new Date('2026-08-06T12:00:00.000Z')),
+        }),
+        setDoc(doc(firestore, 'inaturalist-account-links', 'member-1'), {
+          inaturalistUserId: 42,
+          login: 'cat_watcher',
+        }),
+        setDoc(doc(firestore, 'inaturalist-link-attempts', 'state-hash'), {
+          firebaseUid: 'member-1',
+          attemptId: 'attempt-1',
+          codeVerifier: 'server-secret-verifier',
+          status: 'pending',
+        }),
+      ]);
+    });
+    const member = environment.authenticatedContext('member-1', {
+      email: 'member@gatech.edu',
+    }).firestore();
+    const admin = environment.authenticatedContext('admin-1', {
+      email: 'admin@gatech.edu',
+    }).firestore();
+    const banned = environment.authenticatedContext('banned-1', {
+      email: 'banned@gatech.edu',
+    }).firestore();
+    const anonymous = environment.unauthenticatedContext().firestore();
+
+    await assertSucceeds(
+      getDoc(doc(member, 'inaturalist-public-links', '42')),
+    );
+    await assertSucceeds(
+      getDocs(
+        query(
+          collection(member, 'inaturalist-public-links'),
+          where('userId', '==', 'member-1'),
+        ),
+      ),
+    );
+    await assertFails(
+      getDoc(doc(banned, 'inaturalist-public-links', '42')),
+    );
+    await assertFails(
+      getDoc(doc(anonymous, 'inaturalist-public-links', '42')),
+    );
+    for (const firestore of [member, admin]) {
+      await assertFails(
+        getDoc(doc(firestore, 'inaturalist-account-links', 'member-1')),
+      );
+      await assertFails(
+        getDoc(doc(firestore, 'inaturalist-link-attempts', 'state-hash')),
+      );
+      await assertFails(
+        updateDoc(doc(firestore, 'inaturalist-public-links', '42'), {
+          userId: 'member-2',
+        }),
+      );
+      await assertFails(
+        setDoc(doc(firestore, 'inaturalist-account-links', 'member-2'), {
+          inaturalistUserId: 42,
+        }),
+      );
+    }
   });
 
   it('protects officer events and separates anonymous survey answers from submission receipts', async () => {
@@ -775,6 +898,168 @@ describe('Firebase authorization matrix', () => {
     );
   });
 
+  it('protects contest creation, presidential elections, and private participation records', async () => {
+    const member = environment.authenticatedContext('member-1', {
+      email: 'member@gatech.edu',
+    }).firestore();
+    const other = environment.authenticatedContext('member-2', {
+      email: 'other@gatech.edu',
+    }).firestore();
+    const officer = environment.authenticatedContext('admin-1', {
+      email: 'admin@gatech.edu',
+    }).firestore();
+    const president = environment.authenticatedContext('president-1', {
+      email: 'president@gatech.edu',
+    }).firestore();
+    const developer = environment.authenticatedContext('developer-1', {
+      email: 'developer@gatech.edu',
+    }).firestore();
+    const createdAt = Timestamp.fromDate(new Date('2026-08-06T12:00:00.000Z'));
+    const votingEndsAt = Timestamp.fromDate(new Date('2026-08-13T12:00:00.000Z'));
+    const contest = {
+      kind: 'contest',
+      title: 'Choose our logo',
+      details: 'Pick one design.',
+      options: [
+        { id: 'option-1', label: 'Calico crest' },
+        { id: 'option-2', label: 'Midnight mark' },
+      ],
+      createdAt,
+      createdBy: { id: 'admin-1', email: 'admin@gatech.edu', role: 1 },
+      votingStartsAt: createdAt,
+      votingEndsAt,
+    };
+
+    await assertFails(setDoc(doc(member, 'community-votes', 'contest'), contest));
+    await assertSucceeds(setDoc(doc(officer, 'community-votes', 'contest'), contest));
+    await assertSucceeds(getDoc(doc(member, 'community-votes', 'contest')));
+
+    const nominationEndsAt = Timestamp.fromDate(
+      new Date('2026-08-20T12:00:00.000Z'),
+    );
+    const election = {
+      kind: 'presidential_election',
+      title: 'Club president election',
+      details: 'Nominate yourself, then vote.',
+      options: [],
+      createdAt,
+      createdBy: {
+        id: 'president-1',
+        email: 'president@gatech.edu',
+        role: 3,
+      },
+      nominationEndsAt,
+      votingStartsAt: nominationEndsAt,
+      votingEndsAt: Timestamp.fromDate(new Date('2026-08-27T12:00:00.000Z')),
+    };
+    await assertFails(
+      setDoc(doc(officer, 'community-votes', 'officer-election'), election),
+    );
+    await assertFails(
+      setDoc(doc(developer, 'community-votes', 'developer-election'), election),
+    );
+    await assertSucceeds(
+      setDoc(doc(president, 'community-votes', 'election'), election),
+    );
+    await assertFails(
+      updateDoc(doc(president, 'community-votes', 'election'), {
+        votingNotificationSentAt: createdAt,
+      }),
+    );
+
+    for (const collectionName of [
+      'community-vote-nominees',
+      'community-vote-nomination-receipts',
+      'community-vote-ballots',
+      'community-vote-ballot-receipts',
+    ]) {
+      await assertFails(
+        setDoc(doc(member, collectionName, `member-write-${collectionName}`), {
+          voteId: 'election',
+        }),
+      );
+    }
+
+    await environment.withSecurityRulesDisabled(async (context) => {
+      const firestore = context.firestore();
+      await Promise.all([
+        setDoc(
+          doc(firestore, 'community-vote-nominees', 'election__member-1'),
+          {
+            voteId: 'election',
+            userId: 'member-1',
+            displayName: 'Member One',
+            nominatedAt: createdAt,
+          },
+        ),
+        setDoc(
+          doc(
+            firestore,
+            'community-vote-nomination-receipts',
+            'member-1__election',
+          ),
+          {
+            voteId: 'election',
+            userId: 'member-1',
+            action: 'nominate',
+            submittedAt: createdAt,
+          },
+        ),
+        setDoc(doc(firestore, 'community-vote-ballots', 'ballot-1'), {
+          voteId: 'election',
+          optionId: 'member-1',
+          submittedAt: votingEndsAt,
+        }),
+        setDoc(
+          doc(
+            firestore,
+            'community-vote-ballot-receipts',
+            'member-1__election',
+          ),
+          {
+            voteId: 'election',
+            userId: 'member-1',
+            ballotId: 'ballot-1',
+            submittedAt: votingEndsAt,
+          },
+        ),
+      ]);
+    });
+    await assertSucceeds(
+      getDoc(doc(member, 'community-vote-nominees', 'election__member-1')),
+    );
+    await assertSucceeds(
+      getDoc(
+        doc(
+          member,
+          'community-vote-nomination-receipts',
+          'member-1__election',
+        ),
+      ),
+    );
+    await assertSucceeds(
+      getDoc(
+        doc(
+          member,
+          'community-vote-ballot-receipts',
+          'member-1__election',
+        ),
+      ),
+    );
+    await assertFails(
+      getDoc(
+        doc(
+          other,
+          'community-vote-ballot-receipts',
+          'member-1__election',
+        ),
+      ),
+    );
+    await assertFails(
+      getDoc(doc(member, 'community-vote-ballots', 'ballot-1')),
+    );
+  });
+
   it('enforces admin media management and sighting media ownership', async () => {
     const memberStorage = environment.authenticatedContext('member-1', {
       email: 'member@gatech.edu',
@@ -851,6 +1136,43 @@ describe('Firebase authorization matrix', () => {
     await assertFails(
       uploadBytes(
         ref(adminStorage, 'community-events/event-1/not-an-image.txt'),
+        new Blob(['not image'], { type: 'text/plain' }),
+      ),
+    );
+  });
+
+  it('lets officers upload image-backed contest options while members can only read them', async () => {
+    const memberStorage = environment.authenticatedContext('member-1', {
+      email: 'member@gatech.edu',
+    }).storage();
+    const officerStorage = environment.authenticatedContext('admin-1', {
+      email: 'admin@gatech.edu',
+    }).storage();
+    const image = ref(
+      officerStorage,
+      'community-votes/contest-1/option-1.jpg',
+    );
+
+    await assertFails(
+      uploadBytes(
+        ref(memberStorage, 'community-votes/contest-1/member.jpg'),
+        new Blob([new Uint8Array([1])], { type: 'image/jpeg' }),
+      ),
+    );
+    await assertSucceeds(
+      uploadBytes(
+        image,
+        new Blob([new Uint8Array([1])], { type: 'image/jpeg' }),
+      ),
+    );
+    await assertSucceeds(
+      getMetadata(
+        ref(memberStorage, 'community-votes/contest-1/option-1.jpg'),
+      ),
+    );
+    await assertFails(
+      uploadBytes(
+        ref(officerStorage, 'community-votes/contest-1/not-image.txt'),
         new Blob(['not image'], { type: 'text/plain' }),
       ),
     );

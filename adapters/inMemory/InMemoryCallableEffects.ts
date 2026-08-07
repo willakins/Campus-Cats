@@ -3,7 +3,10 @@ import {
   ApplicationEffects,
   WhitelistCredentials,
 } from '../../core/ports';
-import { AchievementId } from '../../core/domain';
+import {
+  AchievementId,
+  InaturalistAccountLinkStatus,
+} from '../../core/domain';
 
 type Operation =
   | 'notifyAnnouncement'
@@ -18,13 +21,19 @@ type Operation =
   | 'syncPublicProfile'
   | 'updatePublicProfile'
   | 'selectProfileTitle'
-  | 'migrateContributorPrivacy';
+  | 'migrateContributorPrivacy'
+  | 'beginInaturalistAccountLink'
+  | 'getInaturalistAccountLinkStatus'
+  | 'unlinkInaturalistAccount';
 
 export class InMemoryCallableEffects implements ApplicationEffects {
   readonly operations: string[] = [];
   readonly notifications: AnnouncementNotification[] = [];
   readonly #userIds: string[];
   readonly #failures = new Map<Operation, Error>();
+  inaturalistLinkStatus: InaturalistAccountLinkStatus = {
+    status: 'unlinked',
+  };
 
   constructor(userIds: readonly string[] = []) {
     this.#userIds = [...userIds];
@@ -113,6 +122,29 @@ export class InMemoryCallableEffects implements ApplicationEffects {
   async migrateContributorPrivacy(): Promise<void> {
     this.maybeFail('migrateContributorPrivacy');
     this.operations.push('migrate-contributor-privacy');
+  }
+
+  async beginInaturalistAccountLink() {
+    this.maybeFail('beginInaturalistAccountLink');
+    this.operations.push('begin-inaturalist-account-link');
+    return {
+      authorizationUrl: 'https://www.inaturalist.org/oauth/authorize',
+      attemptId: 'attempt-1',
+    };
+  }
+
+  async getInaturalistAccountLinkStatus(attemptId?: string) {
+    this.maybeFail('getInaturalistAccountLinkStatus');
+    this.operations.push(
+      `inaturalist-account-link-status:${attemptId ?? 'current'}`,
+    );
+    return this.inaturalistLinkStatus;
+  }
+
+  async unlinkInaturalistAccount(): Promise<void> {
+    this.maybeFail('unlinkInaturalistAccount');
+    this.operations.push('unlink-inaturalist-account');
+    this.inaturalistLinkStatus = { status: 'unlinked' };
   }
 
   private maybeFail(operation: Operation): void {

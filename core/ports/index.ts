@@ -9,3 +9,4 @@ export * from './session';
 export * from './surveys';
 export * from './whitelist';
 export * from './appSettings';
+export * from './communityVoting';

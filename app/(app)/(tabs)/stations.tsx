@@ -12,6 +12,7 @@ import {
   EmptyState,
   ErrorState,
   FloatingActionButton,
+  IconButton,
   Screen,
   SearchField,
   SegmentedControl,
@@ -33,6 +34,7 @@ const Stations = () => {
   const [stations, setStations] = useState<readonly Station[]>([]);
   const [filter, setFilter] = useState<StationFilter>('All');
   const [query, setQuery] = useState('');
+  const [showOfficerExplanation, setShowOfficerExplanation] = useState(false);
   const [loading, setLoading] = useState(isAdmin);
   const [error, setError] = useState<string>();
 
@@ -83,12 +85,28 @@ const Stations = () => {
         />
       )}
     >
-      <AppHeader title="Feeding stations" eyebrow="Officer operations" />
+      <AppHeader
+        title="Feeding stations"
+        eyebrow="Officer operations"
+        action={
+          !showOfficerExplanation ? (
+            <IconButton
+              icon="shield-checkmark-outline"
+              accessibilityLabel="Explain officer-only access"
+              onPress={() => setShowOfficerExplanation(true)}
+            />
+          ) : undefined
+        }
+      />
       <View style={{ gap: theme.spacing.md, flex: 1 }}>
-        <AccessBanner
-          title="Officer-only area"
-          message="Only officers can view, create, or update station locations and stocking details."
-        />
+        {showOfficerExplanation ? (
+          <AccessBanner
+            title="Officer-only page"
+            message="This page is only visible to officers of the club. Officers can view, create, and update station locations and stocking details."
+            dismissLabel="Hide officer-only explanation"
+            onDismiss={() => setShowOfficerExplanation(false)}
+          />
+        ) : null}
         <SearchField
           accessibilityLabel="Search feeding stations"
           placeholder="Search stations or known cats"
