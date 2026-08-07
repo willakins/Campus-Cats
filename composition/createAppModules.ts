@@ -5,6 +5,7 @@ import {
   BillingProviderPresentation,
   BillingReader,
   CommunityVotingGateway,
+  ClubBillingPort,
   DocumentStore,
   ImageSelectionPort,
   InaturalistEffects,
@@ -21,6 +22,7 @@ import {
   ContentContributors,
 } from '../features/appSettings';
 import { BillingModule } from '../features/billing';
+import { ClubBillingModule } from '../features/clubBilling';
 import { CatalogModule } from '../features/catalog';
 import { CatalogTagsModule } from '../features/catalogTags';
 import { ContactsModule } from '../features/contacts';
@@ -45,6 +47,7 @@ export interface AppBackend {
     readonly reader: BillingReader;
     readonly presentation: BillingProviderPresentation;
   };
+  readonly clubBilling: ClubBillingPort;
   readonly inaturalist: {
     readonly reader: InaturalistReader;
     readonly effects: InaturalistEffects;
@@ -69,6 +72,7 @@ export interface AppModules {
   readonly announcements: AnnouncementsModule;
   readonly appSettings: AppSettingsModule;
   readonly billing: BillingModule;
+  readonly clubBilling: ClubBillingModule;
   readonly catalog: CatalogModule;
   readonly catalogTags: CatalogTagsModule;
   readonly contacts: ContactsModule;
@@ -91,6 +95,7 @@ export function createAppModules(
 ): AppModules {
   const {
     billing,
+    clubBilling,
     clock,
     codecs,
     documents,
@@ -130,6 +135,7 @@ export function createAppModules(
     }),
     appSettings,
     billing: new BillingModule(billing),
+    clubBilling: new ClubBillingModule(clubBilling),
     catalog: new CatalogModule({
       documents,
       media,

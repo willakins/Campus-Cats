@@ -7,6 +7,13 @@ export class BannedAccountError extends Error {
   }
 }
 
+export class UnprovisionedAccountError extends Error {
+  constructor() {
+    super('This account has not been invited to a club.');
+    this.name = 'UnprovisionedAccountError';
+  }
+}
+
 export type ExternalSignInResult =
   | { readonly status: 'authenticated'; readonly user: User }
   | { readonly status: 'cancelled' };

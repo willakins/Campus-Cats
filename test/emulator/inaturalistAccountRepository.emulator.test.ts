@@ -26,6 +26,7 @@ describe('Firebase iNaturalist account-link transactions', () => {
   ) {
     await repository.createAttempt(stateHash, {
       firebaseUid,
+      clubId: 'campus-cats',
       attemptId,
       codeVerifier: `verifier-${attemptId}`,
       createdAt: now,
@@ -59,15 +60,15 @@ describe('Firebase iNaturalist account-link transactions', () => {
       { inaturalistUserId: 43, login: 'new_account' },
       now,
     );
-    expect(await firestore.collection('inaturalist-public-links').doc('42').get())
+    expect(await firestore.collection('clubs').doc('campus-cats').collection('inaturalist-public-links').doc('42').get())
       .toMatchObject({ exists: false });
     expect(
-      (await firestore.collection('inaturalist-public-links').doc('43').get()).data(),
+      (await firestore.collection('clubs').doc('campus-cats').collection('inaturalist-public-links').doc('43').get()).data(),
     ).toMatchObject({ userId: 'member-1', login: 'new_account' });
 
     await repository.unlink('member-1');
     expect(await repository.getLink('member-1')).toBeUndefined();
-    expect(await firestore.collection('inaturalist-public-links').doc('43').get())
+    expect(await firestore.collection('clubs').doc('campus-cats').collection('inaturalist-public-links').doc('43').get())
       .toMatchObject({ exists: false });
     await expect(repository.unlink('member-1')).resolves.toBeUndefined();
   });

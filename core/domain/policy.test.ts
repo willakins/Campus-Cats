@@ -116,14 +116,10 @@ describe('authorization policy', () => {
     },
   );
 
-  it.each([
-    [Role.Member, false],
-    [Role.Officer, false],
-    [Role.VicePresident, false],
-    [Role.President, false],
-    [Role.Developer, true],
-  ])('limits Cloud Console links for role %s', (role, allowed) => {
-    expect(canAccessCloudConsoles(role)).toBe(allowed);
+  it('uses the independent platform-admin flag for Cloud Console links', () => {
+    expect(canAccessCloudConsoles({ platformAdmin: true })).toBe(true);
+    expect(canAccessCloudConsoles({ platformAdmin: false })).toBe(false);
+    expect(canAccessCloudConsoles({})).toBe(false);
   });
 
   it.each([

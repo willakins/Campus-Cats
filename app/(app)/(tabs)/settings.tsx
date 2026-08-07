@@ -421,22 +421,33 @@ const Settings = () => {
               icon="leaf-outline"
               onPress={() => router.push('/settings/inaturalist')}
             />
-            <ListRow
-              title="App Billing"
-              subtitle={appModules.billing.presentation.settingsSubtitle}
-              icon="card-outline"
-              onPress={() => router.push('/settings/billing')}
-            />
           </FormSection>
         ) : null}
 
         {canManageAppSettings(actor.role) ? (
           <FormSection title="President tools">
             <ListRow
+              title="Club Billing"
+              subtitle="Manage invoices, payment method, and subscription"
+              icon="card-outline"
+              onPress={() => router.push('/settings/club-billing' as never)}
+            />
+            <ListRow
               title="App Settings"
               subtitle="Change branding and contributor privacy"
               icon="color-palette-outline"
               onPress={() => router.push('/settings/app-settings' as never)}
+            />
+          </FormSection>
+        ) : null}
+
+        {actor.platformAdmin ? (
+          <FormSection title="Platform administration">
+            <ListRow
+              title="Infrastructure Costs"
+              subtitle={appModules.billing.presentation.settingsSubtitle}
+              icon="cloud-outline"
+              onPress={() => router.push('/settings/billing')}
             />
           </FormSection>
         ) : null}

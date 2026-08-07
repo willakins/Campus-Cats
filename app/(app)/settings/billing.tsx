@@ -18,11 +18,7 @@ import {
   StatusPill,
 } from '@/components/design';
 import { appModules } from '@/composition/appModules';
-import {
-  canAccessCloudConsoles,
-  canManageFeature,
-  parseUser,
-} from '@/core/domain';
+import { parseUser } from '@/core/domain';
 import {
   BillingProviderPresentation,
   BillingSummary,
@@ -36,8 +32,8 @@ const Billing = () => {
   const { user } = useAuth();
   const actor = parseUser(user);
   const theme = useAppTheme();
-  const authorized = canManageFeature(actor.role);
-  const canOpenCloudConsoles = canAccessCloudConsoles(actor.role);
+  const authorized = actor.platformAdmin;
+  const canOpenCloudConsoles = actor.platformAdmin;
   const presentation = appModules.billing.presentation;
   const [summary, setSummary] = useState<BillingSummary>();
   const [loading, setLoading] = useState(authorized);
@@ -65,12 +61,12 @@ const Billing = () => {
   return (
     <Screen scroll>
       <AppHeader
-        title="App billing"
-        eyebrow="Officer tools"
+        title="Infrastructure costs"
+        eyebrow="Platform administration"
         onBack={() => router.back()}
       />
       {!authorized ? (
-        <AccessDeniedState message="Only officers may view app billing." />
+        <AccessDeniedState message="Only platform administrators may view infrastructure costs." />
       ) : loading ? (
         <CardListSkeleton label="Loading app billing" layout="actions" />
       ) : error ? (

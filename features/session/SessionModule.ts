@@ -5,6 +5,7 @@ import {
   BannedAccountError,
   ExternalSignInResult,
   SessionPort,
+  UnprovisionedAccountError,
 } from '../../core/ports';
 
 interface SessionDependencies {
@@ -40,7 +41,10 @@ export class SessionModule {
     try {
       return success(await this.dependencies.session.signInWithEmail(email, password));
     } catch (error) {
-      if (error instanceof BannedAccountError) {
+      if (
+        error instanceof BannedAccountError ||
+        error instanceof UnprovisionedAccountError
+      ) {
         return failure('forbidden', error.message);
       }
       return failure('authentication_failed', 'Email sign-in failed');
@@ -78,7 +82,10 @@ export class SessionModule {
     try {
       return success(await this.dependencies.session.signInWithSaml());
     } catch (error) {
-      if (error instanceof BannedAccountError) {
+      if (
+        error instanceof BannedAccountError ||
+        error instanceof UnprovisionedAccountError
+      ) {
         return failure('forbidden', error.message);
       }
       return failure('dependency_failure', 'SSO sign-in could not be completed');

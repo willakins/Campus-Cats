@@ -45,8 +45,10 @@ export function isPowerRole(role: Role): boolean {
   return classifyRole(role) === RoleClassification.Power;
 }
 
-export function canAccessCloudConsoles(role: Role): boolean {
-  return role === Role.Developer;
+export function canAccessCloudConsoles(actor: {
+  readonly platformAdmin?: boolean;
+}): boolean {
+  return actor.platformAdmin === true;
 }
 
 export function canManageAppSettings(role: Role): boolean {

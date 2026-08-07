@@ -8,6 +8,7 @@ import { Role } from '../../core/domain';
 import { AppThemeProvider } from '../../theme';
 
 let mockRole: Role = Role.Member;
+let mockPlatformAdmin = false;
 const mockBack = jest.fn();
 const mockSummary = jest.fn();
 
@@ -22,7 +23,13 @@ jest.mock('expo-router', () => {
 
 jest.mock('../../providers', () => ({
   useAuth: () => ({
-    user: { id: 'actor-1', email: 'officer@gatech.edu', role: mockRole },
+    user: {
+      id: 'actor-1',
+      email: 'officer@gatech.edu',
+      role: mockRole,
+      clubId: 'campus-cats',
+      platformAdmin: mockPlatformAdmin,
+    },
   }),
 }));
 
@@ -75,10 +82,11 @@ const renderBilling = async () =>
     </AppThemeProvider>,
   );
 
-describe('billing officer route', () => {
+describe('infrastructure billing route', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     mockRole = Role.Member;
+    mockPlatformAdmin = false;
     mockSummary.mockResolvedValue({
       ok: true,
       warnings: [],
@@ -113,18 +121,18 @@ describe('billing officer route', () => {
   });
 
   it('keeps the billing header visible while monthly costs load', async () => {
-    mockRole = Role.Officer;
+    mockPlatformAdmin = true;
     mockSummary.mockImplementation(() => new Promise(() => undefined));
     await renderBilling();
 
-    expect(screen.getByText('App billing')).toBeOnTheScreen();
+    expect(screen.getByText('Infrastructure costs')).toBeOnTheScreen();
     expect(
       screen.getByRole('progressbar', { name: 'Loading app billing' }),
     ).toBeOnTheScreen();
   });
 
-  it('lists monthly usage, credits, and net cost for officers', async () => {
-    mockRole = Role.Officer;
+  it('lists monthly usage, credits, and net cost for platform administrators', async () => {
+    mockPlatformAdmin = true;
     await renderBilling();
 
     expect(await screen.findByText('August 2026')).toBeOnTheScreen();
@@ -134,22 +142,16 @@ describe('billing officer route', () => {
     expect(screen.getByText('Connected')).toBeOnTheScreen();
   });
 
-  it('hides every Cloud Console link from non-developer officers', async () => {
+  it('denies club officers who are not platform administrators', async () => {
     mockRole = Role.VicePresident;
     await renderBilling();
-    await screen.findByText('Connected');
-
-    expect(screen.queryByText('Cloud consoles')).not.toBeOnTheScreen();
-    expect(
-      screen.queryByRole('button', { name: 'Open Firebase Console' }),
-    ).not.toBeOnTheScreen();
-    expect(
-      screen.queryByRole('button', { name: 'Open Google Cloud Billing' }),
-    ).not.toBeOnTheScreen();
+    expect(screen.getByText('Access restricted')).toBeOnTheScreen();
+    expect(mockSummary).not.toHaveBeenCalled();
   });
 
-  it('links developers to both project consoles', async () => {
-    mockRole = Role.Developer;
+  it('links platform administrators to both project consoles', async () => {
+    mockRole = Role.Officer;
+    mockPlatformAdmin = true;
     const user = userEvent.setup();
     await renderBilling();
     await screen.findByText('Connected');
@@ -172,7 +174,7 @@ describe('billing officer route', () => {
   });
 
   it('explains how to connect a missing billing export', async () => {
-    mockRole = Role.Officer;
+    mockPlatformAdmin = true;
     mockSummary.mockResolvedValue({
       ok: true,
       warnings: [],
@@ -194,12 +196,12 @@ describe('billing officer route', () => {
       screen.getByText(/campuscats-d7a5e.billing_export/),
     ).toBeOnTheScreen();
     expect(
-      screen.queryByRole('button', { name: 'Set Up Billing Export' }),
-    ).not.toBeOnTheScreen();
+      screen.getByRole('button', { name: 'Set Up Billing Export' }),
+    ).toBeOnTheScreen();
   });
 
-  it('shows the billing export setup link only to developers', async () => {
-    mockRole = Role.Developer;
+  it('shows the billing export setup link to platform administrators', async () => {
+    mockPlatformAdmin = true;
     mockSummary.mockResolvedValue({
       ok: true,
       warnings: [],

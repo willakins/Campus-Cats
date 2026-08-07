@@ -1,14 +1,18 @@
 import { Redirect, Stack } from 'expo-router';
+import { View } from 'react-native';
 
-import { useAuth } from '@/providers';
+import { clubHasAppAccess } from '@/core/domain';
+import { useAuth, useClub } from '@/providers';
 import { LoadingIndicator } from '@/components/ui/LoadingIndicator';
+import { SubscriptionBanner } from '@/components/billing';
 import { useAppTheme } from '@/theme';
 
 const AppLayout = () => {
   const { currentUser, loading } = useAuth();
+  const club = useClub();
   const theme = useAppTheme();
 
-  if (loading) {
+  if (loading || (Boolean(currentUser) && club.loading)) {
     return <LoadingIndicator />;
   }
 
@@ -17,13 +21,20 @@ const AppLayout = () => {
     return <Redirect href="/login" />;
   }
 
+  if (!club.access || !clubHasAppAccess(club.access)) {
+    return <Redirect href={'/subscription-required' as never} />;
+  }
+
   return (
-    <Stack
-      screenOptions={{
-        headerShown: false,
-        contentStyle: { backgroundColor: theme.colors.background },
-      }}
-    />
+    <View style={{ flex: 1 }}>
+      <SubscriptionBanner />
+      <Stack
+        screenOptions={{
+          headerShown: false,
+          contentStyle: { backgroundColor: theme.colors.background },
+        }}
+      />
+    </View>
   );
 };
 
