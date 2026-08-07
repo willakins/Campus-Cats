@@ -40,7 +40,7 @@ existing-data rollout order are documented in the
 before deploying the related Functions, Firestore rules, Storage rules, or client;
 the contributor migration requires a coordinated maintenance window.
 
-Community event media, survey-response privacy, and the release checks for the new
+Community event media, survey-response privacy, community voting, and the release checks for the new
 Firestore collections are documented in the
 [Community engagement guide](docs/community-engagement.md).
 
@@ -75,6 +75,12 @@ npx firebase-tools deploy --only storage
 
 ```bash
 npx firebase-tools deploy --only functions:submitSurveyResponse
+```
+
+## Deploy community voting callables and schedule
+
+```bash
+npx firebase-tools deploy --only functions:submitCommunityNomination,functions:submitCommunityBallot,functions:getCommunityVoteResults,functions:notifyPresidentialVotingStarted
 ```
 
 ## Deploy Firestore indexes

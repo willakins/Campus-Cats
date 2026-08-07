@@ -3,6 +3,7 @@ import { z } from 'zod';
 import {
   announcementIdSchema,
   catalogEntryIdSchema,
+  catalogTagIdSchema,
   contactIdSchema,
   sightingIdSchema,
   stationIdSchema,
@@ -13,6 +14,20 @@ import { roleSchema } from './roles';
 import { achievementIdSchema } from './achievements';
 
 const requiredText = z.string().trim().min(1);
+const optionalHttpUrl = z
+  .union([
+    z.literal(''),
+    z
+      .string()
+      .trim()
+      .url()
+      .max(2048)
+      .refine(
+        (value) => value.startsWith('https://') || value.startsWith('http://'),
+        { message: 'Expected an http or https URL' },
+      ),
+  ])
+  .default('');
 const validDate = z.date().refine((date) => !Number.isNaN(date.getTime()), {
   message: 'Expected a valid date',
 });
@@ -54,7 +69,9 @@ export const publicProfileSchema = z
     selectedTitleId: z.union([z.literal(''), achievementIdSchema]).default(''),
   })
   .superRefine((profile, context) => {
-    if (new Set(profile.achievementIds).size !== profile.achievementIds.length) {
+    if (
+      new Set(profile.achievementIds).size !== profile.achievementIds.length
+    ) {
       context.addIssue({
         code: 'custom',
         path: ['achievementIds'],
@@ -120,6 +137,54 @@ export const catalogFavoriteSchema = z.object({
   createdAt: validDate,
 });
 
+export const catalogTagSchema = z.object({
+  id: catalogTagIdSchema,
+  label: z.string().trim().min(1).max(40),
+});
+
+export const catalogTagSettingsSchema = z
+  .object({
+    tags: z.array(catalogTagSchema).max(50),
+  })
+  .superRefine(({ tags }, context) => {
+    const ids = new Set<string>();
+    const labels = new Set<string>();
+    tags.forEach((tag, index) => {
+      const normalizedLabel = tag.label.toLocaleLowerCase();
+      if (ids.has(tag.id)) {
+        context.addIssue({
+          code: 'custom',
+          path: ['tags', index, 'id'],
+          message: 'Tag IDs must be unique',
+        });
+      }
+      if (labels.has(normalizedLabel)) {
+        context.addIssue({
+          code: 'custom',
+          path: ['tags', index, 'label'],
+          message: 'Tag labels must be unique',
+        });
+      }
+      ids.add(tag.id);
+      labels.add(normalizedLabel);
+    });
+  });
+
+export const catalogTagAssignmentSchema = z
+  .object({
+    catalogId: catalogEntryIdSchema,
+    tagIds: z.array(catalogTagIdSchema).max(50),
+  })
+  .superRefine(({ tagIds }, context) => {
+    if (new Set(tagIds).size !== tagIds.length) {
+      context.addIssue({
+        code: 'custom',
+        path: ['tagIds'],
+        message: 'Assigned tags must be unique',
+      });
+    }
+  });
+
 export const stationSchema = z.object({
   id: stationIdSchema,
   name: requiredText,
@@ -151,6 +216,9 @@ export const contactSchema = z.object({
   id: contactIdSchema,
   name: requiredText,
   email: z.string().trim().email(),
+  instagramUrl: optionalHttpUrl,
+  facebookUrl: optionalHttpUrl,
+  websiteUrl: optionalHttpUrl,
 });
 
 export type Coordinates = Readonly<z.infer<typeof coordinatesSchema>>;
@@ -168,6 +236,13 @@ export type TNRStatus = Cat['tnr'];
 export type Sex = Cat['sex'];
 export type CatalogEntry = Readonly<z.infer<typeof catalogEntrySchema>>;
 export type CatalogFavorite = Readonly<z.infer<typeof catalogFavoriteSchema>>;
+export type CatalogTag = Readonly<z.infer<typeof catalogTagSchema>>;
+export type CatalogTagSettings = Readonly<
+  z.infer<typeof catalogTagSettingsSchema>
+>;
+export type CatalogTagAssignment = Readonly<
+  z.infer<typeof catalogTagAssignmentSchema>
+>;
 export type Station = Readonly<z.infer<typeof stationSchema>>;
 export type Announcement = Readonly<z.infer<typeof announcementSchema>>;
 export type WhitelistApplication = Readonly<
@@ -205,6 +280,13 @@ export const parseCatalogEntry = (value: unknown): CatalogEntry =>
   parseImmutable(catalogEntrySchema, value);
 export const parseCatalogFavorite = (value: unknown): CatalogFavorite =>
   parseImmutable(catalogFavoriteSchema, value);
+export const parseCatalogTag = (value: unknown): CatalogTag =>
+  parseImmutable(catalogTagSchema, value);
+export const parseCatalogTagSettings = (value: unknown): CatalogTagSettings =>
+  parseImmutable(catalogTagSettingsSchema, value);
+export const parseCatalogTagAssignment = (
+  value: unknown,
+): CatalogTagAssignment => parseImmutable(catalogTagAssignmentSchema, value);
 export const parseStation = (value: unknown): Station =>
   parseImmutable(stationSchema, value);
 export const parseAnnouncement = (value: unknown): Announcement =>
@@ -214,3 +296,21 @@ export const parseWhitelistApplication = (
 ): WhitelistApplication => parseImmutable(whitelistApplicationSchema, value);
 export const parseContact = (value: unknown): Contact =>
   parseImmutable(contactSchema, value);
+
+export const DEFAULT_CATALOG_TAGS: readonly CatalogTag[] = deepFreeze(
+  catalogTagSettingsSchema.parse({
+    tags: [
+      { id: 'adopted', label: 'Adopted' },
+      { id: 'feral', label: 'Feral' },
+      { id: 'frat-cat', label: 'Frat Cat' },
+      { id: 'deceased', label: 'Deceased' },
+      { id: 'tnr-complete', label: 'TNR complete' },
+      { id: 'needs-tnr', label: 'Needs TNR' },
+      { id: 'female', label: 'Female' },
+      { id: 'male', label: 'Male' },
+      { id: 'short-hair', label: 'Short hair' },
+      { id: 'medium-hair', label: 'Medium hair' },
+      { id: 'long-hair', label: 'Long hair' },
+    ],
+  }).tags,
+);

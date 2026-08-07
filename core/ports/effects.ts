@@ -1,4 +1,8 @@
 import { AchievementId } from '../domain/achievements';
+import {
+  InaturalistAccountLinkAuthorization,
+  InaturalistAccountLinkStatus,
+} from '../domain/inaturalist';
 
 export interface AnnouncementNotification {
   readonly title: string;
@@ -28,4 +32,9 @@ export interface ApplicationEffects {
   }): Promise<void>;
   selectProfileTitle(achievementId: AchievementId | ''): Promise<void>;
   migrateContributorPrivacy(): Promise<void>;
+  beginInaturalistAccountLink(): Promise<InaturalistAccountLinkAuthorization>;
+  getInaturalistAccountLinkStatus(
+    attemptId?: string,
+  ): Promise<InaturalistAccountLinkStatus>;
+  unlinkInaturalistAccount(): Promise<void>;
 }

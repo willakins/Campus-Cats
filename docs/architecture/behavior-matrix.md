@@ -18,6 +18,10 @@ unless a later decision explicitly changes them.
 | Read open and past surveys                 | Deny            | Allow                        | Allow                 | Allow                 | Allow                 | Allow                  |
 | Submit one response to an open survey      | Deny            | Allow                        | Allow                 | Allow                 | Allow                 | Allow                  |
 | Create/close surveys and inspect responses | Deny            | Deny                         | Allow                 | Allow                 | Allow                 | Allow                  |
+| Read contests/elections and final results  | Deny            | Allow                        | Allow                 | Allow                 | Allow                 | Allow                  |
+| Nominate/abstain and cast one private vote | Deny            | Allow                        | Allow                 | Allow                 | Allow                 | Allow                  |
+| Create a general contest                   | Deny            | Deny                         | Allow                 | Allow                 | Allow                 | Allow                  |
+| Start a presidential election              | Deny            | Deny                         | Deny                  | Deny                  | Allow                 | Deny                   |
 | Manage contacts and whitelist applications | Deny            | Deny                         | Allow                 | Allow                 | Allow                 | Allow                  |
 | Manage members                             | Deny            | Deny                         | Allow, excluding self | Allow, excluding self | Allow, excluding self | Allow, excluding self  |
 | Manage officers                            | Deny            | Deny                         | Deny                  | Allow, excluding self | Allow, excluding self | Allow, excluding self  |
@@ -71,6 +75,10 @@ unless a later decision explicitly changes them.
   atomically creates a random response and a per-account receipt. Anonymous response
   documents omit identity; named responses include the current user snapshot. Receipts
   prevent duplicate submissions and are unreadable by Officer result screens.
+- Community vote definitions are immutable. Nomination and ballot callables re-read
+  the stored phase inside their Firestore transactions, create a per-account receipt,
+  and keep anonymous ballots separate. Presidential voting begins from timestamps,
+  and a scheduled Function broadcasts the second-round opening once.
 
 ## Test seams
 

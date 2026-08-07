@@ -14,6 +14,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 
 import { useAppTheme, useReducedMotion } from '../../theme';
+import { AppLogo } from '../branding';
 import { IconButton } from './Actions';
 import { AppText } from './Typography';
 import { focusRingStyle } from './focus';
@@ -165,6 +166,12 @@ export const AppHeader = ({ title, eyebrow = 'Campus Cats', onBack, action }: Ap
       }}
     >
       {onBack ? <IconButton icon="arrow-back" accessibilityLabel="Go back" onPress={onBack} /> : null}
+      {!onBack ? (
+        <AppLogo
+          accessibilityLabel="Club logo"
+          style={{ width: theme.layout.minTouchTarget, height: theme.layout.minTouchTarget }}
+        />
+      ) : null}
       <View style={{ flex: 1 }}>
         <AppText
           variant="caption"

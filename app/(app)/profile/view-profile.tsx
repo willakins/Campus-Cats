@@ -25,7 +25,7 @@ import {
   ACHIEVEMENTS,
   AchievementId,
   CatalogRecord,
-  LocalSightingRecord,
+  SightingRecord,
   PublicProfile,
   achievementById,
   parseUser,
@@ -42,7 +42,7 @@ const ViewProfileScreen = () => {
   const actor = parseUser(user);
   const isOwnProfile = id === actor.id;
   const [profile, setProfile] = useState<PublicProfile>();
-  const [sightings, setSightings] = useState<readonly LocalSightingRecord[]>([]);
+  const [sightings, setSightings] = useState<readonly SightingRecord[]>([]);
   const [favorite, setFavorite] = useState<CatalogRecord>();
   const [favoritePhoto, setFavoritePhoto] = useState<DisplayMediaAsset>();
   const [loading, setLoading] = useState(true);

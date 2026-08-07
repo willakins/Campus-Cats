@@ -122,6 +122,9 @@ describe('canonical domain models', () => {
         id: 'contact-1',
         name: 'Campus Cats',
         email: 'cats@gatech.edu',
+        instagramUrl: 'https://www.instagram.com/gtcampuscats',
+        facebookUrl: 'https://www.facebook.com/gtcampuscats',
+        websiteUrl: 'https://campuscats.gatech.edu',
       }),
       parseCatalogFavorite({
         userId: 'member-1',
@@ -158,6 +161,28 @@ describe('canonical domain models', () => {
         createdBy: member,
       }),
     ).toThrow();
+    expect(() =>
+      parseContact({
+        id: 'contact-1',
+        name: 'Campus Cats',
+        email: 'cats@gatech.edu',
+        instagramUrl: 'instagram.com/gtcampuscats',
+      }),
+    ).toThrow();
+  });
+
+  it('defaults missing optional contact links for legacy records', () => {
+    expect(
+      parseContact({
+        id: 'contact-1',
+        name: 'Campus Cats',
+        email: 'cats@gatech.edu',
+      }),
+    ).toMatchObject({
+      instagramUrl: '',
+      facebookUrl: '',
+      websiteUrl: '',
+    });
   });
 
   it('parses the developer role as a persisted user role', () => {
@@ -392,10 +417,12 @@ describe('persistence codecs', () => {
   });
 
   it('defaults legacy users to active and decodes disciplinary history', () => {
-    expect(codecs.user.decode('member-1', {
-      email: 'member@gatech.edu',
-      role: Role.Member,
-    })).toMatchObject({ banned: false, disciplinaryNotices: [] });
+    expect(
+      codecs.user.decode('member-1', {
+        email: 'member@gatech.edu',
+        role: Role.Member,
+      }),
+    ).toMatchObject({ banned: false, disciplinaryNotices: [] });
 
     const managed = codecs.user.decode('member-1', {
       email: 'member@gatech.edu',

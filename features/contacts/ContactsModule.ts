@@ -15,6 +15,9 @@ import { DocumentStore } from '../../core/ports';
 export interface ContactDraft {
   readonly name: string;
   readonly email: string;
+  readonly instagramUrl?: string;
+  readonly facebookUrl?: string;
+  readonly websiteUrl?: string;
 }
 
 interface ContactsDependencies {
@@ -32,7 +35,10 @@ export class ContactsModule {
     try {
       documents = await this.dependencies.documents.list(COLLECTIONS.contacts);
     } catch {
-      return failure('dependency_failure', 'Could not load contact information');
+      return failure(
+        'dependency_failure',
+        'Could not load contact information',
+      );
     }
 
     const contacts: Contact[] = [];
@@ -78,7 +84,13 @@ export class ContactsModule {
     if (denied) return denied;
     const existing = await this.get(id);
     if (!existing.ok) return existing;
-    const contact = parseDraft(id, draft);
+    const contact = parseDraft(id, {
+      name: draft.name,
+      email: draft.email,
+      instagramUrl: draft.instagramUrl ?? existing.value.instagramUrl,
+      facebookUrl: draft.facebookUrl ?? existing.value.facebookUrl,
+      websiteUrl: draft.websiteUrl ?? existing.value.websiteUrl,
+    });
     if (!contact.ok) return contact;
     try {
       await this.dependencies.documents.put(
@@ -107,9 +119,14 @@ export class ContactsModule {
 
   private async get(id: string): Promise<Outcome<Contact>> {
     try {
-      const document = await this.dependencies.documents.get(COLLECTIONS.contacts, id);
+      const document = await this.dependencies.documents.get(
+        COLLECTIONS.contacts,
+        id,
+      );
       return document
-        ? success(this.dependencies.codecs.contact.decode(document.id, document.data))
+        ? success(
+            this.dependencies.codecs.contact.decode(document.id, document.data),
+          )
         : failure('not_found', 'Contact not found');
     } catch {
       return failure('dependency_failure', 'Could not load the contact');
@@ -129,6 +146,9 @@ function parseDraft(id: string, draft: ContactDraft): Outcome<Contact> {
   try {
     return success(parseContact({ id, ...draft }));
   } catch {
-    return failure('validation', 'Enter a contact name and valid email address');
+    return failure(
+      'validation',
+      'Enter a contact name, valid email address, and complete http or https links',
+    );
   }
 }

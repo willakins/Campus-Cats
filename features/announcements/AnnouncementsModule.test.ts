@@ -45,6 +45,9 @@ function buildModule(effects?: Partial<ApplicationEffects>) {
     updatePublicProfile: jest.fn(),
     selectProfileTitle: jest.fn(),
     migrateContributorPrivacy: jest.fn(),
+    beginInaturalistAccountLink: jest.fn(),
+    getInaturalistAccountLinkStatus: jest.fn(),
+    unlinkInaturalistAccount: jest.fn(),
     ...effects,
   };
   const ids = new SequenceIdGenerator([

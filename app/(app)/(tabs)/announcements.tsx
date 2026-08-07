@@ -5,7 +5,9 @@ import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 
 import {
   CommunitySection,
+  CommunitySectionGrid,
   CommunitySectionNav,
+  CommunityVoteItem,
   EventItem,
   SurveyItem,
 } from '@/components/community';
@@ -17,6 +19,7 @@ import {
   EmptyState,
   ErrorState,
   FloatingActionButton,
+  IconButton,
   Screen,
   SegmentedControl,
 } from '@/components/design';
@@ -25,19 +28,27 @@ import { appModules } from '@/composition/appModules';
 import {
   Announcement,
   ClubEvent,
+  CommunityVote,
   Survey,
   canManageFeature,
+  communityVotePhase,
   isExpiredEvent,
   parseUser,
 } from '@/core/domain';
 import { useAuth } from '@/providers';
 import { useAppTheme } from '@/theme';
 
-const validSection = (value: string | string[] | undefined): CommunitySection => {
+const validSection = (
+  value: string | string[] | undefined,
+): CommunitySection | undefined => {
   const section = Array.isArray(value) ? value[0] : value;
-  return section === 'events' || section === 'surveys' || section === 'chat'
+  return section === 'announcements' ||
+    section === 'events' ||
+    section === 'surveys' ||
+    section === 'votes' ||
+    section === 'chat'
     ? section
-    : 'announcements';
+    : undefined;
 };
 
 const Community = () => {
@@ -48,24 +59,27 @@ const Community = () => {
   const actor = parseUser(user);
   const theme = useAppTheme();
   const isOfficer = canManageFeature(actor.role);
-  const [section, setSection] = useState<CommunitySection>(() =>
+  const [section, setSection] = useState<CommunitySection | undefined>(() =>
     validSection(requestedSection),
   );
   const [eventFilter, setEventFilter] = useState<'upcoming' | 'past'>('upcoming');
   const [surveyFilter, setSurveyFilter] = useState<'open' | 'closed'>('open');
+  const [voteFilter, setVoteFilter] = useState<'active' | 'closed'>('active');
   const [announcements, setAnnouncements] = useState<readonly Announcement[]>([]);
   const [events, setEvents] = useState<readonly ClubEvent[]>([]);
   const [surveys, setSurveys] = useState<readonly Survey[]>([]);
+  const [votes, setVotes] = useState<readonly CommunityVote[]>([]);
   const [loading, setLoading] = useState(true);
   const [errors, setErrors] = useState<Partial<Record<CommunitySection, string>>>({});
 
   const load = useCallback(async () => {
     setLoading(true);
     setErrors({});
-    const [announcementResult, eventResult, surveyResult] = await Promise.all([
+    const [announcementResult, eventResult, surveyResult, voteResult] = await Promise.all([
       appModules.announcements.list(),
       appModules.events.list(actor),
       appModules.surveys.list(actor),
+      appModules.communityVoting.list(actor),
     ]);
     if (announcementResult.ok) setAnnouncements(announcementResult.value);
     else setErrors((current) => ({ ...current, announcements: announcementResult.error.message }));
@@ -73,6 +87,8 @@ const Community = () => {
     else setErrors((current) => ({ ...current, events: eventResult.error.message }));
     if (surveyResult.ok) setSurveys(surveyResult.value);
     else setErrors((current) => ({ ...current, surveys: surveyResult.error.message }));
+    if (voteResult.ok) setVotes(voteResult.value);
+    else setErrors((current) => ({ ...current, votes: voteResult.error.message }));
     setLoading(false);
   }, [actor.id, actor.role]);
 
@@ -82,7 +98,7 @@ const Community = () => {
     }, [load]),
   );
 
-  const now = useMemo(() => new Date(), [events]);
+  const now = useMemo(() => new Date(), [events, votes]);
   const visibleEvents = useMemo(
     () =>
       isOfficer
@@ -103,19 +119,34 @@ const Community = () => {
       ),
     [surveyFilter, surveys],
   );
+  const visibleVotes = useMemo(
+    () =>
+      votes.filter((vote) =>
+        voteFilter === 'closed'
+          ? communityVotePhase(vote, now) === 'closed'
+          : communityVotePhase(vote, now) !== 'closed',
+      ),
+    [now, voteFilter, votes],
+  );
 
-  const createRoute = {
-    announcements: '/announcements/create-ann',
-    events: '/events/create-event',
-    surveys: '/surveys/create-survey',
-    chat: undefined,
-  }[section];
-  const createLabel = {
-    announcements: 'Create announcement',
-    events: 'Create event',
-    surveys: 'Create survey',
-    chat: '',
-  }[section];
+  const createRoute = section
+    ? {
+        announcements: '/announcements/create-ann',
+        events: '/events/create-event',
+        surveys: '/surveys/create-survey',
+        votes: '/votes/create-vote',
+        chat: undefined,
+      }[section]
+    : undefined;
+  const createLabel = section
+    ? {
+        announcements: 'Create announcement',
+        events: 'Create event',
+        surveys: 'Create survey',
+        votes: 'Create vote',
+        chat: '',
+      }[section]
+    : '';
 
   const list = (() => {
     if (section === 'announcements') {
@@ -178,12 +209,34 @@ const Community = () => {
         />
       );
     }
-    return (
+    if (section === 'votes') {
+      return (
+        <FlatList
+          {...virtualizedListPerformanceProps}
+          data={errors.votes ? [] : visibleVotes}
+          keyExtractor={(vote) => vote.id}
+          contentContainerStyle={{ flexGrow: 1, gap: theme.spacing.md, paddingBottom: theme.spacing.huge * 2 }}
+          renderItem={({ item }) => <CommunityVoteItem vote={item} now={now} />}
+          ListEmptyComponent={
+            errors.votes ? (
+              <ErrorState title="Votes are unavailable" message={errors.votes} onRetry={() => void load()} />
+            ) : (
+              <EmptyState
+                title={voteFilter === 'closed' ? 'No completed votes' : 'No active votes'}
+                message={voteFilter === 'closed' ? 'Completed contest and election results will remain here.' : 'New contests and club elections will appear here.'}
+              />
+            )
+          }
+        />
+      );
+    }
+    if (section === 'chat') return (
       <EmptyState
         title="Chat is coming soon"
         message="This space is reserved for future Campus Cats conversations."
       />
     );
+    return null;
   })();
 
   return (
@@ -191,13 +244,27 @@ const Community = () => {
       floatingAction={isOfficer && createRoute ? (
         <FloatingActionButton
           accessibilityLabel={createLabel}
-          accessibilityHint={`Opens the new ${section.slice(0, -1)} form`}
+          accessibilityHint="Opens the form for a new Community item"
           onPress={() => router.push(createRoute as never)}
         />
       ) : undefined}
     >
-      <AppHeader title="Community" eyebrow="Connect with Campus Cats" />
-      <CommunitySectionNav value={section} onChange={setSection} />
+      <AppHeader
+        title="Community"
+        eyebrow="Connect with Campus Cats"
+        action={section ? (
+          <IconButton
+            icon="grid-outline"
+            accessibilityLabel="Show Community menu"
+            onPress={() => setSection(undefined)}
+          />
+        ) : undefined}
+      />
+      {section ? (
+        <CommunitySectionNav value={section} onChange={setSection} />
+      ) : (
+        <CommunitySectionGrid onChange={setSection} />
+      )}
       {section === 'announcements' ? (
         <View style={{ paddingBottom: theme.spacing.md }}>
           <AccessBanner title="Announcement access" message="Everyone can read club updates. Only officers can publish or edit announcements." />
@@ -221,10 +288,23 @@ const Community = () => {
             onChange={setSurveyFilter}
           />
         </View>
+      ) : section === 'votes' ? (
+        <View style={{ gap: theme.spacing.sm, paddingBottom: theme.spacing.md }}>
+          <AccessBanner
+            title="One member, one vote"
+            message="Every active member gets one private ballot. Officers can create contests; only the President can start a presidential election."
+          />
+          <SegmentedControl
+            label="Vote status"
+            value={voteFilter}
+            options={[{ value: 'active', label: 'Active' }, { value: 'closed', label: 'Results' }]}
+            onChange={setVoteFilter}
+          />
+        </View>
       ) : null}
-      {loading && section !== 'chat' ? (
+      {section && loading && section !== 'chat' ? (
         <CardListSkeleton label={`Loading ${section}`} />
-      ) : list}
+      ) : section ? list : null}
     </Screen>
   );
 };

@@ -30,6 +30,10 @@ jest.mock('../../composition/appModules', () => ({
       get: (...args: unknown[]) => mockPending(...args),
       media: (...args: unknown[]) => mockPending(...args),
     },
+    catalogTags: {
+      list: (...args: unknown[]) => mockPending(...args),
+      assignments: (...args: unknown[]) => mockPending(...args),
+    },
     inaturalist: { updateCatalog: jest.fn(), setVisibility: jest.fn() },
     sightings: {
       get: (...args: unknown[]) => mockPending(...args),

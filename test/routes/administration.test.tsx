@@ -1,4 +1,5 @@
 import React from 'react';
+import { Linking } from 'react-native';
 
 import {
   fireEvent,
@@ -100,6 +101,9 @@ const contact = parseContact({
   id: 'contact-1',
   name: 'Campus Cats Officers',
   email: 'cats@gatech.edu',
+  instagramUrl: 'https://www.instagram.com/gtcampuscats',
+  facebookUrl: 'https://www.facebook.com/gtcampuscats',
+  websiteUrl: 'https://campuscats.gatech.edu',
 });
 const member = parseManagedUser({
   id: 'member-1',
@@ -231,6 +235,7 @@ describe('settings and administration routes', () => {
       ],
       warnings: [],
     });
+    jest.spyOn(Linking, 'openURL').mockResolvedValue(undefined);
   });
 
   it('organizes More for members and signs out from an explicit account action', async () => {
@@ -240,6 +245,21 @@ describe('settings and administration routes', () => {
     expect(screen.getByText('Account')).toBeOnTheScreen();
     expect(screen.getByText('Club contacts')).toBeOnTheScreen();
     expect(await screen.findByText('Campus Cats Officers')).toBeOnTheScreen();
+    await user.press(screen.getByRole('button', { name: 'Instagram' }));
+    await user.press(screen.getByRole('button', { name: 'Facebook' }));
+    await user.press(screen.getByRole('button', { name: 'Website' }));
+    expect(Linking.openURL).toHaveBeenNthCalledWith(
+      1,
+      'https://www.instagram.com/gtcampuscats',
+    );
+    expect(Linking.openURL).toHaveBeenNthCalledWith(
+      2,
+      'https://www.facebook.com/gtcampuscats',
+    );
+    expect(Linking.openURL).toHaveBeenNthCalledWith(
+      3,
+      'https://campuscats.gatech.edu',
+    );
     expect(screen.getByText('Officer-only tools')).toBeOnTheScreen();
     expect(
       screen.getByText(
@@ -269,14 +289,16 @@ describe('settings and administration routes', () => {
     await renderThemed(<Settings />);
 
     expect(screen.getByText('Officer tools')).toBeOnTheScreen();
+    await user.press(screen.getByRole('button', { name: 'Manage Catalog Tags' }));
     await user.press(screen.getByRole('button', { name: 'Manage Users' }));
     await user.press(screen.getByRole('button', { name: 'Manage Whitelist' }));
     await user.press(screen.getByRole('button', { name: 'iNaturalist Sync' }));
     await user.press(screen.getByRole('button', { name: 'App Billing' }));
-    expect(mockPush).toHaveBeenNthCalledWith(1, '/settings/manage_users');
-    expect(mockPush).toHaveBeenNthCalledWith(2, '/settings/manage_whitelist');
-    expect(mockPush).toHaveBeenNthCalledWith(3, '/settings/inaturalist');
-    expect(mockPush).toHaveBeenNthCalledWith(4, '/settings/billing');
+    expect(mockPush).toHaveBeenNthCalledWith(1, '/settings/catalog-tags');
+    expect(mockPush).toHaveBeenNthCalledWith(2, '/settings/manage_users');
+    expect(mockPush).toHaveBeenNthCalledWith(3, '/settings/manage_whitelist');
+    expect(mockPush).toHaveBeenNthCalledWith(4, '/settings/inaturalist');
+    expect(mockPush).toHaveBeenNthCalledWith(5, '/settings/billing');
   });
 
   it('shows app settings only to the President', async () => {
@@ -304,13 +326,23 @@ describe('settings and administration routes', () => {
       screen.getByLabelText('Contact name'),
       'Campus Cats Leadership',
     );
+    await fireEvent.changeText(
+      screen.getByLabelText('Instagram link'),
+      'https://www.instagram.com/campuscatsgt',
+    );
     await user.press(screen.getByRole('button', { name: 'Save Contacts' }));
 
     await waitFor(() =>
       expect(mockUpdateContact).toHaveBeenCalledWith(
         expect.objectContaining({ id: 'actor-1' }),
         'contact-1',
-        { name: 'Campus Cats Leadership', email: 'cats@gatech.edu' },
+        {
+          name: 'Campus Cats Leadership',
+          email: 'cats@gatech.edu',
+          instagramUrl: 'https://www.instagram.com/campuscatsgt',
+          facebookUrl: 'https://www.facebook.com/gtcampuscats',
+          websiteUrl: 'https://campuscats.gatech.edu',
+        },
       ),
     );
   });
@@ -362,6 +394,9 @@ describe('settings and administration routes', () => {
         {
           name: createdContact.name,
           email: createdContact.email,
+          instagramUrl: '',
+          facebookUrl: '',
+          websiteUrl: '',
         },
       ),
     );

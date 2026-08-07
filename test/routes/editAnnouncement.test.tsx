@@ -133,7 +133,10 @@ describe('edit announcement route', () => {
     await act(async () => destructive?.onPress?.());
 
     await waitFor(() => expect(mockRemove).toHaveBeenCalled());
-    expect(mockReplace).toHaveBeenCalledWith('/announcements');
+    expect(mockReplace).toHaveBeenCalledWith({
+      pathname: '/announcements',
+      params: { section: 'announcements' },
+    });
   });
 
   it('presents load and mutation errors without navigating', async () => {

@@ -1,10 +1,12 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 import { useRouter } from 'expo-router';
 
+import { AccessBanner } from '@/components/design';
 import { FormScreen } from '@/components/forms';
 import { appModules } from '@/composition/appModules';
-import { Cat, CatStatus, Fur, parseUser, Sex, TNRStatus } from '@/core/domain';
+import { CatalogTag, Cat, CatStatus, Fur, parseUser, Sex, TNRStatus } from '@/core/domain';
+import { defaultCatalogTagIdsForCat } from '@/features/catalog/catalogDiscovery';
 import { CatalogForm, CatalogFormData } from '@/forms/CatalogForm';
 import { useAuth } from '@/providers/AuthProvider';
 import { PickerConfig } from '@/types';
@@ -20,6 +22,9 @@ const CreateEntry = () => {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string>();
   const [photos, setPhotos] = useState<string[]>([]);
+  const [availableTags, setAvailableTags] = useState<readonly CatalogTag[]>([]);
+  const [tagsReady, setTagsReady] = useState(false);
+  const [selectedTagIds, setSelectedTagIds] = useState<readonly string[]>();
   const [statusValue, setStatusValue] = useState<CatStatus>('Unknown');
   const [statusOpen, setStatusOpen] = useState(false);
   const [statusOptions, setStatusOptions] = useState(statusItems);
@@ -56,14 +61,32 @@ const CreateEntry = () => {
     tnr: tnrValue,
     sex: sexValue,
   });
+  const resolvedTagIds = (
+    selectedTagIds ?? defaultCatalogTagIdsForCat(cat())
+  ).filter((id) => availableTags.some((tag) => tag.id === id));
+
+  useEffect(() => {
+    void appModules.catalogTags.list(parseUser(user)).then((result) => {
+      if (result.ok) {
+        setAvailableTags(result.value);
+        setTagsReady(true);
+      } else setError(result.error.message);
+    });
+  }, [user.id, user.role]);
+
   const createEntry = async () => {
     if (busy) return;
+    if (!tagsReady) {
+      setError('Catalog tags are still loading. Please try again.');
+      return;
+    }
     setBusy(true);
     setError(undefined);
     const result = await appModules.catalog.create(parseUser(user), {
       cat: cat(),
       credits: formData.credits,
       photos,
+      tagIds: resolvedTagIds,
     });
     setBusy(false);
     if (!result.ok) {
@@ -84,6 +107,10 @@ const CreateEntry = () => {
       onBack={() => router.back()}
       onSave={() => void createEntry()}
     >
+      <AccessBanner
+        title="Catalog access"
+        message="Everyone can browse cat profiles. Only officers can create or edit catalog entries."
+      />
       <CatalogForm
         formData={formData}
         setFormData={setFormData}
@@ -91,6 +118,9 @@ const CreateEntry = () => {
         photos={photos}
         setPhotos={setPhotos}
         isCreate
+        availableTags={availableTags}
+        selectedTagIds={resolvedTagIds}
+        onSelectedTagIdsChange={setSelectedTagIds}
       />
     </FormScreen>
   );

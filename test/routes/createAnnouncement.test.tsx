@@ -68,7 +68,10 @@ describe('create announcement route', () => {
     await act(async () => {
       resolveCreate({ ok: true, value: undefined, warnings: [] });
     });
-    expect(mockReplace).toHaveBeenCalledWith('/announcements');
+    expect(mockReplace).toHaveBeenCalledWith({
+      pathname: '/announcements',
+      params: { section: 'announcements' },
+    });
   });
 
   it('shows a failed save inline and leaves the form in place', async () => {
@@ -92,6 +95,11 @@ describe('create announcement route', () => {
 
     await fireEvent.press(screen.getByRole('button', { name: 'Create Announcement' }));
 
-    await waitFor(() => expect(mockReplace).toHaveBeenCalledWith('/announcements'));
+    await waitFor(() =>
+      expect(mockReplace).toHaveBeenCalledWith({
+        pathname: '/announcements',
+        params: { section: 'announcements' },
+      }),
+    );
   });
 });

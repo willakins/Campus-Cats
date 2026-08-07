@@ -5,10 +5,10 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 
 import { appModules } from '@/composition/appModules';
-import { CatalogRecord } from '@/core/domain';
+import { CatalogRecord, CatalogTag } from '@/core/domain';
 import { DisplayMediaAsset } from '@/core/ports';
 import { useAppTheme } from '@/theme';
-import { AppText, Card, IconButton, Skeleton } from '../design';
+import { AppText, Card, IconButton, Skeleton, StatusPill } from '../design';
 import { ProgressiveImage } from '../ui/ProgressiveImage';
 
 interface CatalogItemMetrics {
@@ -18,6 +18,7 @@ interface CatalogItemMetrics {
   readonly isFavorite?: boolean;
   readonly favoriteBusy?: boolean;
   readonly onToggleFavorite?: () => void;
+  readonly tags?: readonly CatalogTag[];
 }
 
 type CatalogItemProps = CatalogRecord & CatalogItemMetrics;
@@ -29,6 +30,7 @@ export const CatalogItem = React.memo(function CatalogItem({
   isFavorite = false,
   favoriteBusy = false,
   onToggleFavorite,
+  tags = [],
   ...entry
 }: CatalogItemProps) {
   const router = useRouter();
@@ -90,11 +92,19 @@ export const CatalogItem = React.memo(function CatalogItem({
           </View>
         )}
         <View style={{ padding: theme.spacing.md, gap: theme.spacing.xs }}>
-          {entry.source === 'inaturalist' ? (
-            <AppText variant="caption" color="primary">iNaturalist profile</AppText>
-          ) : null}
           <AppText variant="cardTitle">{entry.cat.name}</AppText>
           <AppText color="muted" numberOfLines={2}>{entry.cat.descShort}</AppText>
+          {tags.length > 0 ? (
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: theme.spacing.xs }}>
+              {tags.map((tag) => (
+                <StatusPill
+                  key={tag.id}
+                  label={tag.label}
+                  tone={catalogTagTone(tag.id)}
+                />
+              ))}
+            </View>
+          ) : null}
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: theme.spacing.sm }}>
             <Metric
               icon="eye-outline"
@@ -156,3 +166,13 @@ const Metric = ({
 };
 
 export default CatalogItem;
+
+const catalogTagTone = (
+  tagId: string,
+): 'neutral' | 'primary' | 'success' | 'warning' | 'danger' | 'info' => {
+  if (tagId === 'adopted') return 'success';
+  if (tagId === 'tnr-complete') return 'primary';
+  if (tagId === 'needs-tnr') return 'warning';
+  if (tagId === 'deceased') return 'neutral';
+  return 'info';
+};
