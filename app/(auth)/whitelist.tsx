@@ -5,9 +5,11 @@ import { useRouter } from 'expo-router';
 import { AuthScaffold, AuthTextField } from '@/components/auth';
 import { Button, FeedbackBanner, FormSection } from '@/components/design';
 import { appModules } from '@/composition/appModules';
+import { useUniversitySelection } from '@/providers';
 
 const Whitelist = () => {
   const router = useRouter();
+  const { university } = useUniversitySelection();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string>();
   const [formData, setFormData] = useState({
@@ -42,7 +44,7 @@ const Whitelist = () => {
   return (
     <AuthScaffold
       title="Community access"
-      subtitle="Alumni and community volunteers can ask an officer to review an account request."
+      subtitle={`Alumni and community volunteers can ask a ${university?.club?.name ?? 'club'} officer to review an account request.`}
       onBack={() => router.back()}
     >
       <FormSection title="Your information">
@@ -54,7 +56,7 @@ const Whitelist = () => {
           onChangeText={(text) => handleChange('name', text)}
         />
         <AuthTextField
-          label="Georgia Tech graduation year"
+          label="Graduation year"
           required
           value={formData.graduationYear}
           inputMode="numeric"

@@ -38,6 +38,18 @@ port, presentation, and provider-boundary decisions otherwise remain in force.
 - Subscription screens use the existing `ClubBillingPort` and public feature module.
   Deterministic module tests and Firebase projection parsing tests cover the port
   contract, while rendered route tests cover President and native behavior.
+- Signed-out tenancy has no implicit `campus-cats` default. A device-local university
+  selection may provide a public selected-club scope for branding and login, while a
+  signed-in `users/{uid}.clubId` always overrides that selection. Signing out reveals,
+  but does not erase, the saved selection.
+- University discovery and club claiming are global server workflows rather than club
+  content. The synchronized Scorecard catalog, provider overrides, university mapping,
+  claims, setup requests, and throttles are never directly client-readable. Bounded
+  callable projections expose search results and public authentication metadata.
+- A verified university claim provisions deterministic tenant identity
+  `club-{scorecardId}` through the same reusable provisioning service as the protected
+  club-creation command. Georgia Tech remains the explicit `campus-cats` exception and
+  is connected through a seeded university mapping.
 
 ## Migration and rollback
 
@@ -52,6 +64,9 @@ billing enforcement before the previous application build is redeployed.
 
 - A production data migration is required before tenant enforcement is enabled.
 - Code that bypasses tenant adapters or server tenant helpers is an isolation bug.
+- App settings are not loaded for anonymous users until a mapped university has been
+  selected; university search uses the neutral theme and club setup renders local
+  light/dark previews without creating a tenant.
 - Access policy is intentionally represented in domain code, Firebase rules, and
   scheduled server enforcement; shared truth-table tests must keep those runtimes in
   agreement.

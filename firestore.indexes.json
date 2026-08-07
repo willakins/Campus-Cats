@@ -24,6 +24,14 @@
         { "fieldPath": "clubId", "order": "ASCENDING" },
         { "fieldPath": "periodKey", "order": "ASCENDING" }
       ]
+    },
+    {
+      "collectionGroup": "universities",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "active", "order": "ASCENDING" },
+        { "fieldPath": "searchPrefixes", "arrayConfig": "CONTAINS" }
+      ]
     }
   ],
   "fieldOverrides": []

@@ -521,6 +521,32 @@ service cloud.firestore {
       allow list, write: if false;
     }
 
+    // University discovery is exposed only through bounded callable projections.
+    // Clients must never read provider metadata, claims, tokens, or rate-limit state.
+    match /universities/{universityId} {
+      allow read, write: if false;
+    }
+
+    match /university-overrides/{universityId} {
+      allow read, write: if false;
+    }
+
+    match /university-clubs/{universityId} {
+      allow read, write: if false;
+    }
+
+    match /university-club-claims/{universityId} {
+      allow read, write: if false;
+    }
+
+    match /club-onboarding-requests/{requestId} {
+      allow read, write: if false;
+    }
+
+    match /club-onboarding-rate-limits/{limitId} {
+      allow read, write: if false;
+    }
+
     match /billing-accounts/{clubId} {
       allow read, write: if false;
     }

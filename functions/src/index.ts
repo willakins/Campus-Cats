@@ -1,4 +1,4 @@
-import { createHash, randomUUID } from 'node:crypto';
+import { createHash, randomBytes, randomUUID } from 'node:crypto';
 
 import sgMail from '@sendgrid/mail';
 import { getApps, initializeApp } from 'firebase-admin/app';
@@ -91,10 +91,21 @@ import {
   notifyStartedPresidentialVotes,
 } from './communityVoting';
 import { handleSignedStripeWebhook } from './stripeWebhook';
+import { ClubProvisioningService } from './clubProvisioning';
+import { UniversityCatalogService } from './universityCatalog';
+import {
+  FirebaseClubSetupRequestRepository,
+  UniversityOnboardingDependencies,
+  handleGetUniversity,
+  handleRequestClubSetup,
+  handleSearchUniversities,
+  handleVerifyClubSetup,
+} from './universityOnboarding';
 
 if (getApps().length === 0) initializeApp();
 
 const SENDGRID_API_KEY = defineSecret('SENDGRID_API_KEY');
+const COLLEGE_SCORECARD_API_KEY = defineSecret('COLLEGE_SCORECARD_API_KEY');
 const STRIPE_SECRET_KEY = defineSecret('STRIPE_SECRET_KEY');
 const STRIPE_WEBHOOK_SECRET = defineSecret('STRIPE_WEBHOOK_SECRET');
 const STRIPE_ACTIVITY_PRICE_LOOKUP_KEY = defineString(
@@ -115,6 +126,12 @@ const STRIPE_AUTOMATIC_TAX = defineString('STRIPE_AUTOMATIC_TAX', {
 });
 const BILLING_WEB_APP_ORIGIN = defineString('BILLING_WEB_APP_ORIGIN', {
   default: 'https://campuscats-d7a5e.web.app',
+});
+const CLUB_ONBOARDING_WEB_ORIGIN = defineString('CLUB_ONBOARDING_WEB_ORIGIN', {
+  default: 'https://campuscats-d7a5e.web.app',
+});
+const INVITATION_FROM_EMAIL = defineString('INVITATION_FROM_EMAIL', {
+  default: 'gtcampuscats@gmail.com',
 });
 const INATURALIST_OAUTH_CLIENT_SECRET = defineSecret(
   'INATURALIST_OAUTH_CLIENT_SECRET',
@@ -157,6 +174,64 @@ const inaturalistAccountDependencies: InaturalistAccountLinkingDependencies = {
   oauth: new InaturalistAccountHttpGateway(inaturalistAccountConfig),
   now: () => new Date(),
   getUser: (id) => dependencies.getUser(id),
+};
+
+const universityCatalog = new UniversityCatalogService(
+  firestore,
+  () => COLLEGE_SCORECARD_API_KEY.value(),
+);
+const clubSetupRequests = new FirebaseClubSetupRequestRepository(firestore);
+const onboardingEmail = async (
+  to: string,
+  subject: string,
+  paragraphs: readonly string[],
+) => {
+  sgMail.setApiKey(SENDGRID_API_KEY.value());
+  await sgMail.send({
+    to,
+    from: INVITATION_FROM_EMAIL.value(),
+    subject,
+    text: `${paragraphs.join('\n\n')}\n\nQuestions? Contact willakins23@gmail.com.`,
+  });
+};
+const universityOnboardingDependencies = (): UniversityOnboardingDependencies => {
+  const provisioner = new ClubProvisioningService({
+    firestore,
+    auth,
+    webOrigin: () => CLUB_ONBOARDING_WEB_ORIGIN.value(),
+    sendPasswordSetup: (email, clubName, link) => onboardingEmail(
+      email,
+      `Finish setting up ${clubName}`,
+      [
+        `Your verified ${clubName} club is ready on Campus Cats.`,
+        'Set your password using the secure link below, then sign in to complete club billing.',
+        link,
+      ],
+    ),
+  });
+  return {
+    catalog: universityCatalog,
+    requests: clubSetupRequests,
+    provision: (request) => provisioner.provision(request),
+    sendVerification: (email, clubName, requestId, token) => {
+      const verification = new URL('/club-setup/verify', CLUB_ONBOARDING_WEB_ORIGIN.value());
+      verification.searchParams.set('requestId', requestId);
+      verification.searchParams.set('token', token);
+      return onboardingEmail(
+        email,
+        `Verify your role as President of ${clubName}`,
+        [
+          `Someone selected you as the President of ${clubName} on Campus Cats.`,
+          'Verify your school email within 24 hours to create the club. If you did not expect this, ignore this message.',
+          verification.toString(),
+        ],
+      );
+    },
+    newId: randomUUID,
+    newToken: () => randomBytes(32).toString('base64url'),
+    hash: (value) => createHash('sha256').update(value).digest('hex'),
+    now: () => new Date(),
+  };
 };
 
 const customerBillingService = () =>
@@ -678,20 +753,27 @@ const dependencies: HandlerDependencies = {
     });
   },
 
-  async findWhitelistByEmail(email) {
-    const snapshot = await tenantCollection('campus-cats', 'whitelist')
+  async findWhitelistByEmail(email, clubId) {
+    const [club, mapping, snapshot] = await Promise.all([
+      firestore.collection('clubs').doc(clubId).get(),
+      firestore.collection('university-clubs').where('clubId', '==', clubId).limit(1).get(),
+      tenantCollection(clubId, 'whitelist')
       .where('email', '==', email)
       .limit(1)
-      .get();
+      .get(),
+    ]);
+    if (!club.exists || mapping.empty) {
+      throw new HandlerError('not-found', 'University club not found');
+    }
     return !snapshot.empty;
   },
 
-  async createWhitelistApplication(application: WhitelistApplication) {
+  async createWhitelistApplication(application: WhitelistApplication, clubId) {
     const id = createHash('sha256')
       .update(application.email.toLowerCase())
       .digest('hex');
     try {
-      await tenantCollection('campus-cats', 'whitelist').doc(id).create(application);
+      await tenantCollection(clubId, 'whitelist').doc(id).create(application);
       return { created: true, id };
     } catch (error) {
       const code =
@@ -1214,6 +1296,36 @@ export const sendWhitelistEmail = onCall(
     ),
 );
 
+export const searchUniversities = onCall((request) =>
+  execute(() => handleSearchUniversities(
+    { data: request.data, clientIp: request.rawRequest.ip },
+    universityOnboardingDependencies(),
+  )),
+);
+
+export const getUniversity = onCall((request) =>
+  execute(() => handleGetUniversity(
+    { data: request.data, clientIp: request.rawRequest.ip },
+    universityOnboardingDependencies(),
+  )),
+);
+
+export const requestClubSetup = onCall(
+  { secrets: [SENDGRID_API_KEY] },
+  (request) => execute(() => handleRequestClubSetup(
+    { data: request.data, clientIp: request.rawRequest.ip },
+    universityOnboardingDependencies(),
+  )),
+);
+
+export const verifyClubSetup = onCall(
+  { secrets: [SENDGRID_API_KEY] },
+  (request) => execute(() => handleVerifyClubSetup(
+    { data: request.data, clientIp: request.rawRequest.ip },
+    universityOnboardingDependencies(),
+  )),
+);
+
 export const getBillingSummary = onCall((request) =>
   execute(() => handleGetBillingSummary(requestFor(request), dependencies)),
 );
@@ -1501,6 +1613,18 @@ export const syncInaturalistDaily = onSchedule(
     if (failures.length) {
       throw new Error(`iNaturalist synchronization failures: ${failures.join(', ')}`);
     }
+  },
+);
+
+export const syncUniversityCatalogDaily = onSchedule(
+  {
+    schedule: 'every day 03:00',
+    timeZone: 'America/New_York',
+    secrets: [COLLEGE_SCORECARD_API_KEY],
+  },
+  async () => {
+    const result = await universityCatalog.sync();
+    logger.info('University catalog synchronized', result);
   },
 );
 

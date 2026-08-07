@@ -5,7 +5,7 @@ import * as SplashScreen from 'expo-splash-screen';
 
 import { LoadingIndicator } from '@/components/ui/LoadingIndicator';
 import { clubHasAppAccess } from '@/core/domain';
-import { useAuth, useClub } from '@/providers';
+import { useAuth, useClub, useUniversitySelection } from '@/providers';
 
 // Instruct SplashScreen not to hide yet, we want to do this manually
 SplashScreen.preventAutoHideAsync().catch(() => {
@@ -21,7 +21,9 @@ SplashScreen.setOptions({
 const App = () => {
   const { currentUser, loading } = useAuth();
   const club = useClub();
-  const isLoading = loading || (Boolean(currentUser) && club.loading);
+  const universities = useUniversitySelection();
+  const isLoading =
+    loading || universities.loading || (Boolean(currentUser) && club.loading);
 
   // Use useEffect to handle splash screen hiding
   useEffect(() => {
@@ -48,7 +50,16 @@ const App = () => {
     }
     return <Redirect href="/(app)/(tabs)" />;
   } else {
-    return <Redirect href="/login" />;
+    if (!universities.university) {
+      return <Redirect href={'/university-search' as never} />;
+    }
+    if (universities.university.status === 'mapped') {
+      return <Redirect href="/login" />;
+    }
+    if (universities.university.status === 'pending') {
+      return <Redirect href={'/club-setup/pending' as never} />;
+    }
+    return <Redirect href={'/club-setup' as never} />;
   }
 };
 
