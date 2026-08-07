@@ -150,6 +150,64 @@ service cloud.firestore {
         && data.createdBy.role is int;
     }
 
+    function validCommunityVote(data) {
+      return data.keys().hasOnly([
+          'kind',
+          'title',
+          'details',
+          'options',
+          'createdAt',
+          'createdBy',
+          'nominationEndsAt',
+          'votingStartsAt',
+          'votingEndsAt'
+        ])
+        && data.keys().hasAll([
+          'kind',
+          'title',
+          'details',
+          'options',
+          'createdAt',
+          'createdBy',
+          'votingStartsAt',
+          'votingEndsAt'
+        ])
+        && (data.kind == 'contest' || data.kind == 'presidential_election')
+        && data.title is string
+        && data.title.size() > 0
+        && data.title.size() <= 120
+        && data.title.matches('.*\\S.*')
+        && data.details is string
+        && data.details.size() <= 5000
+        && data.options is list
+        && data.options.size() <= 20
+        && data.createdAt is timestamp
+        && validCurrentUserSnapshot(data.createdBy)
+        && data.votingStartsAt is timestamp
+        && data.votingEndsAt is timestamp
+        && data.votingEndsAt >= data.votingStartsAt + duration.value(1, 'd')
+        && data.votingEndsAt <= data.votingStartsAt + duration.value(14, 'd')
+        && (
+          (
+            data.kind == 'contest'
+            && isAdmin()
+            && data.options.size() >= 2
+            && !('nominationEndsAt' in data)
+            && data.votingStartsAt == data.createdAt
+          )
+          || (
+            data.kind == 'presidential_election'
+            && isPresident()
+            && data.createdBy.role == 3
+            && data.options.size() == 0
+            && data.nominationEndsAt is timestamp
+            && data.nominationEndsAt == data.votingStartsAt
+            && data.votingStartsAt >= data.createdAt + duration.value(1, 'd')
+            && data.votingStartsAt <= data.createdAt + duration.value(31, 'd')
+          )
+        );
+    }
+
     match /cat-sightings/{sightingId} {
       allow read: if isActiveUser()
         && (
@@ -271,6 +329,25 @@ service cloud.firestore {
       allow delete: if isActiveUser() && request.auth.uid == userId;
     }
 
+    match /catalog-tag-settings/{settingsId} {
+      allow read: if settingsId == 'catalog' && isActiveUser();
+      allow create, update: if settingsId == 'catalog'
+        && isAdmin()
+        && request.resource.data.keys().hasOnly(['tags'])
+        && request.resource.data.tags is list
+        && request.resource.data.tags.size() <= 50;
+      allow delete: if false;
+    }
+
+    match /catalog-tag-assignments/{catalogId} {
+      allow read: if isActiveUser();
+      allow create, update: if isAdmin()
+        && request.resource.data.keys().hasOnly(['tagIds'])
+        && request.resource.data.tagIds is list
+        && request.resource.data.tagIds.size() <= 50;
+      allow delete: if isAdmin();
+    }
+
     match /stations/{stationId} {
       allow read: if isActiveUser();
       allow create, update, delete: if isAdmin();
@@ -339,6 +416,35 @@ service cloud.firestore {
       allow create, update, delete: if false;
     }
 
+    match /community-votes/{voteId} {
+      allow read: if isActiveUser();
+      allow create: if isActiveUser() && validCommunityVote(request.resource.data);
+      allow update, delete: if false;
+    }
+
+    match /community-vote-nominees/{nomineeId} {
+      allow read: if isActiveUser();
+      allow create, update, delete: if false;
+    }
+
+    match /community-vote-nomination-receipts/{receiptId} {
+      allow get: if isActiveUser()
+        && receiptId.matches('^' + request.auth.uid + '__.+$');
+      allow list: if false;
+      allow create, update, delete: if false;
+    }
+
+    match /community-vote-ballots/{ballotId} {
+      allow read, create, update, delete: if false;
+    }
+
+    match /community-vote-ballot-receipts/{receiptId} {
+      allow get: if isActiveUser()
+        && receiptId.matches('^' + request.auth.uid + '__.+$');
+      allow list: if false;
+      allow create, update, delete: if false;
+    }
+
     match /contact-info/{contactId} {
       allow read: if isActiveUser();
       allow create, update, delete: if isAdmin();
@@ -351,6 +457,19 @@ service cloud.firestore {
 
     match /inaturalist-guide-profiles/{profileId} {
       allow read: if isActiveUser() && (resource.data.visible == true || isAdmin());
+      allow create, update, delete: if false;
+    }
+
+    match /inaturalist-link-attempts/{attemptId} {
+      allow read, create, update, delete: if false;
+    }
+
+    match /inaturalist-account-links/{userId} {
+      allow read, create, update, delete: if false;
+    }
+
+    match /inaturalist-public-links/{inaturalistUserId} {
+      allow read: if isActiveUser();
       allow create, update, delete: if false;
     }
 

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Alert, View } from 'react-native';
+import { Alert, Linking, View } from 'react-native';
 
 import { useRouter } from 'expo-router';
 
@@ -14,6 +14,7 @@ import {
   EmptyState,
   FeedbackBanner,
   FormSection,
+  IconButton,
   ListRow,
   Screen,
   StatusPill,
@@ -34,7 +35,12 @@ interface EditableContact {
   readonly isNew?: boolean;
   readonly name: string;
   readonly email: string;
+  readonly instagramUrl: string;
+  readonly facebookUrl: string;
+  readonly websiteUrl: string;
 }
+
+type EditableContactField = Exclude<keyof EditableContact, 'id' | 'isNew'>;
 
 const Settings = () => {
   const { signOut, user } = useAuth();
@@ -65,7 +71,7 @@ const Settings = () => {
 
   const changeContact = (
     id: string,
-    field: 'name' | 'email',
+    field: EditableContactField,
     value: string,
   ) => {
     setContacts((current) =>
@@ -85,10 +91,23 @@ const Settings = () => {
     setSavingContacts(true);
     setError(undefined);
     const results = await Promise.all(
-      contacts.map(({ id, isNew, name, email }) =>
-        isNew
-          ? appModules.contacts.create(actor, { name, email })
-          : appModules.contacts.update(actor, id, { name, email }),
+      contacts.map(
+        ({ id, isNew, name, email, instagramUrl, facebookUrl, websiteUrl }) =>
+          isNew
+            ? appModules.contacts.create(actor, {
+                name,
+                email,
+                instagramUrl,
+                facebookUrl,
+                websiteUrl,
+              })
+            : appModules.contacts.update(actor, id, {
+                name,
+                email,
+                instagramUrl,
+                facebookUrl,
+                websiteUrl,
+              }),
       ),
     );
     setContacts(
@@ -186,6 +205,14 @@ const Settings = () => {
                 }
               />
               <Button
+                label="iNaturalist Account"
+                icon="leaf-outline"
+                variant="secondary"
+                onPress={() =>
+                  router.push('/settings/inaturalist-account' as never)
+                }
+              />
+              <Button
                 label="Sign Out"
                 icon="log-out-outline"
                 variant="secondary"
@@ -196,18 +223,24 @@ const Settings = () => {
           </Card>
         </FormSection>
 
-        <FormSection title="Club contacts">
-          {isAdmin ? (
-            <Button
-              label={isEditable ? 'Save Contacts' : 'Edit Contacts'}
-              icon={isEditable ? 'checkmark' : 'create-outline'}
-              variant="secondary"
-              loading={savingContacts}
-              onPress={() =>
-                isEditable ? void saveContacts() : setIsEditable(true)
-              }
-            />
-          ) : null}
+        <FormSection
+          title="Club contacts"
+          action={
+            isAdmin ? (
+              <IconButton
+                accessibilityLabel={
+                  isEditable ? 'Save Contacts' : 'Edit Contacts'
+                }
+                icon={isEditable ? 'checkmark' : 'create-outline'}
+                variant={isEditable ? 'primary' : 'surface'}
+                disabled={savingContacts}
+                onPress={() =>
+                  isEditable ? void saveContacts() : setIsEditable(true)
+                }
+              />
+            ) : undefined
+          }
+        >
           {loadingContacts ? (
             <CardListSkeleton label="Loading club contacts" count={2} />
           ) : contacts.length === 0 ? (
@@ -238,6 +271,40 @@ const Settings = () => {
                       autoCapitalize="none"
                       keyboardType="email-address"
                     />
+                    <FormTextInput
+                      label="Instagram link"
+                      value={contact.instagramUrl}
+                      onChangeText={(value) =>
+                        changeContact(contact.id, 'instagramUrl', value)
+                      }
+                      autoCapitalize="none"
+                      autoCorrect={false}
+                      inputMode="url"
+                      keyboardType="url"
+                    />
+                    <FormTextInput
+                      label="Facebook link"
+                      value={contact.facebookUrl}
+                      onChangeText={(value) =>
+                        changeContact(contact.id, 'facebookUrl', value)
+                      }
+                      autoCapitalize="none"
+                      autoCorrect={false}
+                      inputMode="url"
+                      keyboardType="url"
+                    />
+                    <FormTextInput
+                      label="Website"
+                      helper="Optional links must begin with http:// or https://."
+                      value={contact.websiteUrl}
+                      onChangeText={(value) =>
+                        changeContact(contact.id, 'websiteUrl', value)
+                      }
+                      autoCapitalize="none"
+                      autoCorrect={false}
+                      inputMode="url"
+                      keyboardType="url"
+                    />
                     <Button
                       label={`Remove ${contact.name || 'Contact'}`}
                       variant="danger"
@@ -248,10 +315,57 @@ const Settings = () => {
                 </Card>
               ) : (
                 <Card key={contact.id} accent={theme.colors.gold}>
-                  <AppText variant="cardTitle">{contact.name}</AppText>
-                  <AppText color="muted" selectable>
-                    {contact.email}
-                  </AppText>
+                  <View style={{ gap: theme.spacing.sm }}>
+                    <AppText variant="cardTitle">{contact.name}</AppText>
+                    <AppText color="muted" selectable>
+                      {contact.email}
+                    </AppText>
+                    {contact.instagramUrl ||
+                    contact.facebookUrl ||
+                    contact.websiteUrl ? (
+                      <View
+                        style={{
+                          flexDirection: 'row',
+                          flexWrap: 'wrap',
+                          gap: theme.spacing.xs,
+                        }}
+                      >
+                        {contact.instagramUrl ? (
+                          <Button
+                            label="Instagram"
+                            icon="logo-instagram"
+                            variant="tertiary"
+                            size="small"
+                            onPress={() =>
+                              void Linking.openURL(contact.instagramUrl)
+                            }
+                          />
+                        ) : null}
+                        {contact.facebookUrl ? (
+                          <Button
+                            label="Facebook"
+                            icon="logo-facebook"
+                            variant="tertiary"
+                            size="small"
+                            onPress={() =>
+                              void Linking.openURL(contact.facebookUrl)
+                            }
+                          />
+                        ) : null}
+                        {contact.websiteUrl ? (
+                          <Button
+                            label="Website"
+                            icon="globe-outline"
+                            variant="tertiary"
+                            size="small"
+                            onPress={() =>
+                              void Linking.openURL(contact.websiteUrl)
+                            }
+                          />
+                        ) : null}
+                      </View>
+                    ) : null}
+                  </View>
                 </Card>
               ),
             )
@@ -270,6 +384,9 @@ const Settings = () => {
                     isNew: true,
                     name: '',
                     email: '',
+                    instagramUrl: '',
+                    facebookUrl: '',
+                    websiteUrl: '',
                   },
                 ]);
                 setHasChanged(true);
@@ -280,6 +397,12 @@ const Settings = () => {
 
         {isAdmin ? (
           <FormSection title="Officer tools">
+            <ListRow
+              title="Manage Catalog Tags"
+              subtitle="Create and organize tags used on cat profiles"
+              icon="pricetags-outline"
+              onPress={() => router.push('/settings/catalog-tags' as never)}
+            />
             <ListRow
               title="Manage Users"
               subtitle="Review roles and remove accounts"

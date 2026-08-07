@@ -1,8 +1,8 @@
 # Community engagement
 
-The **Community** bottom tab groups Announcements, Events, Surveys, and Chat without
+The **Community** bottom tab groups Announcements, Events, Surveys, Votes, and Chat without
 increasing the five-item bottom navigation. Announcements remains the default section
-so the existing update workflow stays one tap away. The four labeled section controls
+so the existing update workflow stays one tap away. The labeled section controls
 scroll horizontally when text does not fit. Chat is intentionally a non-interactive
 placeholder until a messaging design and moderation policy are approved.
 
@@ -60,6 +60,28 @@ The trusted callable and Firestore rules reject:
 - a response without its matching new receipt; and
 - a second response after a receipt already exists.
 
+## Contests and elections
+
+Officers may publish a general contest with 2 to 20 choices, an optional picture for
+each choice, and a voting window from 1 to 14 days. This supports decisions such as a
+new club logo without treating a ballot as an ordinary survey. Every active account
+gets one private ballot, and aggregate results appear only after voting closes.
+
+Only the current President may start a presidential election. The President chooses a
+nomination window from 1 to 31 days and a voting window from 1 to 14 days. During the
+first round, each member may nominate themself or abstain once. When that window ends,
+the vote automatically enters the second round with the self-nominees as choices. A
+scheduled Function broadcasts that presidential voting has started. The election
+reports a result; it does not automatically change account roles. Presidential
+succession remains a separate deliberate administration action.
+
+Definitions live in `community-votes`. Trusted callables write self-nominees,
+nomination receipts, anonymous ballots, and ballot receipts to their separate
+collections in transactions. Clients cannot write those records directly. Nominees
+are member-readable so the second-round ballot can be rendered; ballots are never
+member-readable. Each account can read only its own participation receipts. The
+`getCommunityVoteResults` callable returns counts only after the stored closing time.
+
 ## Release checks
 
 Before deployment:
@@ -73,5 +95,10 @@ Before deployment:
 5. Confirm Officer results show identity only for the named response.
 6. Advance an event beyond its expiration date and confirm Members no longer see it
    while Officers see it under Expired.
+7. As an Officer, create an image-backed contest and confirm each account can vote once
+   and results remain hidden until close.
+8. As the President, start an election at both duration boundaries, exercise nominate
+   and abstain with separate accounts, and verify the second-round notification and
+   nominee-only ballot.
 
 Do not deploy Firebase resources from an ordinary contributor branch.

@@ -9,6 +9,7 @@ import { AppThemeProvider } from '../../theme';
 const mockList = jest.fn();
 const mockEventList = jest.fn();
 const mockSurveyList = jest.fn();
+const mockVoteList = jest.fn();
 const mockPush = jest.fn();
 let mockRole: Role = Role.Officer;
 let mockSection: string | undefined;
@@ -28,6 +29,7 @@ jest.mock('../../composition/appModules', () => ({
     announcements: { list: (...args: unknown[]) => mockList(...args) },
     events: { list: (...args: unknown[]) => mockEventList(...args) },
     surveys: { list: (...args: unknown[]) => mockSurveyList(...args) },
+    communityVoting: { list: (...args: unknown[]) => mockVoteList(...args) },
   },
 }));
 
@@ -74,8 +76,10 @@ describe('announcements list route', () => {
     mockPush.mockReset();
     mockEventList.mockReset();
     mockSurveyList.mockReset();
+    mockVoteList.mockReset();
     mockEventList.mockResolvedValue({ ok: true, value: [], warnings: [] });
     mockSurveyList.mockResolvedValue({ ok: true, value: [], warnings: [] });
+    mockVoteList.mockResolvedValue({ ok: true, value: [], warnings: [] });
     mockRole = Role.Officer;
     mockSection = undefined;
   });
@@ -83,12 +87,22 @@ describe('announcements list route', () => {
   it('renders an empty result and limits creation to administrators', async () => {
     mockList.mockResolvedValue({ ok: true, value: [], warnings: [] });
     const { rerender } = await renderAnnouncements();
+    const user = userEvent.setup();
 
     await waitFor(() => expect(mockList).toHaveBeenCalled());
     expect(screen.getByText('Community')).toBeOnTheScreen();
+    expect(screen.getByRole('button', { name: 'Open Announcements' })).toBeOnTheScreen();
+    expect(screen.getByRole('button', { name: 'Open Chat' })).toBeOnTheScreen();
+    expect(screen.getByRole('button', { name: 'Open Events' })).toBeOnTheScreen();
+    expect(screen.getByRole('button', { name: 'Open Surveys' })).toBeOnTheScreen();
+    expect(screen.getByRole('button', { name: 'Open Votes' })).toBeOnTheScreen();
+    expect(screen.queryByLabelText('Community sections')).not.toBeOnTheScreen();
+
+    await user.press(screen.getByRole('button', { name: 'Open Announcements' }));
     expect(screen.getByText('Announcement access')).toBeOnTheScreen();
     expect(screen.getByText('No announcements yet')).toBeOnTheScreen();
     expect(screen.getByRole('button', { name: 'Create announcement' })).toBeOnTheScreen();
+    expect(screen.getByLabelText('Community sections')).toBeOnTheScreen();
 
     mockRole = Role.Member;
     await rerender(
@@ -100,11 +114,16 @@ describe('announcements list route', () => {
     expect(
       screen.getByText('Everyone can read club updates. Only officers can publish or edit announcements.'),
     ).toBeOnTheScreen();
+
+    await user.press(screen.getByRole('button', { name: 'Show Community menu' }));
+    expect(screen.getByRole('button', { name: 'Open Announcements' })).toBeOnTheScreen();
+    expect(screen.queryByLabelText('Community sections')).not.toBeOnTheScreen();
   });
 
   it('renders successful results and module errors', async () => {
     mockList.mockResolvedValue({ ok: true, value: [announcement], warnings: [] });
     const { unmount } = await renderAnnouncements();
+    await userEvent.press(screen.getByRole('button', { name: 'Open Announcements' }));
     expect(await screen.findByText('Volunteer workday')).toBeOnTheScreen();
     await unmount();
 
@@ -113,6 +132,7 @@ describe('announcements list route', () => {
       error: { code: 'dependency_failure', message: 'Could not load announcements' },
     });
     await renderAnnouncements();
+    await userEvent.press(screen.getByRole('button', { name: 'Open Announcements' }));
     expect(await screen.findByText('Could not load announcements')).toBeOnTheScreen();
   });
 
@@ -123,6 +143,7 @@ describe('announcements list route', () => {
     await renderAnnouncements();
 
     expect(screen.getByText('Community')).toBeOnTheScreen();
+    await user.press(screen.getByRole('button', { name: 'Open Announcements' }));
     expect(screen.getByRole('progressbar', { name: 'Loading announcements' })).toBeOnTheScreen();
     await user.press(screen.getByRole('button', { name: 'Create announcement' }));
     expect(mockPush).toHaveBeenCalledWith('/announcements/create-ann');
@@ -147,8 +168,14 @@ describe('announcements list route', () => {
     await surveyView.unmount();
 
     mockSection = 'chat';
-    await renderAnnouncements();
+    const chatView = await renderAnnouncements();
     expect(screen.getByText('Chat is coming soon')).toBeOnTheScreen();
     expect(screen.queryByRole('button', { name: 'Create chat' })).not.toBeOnTheScreen();
+    await chatView.unmount();
+
+    mockSection = 'votes';
+    await renderAnnouncements();
+    expect(await screen.findByText('No active votes')).toBeOnTheScreen();
+    expect(screen.getByText('One member, one vote')).toBeOnTheScreen();
   });
 });

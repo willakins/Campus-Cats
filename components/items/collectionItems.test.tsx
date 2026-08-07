@@ -3,10 +3,12 @@ import React from 'react';
 import { render, screen, userEvent, waitFor } from '@testing-library/react-native';
 
 import {
+  CatalogRecord,
   Role,
   localCatalogRecord,
   parseAnnouncement,
   parseCatalogEntry,
+  parseCatalogTag,
   parseStation,
   parseUser,
 } from '../../core/domain';
@@ -57,6 +59,19 @@ const catalogEntry = localCatalogRecord(parseCatalogEntry({
   createdAt: new Date('2026-06-01T12:00:00.000Z'),
   createdBy: actor,
 }));
+const importedCatalogEntry: CatalogRecord = {
+  source: 'inaturalist',
+  id: 'inat-guide-2001',
+  sourceId: 2001,
+  cat: { name: 'Mimi', descShort: 'Black-and-white campus cat.' },
+  credits: '',
+  sourceUrl: 'https://www.inaturalist.org/guide_taxa/2001',
+  sourceUpdatedAt: new Date('2026-06-01T12:00:00.000Z'),
+  matchStatus: 'unlinked',
+  sourceActive: true,
+  visible: true,
+  moderation: { hidden: false, reason: '' },
+};
 const station = parseStation({
   id: 'station-1',
   name: 'Library station',
@@ -91,9 +106,20 @@ describe('collection cards', () => {
 
   it('provides a catalog photo fallback and routes by ID', async () => {
     const user = userEvent.setup();
-    await renderThemed(<CatalogItem {...catalogEntry} />);
+    await renderThemed(
+      <CatalogItem
+        {...catalogEntry}
+        tags={[
+          parseCatalogTag({ id: 'feral', label: 'Community cat' }),
+          parseCatalogTag({ id: 'medical', label: 'Needs medication' }),
+        ]}
+      />,
+    );
 
     expect(screen.getByText('No profile photo')).toBeOnTheScreen();
+    expect(screen.getByText('Community cat')).toBeOnTheScreen();
+    expect(screen.getByText('Needs medication')).toBeOnTheScreen();
+    expect(screen.queryByText('iNaturalist profile')).not.toBeOnTheScreen();
     await waitFor(() => expect(mockCatalogMedia).toHaveBeenCalledWith('catalog-1'));
     await user.press(screen.getByRole('button', { name: 'View cat: Goldie' }));
     expect(mockPush).toHaveBeenCalledWith({
@@ -124,6 +150,13 @@ describe('collection cards', () => {
     );
     expect(onToggleFavorite).toHaveBeenCalledTimes(1);
     expect(mockPush).not.toHaveBeenCalled();
+  });
+
+  it('does not label imported cards by their source', async () => {
+    await renderThemed(<CatalogItem {...importedCatalogEntry} />);
+
+    expect(screen.getByText('Mimi')).toBeOnTheScreen();
+    expect(screen.queryByText('iNaturalist profile')).not.toBeOnTheScreen();
   });
 
   it('pairs station status color with text and routes by ID', async () => {

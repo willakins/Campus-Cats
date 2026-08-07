@@ -4,7 +4,7 @@
     "slug": "campus-cats",
     "version": "1.0.2",
     "orientation": "portrait",
-    "icon": "./assets/images/icon.png",
+    "icon": "./assets/images/default-app-icon.png",
     "scheme": "campuscats",
     "userInterfaceStyle": "automatic",
     "ios": {
@@ -24,7 +24,7 @@
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/images/adaptive-icon.png",
+        "foregroundImage": "./assets/images/default-app-icon.png",
         "backgroundColor": "#ffffff"
       },
       "config": {
@@ -40,14 +40,14 @@
     "web": {
       "bundler": "metro",
       "output": "static",
-      "favicon": "./assets/images/favicon.png"
+      "favicon": "./assets/images/default-app-icon.png"
     },
     "plugins": [
       "expo-router",
       [
         "expo-splash-screen",
         {
-          "image": "./assets/images/app-icon.png",
+          "image": "./assets/images/default-app-icon.png",
           "resizeMode": "contain",
           "backgroundColor": "#ffffff"
         }
@@ -71,15 +71,15 @@
         "origin": false
       },
       "eas": {
-        "projectId": "80da548d-e526-49ad-a08a-d2817eb4c8fb"
+        "projectId": "1568853b-6f93-4d20-98f9-9425f3648b76"
       }
     },
-    "owner": "gtcampuscats",
+    "owner": "willakins",
     "runtimeVersion": {
       "policy": "appVersion"
     },
     "updates": {
-      "url": "https://u.expo.dev/80da548d-e526-49ad-a08a-d2817eb4c8fb"
+      "url": "https://u.expo.dev/1568853b-6f93-4d20-98f9-9425f3648b76"
     }
   }
 }

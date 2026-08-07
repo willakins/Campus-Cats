@@ -37,7 +37,10 @@ const CreateAnnouncement = () => {
     if (result.warnings.length > 0) {
       Alert.alert('Announcement created', result.warnings[0].message);
     }
-    router.replace('/announcements');
+    router.replace({
+      pathname: '/announcements',
+      params: { section: 'announcements' },
+    });
   };
 
   return (

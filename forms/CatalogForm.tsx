@@ -1,8 +1,10 @@
 import React from 'react';
+import { View } from 'react-native';
 
-import { AppText, FormSection } from '@/components/design';
+import { AppText, Chip, FormSection } from '@/components/design';
 import { FormTextInput, PhotoField, SelectField } from '@/components/forms';
-import { CatStatus, Fur, Sex, TNRStatus } from '@/core/domain';
+import { CatalogTag, CatStatus, Fur, Sex, TNRStatus } from '@/core/domain';
+import { useAppTheme } from '@/theme';
 import { PickerConfig } from '@/types';
 
 export interface CatalogFormData {
@@ -33,6 +35,9 @@ interface CatalogFormProps {
   onPromotePhoto?: (uri: string) => void;
   onDeletePhoto?: (uri: string) => void;
   sourceManaged?: boolean;
+  availableTags: readonly CatalogTag[];
+  selectedTagIds: readonly string[];
+  onSelectedTagIdsChange: (tagIds: readonly string[]) => void;
 }
 
 const CatalogForm: React.FC<CatalogFormProps> = ({
@@ -45,7 +50,11 @@ const CatalogForm: React.FC<CatalogFormProps> = ({
   onPromotePhoto,
   onDeletePhoto,
   sourceManaged = false,
+  availableTags,
+  selectedTagIds,
+  onSelectedTagIdsChange,
 }) => {
+  const theme = useAppTheme();
   const handleChange = (field: keyof CatalogFormData, value: string) =>
     setFormData((current) => ({ ...current, [field]: value }));
   const displayedPhotos = profile ? [profile, ...photos] : photos;
@@ -66,6 +75,32 @@ const CatalogForm: React.FC<CatalogFormProps> = ({
         <SelectField label="Fur length" required picker={pickers.furPicker} placeholder="Select a fur length" zIndex={3000} />
         <SelectField label="TNR status" required picker={pickers.tnrPicker} placeholder="Select a TNR status" zIndex={2000} />
         <SelectField label="Sex" required picker={pickers.sexPicker} placeholder="Select sex" zIndex={1000} />
+      </FormSection>
+      <FormSection title="Tags">
+        <AppText color="muted">
+          Status-based defaults are selected automatically until you change them.
+        </AppText>
+        {availableTags.length ? (
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: theme.spacing.xs }}>
+            {availableTags.map((tag) => {
+              const selected = selectedTagIds.includes(tag.id);
+              return (
+                <Chip
+                  key={tag.id}
+                  label={tag.label}
+                  selected={selected}
+                  onPress={() => onSelectedTagIdsChange(
+                    selected
+                      ? selectedTagIds.filter((id) => id !== tag.id)
+                      : [...selectedTagIds, tag.id],
+                  )}
+                />
+              );
+            })}
+          </View>
+        ) : (
+          <AppText color="muted">No catalog tags are configured.</AppText>
+        )}
       </FormSection>
       <FormSection title="Field notes">
         <FormTextInput label="Detailed color pattern" required value={formData.colorPattern} placeholder="Colors and unique features" onChangeText={(text) => handleChange('colorPattern', text)} />

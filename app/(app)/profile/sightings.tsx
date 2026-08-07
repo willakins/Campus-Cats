@@ -13,7 +13,7 @@ import {
 import { ProfileSightingItem } from '@/components/profile';
 import { virtualizedListPerformanceProps } from '@/components/collections/virtualizedListPerformance';
 import { appModules } from '@/composition/appModules';
-import { LocalSightingRecord, parseUser } from '@/core/domain';
+import { SightingRecord, parseUser } from '@/core/domain';
 import { useAuth } from '@/providers';
 import { useAppTheme } from '@/theme';
 
@@ -25,7 +25,7 @@ const ProfileSightingsScreen = () => {
     id?: string;
     displayName?: string;
   }>();
-  const [sightings, setSightings] = useState<readonly LocalSightingRecord[]>([]);
+  const [sightings, setSightings] = useState<readonly SightingRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string>();
 

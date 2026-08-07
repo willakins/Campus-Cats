@@ -47,6 +47,9 @@ ready.
       its Member view, then verify that it moves to the Officer Expired view.
 - [ ] With two test accounts, submit anonymous and named surveys once; confirm the
       disclosure copy, duplicate prevention, and Officer response identity behavior.
+- [ ] With two test accounts, complete an image-backed contest and a presidential
+      election; confirm self-nominate/abstain, one private ballot per account, delayed
+      results, and the scheduled second-round push notification.
 - [ ] On the other platform's simulator/emulator, verify core navigation and map
       rendering in both appearances and at its largest accessibility text setting.
 - [ ] Confirm the PR remains free of production Firebase deployments and mobile build

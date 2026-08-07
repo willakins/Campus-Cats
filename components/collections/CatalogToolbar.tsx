@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import {
   Modal,
   Pressable,
+  ScrollView,
   TextInput,
   View,
 } from 'react-native';
@@ -11,27 +12,35 @@ import {
   CatalogSort,
   catalogSortOptions,
 } from '@/features/catalog';
+import { CatalogTag } from '@/core/domain';
 import { useAppTheme } from '@/theme';
-import { AppText, Button, IconButton } from '../design';
+import { AppText, Button, Chip, IconButton } from '../design';
 
 interface CatalogToolbarProps {
   readonly query: string;
   readonly sort: CatalogSort;
+  readonly availableTags: readonly CatalogTag[];
+  readonly selectedTagIds: readonly string[];
   readonly resultCount?: number;
   readonly onQueryChange: (query: string) => void;
   readonly onSortChange: (sort: CatalogSort) => void;
+  readonly onSelectedTagIdsChange: (tagIds: readonly string[]) => void;
 }
 
 export const CatalogToolbar = ({
   query,
   sort,
+  availableTags,
+  selectedTagIds,
   resultCount,
   onQueryChange,
   onSortChange,
+  onSelectedTagIdsChange,
 }: CatalogToolbarProps) => {
   const theme = useAppTheme();
   const [focused, setFocused] = useState(false);
   const [sortOpen, setSortOpen] = useState(false);
+  const [filterOpen, setFilterOpen] = useState(false);
   const selectedSort =
     catalogSortOptions.find(({ value }) => value === sort) ??
     catalogSortOptions[0];
@@ -96,6 +105,16 @@ export const CatalogToolbar = ({
           variant="primary"
           onPress={() => setSortOpen(true)}
         />
+        <IconButton
+          icon={selectedTagIds.length > 0 ? 'filter' : 'filter-outline'}
+          accessibilityLabel={
+            selectedTagIds.length > 0
+              ? `Filter catalog. ${selectedTagIds.length} selected`
+              : 'Filter catalog'
+          }
+          variant={selectedTagIds.length > 0 ? 'primary' : 'surface'}
+          onPress={() => setFilterOpen(true)}
+        />
       </View>
       <View
         style={{
@@ -105,6 +124,9 @@ export const CatalogToolbar = ({
         }}
       >
         <AppText variant="caption" color="muted">
+          {selectedTagIds.length > 0
+            ? `${selectedTagIds.length} ${selectedTagIds.length === 1 ? 'filter' : 'filters'} · `
+            : ''}
           Sorted by {selectedSort.label.toLocaleLowerCase()}
         </AppText>
         {resultCount !== undefined ? (
@@ -175,6 +197,99 @@ export const CatalogToolbar = ({
                 />
               );
             })}
+          </View>
+        </View>
+      </Modal>
+
+      <Modal
+        visible={filterOpen}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setFilterOpen(false)}
+      >
+        <View
+          accessibilityViewIsModal
+          style={{
+            flex: 1,
+            justifyContent: 'flex-end',
+            backgroundColor: theme.colors.overlay,
+          }}
+        >
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Close filter options"
+            onPress={() => setFilterOpen(false)}
+            style={{ position: 'absolute', inset: 0 }}
+          />
+          <View
+            style={{
+              width: '100%',
+              maxWidth: theme.layout.maxContentWidth,
+              maxHeight: '90%',
+              alignSelf: 'center',
+              gap: theme.spacing.md,
+              padding: theme.spacing.lg,
+              paddingBottom: theme.spacing.xxl,
+              borderTopLeftRadius: theme.radii.sheet,
+              borderTopRightRadius: theme.radii.sheet,
+              backgroundColor: theme.colors.surface,
+            }}
+          >
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: theme.spacing.sm }}>
+              <View style={{ flex: 1 }}>
+                <AppText variant="section">Filter cat catalog</AppText>
+                <AppText color="muted">Cats must match every selected tag.</AppText>
+              </View>
+              <IconButton
+                icon="close"
+                accessibilityLabel="Close filter options"
+                onPress={() => setFilterOpen(false)}
+              />
+            </View>
+            <ScrollView
+              showsVerticalScrollIndicator={false}
+              contentContainerStyle={{
+                flexDirection: 'row',
+                flexWrap: 'wrap',
+                gap: theme.spacing.xs,
+              }}
+            >
+              {availableTags.map((option) => {
+                const selected = selectedTagIds.includes(option.id);
+                return (
+                  <Chip
+                    key={option.id}
+                    label={option.label}
+                    selected={selected}
+                    onPress={() =>
+                      onSelectedTagIdsChange(
+                        selected
+                          ? selectedTagIds.filter((tagId) => tagId !== option.id)
+                          : [...selectedTagIds, option.id],
+                      )
+                    }
+                  />
+                );
+              })}
+            </ScrollView>
+            <View style={{ flexDirection: 'row', gap: theme.spacing.sm }}>
+              <View style={{ flex: 1 }}>
+                <Button
+                  label="Clear filters"
+                  variant="secondary"
+                  fullWidth
+                  disabled={selectedTagIds.length === 0}
+                  onPress={() => onSelectedTagIdsChange([])}
+                />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Button
+                  label="Show cats"
+                  fullWidth
+                  onPress={() => setFilterOpen(false)}
+                />
+              </View>
+            </View>
           </View>
         </View>
       </Modal>

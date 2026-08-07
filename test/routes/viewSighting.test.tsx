@@ -14,6 +14,7 @@ import { AppThemeProvider } from '../../theme';
 const mockPush = jest.fn();
 const mockGet = jest.fn();
 const mockMedia = jest.fn();
+const mockLinkedReporter = jest.fn();
 const mockProfileGet = jest.fn();
 let mockUserId = 'member-1';
 let mockRole: Role = Role.Member;
@@ -34,6 +35,7 @@ jest.mock('../../composition/appModules', () => ({
     sightings: {
       get: (...args: unknown[]) => mockGet(...args),
       media: (...args: unknown[]) => mockMedia(...args),
+      linkedReporter: (...args: unknown[]) => mockLinkedReporter(...args),
     },
     profiles: { getOrSync: (...args: unknown[]) => mockProfileGet(...args) },
   },
@@ -133,6 +135,11 @@ describe('view sighting route', () => {
     mockAnonymous = true;
     mockGet.mockResolvedValue({ ok: true, value: sighting, warnings: [] });
     mockMedia.mockResolvedValue({ ok: true, value: [], warnings: [] });
+    mockLinkedReporter.mockResolvedValue({
+      ok: true,
+      value: undefined,
+      warnings: [],
+    });
     mockProfileGet.mockResolvedValue({
       ok: false,
       error: { code: 'not_found', message: 'Member profile not found' },
@@ -207,6 +214,46 @@ describe('view sighting route', () => {
 
     expect(await screen.findByText('Mimi')).toBeOnTheScreen();
     expect(screen.queryByRole('button', { name: 'Edit sighting' })).not.toBeOnTheScreen();
+  });
+
+  it('opens the linked Campus Cats profile for a verified iNaturalist observer', async () => {
+    mockGet.mockResolvedValue({
+      ok: true,
+      value: importedSighting,
+      warnings: [],
+    });
+    mockLinkedReporter.mockResolvedValue({
+      ok: true,
+      value: 'member-2',
+      warnings: [],
+    });
+    mockProfileGet.mockResolvedValue({
+      ok: true,
+      value: {
+        id: 'member-2',
+        displayName: 'Cat Watcher',
+        bio: '',
+        profilePhotoUrl: '',
+        role: Role.Member,
+        achievementIds: [],
+        selectedTitleId: '',
+      },
+      warnings: [],
+    });
+    const user = userEvent.setup();
+    await renderSighting();
+
+    await user.press(
+      await screen.findByRole('button', { name: 'View reporter profile' }),
+    );
+    expect(mockLinkedReporter).toHaveBeenCalledWith(
+      expect.objectContaining({ id: 'member-1' }),
+      42,
+    );
+    expect(mockPush).toHaveBeenCalledWith({
+      pathname: '/profile/view-profile',
+      params: { id: 'member-2' },
+    });
   });
 
   it('renders a module error instead of a dummy record', async () => {

@@ -48,7 +48,11 @@ function buildModule(ids: readonly string[] = ['sighting-1', 'profile-1']) {
     ids: generator,
     contributors,
     codecs,
-    imports: { reader: imports, codec: codecs.inaturalistObservation },
+    imports: {
+      reader: imports,
+      codec: codecs.inaturalistObservation,
+      publicLinkCodec: codecs.inaturalistPublicLink,
+    },
   });
   return { module, documents, media, imports, codecs };
 }
@@ -224,6 +228,63 @@ describe('SightingsModule', () => {
         { id: 'older-sighting', name: 'Goldie' },
       ],
     });
+  });
+
+  it('joins imported project sightings by verified numeric observer ID', async () => {
+    const { module, documents, imports, codecs } = buildModule();
+    const linkedAt = new Date('2025-04-11T12:00:00.000Z');
+    await documents.put('inaturalist-public-links', '42', {
+      userId: member.id,
+      login: 'old_login',
+      linkedAt,
+    });
+    const imported = codecs.inaturalistObservation.decode('321', {
+      uuid: 'a1d112b8-954b-4a65-a574-d73092f1cd38',
+      projectId: 149475,
+      sourceUrl: 'https://www.inaturalist.org/observations/321',
+      sourceUpdatedAt: linkedAt,
+      observedAt: linkedAt,
+      observedOn: '2025-04-11',
+      observedTimePrecision: 'exact',
+      displayName: 'Mimi',
+      description: '',
+      qualityGrade: 'research',
+      observer: { id: 42, login: 'renamed_observer' },
+      location: null,
+      positionalAccuracy: null,
+      photos: [],
+      sourceActive: true,
+      visible: true,
+      importedAt: linkedAt,
+      syncedAt: linkedAt,
+      lastSeenRunId: 'run-1',
+      moderation: { hidden: false, reason: '' },
+    });
+    imports.observations.set('321', codecs.inaturalistObservation.encode(imported));
+
+    await expect(module.linkedReporter(otherMember, 42)).resolves.toEqual({
+      ok: true,
+      value: member.id,
+      warnings: [],
+    });
+
+    await expect(
+      module.listByReporter(otherMember, member.id),
+    ).resolves.toMatchObject({
+      ok: true,
+      value: [
+        {
+          source: 'inaturalist',
+          sourceId: 321,
+          observer: { id: 42, login: 'renamed_observer' },
+        },
+      ],
+    });
+
+    await documents.remove('inaturalist-public-links', '42');
+    await expect(
+      module.listByReporter(otherMember, member.id),
+    ).resolves.toMatchObject({ ok: true, value: [] });
   });
 
   it('maps reporter query failures to a typed outcome', async () => {

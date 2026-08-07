@@ -2,6 +2,8 @@ import {
   Announcement,
   CatalogEntry,
   CatalogFavorite,
+  CatalogTagSettings,
+  CatalogTagAssignment,
   Contact,
   ManagedUser,
   PublicProfile,
@@ -11,6 +13,8 @@ import {
   parseAnnouncement,
   parseCatalogEntry,
   parseCatalogFavorite,
+  parseCatalogTagSettings,
+  parseCatalogTagAssignment,
   parseContact,
   parseManagedUser,
   parsePublicProfile,
@@ -20,11 +24,13 @@ import {
 } from './models';
 import {
   ImportedCatalogProfile,
+  InaturalistPublicLink,
   ImportedObservation,
   InaturalistSyncStatus,
   parseImportedCatalogProfile,
   parseImportedObservation,
   parseInaturalistSyncStatus,
+  parseInaturalistPublicLink,
 } from './inaturalist';
 import {
   AppSettings,
@@ -44,11 +50,19 @@ import {
   parseSurveyResponse,
   parseSurveySubmissionReceipt,
 } from './community';
+import {
+  CommunityVote,
+  CommunityVoteNominee,
+  parseCommunityVote,
+  parseCommunityVoteNominee,
+} from './communityVoting';
 
 export const COLLECTIONS = {
   sightings: 'cat-sightings',
   catalog: 'catalog',
   catalogFavorites: 'catalog-favorites',
+  catalogTagSettings: 'catalog-tag-settings',
+  catalogTagAssignments: 'catalog-tag-assignments',
   stations: 'stations',
   announcements: 'announcements',
   contacts: 'contact-info',
@@ -57,6 +71,7 @@ export const COLLECTIONS = {
   whitelist: 'whitelist',
   inaturalistObservations: 'inaturalist-observations',
   inaturalistCatalog: 'inaturalist-guide-profiles',
+  inaturalistPublicLinks: 'inaturalist-public-links',
   integrationState: 'integration-state',
   appSettings: 'app-settings',
   contentContributors: 'content-contributors',
@@ -64,9 +79,15 @@ export const COLLECTIONS = {
   surveys: 'community-surveys',
   surveyResponses: 'survey-responses',
   surveySubmissionReceipts: 'survey-submission-receipts',
+  communityVotes: 'community-votes',
+  communityVoteNominees: 'community-vote-nominees',
+  communityVoteNominationReceipts: 'community-vote-nomination-receipts',
+  communityVoteBallots: 'community-vote-ballots',
+  communityVoteBallotReceipts: 'community-vote-ballot-receipts',
 } as const;
 
 export const APP_SETTINGS_DOCUMENT_ID = 'public';
+export const CATALOG_TAG_SETTINGS_DOCUMENT_ID = 'catalog';
 
 export interface StoredDateCodec<EncodedDate = unknown> {
   encode(value: Date): EncodedDate;
@@ -190,6 +211,17 @@ export function createPersistenceCodecs<EncodedDate>(
     }),
   };
 
+  const catalogTagSettings: PersistenceCodec<CatalogTagSettings> = {
+    decode: (_id, value) => parseCatalogTagSettings(record(value)),
+    encode: (value) => ({ tags: value.tags }),
+  };
+
+  const catalogTagAssignment: PersistenceCodec<CatalogTagAssignment> = {
+    decode: (id, value) =>
+      parseCatalogTagAssignment({ catalogId: id, ...record(value) }),
+    encode: ({ catalogId: _catalogId, ...value }) => value,
+  };
+
   const station: PersistenceCodec<Station> = {
     decode: (id, value) => {
       const data = record(value);
@@ -305,6 +337,65 @@ export function createPersistenceCodecs<EncodedDate>(
     encode: ({ submittedAt, ...value }) => ({
       ...value,
       submittedAt: dates.encode(submittedAt),
+    }),
+  };
+
+  const communityVote: PersistenceCodec<CommunityVote> = {
+    decode: (id, value) => {
+      const data = record(value);
+      return parseCommunityVote({
+        id,
+        ...data,
+        createdAt: dates.decode(data.createdAt),
+        votingStartsAt: dates.decode(data.votingStartsAt),
+        votingEndsAt: dates.decode(data.votingEndsAt),
+        nominationEndsAt:
+          data.nominationEndsAt === undefined
+            ? undefined
+            : dates.decode(data.nominationEndsAt),
+        votingNotificationSentAt:
+          data.votingNotificationSentAt === undefined
+            ? undefined
+            : dates.decode(data.votingNotificationSentAt),
+      });
+    },
+    encode: ({
+      id: _id,
+      createdAt,
+      votingStartsAt,
+      votingEndsAt,
+      nominationEndsAt,
+      votingNotificationSentAt,
+      ...value
+    }) => ({
+      ...value,
+      createdAt: dates.encode(createdAt),
+      votingStartsAt: dates.encode(votingStartsAt),
+      votingEndsAt: dates.encode(votingEndsAt),
+      ...(nominationEndsAt
+        ? { nominationEndsAt: dates.encode(nominationEndsAt) }
+        : {}),
+      ...(votingNotificationSentAt
+        ? {
+            votingNotificationSentAt: dates.encode(
+              votingNotificationSentAt,
+            ),
+          }
+        : {}),
+    }),
+  };
+
+  const communityVoteNominee: PersistenceCodec<CommunityVoteNominee> = {
+    decode: (_id, value) => {
+      const data = record(value);
+      return parseCommunityVoteNominee({
+        ...data,
+        nominatedAt: dates.decode(data.nominatedAt),
+      });
+    },
+    encode: ({ nominatedAt, ...value }) => ({
+      ...value,
+      nominatedAt: dates.encode(nominatedAt),
     }),
   };
 
@@ -458,12 +549,29 @@ export function createPersistenceCodecs<EncodedDate>(
     }),
   };
 
+  const inaturalistPublicLink: PersistenceCodec<InaturalistPublicLink> = {
+    decode: (id, value) => {
+      const data = record(value);
+      return parseInaturalistPublicLink({
+        ...data,
+        inaturalistUserId: Number(id),
+        linkedAt: dates.decode(data.linkedAt),
+      });
+    },
+    encode: ({ inaturalistUserId: _id, linkedAt, ...value }) => ({
+      ...value,
+      linkedAt: dates.encode(linkedAt),
+    }),
+  };
+
   return {
     user,
     publicProfile,
     sighting,
     catalog,
     catalogFavorite,
+    catalogTagSettings,
+    catalogTagAssignment,
     station,
     announcement,
     whitelist,
@@ -474,9 +582,12 @@ export function createPersistenceCodecs<EncodedDate>(
     survey,
     surveyResponse,
     surveySubmissionReceipt,
+    communityVote,
+    communityVoteNominee,
     inaturalistObservation,
     inaturalistCatalog,
     inaturalistStatus,
+    inaturalistPublicLink,
   } as const;
 }
 

@@ -88,7 +88,12 @@ const EditAnnouncement = () => {
           setBusy(true);
           void appModules.announcements.remove(parseUser(user), announcement.id).then((result) => {
             setBusy(false);
-            if (result.ok) router.replace('/announcements');
+            if (result.ok) {
+              router.replace({
+                pathname: '/announcements',
+                params: { section: 'announcements' },
+              });
+            }
             else setError(result.error.message);
           });
         },

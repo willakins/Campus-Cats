@@ -56,6 +56,18 @@ describe('createAppModules', () => {
           submittedAt: new Date('2026-08-06T12:00:00.000Z'),
         }),
       },
+      communityVoting: {
+        submitNomination: async (_actor, _vote, action) => ({
+          action,
+          submittedAt: new Date('2026-08-06T12:00:00.000Z'),
+        }),
+        submitBallot: async (_actor, _vote, optionId) => ({
+          ballotId: 'ballot-1',
+          optionId,
+          submittedAt: new Date('2026-08-06T12:00:00.000Z'),
+        }),
+        getResults: async () => ({ totalVotes: 0, options: [] }),
+      },
       whitelistSubmissions: {
         submit: async () => ({ status: 'created', id: 'application-1' }),
       },
@@ -91,5 +103,9 @@ describe('createAppModules', () => {
       ok: true,
       value: [{ id: 'contact-1', name: 'Campus Cats' }],
     });
+    const tags = await modules.catalogTags.list(officer);
+    expect(tags).toMatchObject({ ok: true });
+    if (!tags.ok) throw new Error('Expected catalog tags');
+    expect(tags.value).toContainEqual({ id: 'adopted', label: 'Adopted' });
   });
 });

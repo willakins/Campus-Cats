@@ -113,6 +113,16 @@ const SightingEntry: React.FC<SightingEntryProps> = ({
             label="Observer"
             value={sighting.observer.displayName ?? sighting.observer.login}
           />
+          {reporterProfile && onReporterPress ? (
+            <View style={{ gap: theme.spacing.xs }}>
+              <AppText color="muted">Linked Campus Cats member</AppText>
+              <MemberIdentity
+                profile={reporterProfile}
+                fallbackEmail={sighting.observer.login}
+                onPress={onReporterPress}
+              />
+            </View>
+          ) : null}
           {sighting.observationFieldValue ? (
             <MetadataRow label="Georgia Tech Cats field" value={sighting.observationFieldValue} />
           ) : null}

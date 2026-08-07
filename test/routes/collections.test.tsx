@@ -4,13 +4,21 @@ import { render, screen, userEvent, waitFor } from '@testing-library/react-nativ
 
 import Catalog from '../../app/(app)/(tabs)/catalog';
 import Stations from '../../app/(app)/(tabs)/stations';
-import { Role, parseCatalogEntry, parseStation, parseUser } from '../../core/domain';
+import {
+  Role,
+  parseCatalogEntry,
+  parseCatalogTag,
+  parseStation,
+  parseUser,
+} from '../../core/domain';
 import { AppThemeProvider } from '../../theme';
 
 const mockCatalogList = jest.fn();
 const mockSightingsList = jest.fn();
 const mockCatalogFavoriteSummary = jest.fn();
 const mockCatalogSetFavorite = jest.fn();
+const mockCatalogTagsList = jest.fn();
+const mockCatalogTagAssignments = jest.fn();
 const mockStationsList = jest.fn();
 const mockStockStatus = jest.fn();
 const mockPush = jest.fn();
@@ -39,6 +47,10 @@ jest.mock('../../composition/appModules', () => ({
       list: (...args: unknown[]) => mockCatalogList(...args),
       favoriteSummary: (...args: unknown[]) => mockCatalogFavoriteSummary(...args),
       setFavorite: (...args: unknown[]) => mockCatalogSetFavorite(...args),
+    },
+    catalogTags: {
+      list: (...args: unknown[]) => mockCatalogTagsList(...args),
+      assignments: (...args: unknown[]) => mockCatalogTagAssignments(...args),
     },
     sightings: { list: (...args: unknown[]) => mockSightingsList(...args) },
     stations: {
@@ -123,8 +135,23 @@ const secondCatalogEntry = parseCatalogEntry({
     descShort: 'A cautious black-and-white cat.',
     descLong: 'Often seen around Tech Green.',
     AoR: 'Tech Green',
+    currentStatus: 'Adopted',
+    furLength: 'Long',
+    tnr: 'No',
+    sex: 'Male',
   },
 });
+const configuredCatalogTags = [
+  parseCatalogTag({ id: 'adopted', label: 'Rehomed' }),
+  parseCatalogTag({ id: 'feral', label: 'Feral' }),
+  parseCatalogTag({ id: 'tnr-complete', label: 'TNR complete' }),
+  parseCatalogTag({ id: 'needs-tnr', label: 'Needs TNR' }),
+  parseCatalogTag({ id: 'female', label: 'Female' }),
+  parseCatalogTag({ id: 'male', label: 'Male' }),
+  parseCatalogTag({ id: 'short-hair', label: 'Short hair' }),
+  parseCatalogTag({ id: 'long-hair', label: 'Long hair' }),
+  parseCatalogTag({ id: 'medical', label: 'Needs medication' }),
+];
 const stocked = parseStation({
   id: 'station-1',
   name: 'Library station',
@@ -156,6 +183,21 @@ describe('catalog collection route', () => {
       warnings: [],
     });
     mockCatalogSetFavorite.mockResolvedValue({ ok: true, value: {}, warnings: [] });
+    mockCatalogTagsList.mockResolvedValue({
+      ok: true,
+      value: configuredCatalogTags,
+      warnings: [],
+    });
+    mockCatalogTagAssignments.mockResolvedValue({
+      ok: true,
+      value: [
+        {
+          catalogId: 'catalog-2',
+          tagIds: ['adopted', 'medical'],
+        },
+      ],
+      warnings: [],
+    });
   });
 
   it('renders loading, empty, success, and authorized creation states', async () => {
@@ -165,7 +207,7 @@ describe('catalog collection route', () => {
     await renderRoute(<Catalog />);
 
     expect(screen.getByText('Cat catalog')).toBeOnTheScreen();
-    expect(screen.getByText('Catalog access')).toBeOnTheScreen();
+    expect(screen.queryByText('Catalog access')).not.toBeOnTheScreen();
     expect(screen.getByRole('progressbar', { name: 'Loading cat cards' })).toBeOnTheScreen();
     finish?.({ ok: true, value: [], warnings: [] });
     expect(await screen.findByText('No cats yet')).toBeOnTheScreen();
@@ -193,9 +235,7 @@ describe('catalog collection route', () => {
     await renderRoute(<Catalog />);
 
     expect(await screen.findByText('No cats yet')).toBeOnTheScreen();
-    expect(
-      screen.getByText('Everyone can browse cat profiles. Only officers can create or edit catalog entries.'),
-    ).toBeOnTheScreen();
+    expect(screen.queryByText('Catalog access')).not.toBeOnTheScreen();
     expect(screen.queryByRole('button', { name: 'Create catalog entry' })).not.toBeOnTheScreen();
   });
 
@@ -219,6 +259,24 @@ describe('catalog collection route', () => {
     expect(screen.getByText('Goldie')).toBeOnTheScreen();
     expect(screen.queryByText('Mimi')).not.toBeOnTheScreen();
     expect(screen.getByText('2 route hearts')).toBeOnTheScreen();
+
+    await user.press(screen.getByRole('button', { name: 'Clear catalog search' }));
+    await user.press(screen.getByRole('button', { name: 'Filter catalog' }));
+    await user.press(screen.getByRole('button', { name: 'Rehomed' }));
+    await user.press(screen.getByRole('button', { name: 'Show cats' }));
+    expect(screen.queryByText('Goldie')).not.toBeOnTheScreen();
+    expect(screen.getByText('Mimi')).toBeOnTheScreen();
+
+    await user.press(screen.getByRole('button', { name: 'Filter catalog. 1 selected' }));
+    await user.press(screen.getByRole('button', { name: 'Needs medication' }));
+    await user.press(screen.getByRole('button', { name: 'Rehomed' }));
+    await user.press(screen.getByRole('button', { name: 'Show cats' }));
+    expect(screen.getByText('Mimi')).toBeOnTheScreen();
+
+    await user.press(screen.getByRole('button', { name: 'Filter catalog. 1 selected' }));
+    await user.press(screen.getByRole('button', { name: 'Clear filters' }));
+    await user.press(screen.getByRole('button', { name: 'Show cats' }));
+    expect(screen.getByText('Goldie')).toBeOnTheScreen();
 
     await user.press(screen.getByRole('button', { name: 'Favorite Goldie' }));
     expect(mockCatalogSetFavorite).toHaveBeenCalledWith(
@@ -262,11 +320,40 @@ describe('station collection route', () => {
     await renderRoute(<Stations />);
 
     expect(screen.getByText('Feeding stations')).toBeOnTheScreen();
-    expect(screen.getByText('Officer-only area')).toBeOnTheScreen();
+    expect(
+      screen.getByRole('button', { name: 'Explain officer-only access' }),
+    ).toBeOnTheScreen();
+    expect(screen.queryByText('Officer-only page')).not.toBeOnTheScreen();
     expect(screen.getByRole('button', { name: 'Stocked' })).toBeOnTheScreen();
     expect(screen.getByRole('button', { name: 'Create station' })).toBeOnTheScreen();
     expect(
       screen.getByRole('progressbar', { name: 'Loading feeding stations' }),
+    ).toBeOnTheScreen();
+  });
+
+  it('expands and collapses the officer-only explanation from the header', async () => {
+    const user = userEvent.setup();
+    await renderRoute(<Stations />);
+
+    await user.press(
+      screen.getByRole('button', { name: 'Explain officer-only access' }),
+    );
+    expect(screen.getByText('Officer-only page')).toBeOnTheScreen();
+    expect(
+      screen.getByText(
+        'This page is only visible to officers of the club. Officers can view, create, and update station locations and stocking details.',
+      ),
+    ).toBeOnTheScreen();
+    expect(
+      screen.queryByRole('button', { name: 'Explain officer-only access' }),
+    ).not.toBeOnTheScreen();
+
+    await user.press(
+      screen.getByRole('button', { name: 'Hide officer-only explanation' }),
+    );
+    expect(screen.queryByText('Officer-only page')).not.toBeOnTheScreen();
+    expect(
+      screen.getByRole('button', { name: 'Explain officer-only access' }),
     ).toBeOnTheScreen();
   });
 

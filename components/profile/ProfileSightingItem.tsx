@@ -4,14 +4,14 @@ import { View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 
-import { LocalSightingRecord } from '../../core/domain';
+import { SightingRecord } from '../../core/domain';
 import { useAppTheme } from '../../theme';
 import { AppText, Card } from '../design';
 
 export const ProfileSightingItem = React.memo(function ProfileSightingItem({
   sighting,
 }: {
-  readonly sighting: LocalSightingRecord;
+  readonly sighting: SightingRecord;
 }) {
   const router = useRouter();
   const theme = useAppTheme();
@@ -47,6 +47,9 @@ export const ProfileSightingItem = React.memo(function ProfileSightingItem({
         </View>
         <View style={{ flex: 1, gap: theme.spacing.xxs }}>
           <AppText variant="cardTitle">{sighting.name}</AppText>
+          {sighting.source === 'inaturalist' ? (
+            <AppText color="primary">iNaturalist sighting</AppText>
+          ) : null}
           <AppText color="muted">
             {sighting.date.toLocaleDateString(undefined, {
               month: 'long',
