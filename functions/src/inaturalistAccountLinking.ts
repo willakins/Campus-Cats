@@ -13,6 +13,7 @@ export type InaturalistLinkAttemptStatus =
 
 export interface InaturalistLinkAttempt {
   readonly firebaseUid: string;
+  readonly clubId: string;
   readonly attemptId: string;
   readonly codeVerifier: string;
   readonly createdAt: Date;
@@ -92,6 +93,7 @@ export async function handleBeginInaturalistAccountLink(
   const createdAt = dependencies.now();
   await dependencies.repository.createAttempt(hash(state), {
     firebaseUid: user.id,
+    clubId: user.clubId,
     attemptId,
     codeVerifier,
     createdAt,

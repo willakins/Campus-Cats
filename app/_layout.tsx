@@ -5,7 +5,12 @@ import { StatusBar } from 'expo-status-bar';
 import { ThemeProvider as PaperThemeProvider } from 'react-native-paper';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
-import { AppSettingsProvider, AuthProvider, useAppSettings } from '@/providers';
+import {
+  AppSettingsProvider,
+  AuthProvider,
+  ClubProvider,
+  useAppSettings,
+} from '@/providers';
 import { AppThemeProvider, useAppTheme } from '@/theme';
 
 const ThemedApplication = () => {
@@ -29,9 +34,7 @@ const BrandedApplication = () => {
         accentColor: settings.accentColor,
       }}
     >
-      <AuthProvider>
-        <ThemedApplication />
-      </AuthProvider>
+      <ThemedApplication />
     </AppThemeProvider>
   );
 };
@@ -39,9 +42,13 @@ const BrandedApplication = () => {
 const RootLayout = () => {
   return (
     <SafeAreaProvider>
-      <AppSettingsProvider>
-        <BrandedApplication />
-      </AppSettingsProvider>
+      <AuthProvider>
+        <ClubProvider>
+          <AppSettingsProvider>
+            <BrandedApplication />
+          </AppSettingsProvider>
+        </ClubProvider>
+      </AuthProvider>
     </SafeAreaProvider>
   );
 };

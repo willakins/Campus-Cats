@@ -6,89 +6,121 @@ service cloud.firestore {
       return request.auth != null;
     }
 
+    function userPath() {
+      return /databases/$(database)/documents/users/$(request.auth.uid);
+    }
+
     function userDocument() {
-      return get(/databases/$(database)/documents/users/$(request.auth.uid));
+      return get(userPath());
     }
 
-    function isActiveUser() {
+    function sameClub(clubId) {
       return signedIn()
-        && (!('banned' in userDocument().data)
-          || userDocument().data.banned != true);
+        && exists(userPath())
+        && userDocument().data.clubId == clubId;
     }
 
-    function role() {
-      return isActiveUser() && userDocument().data.role is int
+    function clubPath(clubId) {
+      return /databases/$(database)/documents/clubs/$(clubId);
+    }
+
+    function clubHasAccess(clubId) {
+      let club = get(clubPath(clubId));
+      return club.data.maintenanceMode != true
+        && (
+          club.data.billingEnforcementEnabled != true
+          || (
+            club.data.accessState == 'enabled'
+            && (
+              !('graceEndsAt' in club.data)
+              || club.data.graceEndsAt == null
+              || request.time < club.data.graceEndsAt
+            )
+            && (
+              !('scheduledEndAt' in club.data)
+              || club.data.scheduledEndAt == null
+              || request.time < club.data.scheduledEndAt
+            )
+          )
+        );
+    }
+
+    function isActiveUser(clubId) {
+      return sameClub(clubId)
+        && userDocument().data.banned != true
+        && clubHasAccess(clubId);
+    }
+
+    function role(clubId) {
+      return isActiveUser(clubId) && userDocument().data.role is int
         ? userDocument().data.role
         : -1;
     }
 
-    function isAdmin() {
-      return role() >= 1;
+    function isAdmin(clubId) {
+      return role(clubId) >= 1;
     }
 
-    function isPresident() {
-      return role() == 3;
+    function isPresident(clubId) {
+      return role(clubId) == 3;
     }
 
-    function contributorPath(kind, contentId) {
-      return /databases/$(database)/documents/content-contributors/$(kind + '__' + contentId);
+    function contributorPath(clubId, kind, contentId) {
+      return /databases/$(database)/documents/clubs/$(clubId)/content-contributors/$(kind + '__' + contentId);
     }
 
-    function contributorsAreAnonymous() {
-      return !contributorPrivacyIsInitialized()
-        || get(/databases/$(database)/documents/app-settings/public).data.sightingsAnonymous != false;
+    function settingsPath(clubId) {
+      return /databases/$(database)/documents/clubs/$(clubId)/app-settings/public;
     }
 
-    function contributorPrivacyIsInitialized() {
-      return exists(/databases/$(database)/documents/app-settings/public);
+    function contributorsAreAnonymous(clubId) {
+      return !exists(settingsPath(clubId))
+        || get(settingsPath(clubId)).data.sightingsAnonymous != false;
     }
 
-    function canReadContributors() {
-      return isAdmin() || !contributorsAreAnonymous();
+    function canReadContributors(clubId) {
+      return isAdmin(clubId) || !contributorsAreAnonymous(clubId);
     }
 
-    function ownsContributor(kind, contentId) {
-      return isActiveUser()
-        && exists(contributorPath(kind, contentId))
-        && get(contributorPath(kind, contentId)).data.user.id == request.auth.uid;
+    function ownsContributor(clubId, kind, contentId) {
+      return isActiveUser(clubId)
+        && exists(contributorPath(clubId, kind, contentId))
+        && get(contributorPath(clubId, kind, contentId)).data.user.id == request.auth.uid;
     }
 
-    function validCurrentUserContributor(data, kind, contentId) {
-      return isActiveUser()
-        && data.keys().hasOnly(['kind', 'contentId', 'user'])
-        && data.kind == kind
-        && data.contentId == contentId
-        && data.user is map
-        && data.user.keys().hasOnly(['id', 'email', 'role'])
-        && data.user.id == request.auth.uid
-        && data.user.email == request.auth.token.email
-        && data.user.role == role();
-    }
-
-    function validCurrentUserSnapshot(user) {
-      return isActiveUser()
+    function validCurrentUserSnapshot(user, clubId) {
+      return isActiveUser(clubId)
         && user is map
-        && user.keys().hasOnly(['id', 'email', 'role'])
+        && user.keys().hasOnly([
+          'id',
+          'email',
+          'role',
+          'clubId',
+          'platformAdmin'
+        ])
         && user.id == request.auth.uid
         && user.email == request.auth.token.email
-        && user.role == role();
+        && user.role == role(clubId)
+        && user.clubId == clubId
+        && user.platformAdmin == (userDocument().data.platformAdmin == true);
     }
 
-    function hasNewContributor(kind, contentId) {
-      return existsAfter(contributorPath(kind, contentId))
-        && getAfter(contributorPath(kind, contentId)).data.user.id == request.auth.uid;
+    function validCurrentUserContributor(data, clubId, kind, contentId) {
+      return data.keys().hasOnly(['kind', 'contentId', 'user'])
+        && data.kind == kind
+        && data.contentId == contentId
+        && validCurrentUserSnapshot(data.user, clubId);
     }
 
-    function contentPath(kind, contentId) {
+    function hasNewContributor(clubId, kind, contentId) {
+      return existsAfter(contributorPath(clubId, kind, contentId))
+        && getAfter(contributorPath(clubId, kind, contentId)).data.user.id == request.auth.uid;
+    }
+
+    function contentPath(clubId, kind, contentId) {
       return kind == 'sighting'
-        ? /databases/$(database)/documents/cat-sightings/$(contentId)
-        : /databases/$(database)/documents/catalog/$(contentId);
-    }
-
-    function ownsSighting(data) {
-      return isActiveUser()
-        && data.createdBy is map
-        && data.createdBy.id == request.auth.uid;
+        ? /databases/$(database)/documents/clubs/$(clubId)/cat-sightings/$(contentId)
+        : /databases/$(database)/documents/clubs/$(clubId)/catalog/$(contentId);
     }
 
     function validWhitelistApplication() {
@@ -112,7 +144,7 @@ service cloud.firestore {
         && request.resource.data.codeWord.size() <= 200;
     }
 
-    function validEvent(data) {
+    function validEvent(data, clubId) {
       return data.keys().hasOnly([
           'title',
           'details',
@@ -143,14 +175,10 @@ service cloud.firestore {
         && data.imageUrl.size() <= 2048
         && data.imageUrl.matches('^https://.+$')
         && data.createdAt is timestamp
-        && data.createdBy is map
-        && data.createdBy.keys().hasOnly(['id', 'email', 'role'])
-        && data.createdBy.id is string
-        && data.createdBy.email is string
-        && data.createdBy.role is int;
+        && validCurrentUserSnapshot(data.createdBy, clubId);
     }
 
-    function validCommunityVote(data) {
+    function validCommunityVote(data, clubId) {
       return data.keys().hasOnly([
           'kind',
           'title',
@@ -182,7 +210,7 @@ service cloud.firestore {
         && data.options is list
         && data.options.size() <= 20
         && data.createdAt is timestamp
-        && validCurrentUserSnapshot(data.createdBy)
+        && validCurrentUserSnapshot(data.createdBy, clubId)
         && data.votingStartsAt is timestamp
         && data.votingEndsAt is timestamp
         && data.votingEndsAt >= data.votingStartsAt + duration.value(1, 'd')
@@ -190,14 +218,14 @@ service cloud.firestore {
         && (
           (
             data.kind == 'contest'
-            && isAdmin()
+            && isAdmin(clubId)
             && data.options.size() >= 2
             && !('nominationEndsAt' in data)
             && data.votingStartsAt == data.createdAt
           )
           || (
             data.kind == 'presidential_election'
-            && isPresident()
+            && isPresident(clubId)
             && data.createdBy.role == 3
             && data.options.size() == 0
             && data.nominationEndsAt is timestamp
@@ -208,300 +236,313 @@ service cloud.firestore {
         );
     }
 
-    match /cat-sightings/{sightingId} {
-      allow read: if isActiveUser()
-        && (
-          !contributorPrivacyIsInitialized()
-          || canReadContributors()
-          || !('createdBy' in resource.data)
-        );
-      allow create: if isActiveUser()
-        && !('createdBy' in request.resource.data)
-        && hasNewContributor('sighting', sightingId);
-      allow update: if ownsContributor('sighting', sightingId)
-        && !('createdBy' in request.resource.data);
-      allow delete: if ownsContributor('sighting', sightingId)
-        && !existsAfter(contributorPath('sighting', sightingId));
-    }
+    match /clubs/{clubId} {
+      allow get: if isActiveUser(clubId);
+      allow list, create, update, delete: if false;
 
-    match /catalog/{entryId} {
-      allow read: if isActiveUser()
-        && (
-          !contributorPrivacyIsInitialized()
-          || canReadContributors()
-          || !('createdBy' in resource.data)
-        );
-      allow create, update: if isAdmin()
-        && !('createdBy' in request.resource.data)
-        && hasNewContributor('catalog', entryId);
-      allow delete: if isAdmin()
-        && !existsAfter(contributorPath('catalog', entryId));
-    }
+      match /access/{accessId} {
+        allow get: if accessId == 'public' && sameClub(clubId);
+        allow list, write: if false;
+      }
 
-    match /content-contributors/{contributorId} {
-      allow read: if isActiveUser()
-        && (canReadContributors() || resource.data.user.id == request.auth.uid);
-      allow create: if
-        (
-          (
+      match /public-profiles/{userId} {
+        allow read: if isActiveUser(clubId);
+        allow write: if false;
+      }
+
+      match /cat-sightings/{sightingId} {
+        allow read: if isActiveUser(clubId)
+          && (canReadContributors(clubId) || !('createdBy' in resource.data));
+        allow create: if isActiveUser(clubId)
+          && !('createdBy' in request.resource.data)
+          && hasNewContributor(clubId, 'sighting', sightingId);
+        allow update: if ownsContributor(clubId, 'sighting', sightingId)
+          && !('createdBy' in request.resource.data);
+        allow delete: if ownsContributor(clubId, 'sighting', sightingId)
+          && !existsAfter(contributorPath(clubId, 'sighting', sightingId));
+      }
+
+      match /catalog/{entryId} {
+        allow read: if isActiveUser(clubId)
+          && (canReadContributors(clubId) || !('createdBy' in resource.data));
+        allow create, update: if isAdmin(clubId)
+          && !('createdBy' in request.resource.data)
+          && hasNewContributor(clubId, 'catalog', entryId);
+        allow delete: if isAdmin(clubId)
+          && !existsAfter(contributorPath(clubId, 'catalog', entryId));
+      }
+
+      match /content-contributors/{contributorId} {
+        allow read: if isActiveUser(clubId)
+          && (canReadContributors(clubId) || resource.data.user.id == request.auth.uid);
+        allow create: if (
             validCurrentUserContributor(
               request.resource.data,
-              'sighting',
+              clubId,
+              request.resource.data.kind,
               request.resource.data.contentId
             )
-            && contributorId == 'sighting__' + request.resource.data.contentId
-          )
-          || (
-            isAdmin()
-            && validCurrentUserContributor(
-              request.resource.data,
-              'catalog',
-              request.resource.data.contentId
+            && (
+              request.resource.data.kind == 'sighting'
+              || (request.resource.data.kind == 'catalog' && isAdmin(clubId))
             )
-            && contributorId == 'catalog__' + request.resource.data.contentId
-          )
-        )
-        && existsAfter(contentPath(
-          request.resource.data.kind,
-          request.resource.data.contentId
-        ));
-      allow update: if
-        (
-          resource.data.kind == 'sighting'
-          && resource.data.user.id == request.auth.uid
-          && validCurrentUserContributor(
+            && contributorId == request.resource.data.kind + '__' + request.resource.data.contentId
+            && existsAfter(contentPath(
+              clubId,
+              request.resource.data.kind,
+              request.resource.data.contentId
+            ))
+          );
+        allow update: if validCurrentUserContributor(
             request.resource.data,
-            'sighting',
+            clubId,
+            resource.data.kind,
             resource.data.contentId
           )
-          && contributorId == 'sighting__' + resource.data.contentId
-        )
-        || (
-          isAdmin()
-          && resource.data.kind == 'catalog'
-          && validCurrentUserContributor(
-            request.resource.data,
-            'catalog',
-            resource.data.contentId
+          && contributorId == resource.data.kind + '__' + resource.data.contentId
+          && (
+            (resource.data.kind == 'sighting' && resource.data.user.id == request.auth.uid)
+            || (resource.data.kind == 'catalog' && isAdmin(clubId))
+          );
+        allow delete: if (
+            (resource.data.kind == 'sighting' && resource.data.user.id == request.auth.uid)
+            || (resource.data.kind == 'catalog' && isAdmin(clubId))
           )
-          && contributorId == 'catalog__' + resource.data.contentId
-        );
-      allow delete: if
-        (
-          (
-            resource.data.kind == 'sighting'
-            && resource.data.user.id == request.auth.uid
-          )
-          || (resource.data.kind == 'catalog' && isAdmin())
-        )
-        && !existsAfter(contentPath(resource.data.kind, resource.data.contentId));
-    }
+          && !existsAfter(contentPath(clubId, resource.data.kind, resource.data.contentId));
+      }
 
-    match /app-settings/{settingsId} {
-      allow read: if settingsId == 'public';
-      allow create, update: if settingsId == 'public'
-        && isPresident()
-        && request.resource.data.keys().hasOnly([
-          'logoUrl',
-          'primaryColor',
-          'accentColor',
-          'sightingsAnonymous'
-        ])
-        && request.resource.data.logoUrl is string
-        && request.resource.data.logoUrl.size() <= 2048
-        && request.resource.data.primaryColor is string
-        && request.resource.data.primaryColor.matches('^#[0-9A-Fa-f]{6}$')
-        && request.resource.data.accentColor is string
-        && request.resource.data.accentColor.matches('^#[0-9A-Fa-f]{6}$')
-        && request.resource.data.sightingsAnonymous is bool;
-      allow delete: if false;
-    }
+      match /app-settings/{settingsId} {
+        allow read: if settingsId == 'public'
+          && (!signedIn() || isActiveUser(clubId));
+        allow create, update: if settingsId == 'public'
+          && isPresident(clubId)
+          && request.resource.data.keys().hasOnly([
+            'logoUrl',
+            'primaryColor',
+            'accentColor',
+            'sightingsAnonymous'
+          ])
+          && request.resource.data.logoUrl is string
+          && request.resource.data.logoUrl.size() <= 2048
+          && request.resource.data.primaryColor.matches('^#[0-9A-Fa-f]{6}$')
+          && request.resource.data.accentColor.matches('^#[0-9A-Fa-f]{6}$')
+          && request.resource.data.sightingsAnonymous is bool;
+        allow delete: if false;
+      }
 
-    match /catalog-favorites/{userId} {
-      allow read: if isActiveUser();
-      allow create, update: if isActiveUser()
-        && request.auth.uid == userId
-        && request.resource.data.keys().hasOnly(['catalogId', 'createdAt'])
-        && request.resource.data.catalogId is string
-        && request.resource.data.catalogId.size() > 0
-        && request.resource.data.catalogId.size() <= 200
-        && request.resource.data.createdAt is timestamp;
-      allow delete: if isActiveUser() && request.auth.uid == userId;
-    }
+      match /catalog-favorites/{userId} {
+        allow read: if isActiveUser(clubId);
+        allow create, update: if isActiveUser(clubId)
+          && request.auth.uid == userId
+          && request.resource.data.keys().hasOnly(['catalogId', 'createdAt'])
+          && request.resource.data.catalogId is string
+          && request.resource.data.catalogId.size() > 0
+          && request.resource.data.catalogId.size() <= 200
+          && request.resource.data.createdAt is timestamp;
+        allow delete: if isActiveUser(clubId) && request.auth.uid == userId;
+      }
 
-    match /catalog-tag-settings/{settingsId} {
-      allow read: if settingsId == 'catalog' && isActiveUser();
-      allow create, update: if settingsId == 'catalog'
-        && isAdmin()
-        && request.resource.data.keys().hasOnly(['tags'])
-        && request.resource.data.tags is list
-        && request.resource.data.tags.size() <= 50;
-      allow delete: if false;
-    }
+      match /catalog-tag-settings/{settingsId} {
+        allow read: if settingsId == 'catalog' && isActiveUser(clubId);
+        allow create, update: if settingsId == 'catalog'
+          && isAdmin(clubId)
+          && request.resource.data.keys().hasOnly(['tags'])
+          && request.resource.data.tags is list
+          && request.resource.data.tags.size() <= 50;
+        allow delete: if false;
+      }
 
-    match /catalog-tag-assignments/{catalogId} {
-      allow read: if isActiveUser();
-      allow create, update: if isAdmin()
-        && request.resource.data.keys().hasOnly(['tagIds'])
-        && request.resource.data.tagIds is list
-        && request.resource.data.tagIds.size() <= 50;
-      allow delete: if isAdmin();
-    }
+      match /catalog-tag-assignments/{catalogId} {
+        allow read: if isActiveUser(clubId);
+        allow create, update: if isAdmin(clubId)
+          && request.resource.data.keys().hasOnly(['tagIds'])
+          && request.resource.data.tagIds is list
+          && request.resource.data.tagIds.size() <= 50;
+        allow delete: if isAdmin(clubId);
+      }
 
-    match /stations/{stationId} {
-      allow read: if isActiveUser();
-      allow create, update, delete: if isAdmin();
-    }
+      match /stations/{stationId} {
+        allow read: if isActiveUser(clubId);
+        allow create, update, delete: if isAdmin(clubId);
+      }
 
-    match /announcements/{announcementId} {
-      allow read: if isActiveUser();
-      allow create, update, delete: if isAdmin();
-    }
+      match /announcements/{announcementId} {
+        allow read: if isActiveUser(clubId);
+        allow create, update, delete: if isAdmin(clubId);
+      }
 
-    match /community-events/{eventId} {
-      allow read: if isActiveUser();
-      allow create: if isAdmin()
-        && validEvent(request.resource.data)
-        && validCurrentUserSnapshot(request.resource.data.createdBy);
-      allow update: if isAdmin()
-        && validEvent(request.resource.data)
-        && request.resource.data.createdAt == resource.data.createdAt
-        && request.resource.data.createdBy == resource.data.createdBy;
-      allow delete: if isAdmin();
-    }
+      match /community-events/{eventId} {
+        allow read: if isActiveUser(clubId);
+        allow create: if isAdmin(clubId)
+          && validEvent(request.resource.data, clubId);
+        allow update: if isAdmin(clubId)
+          && validEvent(request.resource.data, clubId)
+          && request.resource.data.createdAt == resource.data.createdAt
+          && request.resource.data.createdBy == resource.data.createdBy;
+        allow delete: if isAdmin(clubId);
+      }
 
-    match /community-surveys/{surveyId} {
-      allow read: if isActiveUser();
-      allow create: if isAdmin()
-        && request.resource.data.keys().hasOnly([
-          'title',
-          'details',
-          'anonymous',
-          'status',
-          'questions',
-          'createdAt',
-          'createdBy'
-        ])
-        && request.resource.data.title is string
-        && request.resource.data.title.size() > 0
-        && request.resource.data.title.size() <= 120
-        && request.resource.data.title.matches('.*\\S.*')
-        && request.resource.data.details is string
-        && request.resource.data.details.size() <= 5000
-        && request.resource.data.anonymous is bool
-        && request.resource.data.status == 'open'
-        && request.resource.data.questions is list
-        && request.resource.data.questions.size() > 0
-        && request.resource.data.questions.size() <= 40
-        && request.resource.data.createdAt is timestamp
-        && validCurrentUserSnapshot(request.resource.data.createdBy);
-      allow update: if isAdmin()
-        && request.resource.data.diff(resource.data).affectedKeys()
-          .hasOnly(['status', 'closedAt'])
-        && resource.data.status == 'open'
-        && request.resource.data.status == 'closed'
-        && request.resource.data.closedAt is timestamp;
-      allow delete: if false;
-    }
+      match /community-surveys/{surveyId} {
+        allow read: if isActiveUser(clubId);
+        allow create: if isAdmin(clubId)
+          && request.resource.data.keys().hasOnly([
+            'title',
+            'details',
+            'anonymous',
+            'status',
+            'questions',
+            'createdAt',
+            'createdBy'
+          ])
+          && request.resource.data.title is string
+          && request.resource.data.title.size() > 0
+          && request.resource.data.title.size() <= 120
+          && request.resource.data.title.matches('.*\\S.*')
+          && request.resource.data.details is string
+          && request.resource.data.details.size() <= 5000
+          && request.resource.data.anonymous is bool
+          && request.resource.data.status == 'open'
+          && request.resource.data.questions is list
+          && request.resource.data.questions.size() > 0
+          && request.resource.data.questions.size() <= 40
+          && request.resource.data.createdAt is timestamp
+          && validCurrentUserSnapshot(request.resource.data.createdBy, clubId);
+        allow update: if isAdmin(clubId)
+          && request.resource.data.diff(resource.data).affectedKeys()
+            .hasOnly(['status', 'closedAt'])
+          && resource.data.status == 'open'
+          && request.resource.data.status == 'closed'
+          && request.resource.data.closedAt is timestamp;
+        allow delete: if false;
+      }
 
-    match /survey-responses/{responseId} {
-      allow read: if isAdmin();
-      allow create, update, delete: if false;
-    }
+      match /survey-responses/{responseId} {
+        allow read: if isAdmin(clubId);
+        allow write: if false;
+      }
 
-    match /survey-submission-receipts/{receiptId} {
-      allow get: if isActiveUser()
-        && receiptId.matches('^' + request.auth.uid + '__.+$');
-      allow list: if false;
-      allow create, update, delete: if false;
-    }
+      match /survey-submission-receipts/{receiptId} {
+        allow get: if isActiveUser(clubId)
+          && receiptId.matches('^' + request.auth.uid + '__.+$');
+        allow list, create, update, delete: if false;
+      }
 
-    match /community-votes/{voteId} {
-      allow read: if isActiveUser();
-      allow create: if isActiveUser() && validCommunityVote(request.resource.data);
-      allow update, delete: if false;
-    }
+      match /community-votes/{voteId} {
+        allow read: if isActiveUser(clubId);
+        allow create: if isActiveUser(clubId)
+          && validCommunityVote(request.resource.data, clubId);
+        allow update, delete: if false;
+      }
 
-    match /community-vote-nominees/{nomineeId} {
-      allow read: if isActiveUser();
-      allow create, update, delete: if false;
-    }
+      match /community-vote-nominees/{nomineeId} {
+        allow read: if isActiveUser(clubId);
+        allow write: if false;
+      }
 
-    match /community-vote-nomination-receipts/{receiptId} {
-      allow get: if isActiveUser()
-        && receiptId.matches('^' + request.auth.uid + '__.+$');
-      allow list: if false;
-      allow create, update, delete: if false;
-    }
+      match /community-vote-nomination-receipts/{receiptId} {
+        allow get: if isActiveUser(clubId)
+          && receiptId.matches('^' + request.auth.uid + '__.+$');
+        allow list, create, update, delete: if false;
+      }
 
-    match /community-vote-ballots/{ballotId} {
-      allow read, create, update, delete: if false;
-    }
+      match /community-vote-ballots/{ballotId} {
+        allow read, write: if false;
+      }
 
-    match /community-vote-ballot-receipts/{receiptId} {
-      allow get: if isActiveUser()
-        && receiptId.matches('^' + request.auth.uid + '__.+$');
-      allow list: if false;
-      allow create, update, delete: if false;
-    }
+      match /community-vote-ballot-receipts/{receiptId} {
+        allow get: if isActiveUser(clubId)
+          && receiptId.matches('^' + request.auth.uid + '__.+$');
+        allow list, create, update, delete: if false;
+      }
 
-    match /contact-info/{contactId} {
-      allow read: if isActiveUser();
-      allow create, update, delete: if isAdmin();
-    }
+      match /contact-info/{contactId} {
+        allow read: if isActiveUser(clubId);
+        allow create, update, delete: if isAdmin(clubId);
+      }
 
-    match /inaturalist-observations/{observationId} {
-      allow read: if isActiveUser() && (resource.data.visible == true || isAdmin());
-      allow create, update, delete: if false;
-    }
+      match /inaturalist-observations/{observationId} {
+        allow read: if isActiveUser(clubId)
+          && (resource.data.visible == true || isAdmin(clubId));
+        allow write: if false;
+      }
 
-    match /inaturalist-guide-profiles/{profileId} {
-      allow read: if isActiveUser() && (resource.data.visible == true || isAdmin());
-      allow create, update, delete: if false;
-    }
+      match /inaturalist-guide-profiles/{profileId} {
+        allow read: if isActiveUser(clubId)
+          && (resource.data.visible == true || isAdmin(clubId));
+        allow write: if false;
+      }
 
-    match /inaturalist-link-attempts/{attemptId} {
-      allow read, create, update, delete: if false;
-    }
+      match /inaturalist-public-links/{inaturalistUserId} {
+        allow read: if isActiveUser(clubId);
+        allow write: if false;
+      }
 
-    match /inaturalist-account-links/{userId} {
-      allow read, create, update, delete: if false;
-    }
+      match /integration-state/{integrationId} {
+        allow read: if isAdmin(clubId);
+        allow write: if false;
+      }
 
-    match /inaturalist-public-links/{inaturalistUserId} {
-      allow read: if isActiveUser();
-      allow create, update, delete: if false;
-    }
+      match /whitelist/{applicationId} {
+        allow create: if validWhitelistApplication();
+        allow read, delete: if isAdmin(clubId);
+        allow update: if false;
+      }
 
-    match /integration-state/{integrationId} {
-      allow read: if isAdmin();
-      allow create, update, delete: if false;
-    }
-
-    match /whitelist/{applicationId} {
-      allow create: if validWhitelistApplication();
-      allow read, delete: if isAdmin();
-      allow update: if false;
+      match /billing-usage/{periodId} {
+        allow read, write: if false;
+      }
     }
 
     match /users/{userId} {
-      allow get: if signedIn() && (request.auth.uid == userId || isAdmin());
-      allow list: if isAdmin();
-      allow create: if signedIn()
+      allow get: if signedIn()
+        && (
+          request.auth.uid == userId
+          || (
+            isActiveUser(resource.data.clubId)
+            && isAdmin(resource.data.clubId)
+            && userDocument().data.clubId == resource.data.clubId
+          )
+        );
+      allow list: if signedIn()
+        && isActiveUser(resource.data.clubId)
+        && isAdmin(resource.data.clubId)
+        && userDocument().data.clubId == resource.data.clubId;
+      allow create: if false;
+      allow update: if signedIn()
         && request.auth.uid == userId
-        && request.resource.data.keys().hasOnly(['email', 'role'])
-        && request.resource.data.email == request.auth.token.email
-        && request.resource.data.role == 0;
-      allow update: if isActiveUser()
-        && request.auth.uid == userId
+        && isActiveUser(resource.data.clubId)
         && request.resource.data.diff(resource.data).affectedKeys()
           .hasOnly(['expoPushToken']);
       allow delete: if false;
     }
 
-    match /public-profiles/{userId} {
-      allow read: if isActiveUser();
-      allow create, update, delete: if false;
+    match /platform-admins/{userId} {
+      allow get: if signedIn() && request.auth.uid == userId;
+      allow list, write: if false;
+    }
+
+    match /billing-accounts/{clubId} {
+      allow read, write: if false;
+    }
+
+    match /billing-usage-events/{eventId} {
+      allow read, write: if false;
+    }
+
+    match /stripe-events/{eventId} {
+      allow read, write: if false;
+    }
+
+    match /billing-invoice-reconciliations/{invoiceId} {
+      allow read, write: if false;
+    }
+
+    match /inaturalist-link-attempts/{attemptId} {
+      allow read, write: if false;
+    }
+
+    match /inaturalist-account-links/{userId} {
+      allow read, write: if false;
     }
 
     match /{document=**} {

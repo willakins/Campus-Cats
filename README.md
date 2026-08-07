@@ -35,9 +35,9 @@ Campus Cats brings those workflows into one mobile experience. Members can recor
 | **Announcements**              | Give officers a central place to publish updates and send push notifications to members.                                                        |
 | **Community engagement**       | Group announcements, image-backed events, clearly labeled surveys, response history, and future chat in one Community tab.                     |
 | **Community access**           | Support Georgia Tech SSO, an alumni whitelist workflow, and Firebase-backed authentication.                                                     |
-| **Role-aware administration**  | Separate member, officer, Vice-President, President, and developer capabilities, with an atomic presidential succession workflow.               |
+| **Role-aware administration**  | Separate club roles from global platform administration, with an atomic presidential succession workflow.                                    |
 | **iNaturalist integration**    | Bring public Georgia Tech project sightings and guide profiles into the existing map and catalog through a daily, attributed, read-only import. |
-| **Officer billing**            | Review monthly Firebase and Google Cloud usage, credits, and net app costs from a role-protected screen.                                        |
+| **Subscription billing**       | Give each club isolated data, usage-based Stripe billing, hosted invoices, and President-managed payment controls.                             |
 | **President-managed settings** | Change login branding and accessible app colors, and control whether Campus Cats contributor identities are visible to Members.                 |
 | **Member moderation**          | Power-role users can record disciplinary notices and ban or restore Member accounts with Firebase-enforced login blocking.                      |
 
@@ -102,10 +102,12 @@ The interface can be explored locally, but authentication, maps, notifications, 
 - [Detailed design document](Detailed%20Design%20Document.pdf) — the team's original capstone design artifact; it includes planned ideas beyond the final v1 scope
 - [Firebase operations](FIREBASE.md)
 - [Architecture](docs/architecture/0001-feature-modules.md)
+- [Multi-club subscription architecture](docs/architecture/0003-multi-club-subscription-tenancy.md)
 - [Authorization matrix](docs/architecture/behavior-matrix.md)
 - [Campus Field Guide design system](docs/design-system.md)
 - [iNaturalist import and operations](docs/inaturalist-import.md)
 - [App Billing operations](docs/billing.md)
+- [Club subscriptions and tenant migration](docs/billing-operations.md)
 - [App settings and contributor privacy](docs/app-settings.md)
 - [Community engagement](docs/community-engagement.md)
 - [Testing guide](docs/testing.md)

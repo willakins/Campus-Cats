@@ -47,7 +47,7 @@ function parseBillingSummary(value: unknown): BillingSummary {
     datasetId,
     generatedAt,
     dataThrough:
-      data.dataThrough === undefined
+      data.dataThrough === undefined || data.dataThrough === null
         ? undefined
         : dateString(data.dataThrough),
     months: data.months.map(parseMonthlyCost),

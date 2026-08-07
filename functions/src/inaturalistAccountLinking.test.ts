@@ -17,6 +17,7 @@ const member: ManagedUser = {
   id: 'member-1',
   email: 'member@gatech.edu',
   role: 0,
+  clubId: 'campus-cats',
 };
 
 function buildDependencies() {

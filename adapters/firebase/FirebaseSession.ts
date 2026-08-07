@@ -2,6 +2,7 @@ import {
   Auth,
   User as FirebaseUser,
   createUserWithEmailAndPassword,
+  deleteUser,
   sendPasswordResetEmail,
   signInWithCredential,
   signInWithEmailAndPassword,
@@ -10,19 +11,22 @@ import {
 } from 'firebase/auth';
 import { Firestore, doc, getDoc, onSnapshot, setDoc } from 'firebase/firestore';
 
-import { ManagedUser, Role, User, parseManagedUser } from '../../core/domain';
+import { ManagedUser, User, parseManagedUser } from '../../core/domain';
 import {
   BannedAccountError,
   ExternalSignInResult,
   SessionPort,
+  UnprovisionedAccountError,
 } from '../../core/ports';
 import { SamlCredentialProvider } from './ExpoSamlCredentialProvider';
+import { FirebaseTenantScope } from './FirebaseTenantScope';
 
 export class FirebaseSession implements SessionPort {
   constructor(
     private readonly auth: Auth,
     private readonly firestore: Firestore,
     private readonly saml: SamlCredentialProvider,
+    private readonly tenantScope?: FirebaseTenantScope,
   ) {}
 
   async currentUser(): Promise<User | undefined> {
@@ -62,6 +66,7 @@ export class FirebaseSession implements SessionPort {
                 void signOut(this.auth).catch(onError);
                 return;
               }
+              this.tenantScope?.setClubId(profile.clubId);
               onChange(profile);
             } catch (error) {
               onError(error);
@@ -94,6 +99,13 @@ export class FirebaseSession implements SessionPort {
       email,
       password,
     );
+    const profile = await getDoc(
+      doc(this.firestore, 'users', credential.user.uid),
+    );
+    if (!profile.exists()) {
+      await deleteUser(credential.user).catch(() => undefined);
+      throw new UnprovisionedAccountError();
+    }
     return this.ensureActiveProfile(credential.user);
   }
 
@@ -130,6 +142,7 @@ export class FirebaseSession implements SessionPort {
 
   async signOut(): Promise<void> {
     await signOut(this.auth);
+    this.tenantScope?.reset();
   }
 
   async registerPushToken(token: string): Promise<void> {
@@ -145,14 +158,12 @@ export class FirebaseSession implements SessionPort {
     const reference = doc(this.firestore, 'users', user.uid);
     const snapshot = await getDoc(reference);
     if (!snapshot.exists()) {
-      await setDoc(reference, { email: user.email, role: Role.Member });
-      return parseManagedUser({
-        id: user.uid,
-        email: user.email,
-        role: Role.Member,
-      });
+      await signOut(this.auth);
+      throw new UnprovisionedAccountError();
     }
-    return parseManagedUser({ id: snapshot.id, ...snapshot.data() });
+    const profile = parseManagedUser({ id: snapshot.id, ...snapshot.data() });
+    this.tenantScope?.setClubId(profile.clubId);
+    return profile;
   }
 
   private async ensureActiveProfile(user: FirebaseUser): Promise<ManagedUser> {

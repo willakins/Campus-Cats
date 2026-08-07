@@ -6,98 +6,137 @@ service firebase.storage {
       return request.auth != null;
     }
 
-    function isActiveUser() {
+    function userDocument() {
+      return firestore.get(/databases/(default)/documents/users/$(request.auth.uid));
+    }
+
+    function sameClub(clubId) {
       return signedIn()
-        && (!('banned' in firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data)
-          || firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data.banned != true);
+        && userDocument().data.clubId == clubId;
     }
 
-    function role() {
-      return isActiveUser()
-        ? firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data.role
-        : -1;
+    function clubDocument(clubId) {
+      return firestore.get(/databases/(default)/documents/clubs/$(clubId));
     }
 
-    function isAdmin() {
-      return role() >= 1;
-    }
-
-    function isPresident() {
-      return role() == 3;
-    }
-
-    function ownsSighting(sightingId) {
-      return isActiveUser()
+    function clubHasAccess(clubId) {
+      let club = clubDocument(clubId);
+      return club.data.maintenanceMode != true
         && (
-          resource.metadata.ownerId == request.auth.uid
+          club.data.billingEnforcementEnabled != true
           || (
-            firestore.exists(/databases/(default)/documents/cat-sightings/$(sightingId))
-            && firestore.exists(/databases/(default)/documents/content-contributors/$(('sighting__' + sightingId)))
-            && firestore.get(/databases/(default)/documents/content-contributors/$(('sighting__' + sightingId))).data.user.id == request.auth.uid
+            club.data.accessState == 'enabled'
+            && (
+              !('graceEndsAt' in club.data)
+              || club.data.graceEndsAt == null
+              || request.time < club.data.graceEndsAt
+            )
+            && (
+              !('scheduledEndAt' in club.data)
+              || club.data.scheduledEndAt == null
+              || request.time < club.data.scheduledEndAt
+            )
           )
         );
     }
 
-    match /cat-sightings/{sightingId}/{fileName} {
-      allow read: if isActiveUser();
-      allow create: if isActiveUser()
-        && request.resource.metadata.ownerId == request.auth.uid;
-      allow update, delete: if ownsSighting(sightingId);
+    function isActiveUser(clubId) {
+      return sameClub(clubId)
+        && userDocument().data.banned != true
+        && clubHasAccess(clubId);
     }
 
-    match /public-profiles/{userId}/{fileName} {
-      allow read: if isActiveUser();
-      allow create: if isActiveUser()
+    function role(clubId) {
+      return isActiveUser(clubId) ? userDocument().data.role : -1;
+    }
+
+    function isAdmin(clubId) {
+      return role(clubId) >= 1;
+    }
+
+    function isPresident(clubId) {
+      return role(clubId) == 3;
+    }
+
+    function validImage() {
+      return request.resource.size <= 10 * 1024 * 1024
+        && request.resource.contentType.matches('image/.*')
+        && !('billingInitiatedBy' in request.resource.metadata);
+    }
+
+    function ownsSighting(clubId, sightingId) {
+      return isActiveUser(clubId)
+        && (
+          resource.metadata.ownerId == request.auth.uid
+          || (
+            firestore.exists(/databases/(default)/documents/clubs/$(clubId)/cat-sightings/$(sightingId))
+            && firestore.exists(/databases/(default)/documents/clubs/$(clubId)/content-contributors/$(('sighting__' + sightingId)))
+            && firestore.get(/databases/(default)/documents/clubs/$(clubId)/content-contributors/$(('sighting__' + sightingId))).data.user.id == request.auth.uid
+          )
+        );
+    }
+
+    match /clubs/{clubId}/cat-sightings/{sightingId}/{fileName} {
+      allow read: if isActiveUser(clubId);
+      allow create: if isActiveUser(clubId)
+        && validImage()
+        && request.resource.metadata.ownerId == request.auth.uid;
+      allow update: if ownsSighting(clubId, sightingId)
+        && validImage()
+        && request.resource.metadata.ownerId == request.auth.uid;
+      allow delete: if ownsSighting(clubId, sightingId);
+    }
+
+    match /clubs/{clubId}/public-profiles/{userId}/{fileName} {
+      allow read: if isActiveUser(clubId);
+      allow create: if isActiveUser(clubId)
         && request.auth.uid == userId
-        && request.resource.metadata.ownerId == request.auth.uid
-        && request.resource.size <= 10 * 1024 * 1024
-        && request.resource.contentType.matches('image/.*');
-      allow update, delete: if isActiveUser()
+        && validImage()
+        && request.resource.metadata.ownerId == request.auth.uid;
+      allow update: if isActiveUser(clubId)
         && request.auth.uid == userId
         && resource.metadata.ownerId == request.auth.uid
-        && (request.resource == null
-          || (request.resource.size <= 10 * 1024 * 1024
-            && request.resource.metadata.ownerId == request.auth.uid
-            && request.resource.contentType.matches('image/.*')));
+        && validImage()
+        && request.resource.metadata.ownerId == request.auth.uid;
+      allow delete: if isActiveUser(clubId)
+        && request.auth.uid == userId
+        && resource.metadata.ownerId == request.auth.uid;
     }
 
-    match /catalog/{entryId}/{fileName} {
-      allow read: if isActiveUser();
-      allow write: if isAdmin();
+    match /clubs/{clubId}/catalog/{entryId}/{fileName} {
+      allow read: if isActiveUser(clubId);
+      allow create, update: if isAdmin(clubId) && validImage();
+      allow delete: if isAdmin(clubId);
     }
 
-    match /stations/{stationId}/{fileName} {
-      allow read: if isActiveUser();
-      allow write: if isAdmin();
+    match /clubs/{clubId}/stations/{stationId}/{fileName} {
+      allow read: if isActiveUser(clubId);
+      allow create, update: if isAdmin(clubId) && validImage();
+      allow delete: if isAdmin(clubId);
     }
 
-    match /announcements/{announcementId}/{fileName} {
-      allow read: if isActiveUser();
-      allow write: if isAdmin();
+    match /clubs/{clubId}/announcements/{announcementId}/{fileName} {
+      allow read: if isActiveUser(clubId);
+      allow create, update: if isAdmin(clubId) && validImage();
+      allow delete: if isAdmin(clubId);
     }
 
-    match /community-events/{eventId}/{fileName} {
-      allow read: if isActiveUser();
-      allow create, update: if isAdmin()
-        && request.resource.size <= 10 * 1024 * 1024
-        && request.resource.contentType.matches('image/.*');
-      allow delete: if isAdmin();
+    match /clubs/{clubId}/community-events/{eventId}/{fileName} {
+      allow read: if isActiveUser(clubId);
+      allow create, update: if isAdmin(clubId) && validImage();
+      allow delete: if isAdmin(clubId);
     }
 
-    match /community-votes/{voteId}/{fileName} {
-      allow read: if isActiveUser();
-      allow create, update: if isAdmin()
-        && request.resource.size <= 10 * 1024 * 1024
-        && request.resource.contentType.matches('image/.*');
-      allow delete: if isAdmin();
+    match /clubs/{clubId}/community-votes/{voteId}/{fileName} {
+      allow read: if isActiveUser(clubId);
+      allow create, update: if isAdmin(clubId) && validImage();
+      allow delete: if isAdmin(clubId);
     }
 
-    match /app-branding/{fileName} {
-      allow read: if true;
-      allow create, update: if isPresident()
-        && request.resource.size <= 10 * 1024 * 1024
-        && request.resource.contentType.matches('image/.*');
-      allow delete: if isPresident();
+    match /clubs/{clubId}/app-branding/{fileName} {
+      allow read: if !signedIn() || isActiveUser(clubId);
+      allow create, update: if isPresident(clubId) && validImage();
+      allow delete: if isPresident(clubId);
     }
 
     match /{allPaths=**} {

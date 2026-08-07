@@ -11,8 +11,8 @@ import {
 } from './inaturalistHandlers';
 
 const users = new Map<string, ManagedUser>([
-  ['member-1', { id: 'member-1', email: 'member@example.com', role: 0 }],
-  ['admin-1', { id: 'admin-1', email: 'admin@example.com', role: 1 }],
+  ['member-1', { id: 'member-1', email: 'member@example.com', role: 0, clubId: 'campus-cats' }],
+  ['admin-1', { id: 'admin-1', email: 'admin@example.com', role: 1, clubId: 'campus-cats' }],
 ]);
 
 function dependencies() {

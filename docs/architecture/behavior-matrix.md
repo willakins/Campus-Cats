@@ -2,7 +2,9 @@
 
 This matrix is the compatibility contract for the architecture refactor. Existing
 collection names, document fields, Storage paths, and user-visible flows remain stable
-unless a later decision explicitly changes them.
+unless a later decision explicitly changes them. ADR 0003 intentionally replaces the
+root persistence layout with tenant paths and separates platform administration from
+club roles.
 
 | Capability                                 | Unauthenticated | Member                       | Officer               | Vice-President        | President             | Developer              |
 | ------------------------------------------ | --------------- | ---------------------------- | --------------------- | --------------------- | --------------------- | ---------------------- |
@@ -33,11 +35,11 @@ unless a later decision explicitly changes them.
 | Browse Developer accounts                  | Deny            | Deny                         | Deny                  | Deny                  | Deny                  | Read-only              |
 | Crown a President                          | Deny            | Deny                         | Deny                  | Deny                  | Transfer only         | First appointment only |
 | Manage Presidents or Developers ordinarily | Deny            | Deny                         | Deny                  | Deny                  | Deny                  | Deny                   |
-| View app billing costs                     | Deny            | Deny                         | Callable only         | Callable only         | Callable only         | Callable only          |
+| Manage club subscription billing           | Deny            | Deny                         | Deny                  | Deny                  | Callable only         | Deny                   |
 | Manage app branding and privacy            | Deny            | Deny                         | Deny                  | Deny                  | Allow                 | Deny                   |
 | View contributors while anonymous          | Deny            | Hidden (self ownership only) | Allow                 | Allow                 | Allow                 | Allow                  |
 | View contributors while non-anonymous      | Deny            | Allow                        | Allow                 | Allow                 | Allow                 | Allow                  |
-| Open Firebase or Google Cloud consoles     | Deny            | Deny                         | Deny                  | Deny                  | Deny                  | Allow                  |
+| Open Firebase or Google Cloud consoles     | Deny            | Deny                         | Deny                  | Deny                  | Deny                  | Deny                   |
 | Update a push token                        | Deny            | Own only                     | Own only              | Own only              | Own only              | Own only               |
 | Update non-privileged profile fields       | Deny            | Own only                     | Own only              | Own only              | Own only              | Own only               |
 | Read visible imported iNaturalist records  | Deny            | Allow                        | Allow                 | Allow                 | Allow                 | Allow                  |
@@ -79,6 +81,20 @@ unless a later decision explicitly changes them.
   the stored phase inside their Firestore transactions, create a per-account receipt,
   and keep anonymous ballots separate. Presidential voting begins from timestamps,
   and a scheduled Function broadcasts the second-round opening once.
+- Club content and public profiles are tenant-scoped. A suspended user may read only
+  their own global identity and `clubs/{clubId}/access/public`; the President retains
+  server billing endpoints.
+- The legacy Developer role is migration-only. `platformAdmin` is an independent
+  global flag: it permits infrastructure-cost reports and provider console links, but
+  every club-content decision continues to use the account's ordinary club role.
+
+## Platform administration
+
+| Capability                            | Ordinary account | `platformAdmin` account |
+| ------------------------------------- | ---------------- | ----------------------- |
+| View Firebase/Google Cloud app costs  | Deny             | Callable only           |
+| Open provider administration consoles | Deny             | Allow                   |
+| Gain additional club-content rights   | Deny             | Deny                    |
 
 ## Test seams
 
@@ -86,7 +102,7 @@ unless a later decision explicitly changes them.
 - Persistence and media behavior use shared contracts against in-memory and Firebase
   Emulator adapters.
 - Screens and forms are tested through accessible rendered interactions.
-- Callable behavior is tested through dependency-injected handlers, with emulator
+- Callable behavior is tested through dependency-injected domain handlers, with emulator
   tests covering Firebase wrappers.
 - Firestore and Storage access are tested as authorization matrices in the Emulator
   Suite.

@@ -8,6 +8,7 @@ import {
 import { doc, Firestore, setDoc } from 'firebase/firestore';
 
 import { FirebaseInaturalistReader } from '../../adapters/firebase/FirebaseInaturalistReader';
+import { FirebaseTenantScope } from '../../adapters/firebase/FirebaseTenantScope';
 import { inaturalistReaderContract } from '../contracts/inaturalistReaderContract';
 import {
   FIREBASE_TEST_PROJECT_ID,
@@ -32,24 +33,33 @@ describe('Firebase iNaturalist reader adapter', () => {
         setDoc(doc(firestore, 'users', 'admin-inat-reader'), {
           email: 'admin@gatech.edu',
           role: 1,
+          clubId: 'campus-cats',
+          platformAdmin: false,
         }),
-        setDoc(doc(firestore, 'inaturalist-observations', '1001'), {
+        setDoc(doc(firestore, 'clubs', 'campus-cats'), {
+          name: 'Campus Cats',
+          timezone: 'America/New_York',
+          billingEmail: 'billing@example.com',
+          billingEnforcementEnabled: false,
+          accessState: 'enabled',
+        }),
+        setDoc(doc(firestore, 'clubs', 'campus-cats', 'inaturalist-observations', '1001'), {
           visible: true,
           displayName: 'Goldie',
         }),
-        setDoc(doc(firestore, 'inaturalist-observations', '1002'), {
+        setDoc(doc(firestore, 'clubs', 'campus-cats', 'inaturalist-observations', '1002'), {
           visible: false,
           displayName: 'Hidden cat',
         }),
-        setDoc(doc(firestore, 'inaturalist-guide-profiles', '2001'), {
+        setDoc(doc(firestore, 'clubs', 'campus-cats', 'inaturalist-guide-profiles', '2001'), {
           visible: true,
           displayName: 'Goldie',
         }),
-        setDoc(doc(firestore, 'inaturalist-guide-profiles', '2002'), {
+        setDoc(doc(firestore, 'clubs', 'campus-cats', 'inaturalist-guide-profiles', '2002'), {
           visible: false,
           displayName: 'Retired profile',
         }),
-        setDoc(doc(firestore, 'integration-state', 'inaturalist'), {
+        setDoc(doc(firestore, 'clubs', 'campus-cats', 'integration-state', 'inaturalist'), {
           running: false,
           lastStatus: 'success',
         }),
@@ -70,6 +80,7 @@ describe('Firebase iNaturalist reader adapter', () => {
             email: 'admin@gatech.edu',
           })
           .firestore() as unknown as Firestore,
+        new FirebaseTenantScope(),
       ),
   );
 });

@@ -23,11 +23,11 @@ import {
 
 function buildDependencies(overrides: Partial<HandlerDependencies> = {}) {
   const users = new Map<string, ManagedUser>([
-    ['member-1', { id: 'member-1', email: 'member@example.com', role: 0, banned: false }],
-    ['admin-1', { id: 'admin-1', email: 'admin@example.com', role: 1, banned: false }],
-    ['super-1', { id: 'super-1', email: 'super@example.com', role: 2, banned: false }],
-    ['president-1', { id: 'president-1', email: 'president@example.com', role: 3, banned: false }],
-    ['developer-1', { id: 'developer-1', email: 'developer@example.com', role: 4, banned: false }],
+    ['member-1', { id: 'member-1', email: 'member@example.com', role: 0, clubId: 'campus-cats', banned: false }],
+    ['admin-1', { id: 'admin-1', email: 'admin@example.com', role: 1, clubId: 'campus-cats', banned: false }],
+    ['super-1', { id: 'super-1', email: 'super@example.com', role: 2, clubId: 'campus-cats', banned: false }],
+    ['president-1', { id: 'president-1', email: 'president@example.com', role: 3, clubId: 'campus-cats', banned: false }],
+    ['developer-1', { id: 'developer-1', email: 'developer@example.com', role: 4, clubId: 'campus-cats', platformAdmin: true, banned: false }],
   ]);
   const operations: string[] = [];
   const batches: number[] = [];
@@ -35,6 +35,10 @@ function buildDependencies(overrides: Partial<HandlerDependencies> = {}) {
   const dependencies: HandlerDependencies = {
     async getUser(id) {
       return users.get(id);
+    },
+    async getPlatformAdmin(id) {
+      const user = users.get(id);
+      return user?.platformAdmin ? user : undefined;
     },
     async getBillingSummary() {
       return {
@@ -128,7 +132,7 @@ async function rejectsWithCode(
 }
 
 describe('callable handlers', () => {
-  it('restricts monthly billing data to administrators', async () => {
+  it('restricts infrastructure billing data to platform administrators', async () => {
     const { dependencies } = buildDependencies();
 
     await rejectsWithCode(
@@ -143,11 +147,14 @@ describe('callable handlers', () => {
         ),
       'permission-denied',
     );
-    const result = await handleGetBillingSummary(
-      { authUid: 'admin-1', data: {} },
-      dependencies,
+    await rejectsWithCode(
+      () =>
+        handleGetBillingSummary(
+          { authUid: 'admin-1', data: {} },
+          dependencies,
+        ),
+      'permission-denied',
     );
-    assert.equal(result.status, 'ready');
     assert.equal(
       (
         await handleGetBillingSummary(

@@ -13,6 +13,7 @@ export interface StoredCommunityVoteOption {
 
 export interface StoredCommunityVote {
   readonly id: string;
+  readonly clubId: string;
   readonly kind: CommunityVoteKind;
   readonly title?: string;
   readonly votingStartsAtMillis: number;
@@ -45,7 +46,7 @@ export interface CommunityVoteResults {
 export interface CommunityVotingDependencies {
   now(): Date;
   getUser(id: string): Promise<ManagedUser | undefined>;
-  getVote(id: string): Promise<StoredCommunityVote | undefined>;
+  getVote(id: string, clubId: string): Promise<StoredCommunityVote | undefined>;
   submitNomination(input: {
     readonly actor: ManagedUser;
     readonly vote: StoredCommunityVote;
@@ -112,9 +113,10 @@ const requireActor = async (
 
 const requireVote = async (
   voteId: string,
+  clubId: string,
   dependencies: CommunityVotingDependencies,
 ): Promise<StoredCommunityVote> => {
-  const vote = await dependencies.getVote(voteId);
+  const vote = await dependencies.getVote(voteId, clubId);
   if (!vote) throw new HandlerError('not-found', 'Vote not found');
   return vote;
 };
@@ -131,7 +133,7 @@ export async function handleSubmitCommunityNomination(
       'Choose whether to nominate yourself or abstain',
     );
   }
-  const vote = await requireVote(voteId, dependencies);
+  const vote = await requireVote(voteId, actor.clubId, dependencies);
   if (vote.kind !== 'presidential_election') {
     throw new HandlerError(
       'failed-precondition',
@@ -168,7 +170,7 @@ export async function handleSubmitCommunityBallot(
   ) {
     throw new HandlerError('invalid-argument', 'Choose a valid voting option');
   }
-  const vote = await requireVote(voteId, dependencies);
+  const vote = await requireVote(voteId, actor.clubId, dependencies);
   const submittedAt = dependencies.now();
   if (submittedAt.getTime() < vote.votingStartsAtMillis) {
     throw new HandlerError('failed-precondition', 'Voting has not started');
@@ -200,8 +202,12 @@ export async function handleGetCommunityVoteResults(
   request: HandlerRequest<ResultsRequest>,
   dependencies: CommunityVotingDependencies,
 ): Promise<CommunityVoteResults> {
-  await requireActor(request.authUid, dependencies);
-  const vote = await requireVote(parseVoteId(request.data.voteId), dependencies);
+  const actor = await requireActor(request.authUid, dependencies);
+  const vote = await requireVote(
+    parseVoteId(request.data.voteId),
+    actor.clubId,
+    dependencies,
+  );
   if (dependencies.now().getTime() < vote.votingEndsAtMillis) {
     throw new HandlerError(
       'failed-precondition',
@@ -217,8 +223,8 @@ export interface CommunityVoteStartNotificationDependencies {
   sendNotification(notification: {
     readonly title: string;
     readonly body: string;
-  }): Promise<void>;
-  markNotificationSent(voteId: string, sentAt: Date): Promise<void>;
+  }, clubId: string): Promise<void>;
+  markNotificationSent(vote: StoredCommunityVote, sentAt: Date): Promise<void>;
 }
 
 export async function notifyStartedPresidentialVotes(
@@ -234,18 +240,21 @@ export async function notifyStartedPresidentialVotes(
       vote.votingNotificationSentAtMillis === undefined,
   );
   for (const vote of ready) {
-    await dependencies.sendNotification({
-      title: 'Voting for club president has started',
-      body: `Choose from the nominees before ${new Date(
-        vote.votingEndsAtMillis,
-      ).toLocaleDateString('en-US', {
-        month: 'short',
-        day: 'numeric',
-        year: 'numeric',
-        timeZone: 'America/New_York',
-      })}.`,
-    });
-    await dependencies.markNotificationSent(vote.id, now);
+    await dependencies.sendNotification(
+      {
+        title: 'Voting for club president has started',
+        body: `Choose from the nominees before ${new Date(
+          vote.votingEndsAtMillis,
+        ).toLocaleDateString('en-US', {
+          month: 'short',
+          day: 'numeric',
+          year: 'numeric',
+          timeZone: 'America/New_York',
+        })}.`,
+      },
+      vote.clubId,
+    );
+    await dependencies.markNotificationSent(vote, now);
   }
   return ready.length;
 }

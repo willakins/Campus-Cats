@@ -6,19 +6,21 @@ type SyncRunResult = Pick<SyncRunSummary, 'status' | 'runId'>;
 
 export interface InaturalistHandlerDependencies {
   getUser(id: string): Promise<ManagedUser | undefined>;
-  runSync(): Promise<SyncRunResult>;
+  runSync(clubId: string): Promise<SyncRunResult>;
   moderate(
     kind: ImportedRecordKind,
     id: number,
     hidden: boolean,
     reason: string,
     actorId: string,
+    clubId: string,
   ): Promise<void>;
   updateCatalogOverrides(
     id: number,
     overrides: Readonly<Record<string, unknown>>,
+    clubId: string,
   ): Promise<void>;
-  linkCatalog(id: number, localCatalogId?: string): Promise<void>;
+  linkCatalog(id: number, localCatalogId: string | undefined, clubId: string): Promise<void>;
 }
 
 interface HandlerRequest<T> {
@@ -30,8 +32,8 @@ export async function handleRunInaturalistSync(
   request: HandlerRequest<Record<string, never>>,
   dependencies: InaturalistHandlerDependencies,
 ): Promise<SyncRunResult> {
-  await requireAdmin(request.authUid, dependencies);
-  const result = await dependencies.runSync();
+  const actor = await requireAdmin(request.authUid, dependencies);
+  const result = await dependencies.runSync(actor.clubId);
   return { status: result.status, runId: result.runId };
 }
 
@@ -69,6 +71,7 @@ export async function handleModerateInaturalistRecord(
     request.data.hidden,
     reason,
     actor.id,
+    actor.clubId,
   );
   return { success: true };
 }
@@ -80,10 +83,10 @@ export async function handleUpdateInaturalistCatalog(
   }>,
   dependencies: InaturalistHandlerDependencies,
 ): Promise<{ readonly success: true }> {
-  await requireAdmin(request.authUid, dependencies);
+  const actor = await requireAdmin(request.authUid, dependencies);
   const id = positiveInteger(request.data.id, 'id');
   const overrides = catalogOverrides(request.data.overrides);
-  await dependencies.updateCatalogOverrides(id, overrides);
+  await dependencies.updateCatalogOverrides(id, overrides, actor.clubId);
   return { success: true };
 }
 
@@ -94,14 +97,14 @@ export async function handleLinkInaturalistCatalog(
   }>,
   dependencies: InaturalistHandlerDependencies,
 ): Promise<{ readonly success: true }> {
-  await requireAdmin(request.authUid, dependencies);
+  const actor = await requireAdmin(request.authUid, dependencies);
   const id = positiveInteger(request.data.id, 'id');
   const rawLocalId = request.data.localCatalogId;
   const localCatalogId =
     rawLocalId === null || rawLocalId === undefined
       ? undefined
       : requiredString(rawLocalId, 'localCatalogId');
-  await dependencies.linkCatalog(id, localCatalogId);
+  await dependencies.linkCatalog(id, localCatalogId, actor.clubId);
   return { success: true };
 }
 

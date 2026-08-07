@@ -7,11 +7,18 @@ import {
   assertSucceeds,
   initializeTestEnvironment,
 } from '@firebase/rules-unit-testing';
-import { deleteObject, getMetadata, ref, uploadBytes } from 'firebase/storage';
 import {
-  collection,
+  FirebaseStorage,
+  deleteObject,
+  getMetadata,
+  ref as firebaseStorageRef,
+  uploadBytes,
+} from 'firebase/storage';
+import {
+  Firestore,
+  collection as firebaseCollection,
   deleteDoc,
-  doc,
+  doc as firebaseDoc,
   getDoc,
   getDocs,
   query,
@@ -26,6 +33,35 @@ import {
   FIREBASE_TEST_PROJECT_ID,
   assertDemoProjectId,
 } from '../support/firebaseProject';
+
+const CLUB_ID = 'campus-cats';
+const GLOBAL_COLLECTIONS = new Set(['clubs', 'users']);
+const tenantPath = (segments: readonly string[]) =>
+  segments[0] === 'clubs' || GLOBAL_COLLECTIONS.has(segments[0] ?? '')
+    ? segments
+    : ['clubs', CLUB_ID, ...segments];
+const doc = (firestore: unknown, ...segments: string[]) => {
+  const [path, ...rest] = tenantPath(segments);
+  if (!path) throw new Error('Document path is required');
+  return firebaseDoc(firestore as Firestore, path, ...rest);
+};
+const collection = (firestore: unknown, ...segments: string[]) => {
+  const [path, ...rest] = tenantPath(segments);
+  if (!path) throw new Error('Collection path is required');
+  return firebaseCollection(firestore as Firestore, path, ...rest);
+};
+const ref = (storage: unknown, path: string) =>
+  firebaseStorageRef(
+    storage as FirebaseStorage,
+    path.startsWith('clubs/') ? path : `clubs/${CLUB_ID}/${path}`,
+  );
+const userSnapshot = (id: string, email: string, role: number) => ({
+  id,
+  email,
+  role,
+  clubId: CLUB_ID,
+  platformAdmin: id === 'developer-1',
+});
 
 describe('Firebase authorization matrix', () => {
   let environment: RulesTestEnvironment;
@@ -52,34 +88,71 @@ describe('Firebase authorization matrix', () => {
     await environment.withSecurityRulesDisabled(async (context) => {
       const firestore = context.firestore();
       await Promise.all([
+        setDoc(doc(firestore, 'clubs', CLUB_ID), {
+          name: 'Campus Cats',
+          timezone: 'America/New_York',
+          billingEmail: 'billing@example.com',
+          billingEnforcementEnabled: false,
+          maintenanceMode: false,
+          accessState: 'enabled',
+          paymentStanding: 'current',
+          collectionMethod: 'manual',
+        }),
+        setDoc(
+          firebaseDoc(firestore, 'clubs', CLUB_ID, 'access', 'public'),
+          {
+            clubId: CLUB_ID,
+            clubName: 'Campus Cats',
+            timezone: 'America/New_York',
+            billingEnforcementEnabled: false,
+            maintenanceMode: false,
+            accessState: 'enabled',
+            paymentStanding: 'current',
+            collectionMethod: 'manual',
+          },
+        ),
         setDoc(doc(firestore, 'users', 'member-1'), {
           email: 'member@gatech.edu',
           role: 0,
+          clubId: CLUB_ID,
+          platformAdmin: false,
         }),
         setDoc(doc(firestore, 'users', 'member-2'), {
           email: 'other@gatech.edu',
           role: 0,
+          clubId: CLUB_ID,
+          platformAdmin: false,
         }),
         setDoc(doc(firestore, 'users', 'banned-1'), {
           email: 'banned@gatech.edu',
           role: 0,
+          clubId: CLUB_ID,
+          platformAdmin: false,
           banned: true,
         }),
         setDoc(doc(firestore, 'users', 'admin-1'), {
           email: 'admin@gatech.edu',
           role: 1,
+          clubId: CLUB_ID,
+          platformAdmin: false,
         }),
         setDoc(doc(firestore, 'users', 'super-1'), {
           email: 'super@gatech.edu',
           role: 2,
+          clubId: CLUB_ID,
+          platformAdmin: false,
         }),
         setDoc(doc(firestore, 'users', 'president-1'), {
           email: 'president@gatech.edu',
           role: 3,
+          clubId: CLUB_ID,
+          platformAdmin: false,
         }),
         setDoc(doc(firestore, 'users', 'developer-1'), {
           email: 'developer@gatech.edu',
-          role: 4,
+          role: 1,
+          clubId: CLUB_ID,
+          platformAdmin: true,
         }),
         setDoc(doc(firestore, 'public-profiles', 'member-1'), {
           displayName: 'Member One',
@@ -88,6 +161,7 @@ describe('Firebase authorization matrix', () => {
           role: 0,
           achievementIds: [],
           selectedTitleId: '',
+          clubId: CLUB_ID,
         }),
         setDoc(doc(firestore, 'public-profiles', 'member-2'), {
           displayName: 'Member Two',
@@ -96,6 +170,7 @@ describe('Firebase authorization matrix', () => {
           role: 0,
           achievementIds: ['first-sighting'],
           selectedTitleId: 'first-sighting',
+          clubId: CLUB_ID,
         }),
         setDoc(doc(firestore, 'announcements', 'announcement-1'), {
           title: 'Update',
@@ -159,6 +234,79 @@ describe('Firebase authorization matrix', () => {
     );
   });
 
+  it('isolates clubs and limits suspended members to identity and access state', async () => {
+    await environment.withSecurityRulesDisabled(async (context) => {
+      const firestore = context.firestore();
+      await Promise.all([
+        setDoc(firebaseDoc(firestore, 'clubs', 'other-club'), {
+          name: 'Other Club',
+          timezone: 'America/Chicago',
+          billingEmail: 'billing@other.example',
+          billingEnforcementEnabled: false,
+          accessState: 'enabled',
+          paymentStanding: 'current',
+          collectionMethod: 'manual',
+        }),
+        setDoc(firebaseDoc(firestore, 'users', 'other-club-member'), {
+          email: 'member@other.example',
+          role: 0,
+          clubId: 'other-club',
+          platformAdmin: false,
+        }),
+        setDoc(
+          firebaseDoc(
+            firestore,
+            'clubs',
+            'other-club',
+            'announcements',
+            'private-update',
+          ),
+          { title: 'Other club only' },
+        ),
+      ]);
+    });
+    const member = environment.authenticatedContext('member-1', {
+      email: 'member@gatech.edu',
+    }).firestore();
+    await assertFails(
+      getDoc(
+        firebaseDoc(
+          member,
+          'clubs',
+          'other-club',
+          'announcements',
+          'private-update',
+        ),
+      ),
+    );
+
+    await environment.withSecurityRulesDisabled(async (context) => {
+      await updateDoc(firebaseDoc(context.firestore(), 'clubs', CLUB_ID), {
+        billingEnforcementEnabled: true,
+        accessState: 'suspended',
+        suspensionReason: 'nonpayment',
+      });
+      await updateDoc(
+        firebaseDoc(context.firestore(), 'clubs', CLUB_ID, 'access', 'public'),
+        {
+          billingEnforcementEnabled: true,
+          accessState: 'suspended',
+          suspensionReason: 'nonpayment',
+        },
+      );
+    });
+    await assertSucceeds(getDoc(firebaseDoc(member, 'users', 'member-1')));
+    await assertFails(getDoc(firebaseDoc(member, 'clubs', CLUB_ID)));
+    await assertSucceeds(
+      getDoc(firebaseDoc(member, 'clubs', CLUB_ID, 'access', 'public')),
+    );
+    await assertFails(getDoc(doc(member, 'announcements', 'announcement-1')));
+    await assertFails(getDoc(doc(member, 'public-profiles', 'member-1')));
+    await assertFails(
+      getDoc(firebaseDoc(member, 'billing-accounts', CLUB_ID)),
+    );
+  });
+
   it('allows members to read content and mutate only their own sightings', async () => {
     const member = environment.authenticatedContext('member-1', {
       email: 'member@gatech.edu',
@@ -176,7 +324,7 @@ describe('Firebase authorization matrix', () => {
       {
         kind: 'sighting',
         contentId: 'sighting-1',
-        user: { id: 'member-1', email: 'member@gatech.edu', role: 0 },
+        user: userSnapshot('member-1', 'member@gatech.edu', 0),
       },
     );
     await assertSucceeds(createSighting.commit());
@@ -190,7 +338,7 @@ describe('Firebase authorization matrix', () => {
         {
           kind: 'sighting',
           contentId: 'sighting-1',
-          user: { id: 'member-2', email: 'other@gatech.edu', role: 0 },
+          user: userSnapshot('member-2', 'other@gatech.edu', 0),
         },
       ),
     );
@@ -200,7 +348,7 @@ describe('Firebase authorization matrix', () => {
         {
           kind: 'sighting',
           contentId: 'orphaned',
-          user: { id: 'member-2', email: 'other@gatech.edu', role: 0 },
+          user: userSnapshot('member-2', 'other@gatech.edu', 0),
         },
       ),
     );
@@ -270,7 +418,7 @@ describe('Firebase authorization matrix', () => {
     batch.set(contributor, {
       kind: 'sighting',
       contentId: 'private-sighting',
-      user: { id: 'member-1', email: 'member@gatech.edu', role: 0 },
+      user: userSnapshot('member-1', 'member@gatech.edu', 0),
     });
     await assertSucceeds(batch.commit());
 
@@ -742,7 +890,7 @@ describe('Firebase authorization matrix', () => {
       expiresAt,
       imageUrl: 'https://example.com/event.jpg',
       createdAt,
-      createdBy: { id: 'admin-1', email: 'admin@gatech.edu', role: 1 },
+      createdBy: userSnapshot('admin-1', 'admin@gatech.edu', 1),
     };
 
     await assertFails(setDoc(doc(member, 'community-events', 'event-1'), event));
@@ -769,7 +917,7 @@ describe('Firebase authorization matrix', () => {
         },
       ],
       createdAt,
-      createdBy: { id: 'admin-1', email: 'admin@gatech.edu', role: 1 },
+      createdBy: userSnapshot('admin-1', 'admin@gatech.edu', 1),
     };
     await assertFails(
       setDoc(doc(member, 'community-surveys', 'anonymous'), anonymousSurvey),
@@ -925,7 +1073,7 @@ describe('Firebase authorization matrix', () => {
         { id: 'option-2', label: 'Midnight mark' },
       ],
       createdAt,
-      createdBy: { id: 'admin-1', email: 'admin@gatech.edu', role: 1 },
+      createdBy: userSnapshot('admin-1', 'admin@gatech.edu', 1),
       votingStartsAt: createdAt,
       votingEndsAt,
     };
@@ -943,11 +1091,7 @@ describe('Firebase authorization matrix', () => {
       details: 'Nominate yourself, then vote.',
       options: [],
       createdAt,
-      createdBy: {
-        id: 'president-1',
-        email: 'president@gatech.edu',
-        role: 3,
-      },
+      createdBy: userSnapshot('president-1', 'president@gatech.edu', 3),
       nominationEndsAt,
       votingStartsAt: nominationEndsAt,
       votingEndsAt: Timestamp.fromDate(new Date('2026-08-27T12:00:00.000Z')),
@@ -1243,6 +1387,18 @@ describe('Firebase authorization matrix', () => {
         ref(memberStorage, 'public-profiles/member-1/wrong-owner.jpg'),
         new Blob([new Uint8Array([1])], { type: 'image/jpeg' }),
         { customMetadata: { ownerId: 'member-2' } },
+      ),
+    );
+    await assertFails(
+      uploadBytes(
+        ref(memberStorage, 'public-profiles/member-1/fake-system.jpg'),
+        new Blob([new Uint8Array([1])], { type: 'image/jpeg' }),
+        {
+          customMetadata: {
+            ownerId: 'member-1',
+            billingInitiatedBy: 'system',
+          },
+        },
       ),
     );
     await assertFails(

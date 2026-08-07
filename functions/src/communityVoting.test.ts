@@ -14,11 +14,13 @@ const member: ManagedUser = {
   id: 'member-1',
   email: 'member@gatech.edu',
   role: 0,
+  clubId: 'campus-cats',
   banned: false,
 };
 
 const election = {
   id: 'election-1',
+  clubId: 'campus-cats',
   kind: 'presidential_election' as const,
   votingStartsAtMillis: Date.parse('2026-08-10T12:00:00.000Z'),
   votingEndsAtMillis: Date.parse('2026-08-17T12:00:00.000Z'),
@@ -192,8 +194,8 @@ describe('community voting callable', () => {
       async sendNotification(notification) {
         notifications.push(notification);
       },
-      async markNotificationSent(voteId) {
-        marked.push(voteId);
+      async markNotificationSent(vote) {
+        marked.push(vote.id);
       },
     });
 

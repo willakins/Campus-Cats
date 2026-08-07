@@ -23,14 +23,17 @@ const WRITE_BATCH_SIZE = 400;
 export type ImportedRecordKind = 'observation' | 'catalog';
 
 export class FirebaseInaturalistRepository implements ImportRepository {
-  constructor(private readonly firestore: Firestore) {}
+  constructor(
+    private readonly firestore: Firestore,
+    private readonly clubId = 'campus-cats',
+  ) {}
 
   async acquireLease(
     runId: string,
     now: Date,
     leaseUntil: Date,
   ): Promise<boolean> {
-    const reference = this.firestore.collection(STATE).doc(STATE_ID);
+    const reference = this.collection(STATE).doc(STATE_ID);
     return this.firestore.runTransaction(async (transaction) => {
       const snapshot = await transaction.get(reference);
       const data = snapshot.data();
@@ -53,7 +56,7 @@ export class FirebaseInaturalistRepository implements ImportRepository {
   }
 
   async releaseLease(runId: string): Promise<void> {
-    const reference = this.firestore.collection(STATE).doc(STATE_ID);
+    const reference = this.collection(STATE).doc(STATE_ID);
     await this.firestore.runTransaction(async (transaction) => {
       const snapshot = await transaction.get(reference);
       if (snapshot.data()?.runId !== runId) return;
@@ -69,8 +72,7 @@ export class FirebaseInaturalistRepository implements ImportRepository {
   }
 
   async listGuideNames() {
-    const snapshot = await this.firestore
-      .collection(CATALOG)
+    const snapshot = await this.collection(CATALOG)
       .where('sourceActive', '==', true)
       .get();
     return snapshot.docs.flatMap((document) => {
@@ -94,7 +96,7 @@ export class FirebaseInaturalistRepository implements ImportRepository {
   }
 
   async listLocalCatalogEntries() {
-    const snapshot = await this.firestore.collection(LOCAL_CATALOG).get();
+    const snapshot = await this.collection(LOCAL_CATALOG).get();
     return snapshot.docs.flatMap((document) => {
       const cat = objectValue(document.data().cat);
       return typeof cat?.name === 'string'
@@ -110,7 +112,7 @@ export class FirebaseInaturalistRepository implements ImportRepository {
     let updated = 0;
     for (const valuesChunk of chunks(values, WRITE_BATCH_SIZE)) {
       const references = valuesChunk.map(({ id }) =>
-        this.firestore.collection(OBSERVATIONS).doc(String(id)),
+        this.collection(OBSERVATIONS).doc(String(id)),
       );
       const counts = await this.firestore.runTransaction(async (transaction) => {
         const existing = await transaction.getAll(...references);
@@ -157,7 +159,7 @@ export class FirebaseInaturalistRepository implements ImportRepository {
     let updated = 0;
     for (const valuesChunk of chunks(values, WRITE_BATCH_SIZE)) {
       const references = valuesChunk.map(({ id }) =>
-        this.firestore.collection(CATALOG).doc(String(id)),
+        this.collection(CATALOG).doc(String(id)),
       );
       const counts = await this.firestore.runTransaction(async (transaction) => {
         const existing = await transaction.getAll(...references);
@@ -209,7 +211,7 @@ export class FirebaseInaturalistRepository implements ImportRepository {
   }
 
   async completeRun(summary: SyncRunSummary): Promise<void> {
-    const reference = this.firestore.collection(STATE).doc(STATE_ID);
+    const reference = this.collection(STATE).doc(STATE_ID);
     await this.firestore.runTransaction(async (transaction) => {
       const snapshot = await transaction.get(reference);
       const previous = snapshot.data();
@@ -247,8 +249,9 @@ export class FirebaseInaturalistRepository implements ImportRepository {
     actorId: string,
     now: Date,
   ): Promise<void> {
-    const reference = this.firestore
-      .collection(kind === 'observation' ? OBSERVATIONS : CATALOG)
+    const reference = this.collection(
+      kind === 'observation' ? OBSERVATIONS : CATALOG,
+    )
       .doc(String(id));
     await this.firestore.runTransaction(async (transaction) => {
       const snapshot = await transaction.get(reference);
@@ -270,25 +273,22 @@ export class FirebaseInaturalistRepository implements ImportRepository {
     id: number,
     overrides: Readonly<Record<string, unknown>>,
   ): Promise<void> {
-    const reference = this.firestore.collection(CATALOG).doc(String(id));
+    const reference = this.collection(CATALOG).doc(String(id));
     const snapshot = await reference.get();
     if (!snapshot.exists) throw new Error('Imported catalog profile not found');
     await reference.update({ overrides });
   }
 
   async linkCatalog(id: number, localCatalogId?: string): Promise<void> {
-    const reference = this.firestore.collection(CATALOG).doc(String(id));
+    const reference = this.collection(CATALOG).doc(String(id));
     await this.firestore.runTransaction(async (transaction) => {
       const imported = await transaction.get(reference);
       if (!imported.exists) {
         throw new Error('Imported catalog profile not found');
       }
       if (localCatalogId) {
-        const localReference = this.firestore
-          .collection(LOCAL_CATALOG)
-          .doc(localCatalogId);
-        const existingLinkQuery = this.firestore
-          .collection(CATALOG)
+        const localReference = this.collection(LOCAL_CATALOG).doc(localCatalogId);
+        const existingLinkQuery = this.collection(CATALOG)
           .where('linkedLocalCatalogId', '==', localCatalogId);
         const [local, existingLinks] = await Promise.all([
           transaction.get(localReference),
@@ -311,8 +311,7 @@ export class FirebaseInaturalistRepository implements ImportRepository {
     seen: ReadonlySet<number>,
     now: Date,
   ): Promise<number> {
-    const snapshot = await this.firestore
-      .collection(collection)
+    const snapshot = await this.collection(collection)
       .where('sourceActive', '==', true)
       .get();
     const missing = snapshot.docs.filter(
@@ -330,6 +329,10 @@ export class FirebaseInaturalistRepository implements ImportRepository {
       await batch.commit();
     }
     return missing.length;
+  }
+
+  private collection(name: string) {
+    return this.firestore.collection('clubs').doc(this.clubId).collection(name);
   }
 }
 
