@@ -68,7 +68,11 @@ export const SearchField = ({
           onPress={() => onChangeText('')}
           style={({ pressed }) => ({ opacity: pressed ? 0.6 : 1 })}
         >
-          <Ionicons name="close-circle" size={20} color={theme.colors.textMuted} />
+          <Ionicons
+            name="close-circle"
+            size={20}
+            color={theme.colors.textMuted}
+          />
         </Pressable>
       ) : null}
     </View>
@@ -85,18 +89,31 @@ interface FormFieldProps {
   readonly required?: boolean;
   readonly helper?: string;
   readonly error?: string;
-  readonly children: React.ReactNode | ((props: FormFieldRenderProps) => React.ReactNode);
+  readonly children:
+    React.ReactNode | ((props: FormFieldRenderProps) => React.ReactNode);
 }
 
-export const FormField = ({ label, required = false, helper, error, children }: FormFieldProps) => {
+export const FormField = ({
+  label,
+  required = false,
+  helper,
+  error,
+  children,
+}: FormFieldProps) => {
   const theme = useAppTheme();
   const generatedId = useId().replaceAll(':', '');
   const inputId = `field-${generatedId}`;
-  const describedBy = error ? `${inputId}-error` : helper ? `${inputId}-helper` : undefined;
+  const describedBy = error
+    ? `${inputId}-error`
+    : helper
+      ? `${inputId}-helper`
+      : undefined;
   return (
     <View style={{ gap: theme.spacing.xxs }}>
       <AppText variant="label">{required ? `${label} *` : label}</AppText>
-      {typeof children === 'function' ? children({ inputId, describedBy }) : children}
+      {typeof children === 'function'
+        ? children({ inputId, describedBy })
+        : children}
       {error ? (
         <AppText
           nativeID={`${inputId}-error`}
@@ -115,7 +132,15 @@ export const FormField = ({ label, required = false, helper, error, children }: 
   );
 };
 
-export const FormSection = ({ title, children }: { title: string; children: React.ReactNode }) => {
+export const FormSection = ({
+  title,
+  action,
+  children,
+}: {
+  title: string;
+  action?: React.ReactNode;
+  children: React.ReactNode;
+}) => {
   const theme = useAppTheme();
   return (
     <View
@@ -128,7 +153,20 @@ export const FormSection = ({ title, children }: { title: string; children: Reac
         borderColor: theme.colors.border,
       }}
     >
-      <AppText variant="section">{title}</AppText>
+      <View
+        style={{
+          minHeight: action ? theme.layout.minTouchTarget : undefined,
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: theme.spacing.sm,
+        }}
+      >
+        <AppText variant="section" style={{ flex: 1 }}>
+          {title}
+        </AppText>
+        {action}
+      </View>
       {children}
     </View>
   );

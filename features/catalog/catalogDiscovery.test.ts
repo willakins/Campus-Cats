@@ -1,16 +1,20 @@
 import {
   CatalogRecord,
   InaturalistSightingRecord,
+  LocalCatalogRecord,
   Role,
   SightingRecord,
   localCatalogRecord,
   localSightingRecord,
   parseCatalogEntry,
+  parseCatalogTag,
+  parseCatalogTagAssignment,
   parseSighting,
   parseUser,
 } from '../../core/domain';
 import {
   buildCatalogItems,
+  catalogTagsForEntry,
   filterAndSortCatalog,
   isSourceManagedCatalogEntry,
   moveCatalogFavorite,
@@ -27,7 +31,7 @@ const localEntry = (
   id: string,
   name: string,
   area: string,
-): CatalogRecord =>
+): LocalCatalogRecord =>
   localCatalogRecord(
     parseCatalogEntry({
       id,
@@ -215,6 +219,79 @@ describe('catalog discovery', () => {
       .toEqual(['inat-guide-2001', 'goldie', 'alex']);
     expect(filterAndSortCatalog(items, '', 'hearts').map(({ entry }) => entry.id))
       .toEqual(['inat-guide-2001', 'goldie', 'alex']);
+  });
+
+  it('derives visible tags and filters by every selected tag', () => {
+    const adoptedBase = localEntry('adopted', 'Peaches', 'Student Center');
+    const adopted: CatalogRecord = {
+      ...adoptedBase,
+      cat: {
+        ...adoptedBase.cat,
+        currentStatus: 'Adopted',
+        tnr: 'Yes',
+        sex: 'Female',
+        furLength: 'Long',
+      },
+    };
+    const needsTnrBase = localEntry('needs-tnr', 'Pepper', 'Tech Green');
+    const needsTnr: CatalogRecord = {
+      ...needsTnrBase,
+      cat: {
+        ...needsTnrBase.cat,
+        currentStatus: 'Feral',
+        tnr: 'No',
+        sex: 'Male',
+        furLength: 'Short',
+      },
+    };
+    const configuredTags = [
+      parseCatalogTag({ id: 'adopted', label: 'Rehomed' }),
+      parseCatalogTag({ id: 'feral', label: 'Feral' }),
+      parseCatalogTag({ id: 'tnr-complete', label: 'TNR complete' }),
+      parseCatalogTag({ id: 'needs-tnr', label: 'Needs TNR' }),
+      parseCatalogTag({ id: 'female', label: 'Female' }),
+      parseCatalogTag({ id: 'male', label: 'Male' }),
+      parseCatalogTag({ id: 'short-hair', label: 'Short hair' }),
+      parseCatalogTag({ id: 'long-hair', label: 'Long hair' }),
+      parseCatalogTag({ id: 'medical', label: 'Needs medication' }),
+    ];
+
+    expect(catalogTagsForEntry(adopted, configuredTags).map(({ label }) => label)).toEqual([
+      'Rehomed',
+      'TNR complete',
+      'Female',
+      'Long hair',
+    ]);
+    expect(
+      catalogTagsForEntry(
+        adopted,
+        configuredTags,
+        parseCatalogTagAssignment({
+          catalogId: adopted.id,
+          tagIds: ['medical'],
+        }),
+      ).map(({ label }) => label),
+    ).toEqual(['Needs medication']);
+
+    const taggedItems = buildCatalogItems(
+      [adopted, needsTnr],
+      [],
+      { counts: {} },
+      configuredTags,
+      [],
+    );
+    expect(
+      filterAndSortCatalog(taggedItems, '', 'name-asc', [
+        'adopted',
+        'tnr-complete',
+      ]).map(({ entry }) => entry.id),
+    ).toEqual(['adopted']);
+    expect(
+      filterAndSortCatalog(taggedItems, '', 'name-asc', [
+        'adopted',
+        'needs-tnr',
+      ]),
+    ).toEqual([]);
   });
 
   it('uses deterministic name tie-breakers for equal discovery metrics', () => {

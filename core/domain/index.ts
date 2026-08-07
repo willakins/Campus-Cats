@@ -10,3 +10,4 @@ export * from './dependencies';
 export * from './appSettings';
 export * from './contributors';
 export * from './community';
+export * from './communityVoting';

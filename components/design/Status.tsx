@@ -4,7 +4,7 @@ import { ActivityIndicator, Pressable, View, ViewProps } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
 import { AppColors, useAppTheme } from '../../theme';
-import { Button } from './Actions';
+import { Button, IconButton } from './Actions';
 import { AppText } from './Typography';
 import { focusRingStyle } from './focus';
 
@@ -201,14 +201,18 @@ export const AccessDeniedState = ({ message }: { message: string }) => (
 export const AccessBanner = ({
   title,
   message,
+  dismissLabel,
+  onDismiss,
 }: {
   title: string;
   message: string;
+  dismissLabel?: string;
+  onDismiss?: () => void;
 }) => {
   const theme = useAppTheme();
   return (
     <View
-      accessible
+      accessible={!onDismiss}
       accessibilityLabel={`${title}. ${message}`}
       style={{
         padding: theme.spacing.sm,
@@ -219,11 +223,19 @@ export const AccessBanner = ({
         gap: theme.spacing.xs,
       }}
     >
-      <Ionicons
-        name="shield-checkmark-outline"
-        size={20}
-        color={theme.colors.info}
-      />
+      {onDismiss ? (
+        <IconButton
+          icon="close"
+          accessibilityLabel={dismissLabel || `Hide ${title}`}
+          onPress={onDismiss}
+        />
+      ) : (
+        <Ionicons
+          name="shield-checkmark-outline"
+          size={20}
+          color={theme.colors.info}
+        />
+      )}
       <View style={{ flex: 1, gap: theme.spacing.xxs }}>
         <AppText variant="label" style={{ color: theme.colors.info }}>
           {title}

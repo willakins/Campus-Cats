@@ -1,5 +1,5 @@
 import { useCallback, useState } from 'react';
-import { Image, View } from 'react-native';
+import { View } from 'react-native';
 
 import { useFocusEffect, useRouter } from 'expo-router';
 
@@ -15,6 +15,7 @@ import {
   FormSection,
   Screen,
 } from '@/components/design';
+import { AppLogo, resolveAppLogoSource } from '@/components/branding';
 import { FormTextInput, ToggleField } from '@/components/forms';
 import { appModules } from '@/composition/appModules';
 import {
@@ -23,6 +24,7 @@ import {
   canManageAppSettings,
   parseUser,
 } from '@/core/domain';
+import { loadBundledClubLogoUri } from '@/features/appSettings/bundledBranding';
 import { useAppSettings } from '@/providers/AppSettingsProvider';
 import { useAuth } from '@/providers/AuthProvider';
 import { useAppTheme } from '@/theme';
@@ -39,7 +41,7 @@ const AppSettingsScreen = () => {
   const [hasLoaded, setHasLoaded] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string>();
-  const [saved, setSaved] = useState(false);
+  const [successMessage, setSuccessMessage] = useState<string>();
 
   const load = useCallback(() => {
     if (!authorized) return;
@@ -61,19 +63,22 @@ const AppSettingsScreen = () => {
     const result = await appModules.imageSelection.pickFromLibrary();
     if (result.ok && result.value) {
       setLogoLocalUri(result.value.localUri);
-      setSaved(false);
+      setSuccessMessage(undefined);
     } else if (!result.ok) setError(result.error.message);
   };
 
-  const save = async () => {
+  const persistSettings = async (
+    uploadUri: string | undefined,
+    message: string,
+  ) => {
     if (saving) return;
     setSaving(true);
-    setSaved(false);
+    setSuccessMessage(undefined);
     setError(undefined);
     const result = await appModules.appSettings.save(
       actor,
       settings,
-      logoLocalUri,
+      uploadUri,
     );
     setSaving(false);
     if (!result.ok) {
@@ -82,15 +87,28 @@ const AppSettingsScreen = () => {
     }
     setSettings(result.value);
     setLogoLocalUri(undefined);
-    setSaved(true);
+    setSuccessMessage(message);
     applySettings(result.value);
+  };
+
+  const save = async () => {
+    await persistSettings(logoLocalUri, 'App settings saved.');
+  };
+
+  const publishCurrentClubLogo = async () => {
+    if (saving) return;
+    setError(undefined);
+    try {
+      const uri = await loadBundledClubLogoUri();
+      await persistSettings(uri, 'Current club logo published.');
+    } catch {
+      setError('Could not load the current bundled club logo');
+    }
   };
 
   const logoSource = logoLocalUri
     ? { uri: logoLocalUri }
-    : settings.logoUrl
-      ? { uri: settings.logoUrl }
-      : require('../../../assets/images/campus_cats_logo.png');
+    : resolveAppLogoSource(settings.logoUrl);
   const primaryPreview = /^#[0-9A-Fa-f]{6}$/.test(settings.primaryColor)
     ? settings.primaryColor
     : theme.colors.surface;
@@ -114,17 +132,28 @@ const AppSettingsScreen = () => {
       ) : (
         <View style={{ gap: theme.spacing.lg, paddingBottom: theme.spacing.xl }}>
           {error ? <FeedbackBanner tone="danger" message={error} /> : null}
-          {saved ? <FeedbackBanner tone="success" message="App settings saved." /> : null}
+          {successMessage ? <FeedbackBanner tone="success" message={successMessage} /> : null}
 
           <FormSection title="Club logo">
             <Card accent={theme.colors.gold}>
-              <Image
+              <AppLogo
                 accessibilityLabel="Current club logo"
-                resizeMode="contain"
                 source={logoSource}
                 style={{ width: '100%', height: 160 }}
               />
             </Card>
+            {!settings.logoUrl && !logoLocalUri ? (
+              <>
+                <FeedbackBanner message="The previous app icon is ready to move into president-managed club branding." />
+                <Button
+                  label="Publish Current Club Logo"
+                  icon="cloud-upload-outline"
+                  variant="secondary"
+                  disabled={saving}
+                  onPress={() => void publishCurrentClubLogo()}
+                />
+              </>
+            ) : null}
             <Button
               label="Choose New Logo"
               icon="images-outline"
@@ -133,7 +162,7 @@ const AppSettingsScreen = () => {
               onPress={() => void chooseLogo()}
             />
             <AppText color="muted" variant="caption">
-              The selected image appears on all account-access screens, including sign in.
+              The saved logo appears on account-access screens and primary app headers.
             </AppText>
           </FormSection>
 
@@ -144,7 +173,7 @@ const AppSettingsScreen = () => {
               value={settings.primaryColor}
               autoCapitalize="characters"
               onChangeText={(primaryColor) => {
-                setSaved(false);
+                setSuccessMessage(undefined);
                 setSettings((current) => ({ ...current, primaryColor }));
               }}
             />
@@ -154,7 +183,7 @@ const AppSettingsScreen = () => {
               value={settings.accentColor}
               autoCapitalize="characters"
               onChangeText={(accentColor) => {
-                setSaved(false);
+                setSuccessMessage(undefined);
                 setSettings((current) => ({ ...current, accentColor }));
               }}
             />
@@ -189,7 +218,7 @@ const AppSettingsScreen = () => {
               label="Keep sightings anonymous"
               value={settings.sightingsAnonymous}
               onValueChange={(sightingsAnonymous) => {
-                setSaved(false);
+                setSuccessMessage(undefined);
                 setSettings((current) => ({ ...current, sightingsAnonymous }));
               }}
             />

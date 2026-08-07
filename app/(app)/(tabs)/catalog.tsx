@@ -11,7 +11,6 @@ import { FlatList, useWindowDimensions, View } from 'react-native';
 import { useFocusEffect, useRouter } from 'expo-router';
 
 import {
-  AccessBanner,
   AppHeader,
   CardListSkeleton,
   EmptyState,
@@ -28,7 +27,13 @@ import { CatalogToolbar } from '@/components/collections/CatalogToolbar';
 import { virtualizedListPerformanceProps } from '@/components/collections/virtualizedListPerformance';
 import { CatalogItem } from '@/components/items/CatalogItem';
 import { appModules } from '@/composition/appModules';
-import { canManageFeature, CatalogRecord, SightingRecord } from '@/core/domain';
+import {
+  canManageFeature,
+  CatalogRecord,
+  CatalogTag,
+  CatalogTagAssignment,
+  SightingRecord,
+} from '@/core/domain';
 import {
   buildCatalogItems,
   CatalogFavoriteSummary,
@@ -63,9 +68,14 @@ const Catalog = () => {
   const [entries, setEntries] = useState<readonly CatalogRecord[]>([]);
   const [sightings, setSightings] = useState<readonly SightingRecord[]>([]);
   const [favorites, setFavorites] = useState<CatalogFavoriteSummary>(emptyFavorites);
+  const [tags, setTags] = useState<readonly CatalogTag[]>([]);
+  const [tagAssignments, setTagAssignments] = useState<
+    readonly CatalogTagAssignment[]
+  >([]);
   const [query, setQuery] = useState('');
   const deferredQuery = useDeferredValue(query);
   const [sort, setSort] = useState<CatalogSort>('name-asc');
+  const [selectedTagIds, setSelectedTagIds] = useState<readonly string[]>([]);
   const [favoriteBusyId, setFavoriteBusyId] = useState<string>();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string>();
@@ -79,11 +89,21 @@ const Catalog = () => {
     setError(undefined);
     setFeedback(undefined);
     const actor = currentUserRef.current;
-    const [catalogResult, sightingsResult, favoritesResult] = await Promise.all([
+    const [
+      catalogResult,
+      sightingsResult,
+      favoritesResult,
+      tagsResult,
+      assignmentsResult,
+    ] = await Promise.all([
       appModules.catalog.list(actor),
       appModules.sightings.list(actor),
       actor
         ? appModules.catalog.favoriteSummary(actor)
+        : Promise.resolve(undefined),
+      actor ? appModules.catalogTags.list(actor) : Promise.resolve(undefined),
+      actor
+        ? appModules.catalogTags.assignments(actor)
         : Promise.resolve(undefined),
     ]);
     const warnings: string[] = [];
@@ -103,6 +123,25 @@ const Catalog = () => {
       setFavorites(emptyFavorites);
       warnings.push(favoritesResult.error.message);
     } else setFavorites(emptyFavorites);
+    if (tagsResult?.ok) {
+      const configuredIds = new Set<string>(
+        tagsResult.value.map(({ id }) => id),
+      );
+      setTags(tagsResult.value);
+      setSelectedTagIds((current) =>
+        current.filter((tagId) => configuredIds.has(tagId)),
+      );
+    } else {
+      setTags([]);
+      if (tagsResult && !tagsResult.ok) warnings.push(tagsResult.error.message);
+    }
+    if (assignmentsResult?.ok) setTagAssignments(assignmentsResult.value);
+    else {
+      setTagAssignments([]);
+      if (assignmentsResult && !assignmentsResult.ok) {
+        warnings.push(assignmentsResult.error.message);
+      }
+    }
     if (warnings.length > 0) {
       setFeedback({ message: warnings.join(' '), tone: 'warning' });
     }
@@ -116,12 +155,12 @@ const Catalog = () => {
   );
 
   const catalogItems = useMemo(
-    () => buildCatalogItems(entries, sightings, favorites),
-    [entries, favorites, sightings],
+    () => buildCatalogItems(entries, sightings, favorites, tags, tagAssignments),
+    [entries, favorites, sightings, tagAssignments, tags],
   );
   const visibleItems = useMemo(
-    () => filterAndSortCatalog(catalogItems, deferredQuery, sort),
-    [catalogItems, deferredQuery, sort],
+    () => filterAndSortCatalog(catalogItems, deferredQuery, sort, selectedTagIds),
+    [catalogItems, deferredQuery, selectedTagIds, sort],
   );
 
   const toggleFavorite = useCallback(
@@ -169,16 +208,15 @@ const Catalog = () => {
     >
       <AppHeader title="Cat catalog" eyebrow="Meet the colony" />
       <View style={{ gap: theme.spacing.sm, paddingBottom: theme.spacing.md }}>
-        <AccessBanner
-          title="Catalog access"
-          message="Everyone can browse cat profiles. Only officers can create or edit catalog entries."
-        />
         <CatalogToolbar
           query={query}
           sort={sort}
+          availableTags={tags}
+          selectedTagIds={selectedTagIds}
           resultCount={loading ? undefined : visibleItems.length}
           onQueryChange={setQuery}
           onSortChange={setSort}
+          onSelectedTagIdsChange={setSelectedTagIds}
         />
         {feedback ? <FeedbackBanner message={feedback.message} tone={feedback.tone} /> : null}
       </View>
@@ -210,6 +248,7 @@ const Catalog = () => {
                 mostRecentSighting={item.mostRecentSighting}
                 heartCount={item.heartCount}
                 isFavorite={item.isFavorite}
+                tags={item.tags}
                 favoriteBusy={favoriteBusyId !== undefined}
                 onToggleFavorite={() => void toggleFavorite(item.entry)}
               />
@@ -217,12 +256,15 @@ const Catalog = () => {
           )}
           ListEmptyComponent={error ? (
             <ErrorState title="Catalog unavailable" message={error} onRetry={() => void load()} />
-          ) : query.trim() && entries.length > 0 ? (
+          ) : (query.trim() || selectedTagIds.length > 0) && entries.length > 0 ? (
             <EmptyState
               title="No matching cats"
-              message={`No profiles match “${query.trim()}”. Try another name or field note.`}
-              actionLabel="Clear search"
-              onAction={() => setQuery('')}
+              message="No profiles match the current search and filters. Try broadening your choices."
+              actionLabel="Clear filters"
+              onAction={() => {
+                setQuery('');
+                setSelectedTagIds([]);
+              }}
             />
           ) : (
             <EmptyState

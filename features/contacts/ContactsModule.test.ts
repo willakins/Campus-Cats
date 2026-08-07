@@ -37,6 +37,9 @@ describe('ContactsModule', () => {
     const created = await module.create(admin, {
       name: 'Campus Cats President',
       email: 'cats@gatech.edu',
+      instagramUrl: 'https://www.instagram.com/gtcampuscats',
+      facebookUrl: 'https://www.facebook.com/gtcampuscats',
+      websiteUrl: 'https://campuscats.gatech.edu',
     });
     expect(created).toMatchObject({ ok: true, value: { id: 'contact-1' } });
     await expect(module.list(member)).resolves.toMatchObject({
@@ -47,10 +50,16 @@ describe('ContactsModule', () => {
       module.update(admin, 'contact-1', {
         name: 'Campus Cats Officers',
         email: 'officers@gatech.edu',
+        websiteUrl: 'https://cats.gatech.edu',
       }),
     ).resolves.toMatchObject({
       ok: true,
-      value: { name: 'Campus Cats Officers' },
+      value: {
+        name: 'Campus Cats Officers',
+        instagramUrl: 'https://www.instagram.com/gtcampuscats',
+        facebookUrl: 'https://www.facebook.com/gtcampuscats',
+        websiteUrl: 'https://cats.gatech.edu',
+      },
     });
     await expect(module.remove(admin, 'contact-1')).resolves.toMatchObject({
       ok: true,
@@ -67,10 +76,21 @@ describe('ContactsModule', () => {
       module.create(member, { name: 'Officer', email: 'officer@gatech.edu' }),
     ).resolves.toMatchObject({ ok: false, error: { code: 'forbidden' } });
     await expect(
-      module.create(undefined, { name: 'Officer', email: 'officer@gatech.edu' }),
+      module.create(undefined, {
+        name: 'Officer',
+        email: 'officer@gatech.edu',
+      }),
     ).resolves.toMatchObject({ ok: false, error: { code: 'unauthenticated' } });
     await expect(
       module.create(admin, { name: ' ', email: 'not-an-email' }),
+    ).resolves.toMatchObject({ ok: false, error: { code: 'validation' } });
+    const { module: invalidUrlModule } = buildModule();
+    await expect(
+      invalidUrlModule.create(admin, {
+        name: 'Officer',
+        email: 'officer@gatech.edu',
+        instagramUrl: 'instagram.com/gtcampuscats',
+      }),
     ).resolves.toMatchObject({ ok: false, error: { code: 'validation' } });
   });
 
@@ -108,6 +128,9 @@ describe('ContactsModule', () => {
           id: 'contact-1',
           name: 'Campus Cats President',
           email: 'cats@gatech.edu',
+          instagramUrl: '',
+          facebookUrl: '',
+          websiteUrl: '',
         },
       ],
     });
@@ -121,11 +144,15 @@ describe('ContactsModule', () => {
   it('covers update and delete authorization and validation', async () => {
     const draft = { name: 'Officer', email: 'officer@gatech.edu' };
     const { module } = buildModule();
-    await expect(module.update(undefined, 'missing', draft)).resolves.toMatchObject({
+    await expect(
+      module.update(undefined, 'missing', draft),
+    ).resolves.toMatchObject({
       ok: false,
       error: { code: 'unauthenticated' },
     });
-    await expect(module.update(member, 'missing', draft)).resolves.toMatchObject({
+    await expect(
+      module.update(member, 'missing', draft),
+    ).resolves.toMatchObject({
       ok: false,
       error: { code: 'forbidden' },
     });
@@ -153,19 +180,23 @@ describe('ContactsModule', () => {
     ['update', 'put'],
     ['update', 'get'],
     ['remove', 'remove'],
-  ] as const)('maps %s adapter failures to dependency outcomes', async (method, operation) => {
-    const { module, documents } = buildModule();
-    const draft = { name: 'Officer', email: 'officer@gatech.edu' };
-    if (method !== 'create') await module.create(admin, draft);
-    documents.failNext(operation, new Error('offline'));
-    const result = method === 'create'
-      ? module.create(admin, draft)
-      : method === 'update'
-        ? module.update(admin, 'contact-1', draft)
-        : module.remove(admin, 'contact-1');
-    await expect(result).resolves.toMatchObject({
-      ok: false,
-      error: { code: 'dependency_failure' },
-    });
-  });
+  ] as const)(
+    'maps %s adapter failures to dependency outcomes',
+    async (method, operation) => {
+      const { module, documents } = buildModule();
+      const draft = { name: 'Officer', email: 'officer@gatech.edu' };
+      if (method !== 'create') await module.create(admin, draft);
+      documents.failNext(operation, new Error('offline'));
+      const result =
+        method === 'create'
+          ? module.create(admin, draft)
+          : method === 'update'
+            ? module.update(admin, 'contact-1', draft)
+            : module.remove(admin, 'contact-1');
+      await expect(result).resolves.toMatchObject({
+        ok: false,
+        error: { code: 'dependency_failure' },
+      });
+    },
+  );
 });

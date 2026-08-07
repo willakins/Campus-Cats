@@ -48,6 +48,35 @@ const observerSchema = z.object({
   displayName: optionalText,
 });
 
+export const inaturalistPublicLinkSchema = z.object({
+  inaturalistUserId: z.number().int().positive(),
+  userId: requiredText,
+  login: requiredText,
+  linkedAt: validDate,
+});
+
+export type InaturalistPublicLink = Readonly<
+  z.infer<typeof inaturalistPublicLinkSchema>
+>;
+
+export interface InaturalistLinkedAccount {
+  readonly inaturalistUserId: number;
+  readonly login: string;
+}
+
+export interface InaturalistAccountLinkStatus {
+  readonly status: 'unlinked' | 'pending' | 'failed' | 'linked';
+  readonly account?: InaturalistLinkedAccount;
+}
+
+export interface InaturalistAccountLinkAuthorization {
+  readonly authorizationUrl: string;
+  readonly attemptId: string;
+}
+
+export const parseInaturalistPublicLink = (value: unknown) =>
+  inaturalistPublicLinkSchema.parse(value);
+
 const coordinatesSchema = z.object({
   latitude: z.number().finite().min(-90).max(90),
   longitude: z.number().finite().min(-180).max(180),

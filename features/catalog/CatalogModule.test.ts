@@ -66,11 +66,12 @@ function buildModule() {
 
 describe('CatalogModule', () => {
   it('lets an admin create, list, load, and remove a catalog entry', async () => {
-    const { module } = buildModule();
+    const { module, documents, codecs } = buildModule();
     const created = await module.create(admin, {
       cat,
       credits: 'Campus Cats team',
       photos: ['file://profile.jpg'],
+      tagIds: ['feral', 'tnr-complete'],
     });
 
     expect(created).toMatchObject({
@@ -82,7 +83,17 @@ describe('CatalogModule', () => {
       ok: true,
       value: { id: 'cat-1', source: 'campus-cats' },
     });
+    const assignment = await documents.get('catalog-tag-assignments', 'cat-1');
+    expect(
+      assignment
+        ? codecs.catalogTagAssignment.decode(assignment.id, assignment.data)
+        : undefined,
+    ).toEqual({
+      catalogId: 'cat-1',
+      tagIds: ['feral', 'tnr-complete'],
+    });
     await expect(module.remove(admin, 'cat-1')).resolves.toMatchObject({ ok: true });
+    expect(await documents.get('catalog-tag-assignments', 'cat-1')).toBeUndefined();
   });
 
   it('shows separately stored catalog contributors only to officers by default', async () => {

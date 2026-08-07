@@ -2,7 +2,7 @@ import { View } from 'react-native';
 
 import { Slot } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { Provider as PaperProvider } from 'react-native-paper';
+import { ThemeProvider as PaperThemeProvider } from 'react-native-paper';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { AppSettingsProvider, AuthProvider, useAppSettings } from '@/providers';
@@ -11,12 +11,12 @@ import { AppThemeProvider, useAppTheme } from '@/theme';
 const ThemedApplication = () => {
   const theme = useAppTheme();
   return (
-    <PaperProvider theme={theme.paper}>
+    <PaperThemeProvider theme={theme.paper}>
       <StatusBar style={theme.dark ? 'light' : 'dark'} />
       <View style={{ flex: 1, backgroundColor: theme.colors.background }}>
         <Slot />
       </View>
-    </PaperProvider>
+    </PaperThemeProvider>
   );
 };
 

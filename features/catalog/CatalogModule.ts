@@ -3,6 +3,7 @@ import {
   CatalogEntry,
   CatalogFavorite,
   CatalogRecord,
+  CatalogTagAssignment,
   Cat,
   Clock,
   PersistenceCodec,
@@ -16,6 +17,7 @@ import {
   localCatalogRecord,
   parseCatalogEntry,
   parseCatalogFavorite,
+  parseCatalogTagAssignment,
   success,
 } from '../../core/domain';
 import { MediaCoordinator, MediaSelection, localMedia } from '../../core/media';
@@ -32,6 +34,7 @@ export interface CatalogDraft {
   readonly cat: Cat;
   readonly credits: string;
   readonly photos: readonly string[];
+  readonly tagIds?: readonly string[];
 }
 
 export interface CatalogUpdate {
@@ -39,6 +42,7 @@ export interface CatalogUpdate {
   readonly credits: string;
   readonly profile: MediaSelection;
   readonly gallery: readonly MediaSelection[];
+  readonly tagIds?: readonly string[];
 }
 
 interface CatalogDependencies {
@@ -51,6 +55,7 @@ interface CatalogDependencies {
   readonly codecs: {
     readonly catalog: PersistenceCodec<CatalogEntry>;
     readonly catalogFavorite: PersistenceCodec<CatalogFavorite>;
+    readonly catalogTagAssignment: PersistenceCodec<CatalogTagAssignment>;
   };
   readonly imports?: {
     readonly reader: InaturalistReader;
@@ -359,6 +364,11 @@ export class CatalogModule {
             data: this.dependencies.codecs.catalog.encode(entry),
           },
           this.dependencies.contributors.write('catalog', id, actor!),
+          ...catalogTagAssignmentWrite(
+            id,
+            draft.tagIds,
+            this.dependencies.codecs.catalogTagAssignment,
+          ),
         ]),
     });
     return mediaResult.ok ? success(entry, mediaResult.warnings) : mediaResult;
@@ -408,6 +418,11 @@ export class CatalogModule {
             data: this.dependencies.codecs.catalog.encode(entry),
           },
           this.dependencies.contributors.write('catalog', id, actor!),
+          ...catalogTagAssignmentWrite(
+            id,
+            update.tagIds,
+            this.dependencies.codecs.catalogTagAssignment,
+          ),
         ]),
     });
     return mediaResult.ok ? success(entry, mediaResult.warnings) : mediaResult;
@@ -435,6 +450,11 @@ export class CatalogModule {
       await this.dependencies.documents.commit([
         { operation: 'remove', collection: COLLECTIONS.catalog, id },
         this.dependencies.contributors.remove('catalog', id),
+        {
+          operation: 'remove',
+          collection: COLLECTIONS.catalogTagAssignments,
+          id,
+        },
       ]);
     } catch {
       return failure('dependency_failure', 'Could not delete the catalog entry');
@@ -480,6 +500,21 @@ export class CatalogModule {
       contributor ?? (canViewContributors ? decoded.createdBy : undefined),
     );
   }
+}
+
+function catalogTagAssignmentWrite(
+  catalogId: string,
+  tagIds: readonly string[] | undefined,
+  codec: PersistenceCodec<CatalogTagAssignment>,
+) {
+  if (tagIds === undefined) return [];
+  const assignment = parseCatalogTagAssignment({ catalogId, tagIds });
+  return [{
+    operation: 'put' as const,
+    collection: COLLECTIONS.catalogTagAssignments,
+    id: catalogId,
+    data: codec.encode(assignment),
+  }];
 }
 
 function withCatalogContributor(

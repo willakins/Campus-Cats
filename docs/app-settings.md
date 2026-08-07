@@ -6,8 +6,9 @@ have access to these controls.
 
 ## Behavior
 
-- The login and other account-access screens use the uploaded club logo. Until a logo
-  is uploaded, they use `assets/images/campus_cats_logo.png`.
+- Account-access screens and primary app headers use the uploaded club logo. Until a
+  logo is uploaded, they use the separate bundled fallback in
+  `assets/images/default-app-icon.png`.
 - Primary and accent colors must be six-digit hex values. The app derives accessible
   light and dark variants instead of placing an arbitrary selected color directly
   behind text.
@@ -26,6 +27,11 @@ Public branding and privacy preferences live at `app-settings/public`. Logo imag
 live under `app-branding/` in Cloud Storage and are publicly readable so the signed-out
 login screen can display them. Only the President can write either resource.
 
+The installed iOS and Android home-screen icon remains a bundled asset. Mobile
+operating systems do not allow the app to replace that icon with an arbitrary image
+downloaded from Firestore at runtime. The bundled icon is therefore the stable
+fallback; president-managed branding controls every in-app logo surface.
+
 Campus Cats identities are stored separately from public content:
 
 ```text
@@ -39,7 +45,15 @@ contributor document in one Firestore batch. Deletes remove both documents in on
 batch. Firestore rules reject orphaned contributor creation, identity takeover, and
 one-sided deletion.
 
-## Existing-data migration
+## Existing-logo migration
+
+The previous native icon artwork remains bundled at `assets/images/icon.png` solely
+as a migration source. When `logoUrl` is empty, the President sees **Publish Current
+Club Logo** in App Settings. That action uploads the artwork to `app-branding/`, writes
+its public download URL to `app-settings/public`, and immediately applies it in the
+running app. Once the URL exists, the migration control is hidden.
+
+## Existing contributor-data migration
 
 Older `cat-sightings` and `catalog` documents contain an embedded `createdBy` map. The
 President's first save with anonymity enabled calls `migrateContributorPrivacy`, which

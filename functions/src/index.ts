@@ -6,11 +6,12 @@ import { getAuth } from 'firebase-admin/auth';
 import { FieldValue, Timestamp, getFirestore } from 'firebase-admin/firestore';
 import { getStorage } from 'firebase-admin/storage';
 import { logger } from 'firebase-functions/logger';
-import { defineSecret } from 'firebase-functions/params';
+import { defineSecret, defineString } from 'firebase-functions/params';
 import {
   CallableRequest,
   HttpsError,
   onCall,
+  onRequest,
 } from 'firebase-functions/v2/https';
 import { onSchedule } from 'firebase-functions/v2/scheduler';
 
@@ -38,6 +39,7 @@ import {
 import { createGoogleCloudBillingReader } from './billing';
 import { deleteAuthUserIfPresent } from './firebaseAuth';
 import { FirebaseInaturalistRepository } from './firebaseInaturalist';
+import { FirebaseInaturalistAccountLinkRepository } from './firebaseInaturalistAccountLinks';
 import {
   InaturalistHttpGateway,
   runInaturalistSync as executeInaturalistSync,
@@ -50,20 +52,72 @@ import {
   handleUpdateInaturalistCatalog,
 } from './inaturalistHandlers';
 import {
+  InaturalistAccountLinkingDependencies,
+  handleBeginInaturalistAccountLink,
+  handleGetInaturalistAccountLinkStatus,
+  handleInaturalistAccountCallback,
+  handleUnlinkInaturalistAccount,
+} from './inaturalistAccountLinking';
+import { InaturalistAccountHttpGateway } from './inaturalistAccountHttp';
+import {
   SurveySubmissionDependencies,
   handleSubmitSurveyResponse,
   validateSurveyAnswers,
 } from './surveySubmission';
+import {
+  CommunityVoteStartNotificationDependencies,
+  CommunityVotingDependencies,
+  StoredCommunityVote,
+  handleGetCommunityVoteResults,
+  handleSubmitCommunityBallot,
+  handleSubmitCommunityNomination,
+  notifyStartedPresidentialVotes,
+} from './communityVoting';
 
 if (getApps().length === 0) initializeApp();
 
 const SENDGRID_API_KEY = defineSecret('SENDGRID_API_KEY');
+const INATURALIST_OAUTH_CLIENT_SECRET = defineSecret(
+  'INATURALIST_OAUTH_CLIENT_SECRET',
+);
+const INATURALIST_OAUTH_CLIENT_ID = defineString(
+  'INATURALIST_OAUTH_CLIENT_ID',
+);
+const INATURALIST_OAUTH_REDIRECT_URI = defineString(
+  'INATURALIST_OAUTH_REDIRECT_URI',
+);
+const INATURALIST_APP_RETURN_URI = defineString('INATURALIST_APP_RETURN_URI', {
+  default: 'campuscats://settings/inaturalist-account',
+});
 const firestore = getFirestore();
 const auth = getAuth();
 const storage = getStorage();
 const billingReader = createGoogleCloudBillingReader();
 const inaturalistRepository = new FirebaseInaturalistRepository(firestore);
 const inaturalistGateway = new InaturalistHttpGateway();
+const inaturalistAccountRepository =
+  new FirebaseInaturalistAccountLinkRepository(firestore);
+const inaturalistAccountConfig = {
+  get clientId() {
+    return INATURALIST_OAUTH_CLIENT_ID.value();
+  },
+  get clientSecret() {
+    return INATURALIST_OAUTH_CLIENT_SECRET.value();
+  },
+  get redirectUri() {
+    return INATURALIST_OAUTH_REDIRECT_URI.value();
+  },
+  get appReturnUri() {
+    return INATURALIST_APP_RETURN_URI.value();
+  },
+};
+const inaturalistAccountDependencies: InaturalistAccountLinkingDependencies = {
+  config: inaturalistAccountConfig,
+  repository: inaturalistAccountRepository,
+  oauth: new InaturalistAccountHttpGateway(inaturalistAccountConfig),
+  now: () => new Date(),
+  getUser: (id) => dependencies.getUser(id),
+};
 
 const publicProfileDefaults = (email: string, role: number) => ({
   displayName: (email.split('@')[0]?.trim() || 'Campus Cats member').slice(
@@ -254,6 +308,7 @@ const dependencies: HandlerDependencies = {
   },
 
   async deleteUser(id) {
+    await inaturalistAccountRepository.unlink(id);
     const batch = firestore.batch();
     batch.delete(firestore.collection('users').doc(id));
     batch.delete(firestore.collection('public-profiles').doc(id));
@@ -318,6 +373,7 @@ const dependencies: HandlerDependencies = {
   async setUserBanned(id, banned, actor) {
     const reference = firestore.collection('users').doc(id);
     if (banned) {
+      await inaturalistAccountRepository.unlink(id);
       await firestore.runTransaction(async (transaction) => {
         const snapshot = await transaction.get(reference);
         if (!snapshot.exists) {
@@ -648,6 +704,282 @@ const surveySubmissionDependencies: SurveySubmissionDependencies = {
   },
 };
 
+const storedCommunityVote = (
+  id: string,
+  data: Record<string, unknown> | undefined,
+): StoredCommunityVote => {
+  const votingStartsAt = data?.votingStartsAt;
+  const votingEndsAt = data?.votingEndsAt;
+  if (
+    (data?.kind !== 'contest' && data?.kind !== 'presidential_election') ||
+    !(votingStartsAt instanceof Timestamp) ||
+    !(votingEndsAt instanceof Timestamp) ||
+    !Array.isArray(data.options)
+  ) {
+    throw new HandlerError('internal', 'Stored community vote is invalid');
+  }
+  const options = data.options.map((option) => {
+    if (
+      typeof option !== 'object' ||
+      option === null ||
+      typeof option.id !== 'string' ||
+      typeof option.label !== 'string' ||
+      ('imageUrl' in option && typeof option.imageUrl !== 'string')
+    ) {
+      throw new HandlerError('internal', 'Stored voting options are invalid');
+    }
+    return {
+      id: option.id,
+      label: option.label,
+      ...(typeof option.imageUrl === 'string'
+        ? { imageUrl: option.imageUrl }
+        : {}),
+    };
+  });
+  const notificationSentAt = data.votingNotificationSentAt;
+  if (
+    notificationSentAt !== undefined &&
+    !(notificationSentAt instanceof Timestamp)
+  ) {
+    throw new HandlerError('internal', 'Stored notification state is invalid');
+  }
+  return {
+    id,
+    kind: data.kind,
+    title: typeof data.title === 'string' ? data.title : undefined,
+    votingStartsAtMillis: votingStartsAt.toMillis(),
+    votingEndsAtMillis: votingEndsAt.toMillis(),
+    options,
+    ...(notificationSentAt instanceof Timestamp
+      ? { votingNotificationSentAtMillis: notificationSentAt.toMillis() }
+      : {}),
+  };
+};
+
+const communityVotingDependencies: CommunityVotingDependencies = {
+  now: () => new Date(),
+  getUser: dependencies.getUser,
+  async getVote(id) {
+    const snapshot = await firestore.collection('community-votes').doc(id).get();
+    return snapshot.exists
+      ? storedCommunityVote(snapshot.id, snapshot.data())
+      : undefined;
+  },
+  async submitNomination({ actor, vote, action, submittedAt }) {
+    const voteReference = firestore.collection('community-votes').doc(vote.id);
+    const receiptReference = firestore
+      .collection('community-vote-nomination-receipts')
+      .doc(`${actor.id}__${vote.id}`);
+    const nomineeReference = firestore
+      .collection('community-vote-nominees')
+      .doc(`${vote.id}__${actor.id}`);
+    const profileReference = firestore
+      .collection('public-profiles')
+      .doc(actor.id);
+    return firestore.runTransaction(async (transaction) => {
+      const [voteSnapshot, receiptSnapshot, profileSnapshot] =
+        await transaction.getAll(
+          voteReference,
+          receiptReference,
+          profileReference,
+        );
+      if (!voteSnapshot.exists) {
+        throw new HandlerError('not-found', 'Vote not found');
+      }
+      if (receiptSnapshot.exists) {
+        throw new HandlerError(
+          'already-exists',
+          'You already responded to nominations',
+        );
+      }
+      const canonical = storedCommunityVote(
+        voteSnapshot.id,
+        voteSnapshot.data(),
+      );
+      if (canonical.kind !== 'presidential_election') {
+        throw new HandlerError(
+          'failed-precondition',
+          'This vote does not have nominations',
+        );
+      }
+      const now = Timestamp.fromDate(submittedAt);
+      if (now.toMillis() >= canonical.votingStartsAtMillis) {
+        throw new HandlerError('failed-precondition', 'Nominations are closed');
+      }
+      transaction.create(receiptReference, {
+        voteId: vote.id,
+        userId: actor.id,
+        action,
+        submittedAt: now,
+      });
+      if (action === 'nominate') {
+        const displayName =
+          typeof profileSnapshot.data()?.displayName === 'string'
+            ? profileSnapshot.data()?.displayName.trim().slice(0, 60)
+            : actor.email.split('@')[0]?.trim().slice(0, 60);
+        transaction.create(nomineeReference, {
+          voteId: vote.id,
+          userId: actor.id,
+          displayName: displayName || 'Campus Cats member',
+          nominatedAt: now,
+        });
+      }
+      return {
+        action,
+        ...(action === 'nominate' ? { candidateId: actor.id } : {}),
+        submittedAt,
+      };
+    });
+  },
+  async submitBallot({ actor, vote, optionId, ballotId, submittedAt }) {
+    const voteReference = firestore.collection('community-votes').doc(vote.id);
+    const receiptReference = firestore
+      .collection('community-vote-ballot-receipts')
+      .doc(`${actor.id}__${vote.id}`);
+    const ballotReference = firestore
+      .collection('community-vote-ballots')
+      .doc(ballotId);
+    return firestore.runTransaction(async (transaction) => {
+      const [voteSnapshot, receiptSnapshot] = await transaction.getAll(
+        voteReference,
+        receiptReference,
+      );
+      if (!voteSnapshot.exists) {
+        throw new HandlerError('not-found', 'Vote not found');
+      }
+      if (receiptSnapshot.exists) {
+        throw new HandlerError('already-exists', 'You already voted');
+      }
+      const canonical = storedCommunityVote(
+        voteSnapshot.id,
+        voteSnapshot.data(),
+      );
+      const now = Timestamp.fromDate(submittedAt);
+      if (now.toMillis() < canonical.votingStartsAtMillis) {
+        throw new HandlerError('failed-precondition', 'Voting has not started');
+      }
+      if (now.toMillis() >= canonical.votingEndsAtMillis) {
+        throw new HandlerError('failed-precondition', 'Voting is closed');
+      }
+      if (canonical.kind === 'contest') {
+        if (!canonical.options.some(({ id }) => id === optionId)) {
+          throw new HandlerError(
+            'invalid-argument',
+            'Choose a valid voting option',
+          );
+        }
+      } else {
+        const nominee = await transaction.get(
+          firestore
+            .collection('community-vote-nominees')
+            .doc(`${vote.id}__${optionId}`),
+        );
+        if (!nominee.exists || nominee.data()?.voteId !== vote.id) {
+          throw new HandlerError(
+            'invalid-argument',
+            'Choose a valid presidential nominee',
+          );
+        }
+      }
+      transaction.create(ballotReference, {
+        voteId: vote.id,
+        optionId,
+        submittedAt: now,
+      });
+      transaction.create(receiptReference, {
+        voteId: vote.id,
+        userId: actor.id,
+        ballotId,
+        submittedAt: now,
+      });
+      return { ballotId, optionId, submittedAt };
+    });
+  },
+  async getResults(vote) {
+    const ballots = await firestore
+      .collection('community-vote-ballots')
+      .where('voteId', '==', vote.id)
+      .get();
+    const options =
+      vote.kind === 'contest'
+        ? vote.options
+        : (
+            await firestore
+              .collection('community-vote-nominees')
+              .where('voteId', '==', vote.id)
+              .get()
+          ).docs.flatMap((document) => {
+            const data = document.data();
+            return typeof data.userId === 'string' &&
+              typeof data.displayName === 'string'
+              ? [{ id: data.userId, label: data.displayName }]
+              : [];
+          });
+    const counts = new Map(options.map(({ id }) => [id, 0]));
+    for (const ballot of ballots.docs) {
+      const optionId = ballot.data().optionId;
+      if (typeof optionId === 'string' && counts.has(optionId)) {
+        counts.set(optionId, (counts.get(optionId) ?? 0) + 1);
+      }
+    }
+    return {
+      totalVotes: ballots.size,
+      options: options
+        .map((option) => ({
+          ...option,
+          votes: counts.get(option.id) ?? 0,
+        }))
+        .sort(
+          (left, right) =>
+            right.votes - left.votes || left.label.localeCompare(right.label),
+        ),
+    };
+  },
+};
+
+const broadcastNotification = async (notification: {
+  readonly title: string;
+  readonly body: string;
+}) => {
+  const tokens = [...new Set(await dependencies.listPushTokens())];
+  for (let offset = 0; offset < tokens.length; offset += 100) {
+    await dependencies.sendPushBatch(
+      tokens.slice(offset, offset + 100).map((token) => ({
+        to: token,
+        sound: 'default' as const,
+        title: notification.title,
+        body: notification.body,
+      })),
+    );
+  }
+};
+
+const communityVoteNotificationDependencies: CommunityVoteStartNotificationDependencies = {
+  now: () => new Date(),
+  async listElectionVotes() {
+    const snapshot = await firestore
+      .collection('community-votes')
+      .where('kind', '==', 'presidential_election')
+      .get();
+    return snapshot.docs.flatMap((document) => {
+      try {
+        return [storedCommunityVote(document.id, document.data())];
+      } catch {
+        logger.warn('Skipping invalid presidential election', {
+          voteId: document.id,
+        });
+        return [];
+      }
+    });
+  },
+  sendNotification: broadcastNotification,
+  async markNotificationSent(voteId, sentAt) {
+    await firestore.collection('community-votes').doc(voteId).update({
+      votingNotificationSentAt: Timestamp.fromDate(sentAt),
+    });
+  },
+};
+
 const inaturalistDependencies: InaturalistHandlerDependencies = {
   getUser: dependencies.getUser,
   runSync: synchronizeInaturalist,
@@ -757,6 +1089,33 @@ export const submitSurveyResponse = onCall((request) =>
   ),
 );
 
+export const submitCommunityNomination = onCall((request) =>
+  execute(() =>
+    handleSubmitCommunityNomination(
+      requestFor(request),
+      communityVotingDependencies,
+    ),
+  ),
+);
+
+export const submitCommunityBallot = onCall((request) =>
+  execute(() =>
+    handleSubmitCommunityBallot(
+      requestFor(request),
+      communityVotingDependencies,
+    ),
+  ),
+);
+
+export const getCommunityVoteResults = onCall((request) =>
+  execute(() =>
+    handleGetCommunityVoteResults(
+      requestFor(request),
+      communityVotingDependencies,
+    ),
+  ),
+);
+
 export const runInaturalistSync = onCall((request) =>
   execute(() =>
     handleRunInaturalistSync(requestFor(request), inaturalistDependencies),
@@ -790,6 +1149,58 @@ export const linkInaturalistCatalog = onCall((request) =>
   ),
 );
 
+export const beginInaturalistAccountLink = onCall((request) =>
+  execute(() =>
+    handleBeginInaturalistAccountLink(
+      requestFor(request),
+      inaturalistAccountDependencies,
+    ),
+  ),
+);
+
+export const getInaturalistAccountLinkStatus = onCall((request) =>
+  execute(() =>
+    handleGetInaturalistAccountLinkStatus(
+      requestFor(request),
+      inaturalistAccountDependencies,
+    ),
+  ),
+);
+
+export const unlinkInaturalistAccount = onCall((request) =>
+  execute(() =>
+    handleUnlinkInaturalistAccount(
+      requestFor(request),
+      inaturalistAccountDependencies,
+    ),
+  ),
+);
+
+export const inaturalistAccountCallback = onRequest(
+  { secrets: [INATURALIST_OAUTH_CLIENT_SECRET] },
+  async (request, response) => {
+    response.set('Cache-Control', 'no-store');
+    response.set('Referrer-Policy', 'no-referrer');
+    try {
+      const result = await handleInaturalistAccountCallback(
+        {
+          state: request.query.state,
+          code: request.query.code,
+          error: request.query.error,
+        },
+        inaturalistAccountDependencies,
+      );
+      response.redirect(302, result.redirectUrl);
+    } catch {
+      logger.error('iNaturalist account callback failed');
+      response.redirect(
+        302,
+        `${INATURALIST_APP_RETURN_URI.value()}?result=error`,
+      );
+    }
+  },
+);
+
 export const syncInaturalistDaily = onSchedule(
   {
     schedule: '17 3 * * *',
@@ -806,5 +1217,20 @@ export const syncInaturalistDaily = onSchedule(
         `iNaturalist synchronization completed with status ${summary.status}`,
       );
     }
+  },
+);
+
+export const notifyPresidentialVotingStarted = onSchedule(
+  {
+    schedule: '*/15 * * * *',
+    timeZone: 'America/New_York',
+    retryCount: 3,
+    maxInstances: 1,
+  },
+  async () => {
+    const sent = await notifyStartedPresidentialVotes(
+      communityVoteNotificationDependencies,
+    );
+    logger.info('Presidential voting notifications processed', { sent });
   },
 );

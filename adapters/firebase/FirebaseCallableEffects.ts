@@ -5,7 +5,11 @@ import {
   ApplicationEffects,
   WhitelistCredentials,
 } from '../../core/ports';
-import { AchievementId } from '../../core/domain';
+import {
+  AchievementId,
+  InaturalistAccountLinkAuthorization,
+  InaturalistAccountLinkStatus,
+} from '../../core/domain';
 
 export class FirebaseCallableEffects implements ApplicationEffects {
   constructor(private readonly functions: Functions) {}
@@ -85,5 +89,29 @@ export class FirebaseCallableEffects implements ApplicationEffects {
 
   async migrateContributorPrivacy(): Promise<void> {
     await httpsCallable(this.functions, 'migrateContributorPrivacy')({});
+  }
+
+  async beginInaturalistAccountLink(): Promise<InaturalistAccountLinkAuthorization> {
+    const result = await httpsCallable<
+      Record<string, never>,
+      InaturalistAccountLinkAuthorization
+    >(this.functions, 'beginInaturalistAccountLink')({});
+    return result.data;
+  }
+
+  async getInaturalistAccountLinkStatus(
+    attemptId?: string,
+  ): Promise<InaturalistAccountLinkStatus> {
+    const result = await httpsCallable<
+      { readonly attemptId?: string },
+      InaturalistAccountLinkStatus
+    >(this.functions, 'getInaturalistAccountLinkStatus')(
+      attemptId ? { attemptId } : {},
+    );
+    return result.data;
+  }
+
+  async unlinkInaturalistAccount(): Promise<void> {
+    await httpsCallable(this.functions, 'unlinkInaturalistAccount')({});
   }
 }
