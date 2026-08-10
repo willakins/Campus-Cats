@@ -22,7 +22,7 @@
   },
   "main": "lib/index.js",
   "dependencies": {
-    "@google-cloud/bigquery": "^9.0.0",
+    "@google-cloud/bigquery": "^9.0.1",
     "@sendgrid/mail": "^8.1.6",
     "firebase-admin": "^14.2.0",
     "firebase-functions": "^7.3.2",
