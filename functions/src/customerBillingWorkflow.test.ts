@@ -223,12 +223,18 @@ const event = (
 
 class MemoryStripe {
   readonly invoiceRecords = new Map<string, Stripe.Invoice>();
+  readonly customerRecords = new Map<string, Stripe.Customer>();
+  readonly subscriptionRecords = new Map<string, Stripe.Subscription>();
   readonly cancelledSubscriptions: string[] = [];
   readonly createdSubscriptions: Stripe.Subscription[] = [];
+  readonly subscriptionRequests: Stripe.SubscriptionCreateParams[] = [];
   readonly finalizedInvoices: string[] = [];
+  readonly updatedInvoices: string[] = [];
   readonly meterDeliveries: { readonly identifier?: string; readonly value?: string }[] = [];
   invoiceRetrievals = 0;
   meterFailures = 0;
+
+  constructor(private readonly now: () => Date) {}
 
   readonly invoices = {
     retrieve: async (id: string) => {
@@ -244,7 +250,10 @@ class MemoryStripe {
           (!input.status || value.status === input.status),
       ),
     }),
-    update: async (id: string) => this.invoiceRecords.get(id)!,
+    update: async (id: string) => {
+      this.updatedInvoices.push(id);
+      return this.invoiceRecords.get(id)!;
+    },
     finalizeInvoice: async (id: string) => {
       this.finalizedInvoices.push(id);
       const value = this.invoiceRecords.get(id)!;
@@ -256,14 +265,24 @@ class MemoryStripe {
 
   readonly subscriptions = {
     create: async (input: Stripe.SubscriptionCreateParams) => {
+      this.subscriptionRequests.push(input);
+      const trialStartsAt = Math.floor(this.now().getTime() / 1_000);
+      const trialEndsAt = input.trial_period_days
+        ? trialStartsAt + input.trial_period_days * 24 * 60 * 60
+        : null;
       const created = {
         id: `sub_created_${this.createdSubscriptions.length + 1}`,
         object: 'subscription',
-        status: 'active',
+        status: trialEndsAt ? 'trialing' : 'active',
+        trial_start: trialEndsAt ? trialStartsAt : null,
+        trial_end: trialEndsAt,
         metadata: input.metadata ?? {},
-        items: { data: [{ current_period_end: 1_788_240_000 }] },
+        items: {
+          data: [{ current_period_end: input.billing_cycle_anchor ?? 1_788_240_000 }],
+        },
       } as unknown as Stripe.Subscription;
       this.createdSubscriptions.push(created);
+      this.subscriptionRecords.set(created.id, created);
       return created;
     },
     cancel: async (id: string) => {
@@ -273,12 +292,20 @@ class MemoryStripe {
         metadata: { clubId: 'alpha' },
       } as unknown as Stripe.Subscription;
     },
-    list: async () => ({ data: [] as Stripe.Subscription[] }),
+    list: async () => ({ data: [...this.subscriptionRecords.values()] }),
     update: async (id: string) => ({
       id,
       metadata: { clubId: 'alpha' },
       items: { data: [{ current_period_end: 1_788_240_000 }] },
     }) as unknown as Stripe.Subscription,
+  };
+
+  readonly customers = {
+    retrieve: async (id: string) => {
+      const customer = this.customerRecords.get(id);
+      if (!customer) throw new Error(`Missing customer ${id}`);
+      return customer;
+    },
   };
 
   readonly prices = {
@@ -333,11 +360,14 @@ class MemoryStripe {
   };
 }
 
-const setup = (now: Date) => {
+const setup = (
+  now: Date,
+  billingEmailsEnabled = true,
+) => {
   const firestore = new MemoryFirestore();
-  const stripe = new MemoryStripe();
   const notifications: string[] = [];
   const clock = { now };
+  const stripe = new MemoryStripe(() => clock.now);
   const service = new CustomerBillingService({
     firestore: firestore as unknown as Firestore,
     stripe: stripe as unknown as Stripe,
@@ -348,6 +378,7 @@ const setup = (now: Date) => {
       mediaMeterEventName: 'media_bytes',
       automaticTax: true,
       webAppOrigin: 'https://app.example.com',
+      billingEmailsEnabled,
     },
     notify: async (_club, subject) => {
       notifications.push(subject);
@@ -358,6 +389,364 @@ const setup = (now: Date) => {
 };
 
 describe('customer billing workflows', () => {
+  it('starts a first automatic subscription with one 30-day trial aligned to the next local month', async () => {
+    const context = setup(new Date('2026-08-17T16:00:00.000Z'));
+    context.firestore.seed('users/president-1', {
+      email: 'president@example.com',
+      role: 3,
+      clubId: 'alpha',
+    });
+    context.firestore.seed(
+      'clubs/alpha',
+      club({ accessState: 'pending_setup', collectionMethod: 'manual' }),
+    );
+    context.firestore.seed('billing-accounts/alpha', {
+      customerId: 'cus_alpha',
+      collectionMethod: 'manual',
+    });
+    context.stripe.customerRecords.set('cus_alpha', {
+      id: 'cus_alpha',
+      object: 'customer',
+      deleted: false,
+      invoice_settings: { default_payment_method: 'pm_alpha' },
+    } as unknown as Stripe.Customer);
+
+    await context.service.setCollectionMethod(
+      'president-1',
+      'automatic',
+      'https://app.example.com/settings/club-billing',
+    );
+
+    assert.equal(context.stripe.subscriptionRequests.length, 1);
+    assert.equal(context.stripe.subscriptionRequests[0]!.trial_period_days, 30);
+    assert.deepEqual(context.stripe.subscriptionRequests[0]!.trial_settings, {
+      end_behavior: { missing_payment_method: 'cancel' },
+    });
+    assert.equal(
+      context.stripe.subscriptionRequests[0]!.billing_cycle_anchor,
+      Date.parse('2026-10-01T04:00:00.000Z') / 1_000,
+    );
+    assert.equal(
+      (context.firestore.read('clubs/alpha')!.trialEndsAt as Timestamp)
+        .toDate()
+        .toISOString(),
+      '2026-09-16T16:00:00.000Z',
+    );
+    assert.equal(
+      (context.firestore.read('billing-accounts/alpha')!.trialStartedAt as Timestamp)
+        .toDate()
+        .toISOString(),
+      '2026-08-17T16:00:00.000Z',
+    );
+    assert.equal(
+      (context.firestore.read('clubs/alpha')!.trialUsageEndsAt as Timestamp)
+        .toDate()
+        .toISOString(),
+      '2026-09-16T16:00:00.000Z',
+    );
+  });
+
+  it('starts the trial when first-time Setup Checkout completes', async () => {
+    const context = setup(new Date('2026-08-17T16:00:00.000Z'));
+    context.firestore.seed(
+      'clubs/alpha',
+      club({ accessState: 'pending_setup', collectionMethod: 'manual' }),
+    );
+    context.firestore.seed('billing-accounts/alpha', {
+      customerId: 'cus_alpha',
+      collectionMethod: 'manual',
+    });
+    const session = {
+      id: 'cs_trial',
+      object: 'checkout.session',
+      customer: 'cus_alpha',
+      setup_intent: null,
+      metadata: {
+        clubId: 'alpha',
+        purpose: 'activate_or_update_collection',
+        collectionMethod: 'automatic',
+      },
+    } as unknown as Stripe.Checkout.Session;
+
+    await context.service.handleWebhook(
+      event('evt_checkout_trial', 'checkout.session.completed', session),
+    );
+
+    assert.equal(context.stripe.subscriptionRequests[0]!.trial_period_days, 30);
+    assert.equal(context.firestore.read('clubs/alpha')!.accessState, 'enabled');
+    assert.ok(context.firestore.read('clubs/alpha')!.trialEndsAt instanceof Timestamp);
+    assert.ok(
+      context.firestore.read('clubs/alpha')!.trialUsageEndsAt instanceof Timestamp,
+    );
+    assert.ok(
+      context.firestore.read('billing-accounts/alpha')!.trialStartedAt instanceof Timestamp,
+    );
+  });
+
+  it('does not meter usage before the trial ends', async () => {
+    const context = setup(new Date('2026-08-17T16:00:00.000Z'));
+    const trialEndsAt = new Date('2026-09-16T16:00:00.000Z');
+    context.firestore.seed(
+      'clubs/alpha',
+      club({
+        trialEndsAt: Timestamp.fromDate(trialEndsAt),
+        trialUsageEndsAt: Timestamp.fromDate(trialEndsAt),
+      }),
+    );
+
+    await context.service.recordActivity({
+      eventId: 'during-trial',
+      clubId: 'alpha',
+      collection: 'cat-sightings',
+      operation: 'create',
+      occurredAt: new Date('2026-09-16T15:59:59.999Z'),
+      initiatedBy: 'user',
+      actorId: 'member-1',
+    });
+    assert.equal(
+      context.firestore.read('clubs/alpha/billing-usage/2026-09'),
+      undefined,
+    );
+
+    context.firestore.seed(
+      'clubs/alpha',
+      club({ trialEndsAt: null, trialUsageEndsAt: Timestamp.fromDate(trialEndsAt) }),
+    );
+    await context.service.recordActivity({
+      eventId: 'delayed-trial-event',
+      clubId: 'alpha',
+      collection: 'cat-sightings',
+      operation: 'create',
+      occurredAt: new Date('2026-09-15T12:00:00.000Z'),
+      initiatedBy: 'user',
+      actorId: 'member-1',
+    });
+    assert.equal(
+      context.firestore.read('clubs/alpha/billing-usage/2026-09'),
+      undefined,
+    );
+
+    await context.service.recordActivity({
+      eventId: 'after-trial',
+      clubId: 'alpha',
+      collection: 'cat-sightings',
+      operation: 'create',
+      occurredAt: trialEndsAt,
+      initiatedBy: 'user',
+      actorId: 'member-1',
+    });
+    assert.equal(
+      context.firestore.read('clubs/alpha/billing-usage/2026-09')!.activityUnits,
+      1,
+    );
+  });
+
+  it('never grants a second trial after a club has used one', async () => {
+    const context = setup(new Date('2026-11-03T15:00:00.000Z'));
+    context.firestore.seed('users/president-1', {
+      email: 'president@example.com',
+      role: 3,
+      clubId: 'alpha',
+    });
+    context.firestore.seed(
+      'clubs/alpha',
+      club({ accessState: 'suspended', suspensionReason: 'cancellation' }),
+    );
+    context.firestore.seed('billing-accounts/alpha', {
+      customerId: 'cus_alpha',
+      collectionMethod: 'automatic',
+      trialStartedAt: Timestamp.fromDate(new Date('2026-08-17T16:00:00.000Z')),
+    });
+    context.stripe.customerRecords.set('cus_alpha', {
+      id: 'cus_alpha',
+      object: 'customer',
+      deleted: false,
+      invoice_settings: { default_payment_method: 'pm_alpha' },
+    } as unknown as Stripe.Customer);
+
+    await context.service.setCollectionMethod(
+      'president-1',
+      'automatic',
+      'https://app.example.com/settings/club-billing',
+    );
+
+    assert.equal(context.stripe.subscriptionRequests.length, 1);
+    assert.equal(context.stripe.subscriptionRequests[0]!.trial_period_days, undefined);
+    assert.equal(context.firestore.read('clubs/alpha')!.trialEndsAt, null);
+  });
+
+  it('rejects invoice billing until the club has completed its first activation', async () => {
+    const context = setup(new Date('2026-08-17T16:00:00.000Z'));
+    context.firestore.seed('users/president-1', {
+      email: 'president@example.com',
+      role: 3,
+      clubId: 'alpha',
+    });
+    context.firestore.seed(
+      'clubs/alpha',
+      club({ accessState: 'pending_setup', collectionMethod: 'manual' }),
+    );
+    context.firestore.seed('billing-accounts/alpha', {
+      customerId: 'cus_alpha',
+      collectionMethod: 'manual',
+    });
+
+    await assert.rejects(
+      context.service.setCollectionMethod(
+        'president-1',
+        'manual',
+        'https://app.example.com/settings/club-billing',
+      ),
+      /Start the free trial with automatic payments/,
+    );
+    assert.equal(context.stripe.subscriptionRequests.length, 0);
+  });
+
+  it('does not allow invoice billing until the automatic trial has ended', async () => {
+    const context = setup(new Date('2026-09-01T16:00:00.000Z'));
+    context.firestore.seed('users/president-1', {
+      email: 'president@example.com',
+      role: 3,
+      clubId: 'alpha',
+    });
+    context.firestore.seed(
+      'clubs/alpha',
+      club({
+        collectionMethod: 'automatic',
+        trialEndsAt: Timestamp.fromDate(new Date('2026-09-16T16:00:00.000Z')),
+      }),
+    );
+    context.firestore.seed('billing-accounts/alpha', {
+      customerId: 'cus_alpha',
+      subscriptionId: 'sub_alpha',
+      collectionMethod: 'automatic',
+    });
+
+    await assert.rejects(
+      context.service.setCollectionMethod(
+        'president-1',
+        'manual',
+        'https://app.example.com/settings/club-billing',
+      ),
+      /after the free trial ends/,
+    );
+  });
+
+  it('does not let stale pending manual setup activate a first subscription', async () => {
+    const context = setup(new Date('2026-08-17T16:00:00.000Z'));
+    context.firestore.seed(
+      'clubs/alpha',
+      club({ accessState: 'pending_setup', collectionMethod: 'manual' }),
+    );
+    context.firestore.seed('billing-accounts/alpha', {
+      customerId: 'cus_alpha',
+      collectionMethod: 'manual',
+      pendingCollectionMethod: 'manual',
+    });
+    const customer = {
+      id: 'cus_alpha',
+      object: 'customer',
+      deleted: false,
+      name: 'Alpha Cats',
+      email: 'billing@example.com',
+      address: {
+        line1: '1 College Way',
+        city: 'Atlanta',
+        postal_code: '30332',
+        country: 'US',
+      },
+    } as unknown as Stripe.Customer;
+
+    await context.service.handleWebhook(
+      event('evt_stale_manual', 'customer.updated', customer),
+    );
+
+    assert.equal(context.stripe.subscriptionRequests.length, 0);
+    assert.equal(
+      context.firestore.read('billing-accounts/alpha')!.pendingCollectionMethod,
+      null,
+    );
+  });
+
+  it('sends the trial-ending reminder once through the webhook ledger', async () => {
+    const context = setup(new Date('2026-09-13T16:00:00.000Z'));
+    const trialEndsAt = Date.parse('2026-09-16T16:00:00.000Z') / 1_000;
+    context.firestore.seed(
+      'clubs/alpha',
+      club({ trialEndsAt: Timestamp.fromMillis(trialEndsAt * 1_000) }),
+    );
+    context.firestore.seed('billing-accounts/alpha', {
+      customerId: 'cus_alpha',
+      subscriptionId: 'sub_alpha',
+      collectionMethod: 'automatic',
+    });
+    const trial = {
+      id: 'sub_alpha',
+      object: 'subscription',
+      status: 'trialing',
+      trial_end: trialEndsAt,
+      metadata: { clubId: 'alpha' },
+    } as unknown as Stripe.Subscription;
+    const reminder = event(
+      'evt_trial_reminder',
+      'customer.subscription.trial_will_end',
+      trial,
+    );
+
+    await context.service.handleWebhook(reminder);
+    await context.service.handleWebhook(reminder);
+
+    assert.deepEqual(context.notifications, ['Campus Cats free trial ends soon']);
+    assert.equal(
+      context.firestore.read('stripe-events/evt_trial_reminder')!.status,
+      'processed',
+    );
+  });
+
+  it('ignores the zero-dollar invoice Stripe creates when the trial starts', async () => {
+    const context = setup(new Date('2026-08-17T16:00:00.000Z'));
+    const startupInvoice = invoice({
+      id: 'in_trial_start',
+      status: 'draft',
+      amount_due: 0,
+      amount_remaining: 0,
+      billing_reason: 'subscription_create',
+    });
+
+    await context.service.handleWebhook(
+      event('evt_trial_invoice', 'invoice.created', startupInvoice),
+    );
+
+    assert.deepEqual(context.stripe.updatedInvoices, []);
+    assert.equal(
+      context.firestore.read(
+        `${billingCollectionNames.invoiceReconciliations}/in_trial_start`,
+      ),
+      undefined,
+    );
+  });
+
+  it('keeps billing state changes but suppresses email when the environment gate is disabled', async () => {
+    const context = setup(new Date('2026-08-01T04:05:00.000Z'), false);
+    context.firestore.seed('users/president-1', {
+      email: 'president@example.com',
+      role: 3,
+      clubId: 'alpha',
+    });
+    context.firestore.seed('clubs/alpha', club());
+
+    await context.service.updateBillingEmail(
+      'president-1',
+      'new-billing@example.com',
+    );
+
+    assert.equal(
+      context.firestore.read('clubs/alpha')!.billingEmail,
+      'new-billing@example.com',
+    );
+    assert.deepEqual(context.notifications, []);
+  });
+
   it('moves an unpaid invoice through due, lapsed, and suspended states in club time', async () => {
     const context = setup(new Date('2026-08-01T04:05:00.000Z'));
     context.firestore.seed('clubs/alpha', club());

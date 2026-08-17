@@ -59,15 +59,10 @@ const FIELDS = [
   'location.lon',
 ].join(',');
 
-export const MAX_SEARCH_CATALOG_SIZE = 10_000;
-const SEARCH_CACHE_TTL_MS = 15 * 60 * 1000;
+export const MAX_SEARCH_CANDIDATES = 200;
+const SEARCH_RESULT_LIMIT = 20;
 
 export class UniversityCatalogService {
-  private activeCatalogCache:
-    | { readonly expiresAt: number; readonly universities: readonly StoredUniversity[] }
-    | undefined;
-  private activeCatalogLoad: Promise<readonly StoredUniversity[]> | undefined;
-
   constructor(
     private readonly firestore: Firestore,
     private readonly apiKey: () => string,
@@ -108,16 +103,53 @@ export class UniversityCatalogService {
       await batch.commit();
     }
     await this.markMissingInactive(new Set(universities.map(({ id }) => id)), synchronizedAt);
-    this.activeCatalogCache = undefined;
     return { synchronized: universities.length };
   }
 
   async search(rawQuery: string): Promise<readonly UniversitySearchResult[]> {
     const query = normalizeSearch(rawQuery);
     if (query.length < 2) return [];
-    const universities = await this.activeUniversities();
-    const ranked = rankUniversities(query, universities).slice(0, 20);
-    return Promise.all(ranked.map((university) => this.discovery(university)));
+    const universities = this.firestore.collection('universities');
+    const mappings = this.firestore.collection('university-clubs');
+    const [candidateSnapshot, mappingSnapshot] = await Promise.all([
+      universities
+        .where('searchPrefixes', 'array-contains', universitySearchPrefix(query))
+        .limit(MAX_SEARCH_CANDIDATES)
+        .get(),
+      mappings.get(),
+    ]);
+    const mappedClubs = new Map(mappingSnapshot.docs.flatMap((document) => {
+      const club = mappedClub(document.data());
+      return club ? [[document.id, club] as const] : [];
+    }));
+    const mappedUniversitySnapshots = mappedClubs.size > 0
+      ? await this.firestore.getAll(
+        ...[...mappedClubs.keys()].map((id) => universities.doc(id)),
+      )
+      : [];
+    const candidates = new Map<string, StoredUniversity>();
+    [...candidateSnapshot.docs, ...mappedUniversitySnapshots].forEach((document) => {
+      if (!document.exists) return;
+      const university = storedUniversity(document.id, document.data());
+      if (university && (university.active || mappedClubs.has(university.id))) {
+        candidates.set(university.id, university);
+      }
+    });
+    const ranked = [...rankUniversities(query, [...candidates.values()])]
+      .sort((left, right) =>
+        Number(mappedClubs.has(right.id)) - Number(mappedClubs.has(left.id)))
+      .slice(0, SEARCH_RESULT_LIMIT);
+    const claims = ranked.length > 0
+      ? await this.firestore.getAll(
+        ...ranked.map(({ id }) =>
+          this.firestore.collection('university-club-claims').doc(id)),
+      )
+      : [];
+    return ranked.map((university, index) => this.discoveryResult(
+      university,
+      mappedClubs.get(university.id),
+      claims[index],
+    ));
   }
 
   async get(universityId: string): Promise<UniversitySearchResult | undefined> {
@@ -139,28 +171,17 @@ export class UniversityCatalogService {
       this.firestore.collection('university-clubs').doc(university.id).get(),
       this.firestore.collection('university-club-claims').doc(university.id).get(),
     ]);
-    const mapped = mapping.data();
-    if (
-      mapping.exists &&
-      typeof mapped?.clubId === 'string' &&
-      typeof mapped.clubName === 'string'
-    ) {
-      const saml = mapped.samlProvider === 'gt-sso'
-        ? { provider: 'gt-sso' as const, label: String(mapped.samlLabel ?? 'Georgia Tech SSO') }
-        : undefined;
-      return {
-        ...publicUniversity(university),
-        status: 'mapped',
-        club: {
-          id: mapped.clubId,
-          name: mapped.clubName,
-          emailEnabled: true,
-          ...(saml ? { saml } : {}),
-        },
-      };
-    }
-    const expiresAt = claim.data()?.expiresAt;
-    const pending = claim.exists &&
+    return this.discoveryResult(university, mappedClub(mapping.data()), claim);
+  }
+
+  private discoveryResult(
+    university: StoredUniversity,
+    club: NonNullable<UniversitySearchResult['club']> | undefined,
+    claim: { readonly exists: boolean; data(): Record<string, unknown> | undefined } | undefined,
+  ): UniversitySearchResult {
+    if (club) return { ...publicUniversity(university), status: 'mapped', club };
+    const expiresAt = claim?.data()?.expiresAt;
+    const pending = claim?.exists === true &&
       expiresAt instanceof Timestamp &&
       expiresAt.toDate().getTime() > this.now().getTime();
     return { ...publicUniversity(university), status: pending ? 'pending' : 'unclaimed' };
@@ -184,38 +205,6 @@ export class UniversityCatalogService {
         },
       ];
     }));
-  }
-
-  private async activeUniversities(): Promise<readonly StoredUniversity[]> {
-    const now = this.now().getTime();
-    if (this.activeCatalogCache && this.activeCatalogCache.expiresAt > now) {
-      return this.activeCatalogCache.universities;
-    }
-    if (this.activeCatalogLoad) return this.activeCatalogLoad;
-    this.activeCatalogLoad = this.firestore
-      .collection('universities')
-      .where('active', '==', true)
-      .limit(MAX_SEARCH_CATALOG_SIZE + 1)
-      .get()
-      .then((snapshot) => {
-        if (snapshot.size > MAX_SEARCH_CATALOG_SIZE) {
-          throw new Error(
-            `University catalog exceeds the ${MAX_SEARCH_CATALOG_SIZE}-school search limit`,
-          );
-        }
-        const universities = snapshot.docs
-          .map((document) => storedUniversity(document.id, document.data()))
-          .filter((value): value is StoredUniversity => Boolean(value));
-        this.activeCatalogCache = {
-          expiresAt: this.now().getTime() + SEARCH_CACHE_TTL_MS,
-          universities,
-        };
-        return universities;
-      })
-      .finally(() => {
-        this.activeCatalogLoad = undefined;
-      });
-    return this.activeCatalogLoad;
   }
 
   private async markMissingInactive(
@@ -353,6 +342,29 @@ export const universitySearchPrefixes = (
   return [...prefixes].sort();
 };
 
+const GENERIC_UNIVERSITY_SEARCH_TERMS = new Set([
+  'campus',
+  'college',
+  'institute',
+  'school',
+  'state',
+  'the',
+  'university',
+]);
+
+export const universitySearchPrefix = (query: string): string => {
+  const terms = normalizeSearch(query)
+    .split(' ')
+    .filter((term) => term.length >= 2);
+  const specificTerms = terms.filter(
+    (term) => !GENERIC_UNIVERSITY_SEARCH_TERMS.has(term),
+  );
+  return (specificTerms.length > 0 ? specificTerms : terms).reduce(
+    (longest, term) => term.length > longest.length ? term : longest,
+    '',
+  );
+};
+
 export const rankUniversities = <T extends Pick<StoredUniversity, 'id' | 'name' | 'city' | 'state' | 'aliases'>>(
   query: string,
   universities: readonly T[],
@@ -400,6 +412,27 @@ const publicUniversity = (university: StoredUniversity) => ({
   emailDomains: university.emailDomains,
   ...(university.timezone ? { timezone: university.timezone } : {}),
 });
+
+const mappedClub = (
+  value: Record<string, unknown> | undefined,
+): NonNullable<UniversitySearchResult['club']> | undefined => {
+  if (
+    typeof value?.clubId !== 'string' ||
+    typeof value.clubName !== 'string'
+  ) return undefined;
+  const saml = value.samlProvider === 'gt-sso'
+    ? {
+        provider: 'gt-sso' as const,
+        label: String(value.samlLabel ?? 'Georgia Tech SSO'),
+      }
+    : undefined;
+  return {
+    id: value.clubId,
+    name: value.clubName,
+    emailEnabled: true,
+    ...(saml ? { saml } : {}),
+  };
+};
 
 const storedUniversity = (
   id: string,

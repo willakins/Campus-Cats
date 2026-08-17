@@ -125,6 +125,24 @@ describe('subscription-required route', () => {
     );
   });
 
+  it('requires a card for the President to start the first 30-day trial', async () => {
+    mockRole = Role.President;
+    mockAccess = access({
+      accessState: 'pending_setup',
+      paymentStanding: 'current',
+      suspensionReason: undefined,
+    });
+
+    await renderScreen();
+
+    expect(
+      screen.getByRole('button', { name: 'Start 30-Day Free Trial' }),
+    ).toBeOnTheScreen();
+    expect(
+      screen.queryByRole('button', { name: 'Use Monthly Invoices' }),
+    ).not.toBeOnTheScreen();
+  });
+
   it('shows status but no purchasing action on native apps', async () => {
     mockRole = Role.President;
     Object.defineProperty(Platform, 'OS', { configurable: true, value: 'ios' });

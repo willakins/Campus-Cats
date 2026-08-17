@@ -22,6 +22,8 @@ Set these Firebase function parameters:
 - `STRIPE_MEDIA_METER_EVENT` (defaults to `media_bytes`)
 - `STRIPE_AUTOMATIC_TAX` (defaults to `true`)
 - `BILLING_WEB_APP_ORIGIN` (defaults to `https://campuscats-d7a5e.web.app`)
+- `BILLING_EMAILS_ENABLED` (defaults to `false`; set to `true` only when billing
+  notification delivery is ready)
 
 Set `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, and `SENDGRID_API_KEY` as Firebase secrets. Configure the Stripe webhook to call the deployed `stripeWebhook` function for:
 
@@ -32,11 +34,26 @@ Set `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, and `SENDGRID_API_KEY` as Fire
 - `invoice.paid`
 - `invoice.payment_failed`
 - `customer.subscription.updated`
+- `customer.subscription.trial_will_end`
 - `customer.subscription.deleted`
 
-The Customer Portal must allow billing-address, name, email, tax-ID, and payment-method updates. A manual-billing club uses this hosted customer-details flow without being forced to save a card; `customer.updated` activates hosted monthly invoices after required details are complete. Configure invoice branding and verified sender/domain settings before enabling live billing.
+First-time activation requires a card and starts one 30-day trial per club. Activity
+and media usage during those 30 days is not sent to Stripe. The subscription converts
+to automatic paid usage when the trial ends, and its first paid billing cycle is
+anchored to the next month boundary in the club's timezone. The permanent
+`billing-accounts/{clubId}.trialStartedAt` marker and Stripe subscription history both
+prevent a club from receiving another trial. The server-only
+`clubs/{clubId}.trialUsageEndsAt` cutoff remains after conversion so delayed usage
+events that occurred during the trial also stay free. Stripe cancels a trial if its
+saved payment method is missing at conversion.
 
-The `invoice.created` handler disables automatic advancement, dispatches usage for that
+The Customer Portal must allow billing-address, name, email, tax-ID, and payment-method
+updates. After its first activation, a club may switch between automatic payment and
+hosted monthly invoices. Configure invoice branding and verified sender/domain settings
+before enabling live billing.
+
+The `invoice.created` handler ignores Stripe's zero-dollar trial-start invoice. For a
+normal monthly invoice it disables automatic advancement, dispatches usage for that
 club and prior local month, and creates a reconciliation record. A scheduled job
 finalizes the invoice only after every outbox event is sent and its activity/media sums
 match the monthly Firestore aggregate. Leave both five-minute billing schedules enabled.
@@ -56,7 +73,9 @@ SENDGRID_API_KEY=... INVITATION_FROM_EMAIL=... npm run admin:create-club -- \
   --web-origin https://app.example.com
 ```
 
-New clubs start in `pending_setup` with enforcement enabled. Their President can sign in on the web and choose automatic payment or hosted monthly invoices. Native apps show status only and never show payment links.
+New clubs start in `pending_setup` with enforcement enabled. Their President signs in
+on the web, adds a card, and starts the 30-day trial. The card is not charged during
+the trial. Native apps show status only and never show payment links.
 
 ## Migrate the existing club
 
@@ -78,7 +97,27 @@ npm run admin:migrate-campus-cats -- \
   --timezone America/New_York
 ```
 
-The command enters maintenance mode, copies root collections and media to `clubs/campus-cats`, records original identity fields, validates document counts and SHA-256 checksums, verifies every copied media object's size and provider checksum, then reopens access. Source collections and root media are retained for rollback. Billing enforcement stays disabled until the existing President completes setup.
+The command enters maintenance mode, copies root collections and media to `clubs/campus-cats`, records original identity fields, validates document counts and SHA-256 checksums, verifies every copied media object's size and provider checksum, then reopens access. Source collections and root media are retained for rollback. Billing enforcement stays disabled until an operator explicitly enables the subscription gate.
+
+First deploy the billing functions with `BILLING_EMAILS_ENABLED=false`. Then inspect the
+Campus Cats transition without writing and explicitly apply it:
+
+```sh
+cd functions
+npm run admin:enable-campus-cats-billing -- --project campuscats-d7a5e
+npm run admin:enable-campus-cats-billing -- --project campuscats-d7a5e --apply
+```
+
+The command enables enforcement in both the server-only club record and public access
+projection. A club without a subscription enters `pending_setup`; a club with a
+subscription keeps its current access state. The command does not call Stripe or send
+email.
+
+`BILLING_EMAILS_ENABLED` gates the application's SendGrid billing notifications.
+Stripe sandboxes do not send automatic customer emails by default, but Stripe can send
+selected test notifications to an active team member or verified-domain address. Keep
+the sandbox's customer-email settings disabled and do not manually send invoices or
+receipts while testing.
 
 If validation or launch fails, use the printed migration run ID:
 
@@ -94,4 +133,11 @@ complete a code rollback.
 
 ## Launch verification
 
-Use Stripe test mode and test clocks to run setup, manual and automatic collection, failed payment, grace, suspension, restoration, cancellation, and out-of-order webhook scenarios. Run `npm run emulator:exec` from the repository root to validate cross-club and suspended-access rules. Do not enable production enforcement until the published pricing, terms, privacy, cancellation/refund policy, variable-charge authorization, tax registrations, live Prices, webhook secret, and business-account verification are complete.
+Use Stripe test mode and test clocks to run initial trial setup, the three-day trial
+reminder, automatic conversion, post-trial manual and automatic collection, failed
+payment, grace, suspension, restoration, cancellation, and out-of-order webhook
+scenarios. Run `npm run emulator:exec` from the repository root to validate cross-club
+and suspended-access rules. Do not enable production enforcement until the published
+pricing, terms, privacy, cancellation/refund policy, variable-charge authorization,
+tax registrations, live Prices, webhook secret, and business-account verification are
+complete.
