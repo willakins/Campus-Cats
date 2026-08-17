@@ -23,11 +23,14 @@ import { FirebaseSession } from './FirebaseSession';
 import { FirebaseTenantScope } from './FirebaseTenantScope';
 import { FirebaseSurveySubmissionGateway } from './FirebaseSurveySubmissionGateway';
 import { FirebaseWhitelistSubmission } from './FirebaseWhitelistSubmission';
-import { FirebaseUniversityOnboarding } from './FirebaseUniversityOnboarding';
 import { firebaseBillingPresentation } from './firebaseBillingPresentation';
+import { createUniversityOnboardingGateway } from './createUniversityOnboardingGateway';
 import { TenantDocumentStore } from './TenantDocumentStore';
 import { TenantMediaStore } from './TenantMediaStore';
 import { AsyncStorageUniversitySelection } from '../expo/AsyncStorageUniversitySelection';
+import { createApplicationEffectsGateway } from '../development/DevelopmentApplicationEffects';
+import { createClubBillingGateway } from '../development/DevelopmentClubBilling';
+import { createSessionGateway } from '../development/DevelopmentSession';
 
 const firebaseDates = {
   encode: (value: Date) => Timestamp.fromDate(value),
@@ -41,6 +44,8 @@ const firebaseDates = {
 
 export function createFirebaseBackend(): AppBackend {
   const functions = getFunctions(app);
+  const firebaseEffects = new FirebaseCallableEffects(functions);
+  const firebaseClubBilling = new FirebaseClubBilling(db, functions);
   const tenantScope = new FirebaseTenantScope();
   const documents = new TenantDocumentStore(
     new FirebaseDocumentStore(db),
@@ -53,26 +58,28 @@ export function createFirebaseBackend(): AppBackend {
   return {
     documents,
     media,
-    effects: new FirebaseCallableEffects(functions),
+    effects: createApplicationEffectsGateway(firebaseEffects),
     billing: {
       reader: new FirebaseBillingReader(functions),
       presentation: firebaseBillingPresentation,
     },
-    clubBilling: new FirebaseClubBilling(db, functions),
+    clubBilling: createClubBillingGateway(firebaseClubBilling),
     inaturalist: {
       reader: new FirebaseInaturalistReader(db, tenantScope),
       effects: new FirebaseInaturalistEffects(functions),
     },
-    session: new FirebaseSession(
-      auth,
-      db,
-      new ExpoSamlCredentialProvider(samlConfiguration),
-      tenantScope,
+    session: createSessionGateway(
+      new FirebaseSession(
+        auth,
+        db,
+        new ExpoSamlCredentialProvider(samlConfiguration),
+        tenantScope,
+      ),
     ),
     surveySubmissions: new FirebaseSurveySubmissionGateway(functions),
     communityVoting: new FirebaseCommunityVotingGateway(functions),
     whitelistSubmissions: new FirebaseWhitelistSubmission(functions, tenantScope),
-    universityOnboarding: new FirebaseUniversityOnboarding(functions),
+    universityOnboarding: createUniversityOnboardingGateway(functions),
     universitySelections: new AsyncStorageUniversitySelection(tenantScope),
     codecs: createPersistenceCodecs(firebaseDates),
   };

@@ -23,6 +23,7 @@ export const clubAccessSchema = z.object({
   invoiceDueAt: isoDate.optional(),
   graceEndsAt: isoDate.optional(),
   scheduledEndAt: isoDate.optional(),
+  trialEndsAt: isoDate.optional(),
   suspensionReason: suspensionReasonSchema.optional(),
 });
 
@@ -73,18 +74,30 @@ export const parseClubBillingSummary = (value: unknown): ClubBillingSummary =>
 export type ClubSubscriptionLabel =
   | 'Pending setup'
   | 'Paid'
+  | 'Free trial'
   | 'Lapsed'
   | 'Ending'
   | 'No subscription';
 
 export function clubSubscriptionLabel(
   access: ClubAccess,
+  now: Date = new Date(),
 ): ClubSubscriptionLabel {
   if (access.accessState === 'pending_setup') return 'Pending setup';
   if (access.accessState === 'suspended') return 'No subscription';
+  if (clubIsInTrial(access, now)) return 'Free trial';
   if (access.scheduledEndAt) return 'Ending';
   if (access.paymentStanding === 'past_due') return 'Lapsed';
   return 'Paid';
+}
+
+export function clubIsInTrial(
+  access: Pick<ClubAccess, 'trialEndsAt'>,
+  now: Date = new Date(),
+): boolean {
+  return Boolean(
+    access.trialEndsAt && new Date(access.trialEndsAt).getTime() > now.getTime(),
+  );
 }
 
 export function clubHasAppAccess(
