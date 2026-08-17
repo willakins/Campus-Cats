@@ -23,6 +23,9 @@ describe('FirebaseClubBilling access projection', () => {
       graceEndsAt: {
         toDate: () => new Date('2026-09-01T04:00:00.000Z'),
       },
+      trialEndsAt: {
+        toDate: () => new Date('2026-08-30T16:00:00.000Z'),
+      },
       billingEmail: 'must-not-be-part-of-access@example.com',
       migrationBackupReference: 'gs://must-not-leak',
     });
@@ -37,6 +40,7 @@ describe('FirebaseClubBilling access projection', () => {
       paymentStanding: 'past_due',
       collectionMethod: 'manual',
       graceEndsAt: '2026-09-01T04:00:00.000Z',
+      trialEndsAt: '2026-08-30T16:00:00.000Z',
     });
     expect(access).not.toHaveProperty('billingEmail');
     expect(access).not.toHaveProperty('migrationBackupReference');

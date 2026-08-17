@@ -21,6 +21,7 @@ import {
   ClubAccess,
   ClubBillingSummary,
   Role,
+  clubIsInTrial,
   clubSubscriptionLabel,
 } from '@/core/domain';
 import { useAuth, useClub } from '@/providers';
@@ -32,6 +33,7 @@ const ClubBilling = () => {
   const router = useRouter();
   const theme = useAppTheme();
   const authorized = user.role === Role.President;
+  const development = process.env.EXPO_PUBLIC_APP_ENV === 'development';
   const [summary, setSummary] = useState<ClubBillingSummary>();
   const [loading, setLoading] = useState(authorized);
   const [busy, setBusy] = useState<string>();
@@ -39,7 +41,7 @@ const ClubBilling = () => {
   const [billingEmail, setBillingEmail] = useState('');
 
   const load = useCallback(() => {
-    if (!authorized || Platform.OS !== 'web') return;
+    if (!authorized || development || Platform.OS !== 'web') return;
     setLoading(true);
     setError(undefined);
     void appModules.clubBilling.summary(user).then((result) => {
@@ -50,7 +52,7 @@ const ClubBilling = () => {
       }
       else setError(result.error.message);
     });
-  }, [authorized, user.id]);
+  }, [authorized, development, user.id]);
 
   useFocusEffect(load);
 
@@ -129,7 +131,7 @@ const ClubBilling = () => {
         eyebrow="President tools"
         onBack={() => router.back()}
       />
-      {Platform.OS !== 'web' ? (
+      {development || Platform.OS !== 'web' ? (
         <NativeBillingStatus access={access} />
       ) : !authorized ? (
         <AccessDeniedState message="Only the club President may manage billing." />
@@ -180,6 +182,11 @@ const ClubBilling = () => {
                     message={`Access is scheduled to end ${formatDate(summary.scheduledEndAt)}.`}
                   />
                 ) : null}
+                {clubIsInTrial(summary) ? (
+                  <FeedbackBanner
+                    message={trialStatusMessage(summary)}
+                  />
+                ) : null}
               </View>
             </Card>
           </FormSection>
@@ -217,9 +224,10 @@ const ClubBilling = () => {
               />
             ) : null}
             {summary.accessState === 'pending_setup' ? (
-              <>
+              <View style={{ gap: theme.spacing.sm }}>
+                <FeedbackBanner message="Add a card to start your free trial. It will not be charged during the first 30 days." />
                 <Button
-                  label="Set Up Automatic Payments"
+                  label="Start 30-Day Free Trial"
                   icon="wallet-outline"
                   loading={busy === 'setup'}
                   onPress={() =>
@@ -228,13 +236,7 @@ const ClubBilling = () => {
                     )
                   }
                 />
-                <Button
-                  label="Use Monthly Invoices"
-                  variant="secondary"
-                  loading={busy === 'manual'}
-                  onPress={() => void setCollectionMethod('manual')}
-                />
-              </>
+              </View>
             ) : summary.accessState === 'suspended' &&
               summary.suspensionReason === 'cancellation' ? (
               <>
@@ -251,7 +253,7 @@ const ClubBilling = () => {
                   onPress={() => void setCollectionMethod('manual')}
                 />
               </>
-            ) : summary.accessState === 'suspended' ? null : summary.collectionMethod === 'manual' ? (
+            ) : summary.accessState === 'suspended' ? null : clubIsInTrial(summary) ? null : summary.collectionMethod === 'manual' ? (
               <Button
                 label="Turn On Automatic Payments"
                 icon="repeat-outline"
@@ -359,6 +361,8 @@ const ClubBilling = () => {
 
 const NativeBillingStatus = ({ access }: { readonly access?: ClubAccess }) => {
   const theme = useAppTheme();
+  const development =
+    process.env.EXPO_PUBLIC_APP_ENV === 'development';
   if (!access) {
     return (
       <ErrorState
@@ -379,7 +383,9 @@ const NativeBillingStatus = ({ access }: { readonly access?: ClubAccess }) => {
           />
           <AppText variant="cardTitle">{access.clubName}</AppText>
           <AppText color="muted">
-            {access.collectionMethod === 'automatic'
+            {development
+              ? 'Billing disabled in development'
+              : access.collectionMethod === 'automatic'
               ? 'Automatic payment'
               : 'Manual invoice payment'}
           </AppText>
@@ -395,9 +401,24 @@ const NativeBillingStatus = ({ access }: { readonly access?: ClubAccess }) => {
               message={`Access is scheduled to end ${formatDate(access.scheduledEndAt)}.`}
             />
           ) : null}
+          {clubIsInTrial(access) ? (
+            <FeedbackBanner
+              message={
+                development
+                  ? `Your development trial ends ${formatDate(access.trialEndsAt!)}. It will not convert to paid usage.`
+                  : trialStatusMessage(access)
+              }
+            />
+          ) : null}
         </View>
       </Card>
-      <FeedbackBanner message="Club billing is read-only in the mobile app. A club President can manage payment on the web." />
+      <FeedbackBanner
+        message={
+          development
+            ? 'This development build cannot create payments or invoices.'
+            : 'Club billing is read-only in the mobile app. A club President can manage payment on the web.'
+        }
+      />
     </View>
   );
 };
@@ -430,6 +451,10 @@ const formatDate = (value: string) =>
   new Intl.DateTimeFormat(undefined, { dateStyle: 'medium' }).format(
     new Date(value),
   );
+const trialStatusMessage = (access: ClubAccess): string =>
+  access.scheduledEndAt
+    ? `Your free trial ends ${formatDate(access.trialEndsAt!)}. Your subscription is scheduled to end without moving to paid usage.`
+    : `Your free trial ends ${formatDate(access.trialEndsAt!)}. Paid usage begins automatically afterward.`;
 const formatMedia = (bytes: number) =>
   `${Math.ceil(bytes / 1_000_000).toLocaleString()} MB`;
 const formatMoney = (cents: number, currency: string) =>

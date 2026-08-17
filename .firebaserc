@@ -1,5 +1,7 @@
 {
   "projects": {
+    "dev": "campus-cats-development",
+    "prod": "campuscats-d7a5e",
     "test": "demo-campus-cats-test"
   }
 }

@@ -41,7 +41,7 @@ const SubscriptionRequired = () => {
   const label = access ? clubSubscriptionLabel(access) : 'No subscription';
   const actionLabel =
     access?.accessState === 'pending_setup'
-      ? 'Set Up Club Billing'
+      ? 'Start 30-Day Free Trial'
       : access?.suspensionReason === 'nonpayment'
         ? 'Pay to Re-enable'
         : 'Restart Subscription';
@@ -122,13 +122,17 @@ const SubscriptionRequired = () => {
             )}
             {canManageOnWeb ? (
               <>
+                {access?.accessState === 'pending_setup' ? (
+                  <FeedbackBanner message="Add a card to start. It will not be charged during the first 30 days." />
+                ) : null}
                 <Button
                   label={actionLabel}
                   icon="card-outline"
                   loading={busy}
                   onPress={() => void manage()}
                 />
-                {access?.suspensionReason !== 'nonpayment' ? (
+                {access?.accessState !== 'pending_setup' &&
+                access?.suspensionReason !== 'nonpayment' ? (
                   <Button
                     label="Use Monthly Invoices"
                     variant="secondary"

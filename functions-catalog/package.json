@@ -1,0 +1,17 @@
+{
+  "name": "campus-cats-catalog-functions",
+  "version": "1.0.0",
+  "description": "Read-only university discovery functions for isolated development builds",
+  "main": "index.js",
+  "scripts": {
+    "test": "node index.test.js"
+  },
+  "engines": {
+    "node": "22"
+  },
+  "dependencies": {
+    "firebase-admin": "^14.2.0",
+    "firebase-functions": "^7.3.2"
+  },
+  "private": true
+}

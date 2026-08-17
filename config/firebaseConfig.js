@@ -1,4 +1,8 @@
+const { validateFirebaseEnvironment } = require('./firebaseEnvironments');
+
 const createFirebaseConfigurations = (environment) => {
+  validateFirebaseEnvironment(environment);
+
   const sharedFirebaseConfig = {
     authDomain: environment.EXPO_PUBLIC_AUTH_DOMAIN,
     projectId: environment.EXPO_PUBLIC_PROJECT_ID,
@@ -32,6 +36,7 @@ const {
   webFirebaseConfig,
 } = createFirebaseConfigurations({
   EXPO_PUBLIC_API_KEY: process.env.EXPO_PUBLIC_API_KEY,
+  EXPO_PUBLIC_APP_ENV: process.env.EXPO_PUBLIC_APP_ENV,
   EXPO_PUBLIC_APP_ID: process.env.EXPO_PUBLIC_APP_ID,
   EXPO_PUBLIC_AUTH_DOMAIN: process.env.EXPO_PUBLIC_AUTH_DOMAIN,
   EXPO_PUBLIC_PROJECT_ID: process.env.EXPO_PUBLIC_PROJECT_ID,

@@ -17,6 +17,17 @@
       "predeploy": [
         "npm --prefix \"$RESOURCE_DIR\" run build"
       ]
+    },
+    {
+      "source": "functions-catalog",
+      "codebase": "catalog",
+      "ignore": [
+        "node_modules",
+        ".git",
+        "firebase-debug.log",
+        "firebase-debug.*.log",
+        "*.local"
+      ]
     }
   ],
   "hosting": {
