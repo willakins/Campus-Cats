@@ -40,10 +40,21 @@ export const normalizeClubAccess = (
     accessState: data.accessState,
     paymentStanding: data.paymentStanding,
     collectionMethod: data.collectionMethod,
-    invoiceDueAt: isoDate(data.invoiceDueAt),
-    graceEndsAt: isoDate(data.graceEndsAt),
-    scheduledEndAt: isoDate(data.scheduledEndAt),
-    suspensionReason: data.suspensionReason ?? undefined,
+    ...(isoDate(data.invoiceDueAt)
+      ? { invoiceDueAt: isoDate(data.invoiceDueAt) }
+      : {}),
+    ...(isoDate(data.graceEndsAt)
+      ? { graceEndsAt: isoDate(data.graceEndsAt) }
+      : {}),
+    ...(isoDate(data.scheduledEndAt)
+      ? { scheduledEndAt: isoDate(data.scheduledEndAt) }
+      : {}),
+    ...(isoDate(data.trialEndsAt)
+      ? { trialEndsAt: isoDate(data.trialEndsAt) }
+      : {}),
+    ...(data.suspensionReason
+      ? { suspensionReason: data.suspensionReason }
+      : {}),
   });
 
 const redirect = (value: unknown): BillingRedirect => {

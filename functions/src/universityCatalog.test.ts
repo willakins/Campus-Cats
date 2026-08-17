@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
 import {
-  MAX_SEARCH_CATALOG_SIZE,
+  MAX_SEARCH_CANDIDATES,
   UniversityCatalogService,
   approvedDomainFromWebsite,
   applyUniversityOverride,
@@ -10,6 +10,7 @@ import {
   normalizeScorecardSchool,
   rankUniversities,
   universityCanResolve,
+  universitySearchPrefix,
   universitySearchPrefixes,
 } from './universityCatalog';
 
@@ -19,6 +20,7 @@ const catalogDocument = (
   aliases: readonly string[] = [],
 ) => ({
   id,
+  exists: true,
   data: () => ({
     name,
     city: 'Atlanta',
@@ -32,34 +34,71 @@ const catalogDocument = (
 
 const searchFirestore = (
   documents: readonly ReturnType<typeof catalogDocument>[],
-  size = documents.length,
+  mappings: Readonly<Record<string, Record<string, unknown>>> = {},
+  indexedDocuments = documents,
 ) => {
   let catalogReads = 0;
   let requestedLimit = 0;
+  let batchedReads = 0;
+  const whereClauses: unknown[][] = [];
   const emptySnapshot = { exists: false, data: () => undefined };
+  const reference = (collectionName: string, id: string) => ({
+    collectionName,
+    id,
+    get: async () => emptySnapshot,
+  });
   const firestore = {
     collection: (name: string) => {
       if (name === 'universities') {
         const query = {
-          where: () => query,
+          where: (...clause: unknown[]) => {
+            whereClauses.push(clause);
+            return query;
+          },
           limit: (limit: number) => {
             requestedLimit = limit;
             return query;
           },
           get: async () => {
             catalogReads += 1;
-            return { size, docs: documents };
+            return { size: indexedDocuments.length, docs: indexedDocuments };
           },
+          doc: (id: string) => reference(name, id),
         };
         return query;
       }
-      return { doc: () => ({ get: async () => emptySnapshot }) };
+      if (name === 'university-clubs') {
+        return {
+          get: async () => ({
+            docs: Object.entries(mappings).map(([id, data]) => ({
+              id,
+              exists: true,
+              data: () => data,
+            })),
+          }),
+          doc: (id: string) => ({
+            get: async () => mappings[id]
+              ? { exists: true, data: () => mappings[id] }
+              : emptySnapshot,
+          }),
+        };
+      }
+      return { doc: (id: string) => reference(name, id) };
+    },
+    getAll: async (...references: readonly { collectionName: string; id: string }[]) => {
+      batchedReads += 1;
+      return references.map(({ collectionName, id }) => {
+        if (collectionName !== 'universities') return emptySnapshot;
+        return documents.find((document) => document.id === id) ?? emptySnapshot;
+      });
     },
   };
   return {
     firestore,
     get catalogReads() { return catalogReads; },
+    get batchedReads() { return batchedReads; },
     get requestedLimit() { return requestedLimit; },
+    get whereClauses() { return whereClauses; },
   };
 };
 
@@ -158,9 +197,13 @@ describe('university catalog', () => {
       },
     ]);
     assert.equal(ranked[0]?.id, '1');
+    assert.equal(
+      universitySearchPrefix('University of California Los Angeles'),
+      'california',
+    );
   });
 
-  it('globally ranks a bounded active catalog and reuses its instance cache', async () => {
+  it('uses a bounded indexed prefix lookup instead of loading the full catalog', async () => {
     const database = searchFirestore([
       catalogDocument('1', 'Georgia Piedmont Technical College'),
       catalogDocument(
@@ -177,19 +220,31 @@ describe('university catalog', () => {
     );
 
     assert.equal((await service.search('Georgia Tech'))[0]?.id, '2');
-    assert.equal((await service.search('Piedmont'))[0]?.id, '1');
     assert.equal(database.catalogReads, 1);
-    assert.equal(database.requestedLimit, MAX_SEARCH_CATALOG_SIZE + 1);
+    assert.equal(database.requestedLimit, MAX_SEARCH_CANDIDATES);
+    assert.deepEqual(database.whereClauses, [
+      ['searchPrefixes', 'array-contains', 'georgia'],
+    ]);
   });
 
-  it('fails closed instead of silently truncating an oversized search catalog', async () => {
-    const database = searchFirestore([], MAX_SEARCH_CATALOG_SIZE + 1);
+  it('puts mapped clubs ahead of stronger textual matches', async () => {
+    const database = searchFirestore([
+      catalogDocument('1', 'Georgia Tech'),
+      catalogDocument('2', 'Georgia Institute of Technology-Main Campus'),
+    ], {
+      '2': { clubId: 'campus-cats', clubName: 'Campus Cats' },
+    }, [catalogDocument('1', 'Georgia Tech')]);
     const service = new UniversityCatalogService(
       database.firestore as never,
       () => 'unused',
     );
 
-    await assert.rejects(() => service.search('university'), /exceeds/);
+    const results = await service.search('Georgia Tech');
+
+    assert.equal(results[0]?.id, '2');
+    assert.equal(results[0]?.status, 'mapped');
+    assert.equal(results[1]?.id, '1');
+    assert.equal(database.batchedReads, 2);
   });
 
   it('loads every Scorecard page before returning the catalog', async () => {

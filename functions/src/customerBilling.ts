@@ -28,6 +28,8 @@ interface StoredClub {
   readonly invoiceDueAt?: Date;
   readonly graceEndsAt?: Date;
   readonly scheduledEndAt?: Date;
+  readonly trialEndsAt?: Date;
+  readonly trialUsageEndsAt?: Date;
   readonly suspensionReason?: SuspensionReason;
 }
 
@@ -45,6 +47,7 @@ interface BillingAccount {
   readonly outstandingInvoiceCreatedAt?: Date;
   readonly pendingCollectionMethod?: CollectionMethod;
   readonly collectionMethod: CollectionMethod;
+  readonly trialStartedAt?: Date;
   readonly suspensionReason?: SuspensionReason;
 }
 
@@ -55,6 +58,7 @@ interface BillingConfig {
   readonly mediaMeterEventName: string;
   readonly automaticTax: boolean;
   readonly webAppOrigin: string;
+  readonly billingEmailsEnabled: boolean;
 }
 
 interface BillingDependencies {
@@ -77,6 +81,8 @@ const USAGE_EVENTS = 'billing-usage-events';
 const STRIPE_EVENTS = 'stripe-events';
 const USAGE_COLLECTION = 'billing-usage';
 const INVOICE_RECONCILIATIONS = 'billing-invoice-reconciliations';
+const TRIAL_PERIOD_DAYS = 30;
+const DAY_MILLISECONDS = 24 * 60 * 60 * 1000;
 
 const ACTIVITY_COLLECTIONS = new Map<
   string,
@@ -266,6 +272,26 @@ export class CustomerBillingService {
     if (
       !account.subscriptionId &&
       method === 'manual' &&
+      club.accessState === 'pending_setup'
+    ) {
+      throw new HandlerError(
+        'failed-precondition',
+        'Start the free trial with automatic payments before switching to monthly invoices',
+      );
+    }
+    if (
+      method === 'manual' &&
+      club.trialEndsAt &&
+      this.now() < club.trialEndsAt
+    ) {
+      throw new HandlerError(
+        'failed-precondition',
+        'Monthly invoices are available after the free trial ends',
+      );
+    }
+    if (
+      !account.subscriptionId &&
+      method === 'manual' &&
       !(await this.customerHasBillingDetails(account))
     ) {
       await this.dependencies.firestore.collection(ACCOUNTS).doc(club.id).set(
@@ -281,6 +307,7 @@ export class CustomerBillingService {
       return this.createSetupSessionForMethod(actor, club, returnUrl, method);
     }
     let subscriptionId = account.subscriptionId;
+    let activatingSubscription: Stripe.Subscription | undefined;
     const activating = !subscriptionId;
     if (subscriptionId) {
       await this.dependencies.stripe.subscriptions.update(
@@ -292,17 +319,22 @@ export class CustomerBillingService {
     } else {
       const subscription = await this.ensureSubscription(
         club,
-        account.customerId,
+        account,
         method,
       );
       subscriptionId = subscription.id;
+      activatingSubscription = subscription;
     }
+    const trialWrites = activatingSubscription
+      ? subscriptionTrialWrites(activatingSubscription, account)
+      : undefined;
     await Promise.all([
       this.dependencies.firestore.collection(ACCOUNTS).doc(club.id).set(
         {
           collectionMethod: method,
           subscriptionId,
           pendingCollectionMethod: null,
+          ...trialWrites?.account,
           ...(activating ? { suspensionReason: null } : {}),
           updatedAt: Timestamp.fromDate(this.now()),
         },
@@ -318,6 +350,7 @@ export class CustomerBillingService {
                 paymentStanding: 'current',
                 suspensionReason: null,
                 scheduledEndAt: null,
+                ...trialWrites?.club,
               }
             : {}),
           updatedAt: Timestamp.fromDate(this.now()),
@@ -325,7 +358,7 @@ export class CustomerBillingService {
         { merge: true },
       ),
     ]);
-    await this.dependencies.notify(
+    await this.notify(
       {
         ...club,
         accessState: activating ? 'enabled' : club.accessState,
@@ -335,7 +368,9 @@ export class CustomerBillingService {
         ? 'Campus Cats billing is active'
         : 'Campus Cats payment settings updated',
       activating
-        ? `Your club subscription is active with ${method === 'manual' ? 'hosted monthly invoices' : 'automatic payments'}.`
+        ? activatingSubscription?.status === 'trialing'
+          ? `Your club's ${TRIAL_PERIOD_DAYS}-day free trial is active. Paid usage begins after the trial ends.`
+          : `Your club subscription is active with ${method === 'manual' ? 'hosted monthly invoices' : 'automatic payments'}.`
         : `Future invoices will use ${method === 'manual' ? 'manual payment' : 'automatic payment'}. Existing invoice terms have not changed.`,
     );
     return {};
@@ -375,7 +410,7 @@ export class CustomerBillingService {
       },
       { merge: true },
     );
-    await this.dependencies.notify(
+    await this.notify(
       { ...club, scheduledEndAt },
       'Campus Cats cancellation scheduled',
       `Your subscription will end on ${scheduledEndAt.toLocaleDateString()} after the current usage period.`,
@@ -399,7 +434,7 @@ export class CustomerBillingService {
         ? this.dependencies.stripe.customers.update(account.customerId, { email })
         : Promise.resolve(),
     ]);
-    await this.dependencies.notify(
+    await this.notify(
       { ...club, billingEmail: email },
       'Campus Cats billing contact updated',
       `Billing notices will be sent to ${email} and the club President.`,
@@ -425,7 +460,7 @@ export class CustomerBillingService {
       },
       { merge: true },
     );
-    await this.dependencies.notify(
+    await this.notify(
       { ...club, scheduledEndAt: undefined, suspensionReason: undefined },
       'Campus Cats cancellation removed',
       'Your club subscription will continue.',
@@ -459,6 +494,9 @@ export class CustomerBillingService {
           break;
         case 'customer.subscription.updated':
           await this.subscriptionUpdated(event.data.object);
+          break;
+        case 'customer.subscription.trial_will_end':
+          await this.subscriptionTrialWillEnd(event.data.object);
           break;
         case 'customer.subscription.deleted':
           await this.subscriptionDeleted(event.data.object);
@@ -495,9 +533,11 @@ export class CustomerBillingService {
     if (input.initiatedBy !== 'user' || !input.actorId) return;
     if (!ACTIVITY_COLLECTIONS.get(input.collection)?.has(input.operation)) return;
     const club = await this.club(input.clubId);
+    const trialEndsAt = trialUsageCutoff(club);
     if (
       !club.billingEnforcementEnabled ||
       club.accessState !== 'enabled' ||
+      (trialEndsAt && input.occurredAt < trialEndsAt) ||
       (await this.clubReference(club.id).get()).data()?.billingMigrationMode === true
     ) {
       return;
@@ -523,10 +563,12 @@ export class CustomerBillingService {
     const match = meteredMediaPath(input.objectName);
     if (!match || input.bytes <= 0) return;
     const club = await this.club(match.clubId);
+    const trialEndsAt = trialUsageCutoff(club);
     const snapshot = await this.clubReference(club.id).get();
     if (
       !club.billingEnforcementEnabled ||
       club.accessState !== 'enabled' ||
+      (trialEndsAt && input.occurredAt < trialEndsAt) ||
       snapshot.data()?.billingMigrationMode === true
     ) {
       return;
@@ -685,7 +727,7 @@ export class CustomerBillingService {
             { merge: true },
           ),
         ]);
-        await this.dependencies.notify(
+        await this.notify(
           { ...club, accessState: 'suspended', suspensionReason: 'cancellation' },
           'Campus Cats subscription ended',
           'Your club subscription has ended. The President can restart billing from the web app.',
@@ -703,7 +745,7 @@ export class CustomerBillingService {
           { paymentStanding: 'past_due', updatedAt: Timestamp.fromDate(now) },
           { merge: true },
         );
-        await this.dependencies.notify(
+        await this.notify(
           { ...club, paymentStanding: 'past_due' },
           'Campus Cats payment is overdue',
           `Your club's balance is overdue. Pay by ${club.graceEndsAt?.toLocaleDateString() ?? 'the end of the month'} to prevent suspension.`,
@@ -723,7 +765,7 @@ export class CustomerBillingService {
           { graceReminderSentAt: Timestamp.fromDate(now) },
           { merge: true },
         );
-        await this.dependencies.notify(
+        await this.notify(
           refreshed,
           'Campus Cats payment reminder',
           `Pay the overdue balance by ${refreshed.graceEndsAt.toLocaleDateString()} to prevent suspension.`,
@@ -761,7 +803,7 @@ export class CustomerBillingService {
             { merge: true },
           ),
         ]);
-        await this.dependencies.notify(
+        await this.notify(
           { ...refreshed, accessState: 'suspended', suspensionReason: 'nonpayment' },
           'Campus Cats access suspended',
           'Your club has been suspended for nonpayment. Pay the outstanding invoice to restore access.',
@@ -773,6 +815,12 @@ export class CustomerBillingService {
   }
 
   private async invoiceCreated(invoice: Stripe.Invoice): Promise<void> {
+    if (
+      invoice.billing_reason === 'subscription_create' &&
+      invoice.amount_due === 0
+    ) {
+      return;
+    }
     const clubId = await this.clubIdForInvoice(invoice);
     if (!clubId || invoice.status !== 'draft') return;
     const club = await this.club(clubId);
@@ -818,12 +866,23 @@ export class CustomerBillingService {
     const account = await this.account(accountDocument.id);
     if (account.pendingCollectionMethod !== 'manual' || account.subscriptionId) return;
     const club = await this.club(accountDocument.id);
-    const subscription = await this.createSubscription(
+    if (club.accessState === 'pending_setup') {
+      await accountDocument.ref.set(
+        {
+          pendingCollectionMethod: null,
+          updatedAt: Timestamp.fromDate(this.now()),
+        },
+        { merge: true },
+      );
+      return;
+    }
+    const subscription = await this.ensureSubscription(
       club,
-      customer.id,
+      { ...account, customerId: customer.id },
       'manual',
       eventId,
     );
+    const trialWrites = subscriptionTrialWrites(subscription, account);
     await Promise.all([
       accountDocument.ref.set(
         {
@@ -831,6 +890,7 @@ export class CustomerBillingService {
           collectionMethod: 'manual',
           pendingCollectionMethod: null,
           suspensionReason: null,
+          ...trialWrites.account,
           updatedAt: Timestamp.fromDate(this.now()),
         },
         { merge: true },
@@ -843,12 +903,13 @@ export class CustomerBillingService {
           collectionMethod: 'manual',
           suspensionReason: null,
           scheduledEndAt: null,
+          ...trialWrites.club,
           updatedAt: Timestamp.fromDate(this.now()),
         },
         { merge: true },
       ),
     ]);
-    await this.dependencies.notify(
+    await this.notify(
       { ...club, accessState: 'enabled', collectionMethod: 'manual' },
       'Campus Cats billing is active',
       'Billing details are complete and hosted monthly invoices are active.',
@@ -878,15 +939,20 @@ export class CustomerBillingService {
       }
     }
     let account = await this.account(clubId);
+    let activatingSubscription: Stripe.Subscription | undefined;
     const activating = !account.subscriptionId;
     if (!account.subscriptionId) {
-      const subscription = await this.createSubscription(
+      const subscription = await this.ensureSubscription(
         club,
-        customerId,
+        { ...account, customerId },
         collectionMethod,
         eventId,
       );
-      account = { ...account, subscriptionId: subscription.id };
+      activatingSubscription = subscription;
+      account = {
+        ...account,
+        subscriptionId: subscription.id,
+      };
     } else {
       await this.dependencies.stripe.subscriptions.update(account.subscriptionId, {
         ...(collectionMethod === 'manual'
@@ -894,6 +960,9 @@ export class CustomerBillingService {
           : { collection_method: 'charge_automatically' }),
       });
     }
+    const checkoutTrialWrites = activatingSubscription
+      ? subscriptionTrialWrites(activatingSubscription, account)
+      : undefined;
     await Promise.all([
       this.dependencies.firestore.collection(ACCOUNTS).doc(clubId).set(
         {
@@ -901,6 +970,7 @@ export class CustomerBillingService {
           subscriptionId: account.subscriptionId,
           collectionMethod,
           pendingCollectionMethod: null,
+          ...checkoutTrialWrites?.account,
           ...(activating ? { suspensionReason: null } : {}),
           updatedAt: Timestamp.fromDate(this.now()),
         },
@@ -918,6 +988,7 @@ export class CustomerBillingService {
                 invoiceDueAt: null,
                 scheduledEndAt: null,
                 suspensionReason: null,
+                ...checkoutTrialWrites?.club,
               }
             : {}),
           updatedAt: Timestamp.fromDate(this.now()),
@@ -925,13 +996,15 @@ export class CustomerBillingService {
         { merge: true },
       ),
     ]);
-    await this.dependencies.notify(
+    await this.notify(
       { ...club, accessState: 'enabled', paymentStanding: 'current' },
       activating
         ? 'Campus Cats billing is active'
         : 'Campus Cats payment settings updated',
       activating
-        ? 'Billing setup is complete and your club subscription is active.'
+        ? activatingSubscription?.status === 'trialing'
+          ? `Billing setup is complete and your ${TRIAL_PERIOD_DAYS}-day free trial is active.`
+          : 'Billing setup is complete and your club subscription is active.'
         : `Future invoices will use ${collectionMethod === 'manual' ? 'manual payment' : 'automatic payment'}. Existing invoice terms have not changed.`,
     );
   }
@@ -1005,7 +1078,7 @@ export class CustomerBillingService {
         { merge: true },
       ),
     ]);
-    await this.dependencies.notify(
+    await this.notify(
       { ...club, paymentStanding, graceEndsAt },
       eventType === 'invoice.payment_failed'
         ? 'Campus Cats payment failed'
@@ -1056,9 +1129,9 @@ export class CustomerBillingService {
       club.suspensionReason === 'nonpayment' &&
       account.customerId
     ) {
-      const subscription = await this.createSubscription(
+      const subscription = await this.ensureSubscription(
         club,
-        account.customerId,
+        { ...account, customerId: account.customerId },
         account.collectionMethod,
         eventId,
       );
@@ -1089,7 +1162,7 @@ export class CustomerBillingService {
         { merge: true },
       ),
     ]);
-    await this.dependencies.notify(
+    await this.notify(
       { ...club, paymentStanding: 'current' },
       restore ? 'Campus Cats access restored' : 'Campus Cats payment received',
       restore
@@ -1108,14 +1181,41 @@ export class CustomerBillingService {
     const scheduledEndAt = subscription.cancel_at_period_end
       ? subscriptionPeriodEnd(subscription)
       : undefined;
-    await this.clubReference(clubId).set(
-      {
+    const trialWrites = subscriptionTrialWrites(subscription, account);
+    await Promise.all([
+      this.clubReference(clubId).set({
         scheduledEndAt: scheduledEndAt
           ? Timestamp.fromDate(scheduledEndAt)
           : null,
+        ...trialWrites.club,
         updatedAt: Timestamp.fromDate(this.now()),
-      },
-      { merge: true },
+      }, { merge: true }),
+      this.dependencies.firestore.collection(ACCOUNTS).doc(clubId).set(
+        {
+          ...trialWrites.account,
+          updatedAt: Timestamp.fromDate(this.now()),
+        },
+        { merge: true },
+      ),
+    ]);
+  }
+
+  private async subscriptionTrialWillEnd(
+    subscription: Stripe.Subscription,
+  ): Promise<void> {
+    const clubId = subscription.metadata.clubId;
+    if (!clubId || !subscription.trial_end) return;
+    const account = await this.account(clubId);
+    if (account.subscriptionId !== subscription.id) return;
+    const club = await this.club(clubId);
+    const trialEndsAt = new Date(subscription.trial_end * 1000);
+    const ending = subscription.cancel_at_period_end;
+    await this.notify(
+      { ...club, trialEndsAt },
+      'Campus Cats free trial ends soon',
+      ending
+        ? `Your free trial and subscription end on ${trialEndsAt.toLocaleDateString()}. You will not move to paid usage.`
+        : `Your free trial ends on ${trialEndsAt.toLocaleDateString()}. Paid usage begins automatically afterward.`,
     );
   }
 
@@ -1134,6 +1234,7 @@ export class CustomerBillingService {
           accessState: 'suspended',
           suspensionReason: reason,
           scheduledEndAt: null,
+          trialEndsAt: null,
           updatedAt: Timestamp.fromDate(this.now()),
         },
         { merge: true },
@@ -1147,7 +1248,7 @@ export class CustomerBillingService {
         { merge: true },
       ),
     ]);
-    await this.dependencies.notify(
+    await this.notify(
       { ...club, accessState: 'suspended', suspensionReason: reason },
       'Campus Cats subscription ended',
       reason === 'nonpayment'
@@ -1161,8 +1262,13 @@ export class CustomerBillingService {
     customerId: string,
     method: CollectionMethod,
     idempotencySeed: string,
+    startTrial: boolean,
   ): Promise<Stripe.Subscription> {
     const prices = await this.usagePrices();
+    const trialEndsAt = new Date(
+      this.now().getTime() + TRIAL_PERIOD_DAYS * DAY_MILLISECONDS,
+    );
+    const anchorFrom = startTrial ? trialEndsAt : this.now();
     return this.dependencies.stripe.subscriptions.create(
       {
         customer: customerId,
@@ -1171,7 +1277,7 @@ export class CustomerBillingService {
           { price: prices.media.id },
         ],
         billing_cycle_anchor: Math.floor(
-          nextLocalMonthStart(this.now(), club.timezone).getTime() / 1000,
+          nextLocalMonthStart(anchorFrom, club.timezone).getTime() / 1000,
         ),
         billing_mode: { type: 'flexible' },
         collection_method:
@@ -1180,6 +1286,14 @@ export class CustomerBillingService {
         automatic_tax: { enabled: this.dependencies.config.automaticTax },
         metadata: { clubId: club.id },
         proration_behavior: 'none',
+        ...(startTrial
+          ? {
+              trial_period_days: TRIAL_PERIOD_DAYS,
+              trial_settings: {
+                end_behavior: { missing_payment_method: 'cancel' as const },
+              },
+            }
+          : {}),
       },
       { idempotencyKey: `club-subscription-${club.id}-${idempotencySeed}` },
     );
@@ -1187,21 +1301,31 @@ export class CustomerBillingService {
 
   private async ensureSubscription(
     club: StoredClub,
-    customerId: string,
+    account: Required<Pick<BillingAccount, 'customerId'>> & BillingAccount,
     method: CollectionMethod,
+    idempotencySeed: string = randomUUID(),
   ): Promise<Stripe.Subscription> {
     const existing = await this.dependencies.stripe.subscriptions.list({
-      customer: customerId,
+      customer: account.customerId,
       status: 'all',
       limit: 100,
     });
     const reusable = existing.data.find(
       (subscription) =>
         subscription.metadata.clubId === club.id &&
-        ['active', 'past_due', 'unpaid'].includes(subscription.status),
+        ['trialing', 'active', 'past_due', 'unpaid'].includes(subscription.status),
     );
     if (reusable) return reusable;
-    return this.createSubscription(club, customerId, method, randomUUID());
+    const hasPriorSubscription = existing.data.some(
+      (subscription) => subscription.metadata.clubId === club.id,
+    );
+    return this.createSubscription(
+      club,
+      account.customerId,
+      method,
+      idempotencySeed,
+      method === 'automatic' && !account.trialStartedAt && !hasPriorSubscription,
+    );
   }
 
   private async ensureCustomer(
@@ -1314,6 +1438,15 @@ export class CustomerBillingService {
     });
   }
 
+  private async notify(
+    club: StoredClub,
+    subject: string,
+    message: string,
+  ): Promise<void> {
+    if (!this.dependencies.config.billingEmailsEnabled) return;
+    await this.dependencies.notify(club, subject, message);
+  }
+
   private async requirePresident(
     authUid: string | undefined,
   ): Promise<{ readonly actor: BillingActor; readonly club: StoredClub }> {
@@ -1368,6 +1501,7 @@ export class CustomerBillingService {
           : undefined,
       collectionMethod:
         data?.collectionMethod === 'automatic' ? 'automatic' : 'manual',
+      trialStartedAt: dateValue(data?.trialStartedAt),
       suspensionReason:
         data?.suspensionReason === 'nonpayment' ||
         data?.suspensionReason === 'cancellation'
@@ -1546,6 +1680,47 @@ export const invoiceIsAtLeastAsRecent = (
   other: Pick<Stripe.Invoice, 'created'>,
 ): boolean => candidate.created >= other.created;
 
+function trialAccountState(
+  subscription: Stripe.Subscription,
+  account: BillingAccount,
+): { readonly trialStartedAt?: Timestamp } {
+  if (account.trialStartedAt || !subscription.trial_start) return {};
+  return {
+    trialStartedAt: Timestamp.fromMillis(subscription.trial_start * 1000),
+  };
+}
+
+function subscriptionTrialWrites(
+  subscription: Stripe.Subscription,
+  account: BillingAccount,
+): {
+  readonly account: { readonly trialStartedAt?: Timestamp };
+  readonly club: {
+    readonly trialEndsAt: Timestamp | null;
+    readonly trialUsageEndsAt?: Timestamp;
+  };
+} {
+  const immutableTrialEnd = subscription.trial_end
+    ? Timestamp.fromMillis(subscription.trial_end * 1000)
+    : undefined;
+  return {
+    account: trialAccountState(subscription, account),
+    club: {
+      trialEndsAt:
+        subscription.status === 'trialing' && immutableTrialEnd
+          ? immutableTrialEnd
+          : null,
+      ...(immutableTrialEnd
+        ? { trialUsageEndsAt: immutableTrialEnd }
+        : {}),
+    },
+  };
+}
+
+function trialUsageCutoff(club: StoredClub): Date | undefined {
+  return club.trialUsageEndsAt ?? club.trialEndsAt;
+}
+
 function storedClub(id: string, data: DocumentData): StoredClub {
   if (
     typeof data.name !== 'string' ||
@@ -1574,6 +1749,8 @@ function storedClub(id: string, data: DocumentData): StoredClub {
     invoiceDueAt: dateValue(data.invoiceDueAt),
     graceEndsAt: dateValue(data.graceEndsAt),
     scheduledEndAt: dateValue(data.scheduledEndAt),
+    trialEndsAt: dateValue(data.trialEndsAt),
+    trialUsageEndsAt: dateValue(data.trialUsageEndsAt),
     suspensionReason:
       data.suspensionReason === 'nonpayment' ||
       data.suspensionReason === 'cancellation'
@@ -1600,6 +1777,9 @@ function accessResponse(club: StoredClub) {
       : {}),
     ...(club.scheduledEndAt
       ? { scheduledEndAt: club.scheduledEndAt.toISOString() }
+      : {}),
+    ...(club.trialEndsAt
+      ? { trialEndsAt: club.trialEndsAt.toISOString() }
       : {}),
     ...(club.suspensionReason
       ? { suspensionReason: club.suspensionReason }

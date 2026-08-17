@@ -127,6 +127,9 @@ const STRIPE_AUTOMATIC_TAX = defineString('STRIPE_AUTOMATIC_TAX', {
 const BILLING_WEB_APP_ORIGIN = defineString('BILLING_WEB_APP_ORIGIN', {
   default: 'https://campuscats-d7a5e.web.app',
 });
+const BILLING_EMAILS_ENABLED = defineString('BILLING_EMAILS_ENABLED', {
+  default: 'false',
+});
 const CLUB_ONBOARDING_WEB_ORIGIN = defineString('CLUB_ONBOARDING_WEB_ORIGIN', {
   default: 'https://campuscats-d7a5e.web.app',
 });
@@ -245,6 +248,7 @@ const customerBillingService = () =>
       mediaMeterEventName: STRIPE_MEDIA_METER_EVENT.value(),
       automaticTax: STRIPE_AUTOMATIC_TAX.value() !== 'false',
       webAppOrigin: BILLING_WEB_APP_ORIGIN.value(),
+      billingEmailsEnabled: BILLING_EMAILS_ENABLED.value() === 'true',
     },
     notify: async (club, subject, message) => {
       const presidents = await firestore
@@ -1717,6 +1721,7 @@ export const projectClubAccess = onDocumentWritten(
       ...(data.invoiceDueAt ? { invoiceDueAt: data.invoiceDueAt } : {}),
       ...(data.graceEndsAt ? { graceEndsAt: data.graceEndsAt } : {}),
       ...(data.scheduledEndAt ? { scheduledEndAt: data.scheduledEndAt } : {}),
+      ...(data.trialEndsAt ? { trialEndsAt: data.trialEndsAt } : {}),
       ...(data.suspensionReason
         ? { suspensionReason: data.suspensionReason }
         : {}),

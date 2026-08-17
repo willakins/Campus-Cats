@@ -1,0 +1,23 @@
+{
+  "university": {
+    "id": "139755",
+    "name": "Georgia Institute of Technology-Main Campus",
+    "city": "Atlanta",
+    "state": "GA",
+    "websiteDomain": "gatech.edu",
+    "emailDomains": ["gatech.edu"],
+    "latitude": 33.7756,
+    "longitude": -84.3963,
+    "timezone": "America/New_York",
+    "aliases": ["Georgia Tech", "GT"]
+  },
+  "club": {
+    "id": "campus-cats",
+    "name": "Campus Cats",
+    "emailEnabled": true,
+    "logoUrl": "",
+    "primaryColor": "#18314F",
+    "accentColor": "#B58A16",
+    "sightingsAnonymous": true
+  }
+}

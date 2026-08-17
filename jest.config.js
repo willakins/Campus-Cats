@@ -4,6 +4,7 @@ module.exports = {
   testPathIgnorePatterns: [
     '/node_modules/',
     '/functions/',
+    '/functions-catalog/',
     '\\.emulator\\.test\\.[jt]sx?$',
   ],
   collectCoverageFrom: [

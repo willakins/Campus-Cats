@@ -61,11 +61,50 @@ const renderRoute = async () =>
     </AppThemeProvider>,
   );
 
+const billingSummary = (overrides: Record<string, unknown> = {}) => ({
+  clubId: 'campus-cats',
+  clubName: 'Campus Cats',
+  timezone: 'America/New_York',
+  billingEnforcementEnabled: true,
+  maintenanceMode: false,
+  accessState: 'enabled',
+  paymentStanding: 'past_due',
+  collectionMethod: 'manual',
+  invoiceDueAt: '2026-08-02T03:59:59.999Z',
+  graceEndsAt: '2026-09-01T04:00:00.000Z',
+  billingEmail: 'billing@example.com',
+  currency: 'usd',
+  outstandingBalance: 1250,
+  activityUnitPriceLabel: '$0.01 per activity unit',
+  mediaMegabytePriceLabel: '$0.02 per MB',
+  currentUsage: {
+    activityUnits: 42,
+    mediaBytes: 2_500_000,
+    periodStartsAt: '2026-08-01T04:00:00.000Z',
+    periodEndsAt: '2026-09-01T04:00:00.000Z',
+  },
+  invoices: [
+    {
+      id: 'in_1',
+      number: 'CC-001',
+      status: 'open',
+      currency: 'usd',
+      amountDue: 1250,
+      amountPaid: 0,
+      createdAt: '2026-08-01T04:00:00.000Z',
+      hostedInvoiceUrl: 'https://billing.example/invoice',
+    },
+  ],
+  ...overrides,
+});
+
 describe('club billing route', () => {
   const originalPlatform = Platform.OS;
+  const originalAppEnvironment = process.env.EXPO_PUBLIC_APP_ENV;
 
   beforeEach(() => {
     jest.clearAllMocks();
+    process.env.EXPO_PUBLIC_APP_ENV = 'production';
     mockRole = Role.President;
     mockAccess = {
       clubId: 'campus-cats',
@@ -82,41 +121,7 @@ describe('club billing route', () => {
     mockSummary.mockResolvedValue({
       ok: true,
       warnings: [],
-      value: {
-        clubId: 'campus-cats',
-        clubName: 'Campus Cats',
-        timezone: 'America/New_York',
-        billingEnforcementEnabled: true,
-        maintenanceMode: false,
-        accessState: 'enabled',
-        paymentStanding: 'past_due',
-        collectionMethod: 'manual',
-        invoiceDueAt: '2026-08-02T03:59:59.999Z',
-        graceEndsAt: '2026-09-01T04:00:00.000Z',
-        billingEmail: 'billing@example.com',
-        currency: 'usd',
-        outstandingBalance: 1250,
-        activityUnitPriceLabel: '$0.01 per activity unit',
-        mediaMegabytePriceLabel: '$0.02 per MB',
-        currentUsage: {
-          activityUnits: 42,
-          mediaBytes: 2_500_000,
-          periodStartsAt: '2026-08-01T04:00:00.000Z',
-          periodEndsAt: '2026-09-01T04:00:00.000Z',
-        },
-        invoices: [
-          {
-            id: 'in_1',
-            number: 'CC-001',
-            status: 'open',
-            currency: 'usd',
-            amountDue: 1250,
-            amountPaid: 0,
-            createdAt: '2026-08-01T04:00:00.000Z',
-            hostedInvoiceUrl: 'https://billing.example/invoice',
-          },
-        ],
-      },
+      value: billingSummary(),
     });
     mockPay.mockResolvedValue({
       ok: true,
@@ -132,6 +137,7 @@ describe('club billing route', () => {
   });
 
   afterEach(() => {
+    process.env.EXPO_PUBLIC_APP_ENV = originalAppEnvironment;
     Object.defineProperty(Platform, 'OS', {
       configurable: true,
       value: originalPlatform,
@@ -166,6 +172,56 @@ describe('club billing route', () => {
     );
   });
 
+  it('shows when free usage ends and paid usage begins', async () => {
+    mockSummary.mockResolvedValue({
+      ok: true,
+      warnings: [],
+      value: billingSummary({
+        paymentStanding: 'current',
+        collectionMethod: 'automatic',
+        trialEndsAt: '2099-09-16T16:00:00.000Z',
+        graceEndsAt: undefined,
+        invoiceDueAt: undefined,
+        outstandingBalance: 0,
+        invoices: [],
+      }),
+    });
+
+    await renderRoute();
+
+    expect(await screen.findByText('Free trial')).toBeOnTheScreen();
+    expect(
+      screen.getByText(/Your free trial ends .* Paid usage begins automatically afterward/),
+    ).toBeOnTheScreen();
+    expect(
+      screen.queryByRole('button', { name: 'Switch to Manual Invoices' }),
+    ).not.toBeOnTheScreen();
+  });
+
+  it('requires a card to start the first trial and does not offer invoices initially', async () => {
+    mockSummary.mockResolvedValue({
+      ok: true,
+      warnings: [],
+      value: billingSummary({
+        accessState: 'pending_setup',
+        paymentStanding: 'current',
+        outstandingBalance: 0,
+        invoices: [],
+        graceEndsAt: undefined,
+        invoiceDueAt: undefined,
+      }),
+    });
+
+    await renderRoute();
+
+    expect(
+      await screen.findByRole('button', { name: 'Start 30-Day Free Trial' }),
+    ).toBeOnTheScreen();
+    expect(
+      screen.queryByRole('button', { name: 'Use Monthly Invoices' }),
+    ).not.toBeOnTheScreen();
+  });
+
   it('denies non-Presidents and never loads monetary data', async () => {
     mockRole = Role.Officer;
     await renderRoute();
@@ -174,6 +230,7 @@ describe('club billing route', () => {
   });
 
   it('shows read-only mobile status and warnings without purchasing actions', async () => {
+    process.env.EXPO_PUBLIC_APP_ENV = 'production';
     Object.defineProperty(Platform, 'OS', { configurable: true, value: 'ios' });
     await renderRoute();
     expect(screen.getByText('Lapsed')).toBeOnTheScreen();
@@ -191,6 +248,34 @@ describe('club billing route', () => {
     ).not.toBeOnTheScreen();
     expect(
       screen.queryByRole('button', { name: 'Switch to Manual Invoices' }),
+    ).not.toBeOnTheScreen();
+  });
+
+  it('labels a seeded development trial as unable to charge or invoice', async () => {
+    process.env.EXPO_PUBLIC_APP_ENV = 'development';
+    mockAccess = {
+      ...mockAccess,
+      paymentStanding: 'current',
+      collectionMethod: 'automatic',
+      graceEndsAt: undefined,
+      trialEndsAt: '2099-09-16T16:00:00.000Z',
+    };
+
+    await renderRoute();
+
+    expect(screen.getByText('Free trial')).toBeOnTheScreen();
+    expect(
+      screen.getByText('Billing disabled in development'),
+    ).toBeOnTheScreen();
+    expect(
+      screen.getByText(/cannot create payments or invoices/),
+    ).toBeOnTheScreen();
+    expect(
+      screen.queryByText(/Paid usage begins automatically afterward/),
+    ).not.toBeOnTheScreen();
+    expect(mockSummary).not.toHaveBeenCalled();
+    expect(
+      screen.queryByRole('button', { name: 'Pay Outstanding Invoice' }),
     ).not.toBeOnTheScreen();
   });
 });
