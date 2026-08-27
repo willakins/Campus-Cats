@@ -4,10 +4,12 @@ import {
   Outcome,
   User,
   WhitelistApplication,
-  canManageFeature,
+  canAccessRolePolicy,
   failure,
   parseWhitelistApplication,
   success,
+  roleAccessPolicies,
+  roleAccessRequirement,
 } from '../../core/domain';
 import {
   ApplicationEffects,
@@ -158,8 +160,16 @@ export class WhitelistModule {
 
 function adminDenied(actor: User | undefined): Outcome<never> | undefined {
   if (!actor) return failure('unauthenticated', 'Sign in to manage applications');
-  if (!canManageFeature(actor.role)) {
-    return failure('forbidden', 'Only officers may manage applications');
+  if (
+    !canAccessRolePolicy(
+      actor.role,
+      roleAccessPolicies.manageMembershipApplications,
+    )
+  ) {
+    return failure(
+      'forbidden',
+      roleAccessRequirement(roleAccessPolicies.manageMembershipApplications),
+    );
   }
   return undefined;
 }

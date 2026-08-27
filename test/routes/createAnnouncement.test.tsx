@@ -1,6 +1,12 @@
 import React from 'react';
 
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-native';
+import {
+  act,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from '@testing-library/react-native';
 
 import CreateAnnouncement from '../../app/(app)/announcements/create-ann';
 import { AppThemeProvider } from '../../theme';
@@ -33,7 +39,10 @@ jest.mock('../../forms/AnnouncementForm', () => {
   const mockReact = require('react');
   const { Text: MockText } = require('react-native');
   return {
-    AnnouncementForm: () => mockReact.createElement(MockText, null, 'Announcement fields'),
+    AnnouncementForm: () =>
+      mockReact.createElement(MockText, null, 'Announcement fields'),
+    validateAnnouncementForm: () => ({}),
+    firstAnnouncementErrorField: () => undefined,
   };
 });
 
@@ -77,14 +86,21 @@ describe('create announcement route', () => {
   it('shows a failed save inline and leaves the form in place', async () => {
     mockCreate.mockResolvedValue({
       ok: false,
-      error: { code: 'dependency_failure', message: 'The announcement could not be saved' },
+      error: {
+        code: 'dependency_failure',
+        message: 'The announcement could not be saved',
+      },
     });
     await renderRoute();
 
-    await fireEvent.press(screen.getByRole('button', { name: 'Create Announcement' }));
+    await fireEvent.press(
+      screen.getByRole('button', { name: 'Create Announcement' }),
+    );
 
     expect(
-      await screen.findByRole('alert', { name: 'The announcement could not be saved' }),
+      await screen.findByRole('alert', {
+        name: 'The announcement could not be saved',
+      }),
     ).toBeOnTheScreen();
     expect(mockReplace).not.toHaveBeenCalled();
   });
@@ -93,7 +109,9 @@ describe('create announcement route', () => {
     mockCreate.mockResolvedValue({ ok: true, value: undefined, warnings: [] });
     await renderRoute();
 
-    await fireEvent.press(screen.getByRole('button', { name: 'Create Announcement' }));
+    await fireEvent.press(
+      screen.getByRole('button', { name: 'Create Announcement' }),
+    );
 
     await waitFor(() =>
       expect(mockReplace).toHaveBeenCalledWith({
@@ -101,5 +119,20 @@ describe('create announcement route', () => {
         params: { section: 'announcements' },
       }),
     );
+  });
+
+  it('explains Officer-only access from the header shield', async () => {
+    await renderRoute();
+
+    await fireEvent.press(
+      screen.getByRole('button', { name: 'Explain officer-only access' }),
+    );
+
+    expect(screen.getByText('Officer-only page')).toBeOnTheScreen();
+    expect(
+      screen.getByText(
+        'Everyone can read club announcements. Officer-level access is required to create, edit, or delete announcements.',
+      ),
+    ).toBeOnTheScreen();
   });
 });

@@ -5,6 +5,7 @@ import {
   CatalogTagSettings,
   CatalogTagAssignment,
   Contact,
+  Comment,
   ManagedUser,
   PublicProfile,
   Sighting,
@@ -16,6 +17,7 @@ import {
   parseCatalogTagSettings,
   parseCatalogTagAssignment,
   parseContact,
+  parseComment,
   parseManagedUser,
   parsePublicProfile,
   parseSighting,
@@ -65,6 +67,7 @@ export const COLLECTIONS = {
   catalogTagAssignments: 'catalog-tag-assignments',
   stations: 'stations',
   announcements: 'announcements',
+  announcementReadReceipts: 'announcement-read-receipts',
   contacts: 'contact-info',
   users: 'users',
   publicProfiles: 'public-profiles',
@@ -76,14 +79,20 @@ export const COLLECTIONS = {
   appSettings: 'app-settings',
   contentContributors: 'content-contributors',
   events: 'community-events',
+  eventReadReceipts: 'event-read-receipts',
   surveys: 'community-surveys',
   surveyResponses: 'survey-responses',
   surveySubmissionReceipts: 'survey-submission-receipts',
   communityVotes: 'community-votes',
+  communityVoteState: 'community-vote-state',
   communityVoteNominees: 'community-vote-nominees',
   communityVoteNominationReceipts: 'community-vote-nomination-receipts',
   communityVoteBallots: 'community-vote-ballots',
   communityVoteBallotReceipts: 'community-vote-ballot-receipts',
+  sightingComments: 'sighting-comments',
+  catalogComments: 'catalog-comments',
+  stationComments: 'station-comments',
+  inaturalistCommentModeration: 'inaturalist-comment-moderation',
 } as const;
 
 export const APP_SETTINGS_DOCUMENT_ID = 'public';
@@ -159,6 +168,36 @@ export function createPersistenceCodecs<EncodedDate>(
         ...record(value),
       }),
     encode: ({ id: _id, ...value }) => value,
+  };
+
+  const comment: PersistenceCodec<Comment> = {
+    decode: (id, value) => {
+      const data = record(value);
+      return parseComment({
+        id,
+        ...data,
+        createdAt: dates.decode(data.createdAt),
+        sourceUpdatedAt:
+          data.sourceUpdatedAt === undefined
+            ? undefined
+            : dates.decode(data.sourceUpdatedAt),
+      });
+    },
+    encode: ({ target, body, createdAt, createdById, source }) => {
+      if (source !== 'campus-cats' || !createdById) {
+        throw new Error('Only Campus Cats comments can be written by the app');
+      }
+      return {
+        body,
+        createdById,
+        target: {
+          ...target,
+          documentId: commentTargetDocument(target).id,
+        },
+        targetKey: commentTargetKey(target),
+        createdAt: dates.encode(createdAt),
+      };
+    },
   };
 
   const sighting: PersistenceCodec<Sighting> = {
@@ -569,6 +608,7 @@ export function createPersistenceCodecs<EncodedDate>(
   return {
     user,
     publicProfile,
+    comment,
     sighting,
     catalog,
     catalogFavorite,
@@ -594,3 +634,54 @@ export function createPersistenceCodecs<EncodedDate>(
 }
 
 export type ApplicationCodecs = ReturnType<typeof createPersistenceCodecs>;
+
+export const commentTargetKey = ({
+  kind,
+  id,
+}: {
+  readonly kind: string;
+  readonly id: string;
+}): string => `${kind}:${id}`;
+
+export const commentCollection = ({
+  kind,
+}: {
+  readonly kind: 'sighting' | 'catalog' | 'station';
+}): string =>
+  kind === 'sighting'
+    ? COLLECTIONS.sightingComments
+    : kind === 'catalog'
+      ? COLLECTIONS.catalogComments
+      : COLLECTIONS.stationComments;
+
+export const commentTargetDocument = ({
+  kind,
+  id,
+}: {
+  readonly kind: string;
+  readonly id: string;
+}): { readonly collection: string; readonly id: string } => {
+  const importedSighting = /^inat-observation-(\d+)$/.exec(id);
+  if (kind === 'sighting' && importedSighting) {
+    return {
+      collection: COLLECTIONS.inaturalistObservations,
+      id: importedSighting[1],
+    };
+  }
+  const importedCatalog = /^inat-guide-(\d+)$/.exec(id);
+  if (kind === 'catalog' && importedCatalog) {
+    return {
+      collection: COLLECTIONS.inaturalistCatalog,
+      id: importedCatalog[1],
+    };
+  }
+  return {
+    collection:
+      kind === 'sighting'
+        ? COLLECTIONS.sightings
+        : kind === 'catalog'
+          ? COLLECTIONS.catalog
+          : COLLECTIONS.stations,
+    id,
+  };
+};

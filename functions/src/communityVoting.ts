@@ -1,6 +1,10 @@
 import { randomUUID } from 'node:crypto';
 
 import { HandlerError, ManagedUser } from './handlers';
+import {
+  StoredParticipationAudience,
+  assertCanParticipate,
+} from './participation';
 
 export type CommunityVoteKind = 'contest' | 'presidential_election';
 export type NominationAction = 'nominate' | 'abstain';
@@ -16,6 +20,7 @@ export interface StoredCommunityVote {
   readonly clubId: string;
   readonly kind: CommunityVoteKind;
   readonly title?: string;
+  readonly participationAudience: StoredParticipationAudience;
   readonly votingStartsAtMillis: number;
   readonly votingEndsAtMillis: number;
   readonly options: readonly StoredCommunityVoteOption[];
@@ -25,6 +30,7 @@ export interface StoredCommunityVote {
 export interface NominationSubmission {
   readonly action: NominationAction;
   readonly candidateId?: string;
+  readonly pitch?: string;
   readonly submittedAt: Date;
 }
 
@@ -51,6 +57,7 @@ export interface CommunityVotingDependencies {
     readonly actor: ManagedUser;
     readonly vote: StoredCommunityVote;
     readonly action: NominationAction;
+    readonly pitch?: string;
     readonly submittedAt: Date;
   }): Promise<NominationSubmission>;
   submitBallot(input: {
@@ -63,6 +70,11 @@ export interface CommunityVotingDependencies {
   getResults(vote: StoredCommunityVote): Promise<CommunityVoteResults>;
 }
 
+export type BallotDependencies = Pick<
+  CommunityVotingDependencies,
+  'now' | 'getUser' | 'getVote' | 'submitBallot'
+>;
+
 interface HandlerRequest<T> {
   readonly authUid?: string;
   readonly data: T;
@@ -71,6 +83,7 @@ interface HandlerRequest<T> {
 interface NominationRequest {
   readonly voteId?: unknown;
   readonly action?: unknown;
+  readonly pitch?: unknown;
 }
 
 interface BallotRequest {
@@ -96,7 +109,7 @@ const parseVoteId = (value: unknown): string => {
 
 const requireActor = async (
   authUid: string | undefined,
-  dependencies: CommunityVotingDependencies,
+  dependencies: Pick<CommunityVotingDependencies, 'getUser'>,
 ): Promise<ManagedUser> => {
   if (!authUid) {
     throw new HandlerError('unauthenticated', 'Sign in to participate in votes');
@@ -114,7 +127,7 @@ const requireActor = async (
 const requireVote = async (
   voteId: string,
   clubId: string,
-  dependencies: CommunityVotingDependencies,
+  dependencies: Pick<CommunityVotingDependencies, 'getVote'>,
 ): Promise<StoredCommunityVote> => {
   const vote = await dependencies.getVote(voteId, clubId);
   if (!vote) throw new HandlerError('not-found', 'Vote not found');
@@ -133,7 +146,27 @@ export async function handleSubmitCommunityNomination(
       'Choose whether to nominate yourself or abstain',
     );
   }
+  if (
+    request.data.pitch !== undefined &&
+    (typeof request.data.pitch !== 'string' || request.data.pitch.length > 500)
+  ) {
+    throw new HandlerError(
+      'invalid-argument',
+      'Nomination pitch must be 500 characters or fewer',
+    );
+  }
+  const pitch =
+    typeof request.data.pitch === 'string'
+      ? request.data.pitch.trim()
+      : undefined;
+  if (request.data.action === 'abstain' && pitch) {
+    throw new HandlerError(
+      'invalid-argument',
+      'A pitch can only be included when nominating yourself',
+    );
+  }
   const vote = await requireVote(voteId, actor.clubId, dependencies);
+  assertCanParticipate(vote.participationAudience, actor.role, 'vote');
   if (vote.kind !== 'presidential_election') {
     throw new HandlerError(
       'failed-precondition',
@@ -148,18 +181,20 @@ export async function handleSubmitCommunityNomination(
     actor,
     vote,
     action: request.data.action,
+    ...(pitch ? { pitch } : {}),
     submittedAt,
   });
   return {
     action: result.action,
     ...(result.candidateId ? { candidateId: result.candidateId } : {}),
+    ...(result.pitch ? { pitch: result.pitch } : {}),
     submittedAtMillis: result.submittedAt.getTime(),
   };
 }
 
 export async function handleSubmitCommunityBallot(
   request: HandlerRequest<BallotRequest>,
-  dependencies: CommunityVotingDependencies,
+  dependencies: BallotDependencies,
 ) {
   const actor = await requireActor(request.authUid, dependencies);
   const voteId = parseVoteId(request.data.voteId);
@@ -171,6 +206,7 @@ export async function handleSubmitCommunityBallot(
     throw new HandlerError('invalid-argument', 'Choose a valid voting option');
   }
   const vote = await requireVote(voteId, actor.clubId, dependencies);
+  assertCanParticipate(vote.participationAudience, actor.role, 'vote');
   const submittedAt = dependencies.now();
   if (submittedAt.getTime() < vote.votingStartsAtMillis) {
     throw new HandlerError('failed-precondition', 'Voting has not started');

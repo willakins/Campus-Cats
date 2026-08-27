@@ -49,7 +49,6 @@ describe('CatalogForm tags', () => {
           } as never}
           photos={[]}
           setPhotos={jest.fn()}
-          isCreate
           availableTags={[
             parseCatalogTag({ id: 'feral', label: 'Community cat' }),
             parseCatalogTag({ id: 'medical', label: 'Needs medication' }),

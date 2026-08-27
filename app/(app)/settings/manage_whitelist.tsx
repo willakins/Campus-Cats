@@ -4,21 +4,24 @@ import { FlatList, View } from 'react-native';
 import { useFocusEffect, useRouter } from 'expo-router';
 
 import {
-  AccessDeniedState,
-  AppHeader,
   AppText,
   CardListSkeleton,
   EmptyState,
   ErrorState,
   FeedbackBanner,
-  Screen,
   SearchField,
   SegmentedControl,
 } from '@/components/design';
+import { RestrictedScreen } from '@/components/access';
 import { WhitelistItem } from '@/components/items/WhitelistItem';
 import { virtualizedListPerformanceProps } from '@/components/collections/virtualizedListPerformance';
 import { appModules } from '@/composition/appModules';
-import { WhitelistApplication, canManageFeature, parseUser } from '@/core/domain';
+import {
+  WhitelistApplication,
+  canAccessRolePolicy,
+  parseUser,
+  roleAccessPolicies,
+} from '@/core/domain';
 import { useAuth } from '@/providers';
 import { useAppTheme } from '@/theme';
 
@@ -29,7 +32,10 @@ const ManageWhitelist = () => {
   const { user } = useAuth();
   const actor = parseUser(user);
   const theme = useAppTheme();
-  const authorized = canManageFeature(actor.role);
+  const authorized = canAccessRolePolicy(
+    actor.role,
+    roleAccessPolicies.manageMembershipApplications,
+  );
   const [busy, setBusy] = useState(false);
   const [loading, setLoading] = useState(authorized);
   const [error, setError] = useState<string>();
@@ -70,15 +76,16 @@ const ManageWhitelist = () => {
     );
 
   return (
-    <Screen>
-      <AppHeader
-        title="Whitelist applications"
-        eyebrow="Officer tools"
-        onBack={() => router.back()}
-      />
-      {!authorized ? (
-        <AccessDeniedState message="Only officers may review membership applications." />
-      ) : loading ? (
+    <RestrictedScreen
+      title="Whitelist applications"
+      eyebrow="Officer tools"
+      onBack={() => router.back()}
+      access={{
+        policy: roleAccessPolicies.manageMembershipApplications,
+        role: actor.role,
+      }}
+    >
+      {loading ? (
         <CardListSkeleton
           label="Loading whitelist applications"
           layout="actions"
@@ -133,7 +140,7 @@ const ManageWhitelist = () => {
           />
         </View>
       )}
-    </Screen>
+    </RestrictedScreen>
   );
 };
 

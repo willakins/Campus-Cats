@@ -1,13 +1,21 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 import { useRouter } from 'expo-router';
 
-import { AccessBanner } from '@/components/design';
 import { FormScreen } from '@/components/forms';
 import { appModules } from '@/composition/appModules';
-import { CatalogTag, Cat, CatStatus, Fur, parseUser, Sex, TNRStatus } from '@/core/domain';
+import { CatalogTag, Cat, CatStatus, Fur, parseUser, roleAccessPolicies, Sex, TNRStatus } from '@/core/domain';
 import { defaultCatalogTagIdsForCat } from '@/features/catalog/catalogDiscovery';
-import { CatalogForm, CatalogFormData } from '@/forms/CatalogForm';
+import {
+  catalogSectionForField,
+  CatalogForm,
+  CatalogFormData,
+  CatalogFormErrors,
+  CatalogFormSection,
+  CatalogRequiredField,
+  firstCatalogErrorField,
+  validateCatalogForm,
+} from '@/forms/CatalogForm';
 import { useAuth } from '@/providers/AuthProvider';
 import { PickerConfig } from '@/types';
 
@@ -22,6 +30,23 @@ const CreateEntry = () => {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string>();
   const [photos, setPhotos] = useState<string[]>([]);
+  const [validationErrors, setValidationErrors] =
+    useState<CatalogFormErrors>({});
+  const [toast, setToast] = useState<{ id: number; message: string }>();
+  const [scrollRequest, setScrollRequest] = useState<{
+    id: number;
+    y: number;
+  }>();
+  const validationAttempt = useRef(0);
+  const sectionOffsets = useRef<Partial<Record<CatalogFormSection, number>>>({});
+  const requiredFieldOffsets = useRef<
+    Partial<
+      Record<
+        CatalogRequiredField,
+        { section: CatalogFormSection; y: number }
+      >
+    >
+  >({});
   const [availableTags, setAvailableTags] = useState<readonly CatalogTag[]>([]);
   const [tagsReady, setTagsReady] = useState(false);
   const [selectedTagIds, setSelectedTagIds] = useState<readonly string[]>();
@@ -74,14 +99,34 @@ const CreateEntry = () => {
     });
   }, [user.id, user.role]);
 
+  useEffect(() => {
+    if (validationAttempt.current === 0) return;
+    setValidationErrors(validateCatalogForm({ formData, photos }));
+  }, [formData, photos]);
+
   const createEntry = async () => {
     if (busy) return;
+    setError(undefined);
+    const nextValidationErrors = validateCatalogForm({ formData, photos });
+    const firstError = firstCatalogErrorField(nextValidationErrors);
+    if (firstError) {
+      const id = ++validationAttempt.current;
+      setValidationErrors(nextValidationErrors);
+      setToast({ id, message: 'Please fill in the missing information.' });
+      const fieldOffset = requiredFieldOffsets.current[firstError];
+      const section = fieldOffset?.section ?? catalogSectionForField(firstError);
+      setScrollRequest({
+        id,
+        y: (sectionOffsets.current[section] ?? 0) + (fieldOffset?.y ?? 0),
+      });
+      return;
+    }
+    setValidationErrors({});
     if (!tagsReady) {
       setError('Catalog tags are still loading. Please try again.');
       return;
     }
     setBusy(true);
-    setError(undefined);
     const result = await appModules.catalog.create(parseUser(user), {
       cat: cat(),
       credits: formData.credits,
@@ -100,27 +145,32 @@ const CreateEntry = () => {
     <FormScreen
       title="Create catalog entry"
       eyebrow="Campus field guide"
+      access={{ policy: roleAccessPolicies.manageCatalog, role: user.role }}
       saveLabel="Create Entry"
       savingLabel="Creating entry…"
       busy={busy}
       error={error}
+      scrollRequest={scrollRequest}
+      toast={toast}
       onBack={() => router.back()}
       onSave={() => void createEntry()}
     >
-      <AccessBanner
-        title="Catalog access"
-        message="Everyone can browse cat profiles. Only officers can create or edit catalog entries."
-      />
       <CatalogForm
         formData={formData}
         setFormData={setFormData}
         pickers={pickers}
         photos={photos}
         setPhotos={setPhotos}
-        isCreate
         availableTags={availableTags}
         selectedTagIds={resolvedTagIds}
         onSelectedTagIdsChange={setSelectedTagIds}
+        errors={validationErrors}
+        onSectionLayout={(section, y) => {
+          sectionOffsets.current[section] = y;
+        }}
+        onRequiredFieldLayout={(field, section, y) => {
+          requiredFieldOffsets.current[field] = { section, y };
+        }}
       />
     </FormScreen>
   );

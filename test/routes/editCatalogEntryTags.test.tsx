@@ -1,6 +1,12 @@
 import React from 'react';
 
-import { fireEvent, render, screen, waitFor } from '@testing-library/react-native';
+import {
+  fireEvent,
+  render,
+  screen,
+  userEvent,
+  waitFor,
+} from '@testing-library/react-native';
 
 import EditCatalogEntry from '../../app/(app)/catalog/edit-entry';
 import { AppThemeProvider } from '../../theme';
@@ -72,11 +78,17 @@ jest.mock('../../composition/appModules', () => ({
 }));
 
 jest.mock('../../forms/CatalogForm', () => {
+  const actual = jest.requireActual('../../forms/CatalogForm');
   const mockReact = require('react');
   const { Text: MockText } = require('react-native');
   return {
+    ...actual,
     CatalogForm: ({ selectedTagIds }: { selectedTagIds: readonly string[] }) =>
-      mockReact.createElement(MockText, null, `Selected tags: ${selectedTagIds.join(',')}`),
+      mockReact.createElement(
+        MockText,
+        null,
+        `Selected tags: ${selectedTagIds.join(',')}`,
+      ),
   };
 });
 
@@ -89,6 +101,27 @@ describe('edit catalog entry tags', () => {
     mockAssign.mockResolvedValue({ ok: true, value: undefined, warnings: [] });
   });
 
+  it('reveals the officer access explanation from the header shield', async () => {
+    const user = userEvent.setup();
+    await render(
+      <AppThemeProvider colorScheme="light">
+        <EditCatalogEntry />
+      </AppThemeProvider>,
+    );
+
+    await screen.findByText('Selected tags: medical');
+    await user.press(
+      screen.getByRole('button', { name: 'Explain officer-only access' }),
+    );
+
+    expect(screen.getByText('Officer-only page')).toBeOnTheScreen();
+    expect(
+      screen.getByText(
+        'Everyone can browse cat profiles. Officer-level access is required to create, edit, or delete catalog entries.',
+      ),
+    ).toBeOnTheScreen();
+  });
+
   it('loads and saves the profile’s explicit configured tags', async () => {
     await render(
       <AppThemeProvider colorScheme="light">
@@ -99,11 +132,13 @@ describe('edit catalog entry tags', () => {
     expect(await screen.findByText('Selected tags: medical')).toBeOnTheScreen();
     await fireEvent.press(screen.getByRole('button', { name: 'Save Entry' }));
 
-    await waitFor(() => expect(mockUpdate).toHaveBeenCalledWith(
-      expect.objectContaining({ id: 'officer-1' }),
-      'cat-1',
-      expect.objectContaining({ tagIds: ['medical'] }),
-    ));
+    await waitFor(() =>
+      expect(mockUpdate).toHaveBeenCalledWith(
+        expect.objectContaining({ id: 'officer-1' }),
+        'cat-1',
+        expect.objectContaining({ tagIds: ['medical'] }),
+      ),
+    );
     expect(mockAssign).not.toHaveBeenCalled();
   });
 });

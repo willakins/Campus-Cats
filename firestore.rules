@@ -47,7 +47,10 @@ service cloud.firestore {
 
     function isActiveUser(clubId) {
       return sameClub(clubId)
-        && userDocument().data.banned != true
+        && (
+          !('banned' in userDocument().data)
+          || userDocument().data.banned != true
+        )
         && clubHasAccess(clubId);
     }
 
@@ -61,8 +64,32 @@ service cloud.firestore {
       return role(clubId) >= 1;
     }
 
-    function isPresident(clubId) {
-      return role(clubId) == 3;
+    function validAnnouncementReadReceipt(data, clubId, receiptId) {
+      return isActiveUser(clubId)
+        && data.keys().hasOnly(['userId', 'announcementId', 'readAt'])
+        && data.userId == request.auth.uid
+        && data.announcementId is string
+        && data.announcementId.size() > 0
+        && data.announcementId.size() <= 200
+        && data.readAt is timestamp
+        && receiptId == request.auth.uid + '__' + data.announcementId
+        && exists(/databases/$(database)/documents/clubs/$(clubId)/announcements/$(data.announcementId));
+    }
+
+    function validEventReadReceipt(data, clubId, receiptId) {
+      return isActiveUser(clubId)
+        && data.keys().hasOnly(['userId', 'eventId', 'readAt'])
+        && data.userId == request.auth.uid
+        && data.eventId is string
+        && data.eventId.size() > 0
+        && data.eventId.size() <= 200
+        && data.readAt is timestamp
+        && receiptId == request.auth.uid + '__' + data.eventId
+        && exists(/databases/$(database)/documents/clubs/$(clubId)/community-events/$(data.eventId));
+    }
+
+    function hasPresidentAccess(clubId) {
+      return role(clubId) >= 3;
     }
 
     function contributorPath(clubId, kind, contentId) {
@@ -103,6 +130,74 @@ service cloud.firestore {
         && user.role == role(clubId)
         && user.clubId == clubId
         && user.platformAdmin == (userDocument().data.platformAdmin == true);
+    }
+
+    function validDonationImage(image) {
+      return image is map
+        && image.keys().hasOnly(['id', 'url'])
+        && image.id is string
+        && image.id.size() > 0
+        && image.id.size() <= 2048
+        && image.url is string
+        && image.url.size() <= 2048
+        && image.url.matches('^https://.+$');
+    }
+
+    function validDonationImages(images) {
+      return images is list
+        && images.size() <= 1
+        && (images.size() < 1 || validDonationImage(images[0]));
+    }
+
+    function validDonationPage(page) {
+      return page is map
+        && page.keys().hasOnly([
+          'title',
+          'description',
+          'images',
+          'method',
+          'externalUrl'
+        ])
+        && page.title is string
+        && page.title.size() <= 120
+        && page.description is string
+        && page.description.size() <= 5000
+        && validDonationImages(page.images)
+        && page.method == 'external'
+        && page.externalUrl is string
+        && page.externalUrl.size() <= 2048
+        && (
+          (
+            page.title.size() == 0
+            && page.description.size() == 0
+            && page.images.size() == 0
+            && page.externalUrl.size() == 0
+          )
+          || (
+            page.title.size() > 0
+            && page.description.size() > 0
+            && page.externalUrl.matches('^https://.+$')
+          )
+        );
+    }
+
+    function validAppSettings(data) {
+      return data.keys().hasOnly([
+          'logoUrl',
+          'primaryColor',
+          'accentColor',
+          'sightingsAnonymous',
+          'donationPage'
+        ])
+        && data.logoUrl is string
+        && data.logoUrl.size() <= 2048
+        && data.primaryColor.matches('^#[0-9A-Fa-f]{6}$')
+        && data.accentColor.matches('^#[0-9A-Fa-f]{6}$')
+        && data.sightingsAnonymous is bool
+        && (
+          !('donationPage' in data)
+          || validDonationPage(data.donationPage)
+        );
     }
 
     function validCurrentUserContributor(data, clubId, kind, contentId) {
@@ -178,11 +273,114 @@ service cloud.firestore {
         && validCurrentUserSnapshot(data.createdBy, clubId);
     }
 
-    function validCommunityVote(data, clubId) {
+    function validComment(data, clubId) {
+      return data.keys().hasOnly([
+          'target',
+          'targetKey',
+          'body',
+          'createdAt',
+          'createdById'
+        ])
+        && data.target is map
+        && data.target.keys().hasOnly(['kind', 'id', 'documentId'])
+        && (
+          data.target.kind == 'sighting'
+          || data.target.kind == 'catalog'
+          || data.target.kind == 'station'
+        )
+        && data.target.id is string
+        && data.target.id.size() > 0
+        && data.target.id.size() <= 200
+        && data.target.documentId is string
+        && data.target.documentId.size() > 0
+        && data.target.documentId.size() <= 200
+        && data.targetKey == data.target.kind + ':' + data.target.id
+        && data.body is string
+        && data.body.size() > 0
+        && data.body.size() <= 300
+        && data.body.matches('.*\\S.*')
+        && data.createdAt is timestamp
+        && data.createdById == request.auth.uid
+        && commentTargetExists(data.target, clubId);
+    }
+
+    function commentTargetExists(target, clubId) {
+      return (
+          target.kind == 'sighting'
+          && (
+            (
+              target.id == target.documentId
+              && exists(/databases/$(database)/documents/clubs/$(clubId)/cat-sightings/$(target.documentId))
+            )
+            || (
+              target.id == 'inat-observation-' + target.documentId
+              && exists(/databases/$(database)/documents/clubs/$(clubId)/inaturalist-observations/$(target.documentId))
+            )
+          )
+        )
+        || (
+          target.kind == 'catalog'
+          && (
+            (
+              target.id == target.documentId
+              && exists(/databases/$(database)/documents/clubs/$(clubId)/catalog/$(target.documentId))
+            )
+            || (
+              target.id == 'inat-guide-' + target.documentId
+              && exists(/databases/$(database)/documents/clubs/$(clubId)/inaturalist-guide-profiles/$(target.documentId))
+            )
+          )
+        )
+        || (
+          target.kind == 'station'
+          && target.id == target.documentId
+          && exists(/databases/$(database)/documents/clubs/$(clubId)/stations/$(target.documentId))
+        );
+    }
+
+    function commentModerationPath(clubId, commentId) {
+      return /databases/$(database)/documents/clubs/$(clubId)/inaturalist-comment-moderation/$(commentId);
+    }
+
+    function validImportedCommentModeration(data, clubId, commentId) {
+      let comment = get(/databases/$(database)/documents/clubs/$(clubId)/sighting-comments/$(commentId));
+      return data.keys().hasOnly([
+          'commentId',
+          'targetKey',
+          'hiddenById',
+          'hiddenAt'
+        ])
+        && comment.data.source == 'inaturalist'
+        && data.commentId == commentId
+        && data.targetKey == comment.data.targetKey
+        && data.hiddenById == request.auth.uid
+        && data.hiddenAt is timestamp;
+    }
+
+    function activePresidentialElectionPath(clubId) {
+      return /databases/$(database)/documents/clubs/$(clubId)/community-vote-state/presidential-election;
+    }
+
+    function activeElectionReservationAvailable(clubId) {
+      let statePath = activePresidentialElectionPath(clubId);
+      return !exists(statePath)
+        || get(statePath).data.votingEndsAt <= request.time;
+    }
+
+    function validElectionReservation(clubId, voteId, votingEndsAt) {
+      let statePath = activePresidentialElectionPath(clubId);
+      return activeElectionReservationAvailable(clubId)
+        && existsAfter(statePath)
+        && getAfter(statePath).data.voteId == voteId
+        && getAfter(statePath).data.votingEndsAt == votingEndsAt;
+    }
+
+    function validCommunityVote(data, clubId, voteId) {
       return data.keys().hasOnly([
           'kind',
           'title',
           'details',
+          'participationAudience',
           'options',
           'createdAt',
           'createdBy',
@@ -207,6 +405,11 @@ service cloud.firestore {
         && data.title.matches('.*\\S.*')
         && data.details is string
         && data.details.size() <= 5000
+        && (
+          !('participationAudience' in data)
+          || data.participationAudience == 'all_members'
+          || data.participationAudience == 'officers_only'
+        )
         && data.options is list
         && data.options.size() <= 20
         && data.createdAt is timestamp
@@ -225,13 +428,18 @@ service cloud.firestore {
           )
           || (
             data.kind == 'presidential_election'
-            && isPresident(clubId)
-            && data.createdBy.role == 3
+            && hasPresidentAccess(clubId)
+            && data.createdBy.role >= 3
             && data.options.size() == 0
             && data.nominationEndsAt is timestamp
             && data.nominationEndsAt == data.votingStartsAt
             && data.votingStartsAt >= data.createdAt + duration.value(1, 'd')
             && data.votingStartsAt <= data.createdAt + duration.value(31, 'd')
+            && validElectionReservation(
+              clubId,
+              voteId,
+              data.votingEndsAt
+            )
           )
         );
     }
@@ -314,19 +522,12 @@ service cloud.firestore {
       match /app-settings/{settingsId} {
         allow read: if settingsId == 'public'
           && (!signedIn() || isActiveUser(clubId));
-        allow create, update: if settingsId == 'public'
-          && isPresident(clubId)
-          && request.resource.data.keys().hasOnly([
-            'logoUrl',
-            'primaryColor',
-            'accentColor',
-            'sightingsAnonymous'
-          ])
-          && request.resource.data.logoUrl is string
-          && request.resource.data.logoUrl.size() <= 2048
-          && request.resource.data.primaryColor.matches('^#[0-9A-Fa-f]{6}$')
-          && request.resource.data.accentColor.matches('^#[0-9A-Fa-f]{6}$')
-          && request.resource.data.sightingsAnonymous is bool;
+        allow create: if settingsId == 'public'
+          && validAppSettings(request.resource.data)
+          && hasPresidentAccess(clubId);
+        allow update: if settingsId == 'public'
+          && validAppSettings(request.resource.data)
+          && hasPresidentAccess(clubId);
         allow delete: if false;
       }
 
@@ -340,6 +541,52 @@ service cloud.firestore {
           && request.resource.data.catalogId.size() <= 200
           && request.resource.data.createdAt is timestamp;
         allow delete: if isActiveUser(clubId) && request.auth.uid == userId;
+      }
+
+      match /sighting-comments/{commentId} {
+        allow read: if isActiveUser(clubId);
+        allow create: if isActiveUser(clubId)
+          && validComment(request.resource.data, clubId)
+          && request.resource.data.target.kind == 'sighting';
+        allow update: if false;
+        allow delete: if isAdmin(clubId)
+          && (
+            !('source' in resource.data)
+            || resource.data.source != 'inaturalist'
+            || (
+              existsAfter(commentModerationPath(clubId, commentId))
+              && getAfter(commentModerationPath(clubId, commentId)).data.commentId == commentId
+            )
+          );
+      }
+
+      match /inaturalist-comment-moderation/{commentId} {
+        allow read: if isAdmin(clubId);
+        allow create: if isAdmin(clubId)
+          && validImportedCommentModeration(
+            request.resource.data,
+            clubId,
+            commentId
+          );
+        allow update, delete: if false;
+      }
+
+      match /catalog-comments/{commentId} {
+        allow read: if isActiveUser(clubId);
+        allow create: if isActiveUser(clubId)
+          && validComment(request.resource.data, clubId)
+          && request.resource.data.target.kind == 'catalog';
+        allow update: if false;
+        allow delete: if isAdmin(clubId);
+      }
+
+      match /station-comments/{commentId} {
+        allow read: if isAdmin(clubId);
+        allow create: if isAdmin(clubId)
+          && validComment(request.resource.data, clubId)
+          && request.resource.data.target.kind == 'station';
+        allow update: if false;
+        allow delete: if isAdmin(clubId);
       }
 
       match /catalog-tag-settings/{settingsId} {
@@ -371,6 +618,17 @@ service cloud.firestore {
         allow create, update, delete: if isAdmin(clubId);
       }
 
+      match /announcement-read-receipts/{receiptId} {
+        allow get, list: if isActiveUser(clubId)
+          && resource.data.userId == request.auth.uid;
+        allow create, update: if validAnnouncementReadReceipt(
+          request.resource.data,
+          clubId,
+          receiptId
+        );
+        allow delete: if false;
+      }
+
       match /community-events/{eventId} {
         allow read: if isActiveUser(clubId);
         allow create: if isAdmin(clubId)
@@ -382,6 +640,17 @@ service cloud.firestore {
         allow delete: if isAdmin(clubId);
       }
 
+      match /event-read-receipts/{receiptId} {
+        allow get, list: if isActiveUser(clubId)
+          && resource.data.userId == request.auth.uid;
+        allow create, update: if validEventReadReceipt(
+          request.resource.data,
+          clubId,
+          receiptId
+        );
+        allow delete: if false;
+      }
+
       match /community-surveys/{surveyId} {
         allow read: if isActiveUser(clubId);
         allow create: if isAdmin(clubId)
@@ -389,6 +658,7 @@ service cloud.firestore {
             'title',
             'details',
             'anonymous',
+            'participationAudience',
             'status',
             'questions',
             'createdAt',
@@ -401,6 +671,11 @@ service cloud.firestore {
           && request.resource.data.details is string
           && request.resource.data.details.size() <= 5000
           && request.resource.data.anonymous is bool
+          && (
+            !('participationAudience' in request.resource.data)
+            || request.resource.data.participationAudience == 'all_members'
+            || request.resource.data.participationAudience == 'officers_only'
+          )
           && request.resource.data.status == 'open'
           && request.resource.data.questions is list
           && request.resource.data.questions.size() > 0
@@ -430,8 +705,33 @@ service cloud.firestore {
       match /community-votes/{voteId} {
         allow read: if isActiveUser(clubId);
         allow create: if isActiveUser(clubId)
-          && validCommunityVote(request.resource.data, clubId);
+          && validCommunityVote(request.resource.data, clubId, voteId);
         allow update, delete: if false;
+      }
+
+      match /community-vote-state/{stateId} {
+        allow read: if isActiveUser(clubId);
+        allow create, update: if stateId == 'presidential-election'
+          && hasPresidentAccess(clubId)
+          && activeElectionReservationAvailable(clubId)
+          && request.resource.data.keys().hasOnly([
+            'voteId',
+            'votingEndsAt'
+          ])
+          && request.resource.data.voteId is string
+          && request.resource.data.voteId.size() > 0
+          && request.resource.data.voteId.size() <= 200
+          && request.resource.data.votingEndsAt is timestamp
+          && existsAfter(
+            /databases/$(database)/documents/clubs/$(clubId)/community-votes/$(request.resource.data.voteId)
+          )
+          && getAfter(
+            /databases/$(database)/documents/clubs/$(clubId)/community-votes/$(request.resource.data.voteId)
+          ).data.kind == 'presidential_election'
+          && getAfter(
+            /databases/$(database)/documents/clubs/$(clubId)/community-votes/$(request.resource.data.voteId)
+          ).data.votingEndsAt == request.resource.data.votingEndsAt;
+        allow delete: if false;
       }
 
       match /community-vote-nominees/{nomineeId} {

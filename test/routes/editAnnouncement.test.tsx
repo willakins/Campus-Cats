@@ -1,7 +1,13 @@
 import React from 'react';
 import { Alert } from 'react-native';
 
-import { act, render, screen, userEvent, waitFor } from '@testing-library/react-native';
+import {
+  act,
+  render,
+  screen,
+  userEvent,
+  waitFor,
+} from '@testing-library/react-native';
 
 import EditAnnouncement from '../../app/(app)/announcements/edit-ann';
 import { Role, parseAnnouncement, parseUser } from '../../core/domain';
@@ -39,9 +45,11 @@ jest.mock('../../providers/AuthProvider', () => ({
 jest.mock('@expo/vector-icons', () => ({ Ionicons: () => null }));
 
 jest.mock('../../forms/AnnouncementForm', () => {
+  const actual = jest.requireActual('../../forms/AnnouncementForm');
   const mockReact = require('react');
   const { Text: MockText } = require('react-native');
   return {
+    ...actual,
     AnnouncementForm: ({ formData }: { formData: { title: string } }) =>
       mockReact.createElement(MockText, null, formData.title),
   };
@@ -78,16 +86,21 @@ describe('edit announcement route', () => {
     mockRemove.mockReset();
     mockGet.mockResolvedValue({ ok: true, value: announcement, warnings: [] });
     mockMedia.mockResolvedValue({ ok: true, value: [], warnings: [] });
-    mockUpdate.mockResolvedValue({ ok: true, value: announcement, warnings: [] });
+    mockUpdate.mockResolvedValue({
+      ok: true,
+      value: announcement,
+      warnings: [],
+    });
     mockRemove.mockResolvedValue({ ok: true, value: undefined, warnings: [] });
   });
 
   it('shows loading state and navigates by ID after a successful save', async () => {
     let finishGet: ((value: unknown) => void) | undefined;
     mockGet.mockImplementation(
-      () => new Promise((resolve) => {
-        finishGet = resolve;
-      }),
+      () =>
+        new Promise((resolve) => {
+          finishGet = resolve;
+        }),
     );
     const user = userEvent.setup();
     await renderRoute();
@@ -115,12 +128,33 @@ describe('edit announcement route', () => {
     );
   });
 
-  it('requires destructive confirmation before deleting', async () => {
-    const alert = jest.spyOn(Alert, 'alert').mockImplementation(() => undefined);
+  it('explains officer-only access from the header shield', async () => {
     const user = userEvent.setup();
     await renderRoute();
     await screen.findByText('Volunteer workday');
-    await user.press(screen.getByRole('button', { name: 'Delete Announcement' }));
+
+    await user.press(
+      screen.getByRole('button', { name: 'Explain officer-only access' }),
+    );
+
+    expect(screen.getByText('Officer-only page')).toBeOnTheScreen();
+    expect(
+      screen.getByText(
+        'Everyone can read club announcements. Officer-level access is required to create, edit, or delete announcements.',
+      ),
+    ).toBeOnTheScreen();
+  });
+
+  it('requires destructive confirmation before deleting', async () => {
+    const alert = jest
+      .spyOn(Alert, 'alert')
+      .mockImplementation(() => undefined);
+    const user = userEvent.setup();
+    await renderRoute();
+    await screen.findByText('Volunteer workday');
+    await user.press(
+      screen.getByRole('button', { name: 'Delete Announcement' }),
+    );
 
     expect(mockRemove).not.toHaveBeenCalled();
     expect(alert).toHaveBeenCalledWith(
@@ -129,7 +163,9 @@ describe('edit announcement route', () => {
       expect.any(Array),
     );
     const buttons = alert.mock.calls[0][2];
-    const destructive = buttons?.find((button) => button.style === 'destructive');
+    const destructive = buttons?.find(
+      (button) => button.style === 'destructive',
+    );
     await act(async () => destructive?.onPress?.());
 
     await waitFor(() => expect(mockRemove).toHaveBeenCalled());
@@ -145,14 +181,19 @@ describe('edit announcement route', () => {
       error: { code: 'not_found', message: 'Announcement not found' },
     });
     const { unmount } = await renderRoute();
-    expect(await screen.findByText('Could not load announcement')).toBeOnTheScreen();
+    expect(
+      await screen.findByText('Could not load announcement'),
+    ).toBeOnTheScreen();
     expect(screen.getByText('Announcement not found')).toBeOnTheScreen();
     await unmount();
 
     mockGet.mockResolvedValue({ ok: true, value: announcement, warnings: [] });
     mockUpdate.mockResolvedValue({
       ok: false,
-      error: { code: 'dependency_failure', message: 'Could not save announcement' },
+      error: {
+        code: 'dependency_failure',
+        message: 'Could not save announcement',
+      },
     });
     const user = userEvent.setup();
     await renderRoute();

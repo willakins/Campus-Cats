@@ -1,0 +1,12 @@
+{
+  "name": "campus-cats-core-functions",
+  "private": true,
+  "engines": {
+    "node": "22"
+  },
+  "main": "lib/coreCallables.js",
+  "dependencies": {
+    "firebase-admin": "^14.2.0",
+    "firebase-functions": "^7.3.2"
+  }
+}

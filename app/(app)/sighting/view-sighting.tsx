@@ -10,6 +10,7 @@ import {
   FeedbackBanner,
   Screen,
 } from '@/components/design';
+import { CommentsSection } from '@/components/comments';
 import { SightingEntry } from '@/components/entries/SightingEntry';
 import { appModules } from '@/composition/appModules';
 import {
@@ -115,27 +116,33 @@ const SightingScreen = () => {
       <AppHeader
         title="Sighting details"
         eyebrow="Field report"
-        onBack={() => router.push('/(app)/(tabs)')}
+        onBack={() => router.back()}
       />
       {mediaError ? <FeedbackBanner message={mediaError} tone="warning" /> : null}
       {loading ? (
         <DetailSkeleton label="Loading sighting" />
       ) : sighting ? (
-        <SightingEntry
-          sighting={sighting}
-          media={media}
-          reporterProfile={reporterProfile}
-          showContributor={mayViewContributor || Boolean(reporterId)}
-          onReporterPress={
-            reporterId
-              ? () =>
-                  router.push({
-                    pathname: '/profile/view-profile',
-                    params: { id: reporterId },
-                  })
-              : undefined
-          }
-        />
+        <>
+          <SightingEntry
+            sighting={sighting}
+            media={media}
+            reporterProfile={reporterProfile}
+            showContributor={mayViewContributor || Boolean(reporterId)}
+            onReporterPress={
+              reporterId
+                ? () =>
+                    router.push({
+                      pathname: '/profile/view-profile',
+                      params: { id: reporterId },
+                    })
+                : undefined
+            }
+          />
+          <CommentsSection
+            actor={actor}
+            target={{ kind: 'sighting', id: sighting.id }}
+          />
+        </>
       ) : (
         <ErrorState title="Sighting unavailable" message={error || 'Sighting not found'} />
       )}

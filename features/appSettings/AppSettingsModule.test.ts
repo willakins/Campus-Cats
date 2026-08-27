@@ -21,11 +21,21 @@ const developer = parseUser({
   email: 'developer@gatech.edu',
   role: Role.Developer,
 });
+const officer = parseUser({
+  id: 'officer-1',
+  email: 'officer@gatech.edu',
+  role: Role.Officer,
+});
+const member = parseUser({
+  id: 'member-1',
+  email: 'member@gatech.edu',
+  role: Role.Member,
+});
 
 const buildModule = () => {
   const documents = new InMemoryDocumentStore();
   const media = new InMemoryMediaStore();
-  const ids = new SequenceIdGenerator(['logo-1']);
+  const ids = new SequenceIdGenerator(['logo-1', 'donation-1', 'donation-2']);
   const codecs = createPersistenceCodecs(dateObjectCodec);
   const migrateContributorPrivacy = jest.fn().mockResolvedValue(undefined);
   return {
@@ -52,7 +62,7 @@ describe('AppSettingsModule', () => {
     });
   });
 
-  it('allows only the President to save validated branding and privacy', async () => {
+  it('allows President-level roles to save validated branding and privacy', async () => {
     const { module, migrateContributorPrivacy } = buildModule();
     const draft = {
       logoUrl: '',
@@ -62,8 +72,7 @@ describe('AppSettingsModule', () => {
     };
 
     await expect(module.save(developer, draft)).resolves.toMatchObject({
-      ok: false,
-      error: { code: 'forbidden' },
+      ok: true,
     });
     await expect(module.save(president, draft)).resolves.toMatchObject({
       ok: true,
@@ -91,7 +100,9 @@ describe('AppSettingsModule', () => {
   it('requires authentication before saving settings', async () => {
     const { module } = buildModule();
 
-    await expect(module.save(undefined, DEFAULT_APP_SETTINGS)).resolves.toMatchObject({
+    await expect(
+      module.save(undefined, DEFAULT_APP_SETTINGS),
+    ).resolves.toMatchObject({
       ok: false,
       error: { code: 'unauthenticated' },
     });
@@ -174,5 +185,134 @@ describe('AppSettingsModule', () => {
       error: { code: 'validation' },
     });
     await expect(documents.list('app-settings')).resolves.toEqual([]);
+  });
+
+  it('lets President-level roles publish an external donation page with one optional photo', async () => {
+    const { module, media } = buildModule();
+    const donation = {
+      title: 'Help feed the colony',
+      description: 'Your gift pays for food and veterinary care.',
+      method: 'external' as const,
+      externalUrl: 'https://give.example.org/campus-cats',
+    };
+    const images = [
+      { kind: 'local' as const, localUri: 'file://donation-one.jpg' },
+    ];
+
+    await expect(
+      module.saveDonationPage(member, donation, images),
+    ).resolves.toMatchObject({ ok: false, error: { code: 'forbidden' } });
+    await expect(
+      module.saveDonationPage(officer, donation, images),
+    ).resolves.toMatchObject({ ok: false, error: { code: 'forbidden' } });
+
+    await expect(
+      module.saveDonationPage(president, donation, images),
+    ).resolves.toMatchObject({
+      ok: true,
+      value: {
+        donationPage: {
+          ...donation,
+          images: [
+            {
+              id: 'donations/logo-1.jpg',
+              url: 'memory://donations/logo-1.jpg',
+            },
+          ],
+        },
+      },
+    });
+    expect(media.ids()).toEqual(['donations/logo-1.jpg']);
+
+    await expect(
+      module.saveDonationPage(developer, donation, []),
+    ).resolves.toMatchObject({ ok: true });
+  });
+
+  it('requires a valid link only for externally hosted donations', async () => {
+    const { module } = buildModule();
+
+    await expect(
+      module.saveDonationPage(
+        president,
+        {
+          title: 'Support Campus Cats',
+          description: 'Help us care for community cats.',
+          method: 'external',
+          externalUrl: '',
+        },
+        [],
+      ),
+    ).resolves.toMatchObject({ ok: false, error: { code: 'validation' } });
+    await expect(
+      module.saveDonationPage(
+        president,
+        {
+          title: 'Support Campus Cats',
+          description: 'Help us care for community cats.',
+          method: 'external',
+          externalUrl: 'http://give.example.org/campus-cats',
+        },
+        [],
+      ),
+    ).resolves.toMatchObject({ ok: false, error: { code: 'validation' } });
+
+    await expect(
+      module.saveDonationPage(
+        president,
+        {
+          title: 'Support Campus Cats',
+          description: 'Help us care for community cats.',
+          method: 'direct',
+          externalUrl: '',
+        },
+        [],
+      ),
+    ).resolves.toMatchObject({ ok: false, error: { code: 'validation' } });
+  });
+
+  it('preserves the donation page when branding and privacy are saved', async () => {
+    const { module } = buildModule();
+    const donation = {
+      title: 'Support Campus Cats',
+      description: 'Help us care for community cats.',
+      method: 'external' as const,
+      externalUrl: 'https://give.example.org/campus-cats',
+    };
+    await module.saveDonationPage(president, donation, []);
+
+    await module.save(president, {
+      logoUrl: '',
+      primaryColor: '#0057B8',
+      accentColor: '#F5A623',
+      sightingsAnonymous: false,
+    });
+
+    await expect(module.get()).resolves.toMatchObject({
+      ok: true,
+      value: { donationPage: { ...donation, images: [] } },
+    });
+  });
+
+  it('rejects more than one donation photo before uploading any media', async () => {
+    const { module, media } = buildModule();
+    const images = Array.from({ length: 2 }, (_, index) => ({
+      kind: 'local' as const,
+      localUri: `file://donation-${index}.jpg`,
+    }));
+
+    await expect(
+      module.saveDonationPage(
+        president,
+        {
+          title: 'Support Campus Cats',
+          description: 'Help us care for community cats.',
+          method: 'external',
+          externalUrl: 'https://give.example.org/campus-cats',
+        },
+        images,
+      ),
+    ).resolves.toMatchObject({ ok: false, error: { code: 'validation' } });
+    expect(media.ids()).toEqual([]);
   });
 });

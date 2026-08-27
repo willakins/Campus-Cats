@@ -67,8 +67,8 @@ each choice, and a voting window from 1 to 14 days. This supports decisions such
 new club logo without treating a ballot as an ordinary survey. Every active account
 gets one private ballot, and aggregate results appear only after voting closes.
 
-Only the current President may start a presidential election. The President chooses a
-nomination window from 1 to 31 days and a voting window from 1 to 14 days. During the
+Presidents and Developers may start a presidential election. The initiating user chooses
+a nomination window from 1 to 31 days and a voting window from 1 to 14 days. During the
 first round, each member may nominate themself or abstain once. When that window ends,
 the vote automatically enters the second round with the self-nominees as choices. A
 scheduled Function broadcasts that presidential voting has started. The election

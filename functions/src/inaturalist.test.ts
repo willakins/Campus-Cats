@@ -7,6 +7,7 @@ import {
   ImportRepository,
   InaturalistHttpGateway,
   InaturalistGateway,
+  ObservationCommentImport,
   ObservationImport,
   SyncRunSummary,
   mapGuideTaxon,
@@ -95,6 +96,29 @@ const observation = {
       attribution: '(c) Observer, all rights reserved',
     },
   ],
+  comments: [
+    {
+      id: 22894482,
+      uuid: 'e221e4fd-b34c-43ec-b21a-e36c1ba327d7',
+      body: 'Pretty sure this is Charles!',
+      created_at: '2026-08-10T22:53:45-04:00',
+      updated_at: '2026-08-10T22:53:45-04:00',
+      hidden: false,
+      user: {
+        id: 8358607,
+        login: 'chipmunkt',
+        name: 'Chip Munk',
+      },
+    },
+    {
+      id: 22894483,
+      uuid: 'e221e4fd-b34c-43ec-b21a-e36c1ba327d8',
+      body: 'Hidden upstream',
+      created_at: '2026-08-10T23:00:00-04:00',
+      hidden: true,
+      user: { id: 8358608, login: 'moderated', name: null },
+    },
+  ],
   user: { id: 42, login: 'observer', name: 'Observer' },
 };
 
@@ -125,6 +149,26 @@ describe('iNaturalist mappers', () => {
     assert.equal(result.photos[0].role, 'profile');
     assert.match(result.photos[0].url, /\/large\.jpg$/);
     assert.match(result.photos[0].thumbnailUrl, /\/small\.jpg$/);
+    assert.deepEqual(result.comments, [
+      {
+        schemaVersion: 1,
+        id: 22894482,
+        uuid: 'e221e4fd-b34c-43ec-b21a-e36c1ba327d7',
+        observationId: 321,
+        sourceUrl:
+          'https://www.inaturalist.org/observations/321#comment-22894482',
+        body: 'Pretty sure this is Charles!',
+        createdAt: new Date('2026-08-11T02:53:45.000Z'),
+        sourceUpdatedAt: new Date('2026-08-11T02:53:45.000Z'),
+        author: {
+          id: 8358607,
+          login: 'chipmunkt',
+          displayName: 'Chip Munk',
+          sourceUrl: 'https://www.inaturalist.org/people/chipmunkt',
+        },
+        lastSeenRunId: 'run-1',
+      },
+    ]);
   });
 
   it('omits blank observer display names', () => {
@@ -316,6 +360,7 @@ describe('iNaturalist HTTP gateway', () => {
     assert.match(requests[0].url, /api\.inaturalist\.org\/v2\/observations/);
     assert.match(requests[0].url, /id_above=300/);
     assert.match(requests[0].url, /fields=/);
+    assert.match(decodeURIComponent(requests[0].url), /comments:/);
     assert.match(
       requests[0].headers?.['User-Agent'] ?? '',
       /Campus-Cats/,
@@ -347,6 +392,8 @@ describe('iNaturalist HTTP gateway', () => {
 
 class MemoryRepository implements ImportRepository {
   readonly observations = new Map<number, ObservationImport>();
+  readonly importedComments = new Map<string, ObservationCommentImport>();
+  readonly hiddenImportedCommentIds = new Set<string>();
   readonly catalog = new Map<number, CatalogImport>();
   readonly localCatalog = new Map<string, string>();
   summaries: SyncRunSummary[] = [];
@@ -403,6 +450,11 @@ class MemoryRepository implements ImportRepository {
             ? previous.guideTaxonId
             : undefined),
       });
+      for (const comment of value.comments) {
+        if (!this.hiddenImportedCommentIds.has(comment.uuid)) {
+          this.importedComments.set(comment.uuid, comment);
+        }
+      }
     }
     return { created, updated };
   }
@@ -451,6 +503,17 @@ class MemoryRepository implements ImportRepository {
     for (const [id, value] of this.catalog) {
       if (!seen.has(id) && value.sourceActive) {
         this.catalog.set(id, { ...value, sourceActive: false, visible: false });
+        count += 1;
+      }
+    }
+    return count;
+  }
+
+  async removeMissingObservationComments(seen: ReadonlySet<string>) {
+    let count = 0;
+    for (const uuid of this.importedComments.keys()) {
+      if (!seen.has(uuid)) {
+        this.importedComments.delete(uuid);
         count += 1;
       }
     }
@@ -508,6 +571,13 @@ describe('daily iNaturalist synchronization', () => {
     assert.equal(second.observations.created, 0);
     assert.equal(second.observations.updated, 1);
     assert.equal(repository.observations.size, 1);
+    assert.equal(repository.importedComments.size, 1);
+    assert.equal(
+      repository.importedComments.get(
+        'e221e4fd-b34c-43ec-b21a-e36c1ba327d7',
+      )?.body,
+      'Pretty sure this is Charles!',
+    );
   });
 
   it('reports ambiguous exact local names and keeps an established link persistent', async () => {
@@ -568,6 +638,7 @@ describe('daily iNaturalist synchronization', () => {
     });
     assert.equal(complete.observations.deactivated, 1);
     assert.equal(repository.observations.get(321)?.visible, false);
+    assert.equal(repository.importedComments.size, 0);
 
     repository.observations.set(321, {
       ...repository.observations.get(321)!,

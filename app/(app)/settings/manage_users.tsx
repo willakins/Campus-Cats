@@ -4,17 +4,15 @@ import { SectionList, View } from 'react-native';
 import { useFocusEffect, useRouter } from 'expo-router';
 
 import {
-  AccessDeniedState,
   AppText,
-  AppHeader,
   CardListSkeleton,
   EmptyState,
   ErrorState,
   FeedbackBanner,
-  Screen,
   SearchField,
   SegmentedControl,
 } from '@/components/design';
+import { RestrictedScreen } from '@/components/access';
 import { roleLabel } from '@/components/administration/rolePresentation';
 import { virtualizedListPerformanceProps } from '@/components/collections/virtualizedListPerformance';
 import { UserItem } from '@/components/items/UserItem';
@@ -22,9 +20,10 @@ import { appModules } from '@/composition/appModules';
 import {
   ManagedUser,
   Role,
-  canManageFeature,
+  canAccessRolePolicy,
   parseManagedUser,
   parseUser,
+  roleAccessPolicies,
 } from '@/core/domain';
 import { useAuth } from '@/providers';
 import { useAppTheme } from '@/theme';
@@ -51,7 +50,10 @@ const ManageUsers = () => {
   const actorProfile = parseManagedUser(user);
   const actor = parseUser(actorProfile);
   const theme = useAppTheme();
-  const authorized = canManageFeature(actor.role);
+  const authorized = canAccessRolePolicy(
+    actor.role,
+    roleAccessPolicies.manageUsers,
+  );
   const isDeveloper = actor.role === Role.Developer;
   const [users, setUsers] = useState<readonly ManagedUser[]>([]);
   const [loading, setLoading] = useState(authorized);
@@ -114,15 +116,13 @@ const ManageUsers = () => {
     users.some((candidate) => candidate.role === Role.President);
 
   return (
-    <Screen>
-      <AppHeader
-        title="Manage users"
-        eyebrow="Officer tools"
-        onBack={() => router.back()}
-      />
-      {!authorized ? (
-        <AccessDeniedState message="Only officers may manage member accounts." />
-      ) : loading ? (
+    <RestrictedScreen
+      title="Manage users"
+      eyebrow="Officer tools"
+      onBack={() => router.back()}
+      access={{ policy: roleAccessPolicies.manageUsers, role: actor.role }}
+    >
+      {loading ? (
         <CardListSkeleton label="Loading users" layout="actions" />
       ) : error ? (
         <ErrorState title="Could not load users" message={error} onRetry={load} />
@@ -185,7 +185,9 @@ const ManageUsers = () => {
               onPresidencyTransferred={() => setSuccessionMessage(
                 actor.role === Role.President
                   ? 'Presidency transferred. Your account is now an Officer.'
-                  : 'The first President has been appointed.',
+                  : hasPresident
+                    ? 'Presidency transferred. Your Developer access is unchanged.'
+                    : 'The first President has been appointed.',
               )}
             />
           )}
@@ -201,7 +203,7 @@ const ManageUsers = () => {
           />
         </View>
       )}
-    </Screen>
+    </RestrictedScreen>
   );
 };
 

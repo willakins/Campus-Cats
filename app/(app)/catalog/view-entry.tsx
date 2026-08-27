@@ -10,9 +10,17 @@ import {
   FeedbackBanner,
   Screen,
 } from '@/components/design';
+import { CommentsSection } from '@/components/comments';
 import { CatalogEntryElement } from '@/components/entries/CatalogEntryElement';
 import { appModules } from '@/composition/appModules';
-import { canManageFeature, CatalogRecord, SightingRecord } from '@/core/domain';
+import {
+  canAccessRolePolicy,
+  CatalogRecord,
+  parseUser,
+  PublicProfile,
+  roleAccessPolicies,
+  SightingRecord,
+} from '@/core/domain';
 import { DisplayMediaAsset } from '@/core/ports';
 import {
   CatalogFavoriteSummary,
@@ -27,6 +35,7 @@ const emptyFavorites: CatalogFavoriteSummary = { counts: {} };
 
 const ViewEntry = () => {
   const { currentUser, user } = useAuth();
+  const actor = parseUser(user);
   const currentUserId = currentUser?.id;
   const currentUserRef = useRef(currentUser);
   useEffect(() => {
@@ -37,6 +46,8 @@ const ViewEntry = () => {
   const [entry, setEntry] = useState<CatalogRecord>();
   const [media, setMedia] = useState<readonly DisplayMediaAsset[]>([]);
   const [sightings, setSightings] = useState<readonly SightingRecord[]>([]);
+  const [contributorProfile, setContributorProfile] = useState<PublicProfile>();
+  const [contributorId, setContributorId] = useState<string>();
   const [favorites, setFavorites] = useState<CatalogFavoriteSummary>(emptyFavorites);
   const [error, setError] = useState<string>();
   const [warning, setWarning] = useState<string>();
@@ -54,20 +65,40 @@ const ViewEntry = () => {
       setError(undefined);
       setWarning(undefined);
       setFavoriteFeedback(undefined);
+      setContributorProfile(undefined);
+      setContributorId(undefined);
       if (!id) {
         setError('Missing catalog entry ID');
         setLoading(false);
         return () => { active = false; };
       }
       const actor = currentUserRef.current;
+      const entryAttempt = appModules.catalog.get(actor, id);
       void Promise.all([
-        appModules.catalog.get(actor, id),
+        entryAttempt,
         appModules.catalog.media(id),
         appModules.sightings.list(actor),
         actor
           ? appModules.catalog.favoriteSummary(actor)
           : Promise.resolve(undefined),
-      ]).then(([entryResult, mediaResult, sightingsResult, favoritesResult]) => {
+        entryAttempt.then(async (result) => {
+          if (!result.ok) return undefined;
+          const contributor = result.value.source === 'inaturalist'
+            ? result.value.localContribution?.createdBy
+            : result.value.createdBy;
+          if (!contributor) return undefined;
+          return {
+            id: contributor.id,
+            profile: await appModules.profiles.getOrSync(contributor.id),
+          };
+        }),
+      ]).then(([
+        entryResult,
+        mediaResult,
+        sightingsResult,
+        favoritesResult,
+        contributorResult,
+      ]) => {
         if (!active) return;
         if (entryResult.ok) {
           setEntry(entryResult.value);
@@ -86,6 +117,12 @@ const ViewEntry = () => {
         else if (favoritesResult && !favoritesResult.ok) {
           setFavorites(emptyFavorites);
           setWarning(favoritesResult.error.message);
+        }
+        if (contributorResult) {
+          setContributorId(contributorResult.id);
+          if (contributorResult.profile.ok) {
+            setContributorProfile(contributorResult.profile.value);
+          }
         }
         setLoading(false);
       });
@@ -129,7 +166,7 @@ const ViewEntry = () => {
   return (
     <Screen
       scroll
-      footer={entry && canManageFeature(user.role) ? (
+      footer={entry && canAccessRolePolicy(user.role, roleAccessPolicies.manageCatalog) ? (
         <Button
           label="Edit catalog entry"
           icon="create-outline"
@@ -151,15 +188,36 @@ const ViewEntry = () => {
       {loading ? (
         <DetailSkeleton label="Loading cat profile" />
       ) : entry ? (
-        <CatalogEntryElement
-          entry={entry}
-          media={media}
-          sightings={sightings}
-          heartCount={favorites.counts[entry.id] ?? 0}
-          isFavorite={favorites.selectedCatalogId === entry.id}
-          favoriteBusy={favoriteBusy}
-          onToggleFavorite={() => void toggleFavorite()}
-        />
+        <>
+          <CatalogEntryElement
+            entry={entry}
+            media={media}
+            sightings={sightings}
+            heartCount={favorites.counts[entry.id] ?? 0}
+            isFavorite={favorites.selectedCatalogId === entry.id}
+            favoriteBusy={favoriteBusy}
+            onToggleFavorite={() => void toggleFavorite()}
+            onSightingPress={(sighting) =>
+              router.push({
+                pathname: '/sighting/view-sighting',
+                params: { id: sighting.id },
+              })
+            }
+            contributorProfile={contributorProfile}
+            onContributorPress={
+              contributorId
+                ? () => router.push({
+                    pathname: '/profile/view-profile',
+                    params: { id: contributorId },
+                  })
+                : undefined
+            }
+          />
+          <CommentsSection
+            actor={actor}
+            target={{ kind: 'catalog', id: entry.id }}
+          />
+        </>
       ) : (
         <ErrorState title="Cat profile unavailable" message={error || 'Catalog entry not found'} />
       )}

@@ -139,8 +139,9 @@ describe('sightings map route', () => {
     await renderMap();
 
     expect(await screen.findByRole('alert', { name: 'Could not load sightings' })).toBeOnTheScreen();
-    expect(screen.getByText('Report a sighting')).toBeOnTheScreen();
-    await user.press(screen.getByRole('button', { name: 'Report a sighting' }));
+    const reportButton = screen.getByRole('button', { name: 'Report a sighting' });
+    expect(reportButton).toHaveStyle({ alignSelf: 'flex-start' });
+    await user.press(reportButton);
     expect(mockPush).toHaveBeenCalledWith('/sighting/create-sighting');
   });
 

@@ -1,5 +1,5 @@
 import React, { useId, useState } from 'react';
-import { Pressable, TextInput, View } from 'react-native';
+import { Pressable, TextInput, View, ViewProps } from 'react-native';
 
 import { Ionicons } from '@expo/vector-icons';
 
@@ -86,6 +86,8 @@ interface FormFieldRenderProps {
 
 interface FormFieldProps {
   readonly label: string;
+  readonly hideLabel?: boolean;
+  readonly onLabelPress?: () => void;
   readonly required?: boolean;
   readonly helper?: string;
   readonly error?: string;
@@ -95,6 +97,8 @@ interface FormFieldProps {
 
 export const FormField = ({
   label,
+  hideLabel = false,
+  onLabelPress,
   required = false,
   helper,
   error,
@@ -110,7 +114,19 @@ export const FormField = ({
       : undefined;
   return (
     <View style={{ gap: theme.spacing.xxs }}>
-      <AppText variant="label">{required ? `${label} *` : label}</AppText>
+      {hideLabel ? null : onLabelPress ? (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={`${label}${required ? ', required' : ''}`}
+          hitSlop={8}
+          onPress={onLabelPress}
+          style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}
+        >
+          <AppText variant="label">{required ? `${label} *` : label}</AppText>
+        </Pressable>
+      ) : (
+        <AppText variant="label">{required ? `${label} *` : label}</AppText>
+      )}
       {typeof children === 'function'
         ? children({ inputId, describedBy })
         : children}
@@ -136,14 +152,20 @@ export const FormSection = ({
   title,
   action,
   children,
+  onLayout,
+  testID,
 }: {
   title: string;
   action?: React.ReactNode;
   children: React.ReactNode;
+  onLayout?: ViewProps['onLayout'];
+  testID?: string;
 }) => {
   const theme = useAppTheme();
   return (
     <View
+      testID={testID}
+      onLayout={onLayout}
       style={{
         gap: theme.spacing.md,
         padding: theme.spacing.md,

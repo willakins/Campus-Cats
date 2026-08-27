@@ -19,6 +19,8 @@ interface CatalogItemMetrics {
   readonly favoriteBusy?: boolean;
   readonly onToggleFavorite?: () => void;
   readonly tags?: readonly CatalogTag[];
+  readonly accessibilityLabel?: string;
+  readonly onPress?: () => void;
 }
 
 type CatalogItemProps = CatalogRecord & CatalogItemMetrics;
@@ -31,6 +33,8 @@ export const CatalogItem = React.memo(function CatalogItem({
   favoriteBusy = false,
   onToggleFavorite,
   tags = [],
+  accessibilityLabel,
+  onPress,
   ...entry
 }: CatalogItemProps) {
   const router = useRouter();
@@ -56,9 +60,10 @@ export const CatalogItem = React.memo(function CatalogItem({
     <Card style={{ flex: 1, padding: 0 }}>
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel={`View cat: ${entry.cat.name}`}
-        onPress={() =>
-          router.push({ pathname: '/catalog/view-entry', params: { id: entry.id } })
+        accessibilityLabel={accessibilityLabel ?? `View cat: ${entry.cat.name}`}
+        onPress={
+          onPress ?? (() =>
+            router.push({ pathname: '/catalog/view-entry', params: { id: entry.id } }))
         }
         style={({ pressed }) => ({ flex: 1, opacity: pressed ? 0.86 : 1 })}
       >

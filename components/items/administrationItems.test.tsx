@@ -140,7 +140,33 @@ describe('administration cards', () => {
     await user.press(screen.getByRole('button', { name: 'Crown New President' }));
     expect(Alert.alert).toHaveBeenCalledWith(
       'Crown New President',
-      'super@gatech.edu will become President. This creates the first President. Afterward, only that President can transfer the presidency.',
+      'super@gatech.edu will become President. This appoints the first President. Your Developer access will remain unchanged.',
+      expect.any(Array),
+    );
+  });
+
+  it('lets a Developer replace an existing President without losing Developer access', async () => {
+    const vicePresident = parseManagedUser({
+      id: 'super-2',
+      email: 'super@gatech.edu',
+      role: Role.VicePresident,
+    });
+    const user = userEvent.setup();
+    await renderThemed(
+      <UserItem
+        actor={developer}
+        user={vicePresident}
+        hasPresident
+        onChanged={jest.fn()}
+      />,
+    );
+
+    await user.press(screen.getByRole('button', { name: 'Crown New President' }));
+    expect(Alert.alert).toHaveBeenCalledWith(
+      'Crown New President',
+      expect.stringContaining(
+        'The current President will become an Officer. Your Developer access will remain unchanged.',
+      ),
       expect.any(Array),
     );
   });

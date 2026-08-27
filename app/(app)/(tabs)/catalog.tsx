@@ -28,11 +28,12 @@ import { virtualizedListPerformanceProps } from '@/components/collections/virtua
 import { CatalogItem } from '@/components/items/CatalogItem';
 import { appModules } from '@/composition/appModules';
 import {
-  canManageFeature,
+  canAccessRolePolicy,
   CatalogRecord,
   CatalogTag,
   CatalogTagAssignment,
   SightingRecord,
+  roleAccessPolicies,
 } from '@/core/domain';
 import {
   buildCatalogItems,
@@ -56,7 +57,10 @@ const Catalog = () => {
   const router = useRouter();
   const theme = useAppTheme();
   const { width, fontScale } = useWindowDimensions();
-  const isAdmin = canManageFeature(user.role);
+  const isAdmin = canAccessRolePolicy(
+    user.role,
+    roleAccessPolicies.manageCatalog,
+  );
   const columns = catalogColumnCount(width, fontScale);
   const cardWidth = catalogCardWidth(
     width,

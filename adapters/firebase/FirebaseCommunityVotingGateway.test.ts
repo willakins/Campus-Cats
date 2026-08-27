@@ -43,19 +43,30 @@ describe('FirebaseCommunityVotingGateway', () => {
       data: {
         action: 'nominate',
         candidateId: actor.id,
+        pitch: 'I will improve volunteer coordination.',
         submittedAtMillis: 1786017600000,
       },
     });
     await expect(
-      gateway.submitNomination(actor, vote, 'nominate'),
+      gateway.submitNomination(
+        actor,
+        vote,
+        'nominate',
+        '  I will improve volunteer coordination.  ',
+      ),
     ).resolves.toEqual({
       action: 'nominate',
       candidateId: actor.id,
+      pitch: 'I will improve volunteer coordination.',
       submittedAt: new Date(1786017600000),
     });
     expect(mockCallable).toHaveBeenLastCalledWith(
       'submitCommunityNomination',
-      { voteId: vote.id, action: 'nominate' },
+      {
+        voteId: vote.id,
+        action: 'nominate',
+        pitch: 'I will improve volunteer coordination.',
+      },
     );
 
     mockCallable.mockResolvedValueOnce({

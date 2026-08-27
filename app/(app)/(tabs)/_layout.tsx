@@ -3,14 +3,17 @@ import { Ionicons } from '@expo/vector-icons';
 import { Tabs } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { canManageFeature } from '@/core/domain';
+import { canAccessRolePolicy, roleAccessPolicies } from '@/core/domain';
 import { useAuth } from '@/providers';
 import { useAppTheme } from '@/theme';
 const TabNavigator = () => {
   const { user } = useAuth();
   const theme = useAppTheme();
   const insets = useSafeAreaInsets();
-  const isAdmin = canManageFeature(user.role);
+  const canManageStations = canAccessRolePolicy(
+    user.role,
+    roleAccessPolicies.manageStations,
+  );
 
   return (
     <Tabs
@@ -19,7 +22,7 @@ const TabNavigator = () => {
         tabBarActiveTintColor: theme.colors.primary,
         tabBarInactiveTintColor: theme.colors.textMuted,
         tabBarActiveBackgroundColor: theme.colors.primarySurface,
-        tabBarLabelStyle: theme.typography.caption,
+        tabBarShowLabel: false,
         tabBarItemStyle: {
           minHeight: theme.layout.minTouchTarget,
           marginVertical: theme.spacing.xxs,
@@ -40,6 +43,7 @@ const TabNavigator = () => {
         name="index"
         options={{
           tabBarLabel: 'Map',
+          tabBarAccessibilityLabel: 'Map',
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="map-outline" size={size} color={color} />
           ),
@@ -49,16 +53,18 @@ const TabNavigator = () => {
         name="announcements"
         options={{
           tabBarLabel: 'Community',
+          tabBarAccessibilityLabel: 'Community',
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="people-outline" size={size} color={color} />
           ),
         }}
       />
-      <Tabs.Protected guard={isAdmin}>
+      <Tabs.Protected guard={canManageStations}>
         <Tabs.Screen
           name="stations"
           options={{
             tabBarLabel: 'Stations',
+            tabBarAccessibilityLabel: 'Stations',
             tabBarIcon: ({ color, size }) => (
               <Ionicons name="basket-outline" size={size} color={color} />
             ),
@@ -69,6 +75,7 @@ const TabNavigator = () => {
         name="catalog"
         options={{
           tabBarLabel: 'Cats',
+          tabBarAccessibilityLabel: 'Cats',
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="paw-outline" size={size} color={color} />
           ),
@@ -78,6 +85,7 @@ const TabNavigator = () => {
         name="settings"
         options={{
           tabBarLabel: 'More',
+          tabBarAccessibilityLabel: 'More',
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="menu-outline" size={size} color={color} />
           ),

@@ -30,7 +30,15 @@ export interface AppMapMarkerProps {
   readonly accessibilityRole?: AccessibilityRole;
 }
 
+export interface AppMapPathProps {
+  readonly coordinates: readonly Coordinates[];
+  readonly strokeColor: string;
+  readonly strokeWidth?: number;
+  readonly testID?: string;
+}
+
 export interface MapAdapter {
   readonly View: ComponentType<AppMapViewProps>;
   readonly Marker: ComponentType<PropsWithChildren<AppMapMarkerProps>>;
+  readonly Path: ComponentType<AppMapPathProps>;
 }

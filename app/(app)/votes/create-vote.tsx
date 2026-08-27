@@ -1,20 +1,27 @@
 import { useState } from 'react';
-import { View } from 'react-native';
+import { Alert, View } from 'react-native';
 
 import { useRouter } from 'expo-router';
 
 import {
   AccessBanner,
-  AccessDeniedState,
-  AppHeader,
   Button,
   FormSection,
-  Screen,
   SegmentedControl,
 } from '@/components/design';
+import {
+  ParticipationAnnouncementOption,
+  ParticipationAudienceOption,
+} from '@/components/community';
 import { FormScreen, FormTextInput, PhotoField } from '@/components/forms';
 import { appModules } from '@/composition/appModules';
-import { Role, canManageFeature, parseUser } from '@/core/domain';
+import {
+  canAccessRolePolicy,
+  parseUser,
+  ParticipationAudience,
+  roleAccessPolicies,
+} from '@/core/domain';
+import { participationAnnouncementDraft } from '@/features/announcements';
 import { useAuth } from '@/providers';
 import { useAppTheme } from '@/theme';
 
@@ -30,8 +37,10 @@ const CreateCommunityVote = () => {
   const router = useRouter();
   const actor = parseUser(useAuth().user);
   const theme = useAppTheme();
-  const isOfficer = canManageFeature(actor.role);
-  const isPresident = actor.role === Role.President;
+  const authorizedForElection = canAccessRolePolicy(
+    actor.role,
+    roleAccessPolicies.createPresidentialElections,
+  );
   const [kind, setKind] = useState<VoteKind>('contest');
   const [title, setTitle] = useState('');
   const [details, setDetails] = useState('');
@@ -42,16 +51,10 @@ const CreateCommunityVote = () => {
     { key: 'option-2', label: '' },
   ]);
   const [busy, setBusy] = useState(false);
+  const [participationAudience, setParticipationAudience] =
+    useState<ParticipationAudience>('all_members');
+  const [createAnnouncement, setCreateAnnouncement] = useState(false);
   const [error, setError] = useState<string>();
-
-  if (!isOfficer) {
-    return (
-      <Screen>
-        <AppHeader title="Create vote" onBack={() => router.back()} />
-        <AccessDeniedState message="Only officers may create contests, and only the President may start a presidential election." />
-      </Screen>
-    );
-  }
 
   const updateOption = (
     key: string,
@@ -72,6 +75,7 @@ const CreateCommunityVote = () => {
             kind,
             title,
             details,
+            participationAudience,
             votingDays: Number(votingDays),
             options: options.map(({ key: _key, ...option }) => option),
           }
@@ -79,15 +83,31 @@ const CreateCommunityVote = () => {
             kind,
             title,
             details,
+            participationAudience,
             nominationDays: Number(nominationDays),
             votingDays: Number(votingDays),
           },
     );
-    setBusy(false);
     if (!result.ok) {
+      setBusy(false);
       setError(result.error.message);
       return;
     }
+    if (createAnnouncement) {
+      const announcementResult = await appModules.announcements.create(
+        actor,
+        participationAnnouncementDraft(kind, result.value.title),
+      );
+      if (!announcementResult.ok) {
+        Alert.alert(
+          'Vote created',
+          'The vote was created, but its announcement could not be created.',
+        );
+      } else if (announcementResult.warnings.length > 0) {
+        Alert.alert('Vote and announcement created', announcementResult.warnings[0].message);
+      }
+    }
+    setBusy(false);
     router.replace({
       pathname: '/votes/view-vote' as never,
       params: { id: result.value.id },
@@ -98,6 +118,13 @@ const CreateCommunityVote = () => {
     <FormScreen
       title="Create vote"
       eyebrow="Community decision"
+      access={{
+        policy:
+          kind === 'presidential_election'
+            ? roleAccessPolicies.createPresidentialElections
+            : roleAccessPolicies.createContests,
+        role: actor.role,
+      }}
       saveLabel={kind === 'contest' ? 'Open Contest Voting' : 'Start Election'}
       savingLabel="Creating vote…"
       busy={busy}
@@ -105,11 +132,7 @@ const CreateCommunityVote = () => {
       onBack={() => router.back()}
       onSave={() => void create()}
     >
-      <AccessBanner
-        title="Private ballots"
-        message="Members can participate once. Ballots are anonymous and results appear after voting closes."
-      />
-      {isPresident ? (
+      {authorizedForElection ? (
         <FormSection title="Vote type">
           <SegmentedControl
             label="Vote type"
@@ -225,6 +248,15 @@ const CreateCommunityVote = () => {
           message="Round one lets each member nominate themself or abstain. Round two opens automatically with every nominee on the ballot."
         />
       )}
+      <ParticipationAudienceOption
+        value={participationAudience}
+        onChange={setParticipationAudience}
+      />
+      <ParticipationAnnouncementOption
+        checked={createAnnouncement}
+        subject="vote"
+        onChange={setCreateAnnouncement}
+      />
     </FormScreen>
   );
 };

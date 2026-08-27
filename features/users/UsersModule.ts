@@ -7,12 +7,14 @@ import {
   User,
   canChangeUserRole,
   canDisciplineUser,
-  canManageFeature,
+  canAccessRolePolicy,
   canManageUser,
   canTransferPresidency,
   failure,
   parseManagedUser,
   success,
+  roleAccessPolicies,
+  roleAccessRequirement,
 } from '../../core/domain';
 import { ApplicationEffects, DocumentStore } from '../../core/ports';
 
@@ -216,8 +218,11 @@ export class UsersModule {
 
 function adminDenied(actor: User | undefined): Outcome<never> | undefined {
   if (!actor) return failure('unauthenticated', 'Sign in to manage users');
-  if (!canManageFeature(actor.role)) {
-    return failure('forbidden', 'Only officers may manage users');
+  if (!canAccessRolePolicy(actor.role, roleAccessPolicies.manageUsers)) {
+    return failure(
+      'forbidden',
+      roleAccessRequirement(roleAccessPolicies.manageUsers),
+    );
   }
   return undefined;
 }

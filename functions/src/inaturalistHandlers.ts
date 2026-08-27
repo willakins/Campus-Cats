@@ -30,7 +30,7 @@ interface HandlerRequest<T> {
 
 export async function handleRunInaturalistSync(
   request: HandlerRequest<Record<string, never>>,
-  dependencies: InaturalistHandlerDependencies,
+  dependencies: Pick<InaturalistHandlerDependencies, 'getUser' | 'runSync'>,
 ): Promise<SyncRunResult> {
   const actor = await requireAdmin(request.authUid, dependencies);
   const result = await dependencies.runSync(actor.clubId);

@@ -1,9 +1,10 @@
 import React from 'react';
 import { Platform } from 'react-native';
-import RNMapView, { MapStyleElement, Marker } from 'react-native-maps';
+import RNMapView, { MapStyleElement, Marker, Polyline } from 'react-native-maps';
 
 import {
   AppMapMarkerProps,
+  AppMapPathProps,
   AppMapViewProps,
   MapAdapter,
 } from '../../../components/maps/MapAdapter';
@@ -82,5 +83,9 @@ export function createReactNativeMapsAdapter(
     <Marker {...props}>{children}</Marker>
   );
 
-  return Object.freeze({ View: MapView, Marker: MapMarker });
+  const MapPath = ({ coordinates, ...props }: AppMapPathProps) => (
+    <Polyline coordinates={[...coordinates]} {...props} />
+  );
+
+  return Object.freeze({ View: MapView, Marker: MapMarker, Path: MapPath });
 }

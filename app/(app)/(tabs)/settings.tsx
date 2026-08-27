@@ -3,7 +3,6 @@ import { Alert, Linking, View } from 'react-native';
 
 import { useRouter } from 'expo-router';
 
-import { roleLabel } from '@/components/administration/rolePresentation';
 import {
   AccessBanner,
   AppHeader,
@@ -17,15 +16,13 @@ import {
   IconButton,
   ListRow,
   Screen,
-  StatusPill,
 } from '@/components/design';
 import { FormTextInput } from '@/components/forms';
 import { appModules } from '@/composition/appModules';
 import {
-  Role,
-  canManageAppSettings,
-  canManageFeature,
+  canAccessRolePolicy,
   parseUser,
+  roleAccessPolicies,
 } from '@/core/domain';
 import { useAuth } from '@/providers';
 import { useAppTheme } from '@/theme';
@@ -43,9 +40,42 @@ interface EditableContact {
 type EditableContactField = Exclude<keyof EditableContact, 'id' | 'isNew'>;
 
 const Settings = () => {
-  const { signOut, user } = useAuth();
+  const { user } = useAuth();
   const actor = parseUser(user);
-  const isAdmin = canManageFeature(actor.role);
+  const canManageContacts = canAccessRolePolicy(
+    actor.role,
+    roleAccessPolicies.manageContacts,
+  );
+  const canManageCatalogTags = canAccessRolePolicy(
+    actor.role,
+    roleAccessPolicies.manageCatalogTags,
+  );
+  const canManageUsers = canAccessRolePolicy(
+    actor.role,
+    roleAccessPolicies.manageUsers,
+  );
+  const canManageMembershipApplications = canAccessRolePolicy(
+    actor.role,
+    roleAccessPolicies.manageMembershipApplications,
+  );
+  const canManageInaturalist = canAccessRolePolicy(
+    actor.role,
+    roleAccessPolicies.manageInaturalist,
+  );
+  const hasOfficerTools =
+    canManageCatalogTags ||
+    canManageUsers ||
+    canManageMembershipApplications ||
+    canManageInaturalist;
+  const canManageBilling = canAccessRolePolicy(
+    actor.role,
+    roleAccessPolicies.manageClubBilling,
+  );
+  const canManageSettings = canAccessRolePolicy(
+    actor.role,
+    roleAccessPolicies.manageAppSettings,
+  );
+  const hasPresidentTools = canManageBilling || canManageSettings;
   const router = useRouter();
   const theme = useAppTheme();
   const [isEditable, setIsEditable] = useState(false);
@@ -53,7 +83,6 @@ const Settings = () => {
   const [hasChanged, setHasChanged] = useState(false);
   const [loadingContacts, setLoadingContacts] = useState(true);
   const [savingContacts, setSavingContacts] = useState(false);
-  const [signingOut, setSigningOut] = useState(false);
   const [error, setError] = useState<string>();
 
   const loadContacts = useCallback(async () => {
@@ -152,81 +181,33 @@ const Settings = () => {
     ]);
   };
 
-  const logout = async () => {
-    if (signingOut) return;
-    setSigningOut(true);
-    setError(undefined);
-    try {
-      await signOut();
-      router.replace('/login');
-    } catch (caught) {
-      setError(caught instanceof Error ? caught.message : 'Please try again.');
-      setSigningOut(false);
-    }
-  };
-
   return (
     <Screen scroll keyboardAware>
-      <AppHeader title="More" eyebrow="Campus Cats field guide" />
+      <AppHeader
+        title="More"
+        eyebrow="Campus Cats field guide"
+        action={
+          <IconButton
+            accessibilityLabel="Open account"
+            icon="person-circle-outline"
+            onPress={() => router.push('/settings/account' as never)}
+          />
+        }
+      />
       <View style={{ gap: theme.spacing.lg }}>
         {error ? <FeedbackBanner message={error} tone="danger" /> : null}
 
-        {!isAdmin ? (
+        {!hasOfficerTools ? (
           <AccessBanner
             title="Officer-only tools"
             message="Feeding stations and administrative tools are available only to officers, so they do not appear in your navigation."
           />
         ) : null}
 
-        <FormSection title="Account">
-          <Card accent={theme.colors.primary}>
-            <View style={{ gap: theme.spacing.sm }}>
-              <AppText variant="cardTitle" selectable>
-                {actor.email}
-              </AppText>
-              <StatusPill
-                label={roleLabel(actor.role)}
-                tone={actor.role === Role.Member ? 'neutral' : 'primary'}
-                icon={
-                  actor.role === Role.Member
-                    ? 'person-outline'
-                    : 'shield-checkmark-outline'
-                }
-              />
-              <Button
-                label="View My Profile"
-                icon="person-circle-outline"
-                variant="secondary"
-                onPress={() =>
-                  router.push({
-                    pathname: '/profile/view-profile',
-                    params: { id: actor.id },
-                  })
-                }
-              />
-              <Button
-                label="iNaturalist Account"
-                icon="leaf-outline"
-                variant="secondary"
-                onPress={() =>
-                  router.push('/settings/inaturalist-account' as never)
-                }
-              />
-              <Button
-                label="Sign Out"
-                icon="log-out-outline"
-                variant="secondary"
-                loading={signingOut}
-                onPress={() => void logout()}
-              />
-            </View>
-          </Card>
-        </FormSection>
-
         <FormSection
           title="Club contacts"
           action={
-            isAdmin ? (
+            canManageContacts ? (
               <IconButton
                 accessibilityLabel={
                   isEditable ? 'Save Contacts' : 'Edit Contacts'
@@ -250,7 +231,7 @@ const Settings = () => {
             />
           ) : (
             contacts.map((contact) =>
-              isAdmin && isEditable ? (
+              canManageContacts && isEditable ? (
                 <Card key={contact.id} accent={theme.colors.gold}>
                   <View style={{ gap: theme.spacing.sm }}>
                     <FormTextInput
@@ -370,7 +351,7 @@ const Settings = () => {
               ),
             )
           )}
-          {isAdmin && isEditable ? (
+          {canManageContacts && isEditable ? (
             <Button
               label="Add Contact"
               icon="add-circle-outline"
@@ -395,49 +376,49 @@ const Settings = () => {
           ) : null}
         </FormSection>
 
-        {isAdmin ? (
+        {hasOfficerTools ? (
           <FormSection title="Officer tools">
-            <ListRow
+            {canManageCatalogTags ? <ListRow
               title="Manage Catalog Tags"
               subtitle="Create and organize tags used on cat profiles"
               icon="pricetags-outline"
               onPress={() => router.push('/settings/catalog-tags' as never)}
-            />
-            <ListRow
+            /> : null}
+            {canManageUsers ? <ListRow
               title="Manage Users"
               subtitle="Review roles and remove accounts"
               icon="people-outline"
               onPress={() => router.push('/settings/manage_users')}
-            />
-            <ListRow
+            /> : null}
+            {canManageMembershipApplications ? <ListRow
               title="Manage Whitelist"
               subtitle="Review membership applications"
               icon="clipboard-outline"
               onPress={() => router.push('/settings/manage_whitelist')}
-            />
-            <ListRow
+            /> : null}
+            {canManageInaturalist ? <ListRow
               title="iNaturalist Sync"
               subtitle="Review imports, retry synchronization, and moderate records"
               icon="leaf-outline"
               onPress={() => router.push('/settings/inaturalist')}
-            />
+            /> : null}
           </FormSection>
         ) : null}
 
-        {canManageAppSettings(actor.role) ? (
+        {hasPresidentTools ? (
           <FormSection title="President tools">
-            <ListRow
+            {canManageBilling ? <ListRow
               title="Club Billing"
               subtitle="Manage invoices, payment method, and subscription"
               icon="card-outline"
               onPress={() => router.push('/settings/club-billing' as never)}
-            />
-            <ListRow
+            /> : null}
+            {canManageSettings ? <ListRow
               title="App Settings"
               subtitle="Change branding and contributor privacy"
               icon="color-palette-outline"
               onPress={() => router.push('/settings/app-settings' as never)}
-            />
+            /> : null}
           </FormSection>
         ) : null}
 

@@ -2,6 +2,7 @@ import {
   sendPasswordResetEmail,
   signInWithEmailAndPassword,
 } from 'firebase/auth';
+import { getDoc } from 'firebase/firestore';
 
 import { FirebaseSession } from './FirebaseSession';
 
@@ -22,13 +23,49 @@ jest.mock('firebase/firestore', () => ({
 
 const mockedSendPasswordResetEmail = jest.mocked(sendPasswordResetEmail);
 const mockedSignInWithEmailAndPassword = jest.mocked(signInWithEmailAndPassword);
+const mockedGetDoc = jest.mocked(getDoc);
 
-const buildSession = () =>
-  new FirebaseSession(
+const buildSession = (
+  auth: ConstructorParameters<typeof FirebaseSession>[0] =
     {} as ConstructorParameters<typeof FirebaseSession>[0],
+) =>
+  new FirebaseSession(
+    auth,
     {} as ConstructorParameters<typeof FirebaseSession>[1],
     { credential: jest.fn() },
   );
+
+describe('FirebaseSession authenticated profiles', () => {
+  beforeEach(() => jest.clearAllMocks());
+
+  it('uses the Firebase Auth email when profile casing differs', async () => {
+    mockedGetDoc.mockResolvedValue({
+      exists: () => true,
+      id: 'member-1',
+      data: () => ({
+        email: 'Member@Example.com',
+        role: 4,
+        clubId: 'campus-cats',
+        platformAdmin: true,
+      }),
+    } as Awaited<ReturnType<typeof getDoc>>);
+
+    const user = await buildSession({
+      currentUser: {
+        uid: 'member-1',
+        email: 'member@example.com',
+      },
+    } as ConstructorParameters<typeof FirebaseSession>[0]).currentUser();
+
+    expect(user).toMatchObject({
+      id: 'member-1',
+      email: 'member@example.com',
+      role: 4,
+      clubId: 'campus-cats',
+      platformAdmin: true,
+    });
+  });
+});
 
 describe('FirebaseSession password reset', () => {
   beforeEach(() => jest.clearAllMocks());

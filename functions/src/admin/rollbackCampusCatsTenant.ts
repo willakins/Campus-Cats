@@ -11,6 +11,8 @@ import {
   getFirestore,
 } from 'firebase-admin/firestore';
 
+import { compareFirestoreDocumentIds } from './firestoreDocumentOrder';
+
 const BATCH_SIZE = 400;
 
 async function main(): Promise<void> {
@@ -160,7 +162,9 @@ async function validateLegacySources(
           },
         });
       }
-      transformed.sort((left, right) => left.id.localeCompare(right.id));
+      transformed.sort((left, right) =>
+        compareFirestoreDocumentIds(left.id, right.id),
+      );
     }
     if (
       transformed.length !== item.count ||
@@ -205,7 +209,10 @@ function transformValue(value: unknown): unknown {
 
 function checksum(documents: readonly { id: string; data: DocumentData }[]): string {
   const hash = createHash('sha256');
-  for (const document of documents) {
+  const orderedDocuments = [...documents].sort((left, right) =>
+    compareFirestoreDocumentIds(left.id, right.id),
+  );
+  for (const document of orderedDocuments) {
     hash.update(document.id);
     hash.update('\0');
     hash.update(stableValue(document.data));

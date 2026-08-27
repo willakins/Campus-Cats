@@ -32,7 +32,7 @@ interface PolicyUser {
 }
 
 export function canManageFeature(role: Role): boolean {
-  return classifyRole(role) === RoleClassification.Power;
+  return hasMinimumRole(role, Role.Officer);
 }
 
 export function classifyRole(role: Role): RoleClassification {
@@ -52,7 +52,15 @@ export function canAccessCloudConsoles(actor: {
 }
 
 export function canManageAppSettings(role: Role): boolean {
-  return role === Role.President;
+  return hasPresidentAccess(role);
+}
+
+export function hasPresidentAccess(role: Role): boolean {
+  return hasMinimumRole(role, Role.President);
+}
+
+export function hasMinimumRole(role: Role, minimumRole: Role): boolean {
+  return role >= minimumRole;
 }
 
 export function canViewContributors(
@@ -97,11 +105,10 @@ export function canChangeUserRole(
 export function canTransferPresidency(
   actor: PolicyUser,
   target: PolicyUser,
-  hasPresident: boolean,
+  _hasPresident: boolean,
 ): boolean {
   if (target.role !== Role.VicePresident || actor.id === target.id) return false;
-  return actor.role === Role.President ||
-    (actor.role === Role.Developer && !hasPresident);
+  return hasMinimumRole(actor.role, Role.President);
 }
 
 export function canModifySighting(
