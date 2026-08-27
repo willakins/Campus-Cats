@@ -23,8 +23,10 @@ import {
   SurveyAnswer,
   SurveyOption,
   SurveyQuestion,
-  canManageFeature,
+  canAccessRolePolicy,
+  canParticipate,
   parseUser,
+  roleAccessPolicies,
 } from '@/core/domain';
 import { useAuth } from '@/providers';
 import { useAppTheme } from '@/theme';
@@ -83,13 +85,19 @@ const RespondToSurvey = () => {
   const { id } = useLocalSearchParams<{ id?: string }>();
   const actor = parseUser(useAuth().user);
   const theme = useAppTheme();
-  const isOfficer = canManageFeature(actor.role);
+  const isOfficer = canAccessRolePolicy(
+    actor.role,
+    roleAccessPolicies.viewSurveyResponses,
+  );
   const [survey, setSurvey] = useState<Survey>();
   const [submitted, setSubmitted] = useState(false);
   const [answers, setAnswers] = useState<Record<string, AnswerValue>>({});
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string>();
+  const eligible = survey
+    ? canParticipate(actor.role, survey.participationAudience)
+    : false;
 
   useFocusEffect(
     useCallback(() => {
@@ -155,7 +163,7 @@ const RespondToSurvey = () => {
     <Screen
       scroll
       keyboardAware
-      footer={survey && survey.status === 'open' && !submitted ? (
+      footer={survey && survey.status === 'open' && eligible && !submitted ? (
         <Button
           label={survey.anonymous ? 'Submit Anonymous Response' : 'Submit Response With My Name'}
           fullWidth
@@ -199,6 +207,11 @@ const RespondToSurvey = () => {
             />
           ) : survey.status === 'closed' ? (
             <EmptyState title="This survey is closed" message="Past responses remain available to officers." />
+          ) : !eligible ? (
+            <EmptyState
+              title="Officer participation only"
+              message="Only officers can submit this survey."
+            />
           ) : (
             survey.questions.map((question, index) => (
               <FormSection key={question.id} title={`${index + 1}. ${question.prompt}`}>
@@ -222,11 +235,11 @@ const RespondToSurvey = () => {
                   </View>
                 ) : (
                   <FormTextInput
-                    label={question.type === 'short_text' ? 'Short answer' : 'Long answer'}
+                    label="Free response"
                     required
                     value={typeof answers[question.id] === 'string' ? answers[question.id] as string : ''}
                     maxLength={question.type === 'short_text' ? 500 : 5000}
-                    multiline={question.type === 'long_text'}
+                    multiline
                     onChangeText={(value) => setAnswers((current) => ({ ...current, [question.id]: value }))}
                   />
                 )}

@@ -11,7 +11,7 @@ import {
   IdGenerator,
   Outcome,
   User,
-  canManageFeature,
+  canAccessRolePolicy,
   failure,
   importedCatalogMedia,
   localCatalogRecord,
@@ -19,6 +19,8 @@ import {
   parseCatalogFavorite,
   parseCatalogTagAssignment,
   success,
+  roleAccessPolicies,
+  roleAccessRequirement,
 } from '../../core/domain';
 import { MediaCoordinator, MediaSelection, localMedia } from '../../core/media';
 import {
@@ -578,8 +580,11 @@ function importedCatalogRecord(
 
 function mutationDenied(actor: User | undefined): Outcome<never> | undefined {
   if (!actor) return failure('unauthenticated', 'Sign in to manage the catalog');
-  if (!canManageFeature(actor.role)) {
-    return failure('forbidden', 'Only officers may manage the catalog');
+  if (!canAccessRolePolicy(actor.role, roleAccessPolicies.manageCatalog)) {
+    return failure(
+      'forbidden',
+      roleAccessRequirement(roleAccessPolicies.manageCatalog),
+    );
   }
   return undefined;
 }

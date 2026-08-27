@@ -4,8 +4,6 @@ import { FlatList, Linking, View } from 'react-native';
 import { useFocusEffect, useRouter } from 'expo-router';
 
 import {
-  AccessDeniedState,
-  AppHeader,
   AppText,
   Button,
   Card,
@@ -14,10 +12,10 @@ import {
   ErrorState,
   FeedbackBanner,
   FormSection,
-  Screen,
   SegmentedControl,
   StatusPill,
 } from '@/components/design';
+import { RestrictedScreen } from '@/components/access';
 import { FormTextInput } from '@/components/forms';
 import { virtualizedListPerformanceProps } from '@/components/collections/virtualizedListPerformance';
 import { appModules } from '@/composition/appModules';
@@ -25,8 +23,9 @@ import {
   ImportedCatalogProfile,
   ImportedObservation,
   InaturalistSyncStatus,
-  canManageFeature,
+  canAccessRolePolicy,
   parseUser,
+  roleAccessPolicies,
 } from '@/core/domain';
 import { InaturalistRecordKind } from '@/core/ports';
 import { useAuth } from '@/providers';
@@ -52,7 +51,10 @@ const InaturalistAdministration = () => {
   const { user } = useAuth();
   const actor = parseUser(user);
   const theme = useAppTheme();
-  const authorized = canManageFeature(actor.role);
+  const authorized = canAccessRolePolicy(
+    actor.role,
+    roleAccessPolicies.manageInaturalist,
+  );
   const [section, setSection] = useState<InaturalistRecordKind>('catalog');
   const [status, setStatus] = useState<InaturalistSyncStatus>();
   const [observations, setObservations] = useState<readonly ImportedObservation[]>([]);
@@ -191,18 +193,13 @@ const InaturalistAdministration = () => {
       ? catalog.map((value) => ({ kind: 'catalog' as const, value }))
       : observations.map((value) => ({ kind: 'observation' as const, value }));
 
-  if (!authorized) {
-    return (
-      <Screen>
-        <AppHeader title="iNaturalist sync" eyebrow="Officer tools" onBack={() => router.back()} />
-        <AccessDeniedState message="Only officers may manage imported iNaturalist data." />
-      </Screen>
-    );
-  }
-
   return (
-    <Screen>
-      <AppHeader title="iNaturalist sync" eyebrow="Officer tools" onBack={() => router.back()} />
+    <RestrictedScreen
+      title="iNaturalist sync"
+      eyebrow="Officer tools"
+      onBack={() => router.back()}
+      access={{ policy: roleAccessPolicies.manageInaturalist, role: actor.role }}
+    >
       {loading ? (
         <CardListSkeleton
           label="Loading iNaturalist synchronization"
@@ -365,7 +362,7 @@ const InaturalistAdministration = () => {
           )}
         />
       )}
-    </Screen>
+    </RestrictedScreen>
   );
 };
 

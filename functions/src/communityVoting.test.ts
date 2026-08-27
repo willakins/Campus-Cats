@@ -22,6 +22,7 @@ const election = {
   id: 'election-1',
   clubId: 'campus-cats',
   kind: 'presidential_election' as const,
+  participationAudience: 'all_members' as const,
   votingStartsAtMillis: Date.parse('2026-08-10T12:00:00.000Z'),
   votingEndsAtMillis: Date.parse('2026-08-17T12:00:00.000Z'),
   options: [],
@@ -52,19 +53,60 @@ function dependencies(
 
 describe('community voting callable', () => {
   it('lets an active member self-nominate during the presidential nomination round', async () => {
+    const submitted: unknown[] = [];
+    const deps: CommunityVotingDependencies = {
+      ...dependencies(),
+      async submitNomination(input) {
+        submitted.push(input);
+        return {
+          action: input.action,
+          candidateId: input.actor.id,
+          pitch: input.pitch,
+          submittedAt: input.submittedAt,
+        };
+      },
+    };
     const result = await handleSubmitCommunityNomination(
       {
         authUid: member.id,
-        data: { voteId: election.id, action: 'nominate' },
+        data: {
+          voteId: election.id,
+          action: 'nominate',
+          pitch: '  I will make volunteer schedules clearer.  ',
+        },
       },
-      dependencies(),
+      deps,
     );
 
     assert.deepEqual(result, {
       action: 'nominate',
       candidateId: member.id,
+      pitch: 'I will make volunteer schedules clearer.',
       submittedAtMillis: Date.parse('2026-08-07T12:00:00.000Z'),
     });
+    assert.equal(
+      (submitted[0] as { pitch?: string }).pitch,
+      'I will make volunteer schedules clearer.',
+    );
+  });
+
+  it('rejects nomination pitches longer than 500 characters', async () => {
+    await assert.rejects(
+      () =>
+        handleSubmitCommunityNomination(
+          {
+            authUid: member.id,
+            data: {
+              voteId: election.id,
+              action: 'nominate',
+              pitch: 'x'.repeat(501),
+            },
+          },
+          dependencies(),
+        ),
+      (error: unknown) =>
+        error instanceof HandlerError && error.code === 'invalid-argument',
+    );
   });
 
   it('rejects nominations after voting has begun', async () => {
@@ -79,6 +121,28 @@ describe('community voting callable', () => {
         ),
       (error: unknown) =>
         error instanceof HandlerError && error.code === 'failed-precondition',
+    );
+  });
+
+  it('rejects member participation in officer-only votes', async () => {
+    const deps: CommunityVotingDependencies = {
+      ...dependencies(),
+      async getVote() {
+        return { ...election, participationAudience: 'officers_only' };
+      },
+    };
+
+    await assert.rejects(
+      () =>
+        handleSubmitCommunityNomination(
+          {
+            authUid: member.id,
+            data: { voteId: election.id, action: 'abstain' },
+          },
+          deps,
+        ),
+      (error: unknown) =>
+        error instanceof HandlerError && error.code === 'permission-denied',
     );
   });
 

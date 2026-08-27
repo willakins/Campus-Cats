@@ -1,7 +1,11 @@
 import { Platform, View } from 'react-native';
 import { useRouter } from 'expo-router';
 
-import { Role, clubSubscriptionLabel } from '@/core/domain';
+import {
+  canAccessRolePolicy,
+  clubSubscriptionLabel,
+  roleAccessPolicies,
+} from '@/core/domain';
 import { useAuth, useClub } from '@/providers';
 import { useAppTheme } from '@/theme';
 import { Button, FeedbackBanner } from '@/components/design';
@@ -29,7 +33,8 @@ export const SubscriptionBanner = () => {
       }}
     >
       <FeedbackBanner message={message} tone="warning" />
-      {Platform.OS === 'web' && user.role === Role.President ? (
+      {Platform.OS === 'web' &&
+      canAccessRolePolicy(user.role, roleAccessPolicies.manageClubBilling) ? (
         <Button
           label="Manage Club Billing"
           size="small"

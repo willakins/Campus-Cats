@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Linking, Platform, View } from 'react-native';
 import { Redirect, useRouter } from 'expo-router';
 
+import { RestrictedAccess } from '@/components/access';
 import {
   AppHeader,
   AppText,
@@ -13,7 +14,12 @@ import {
 } from '@/components/design';
 import { LoadingIndicator } from '@/components/ui/LoadingIndicator';
 import { appModules } from '@/composition/appModules';
-import { Role, clubHasAppAccess, clubSubscriptionLabel } from '@/core/domain';
+import {
+  canAccessRolePolicy,
+  clubHasAppAccess,
+  clubSubscriptionLabel,
+  roleAccessPolicies,
+} from '@/core/domain';
 import { useAuth, useClub } from '@/providers';
 import { useAppTheme } from '@/theme';
 
@@ -36,8 +42,12 @@ const SubscriptionRequired = () => {
   if (!currentUser) return <Redirect href="/login" />;
   if (loading) return <LoadingIndicator />;
 
-  const isPresident = currentUser.role === Role.President;
-  const canManageOnWeb = Platform.OS === 'web' && isPresident;
+  const billingPolicy = roleAccessPolicies.manageClubBilling;
+  const authorizedForBilling = canAccessRolePolicy(
+    currentUser.role,
+    billingPolicy,
+  );
+  const canManageOnWeb = Platform.OS === 'web' && authorizedForBilling;
   const label = access ? clubSubscriptionLabel(access) : 'No subscription';
   const actionLabel =
     access?.accessState === 'pending_setup'
@@ -95,7 +105,11 @@ const SubscriptionRequired = () => {
 
   return (
     <Screen scroll>
-      <AppHeader title="Subscription required" eyebrow="Campus Cats" />
+      <AppHeader
+        title="Subscription required"
+        eyebrow="Campus Cats"
+        action={<RestrictedAccess policy={billingPolicy} />}
+      />
       <View style={{ gap: theme.spacing.lg }}>
         {error || clubError ? (
           <FeedbackBanner message={error ?? clubError!} tone="danger" />
@@ -111,7 +125,7 @@ const SubscriptionRequired = () => {
               Your club has not paid for this app. Please contact them to let
               them know.
             </AppText>
-            {isPresident ? (
+            {authorizedForBilling ? (
               <AppText color="muted">
                 Your club billing account requires the President's attention.
               </AppText>
@@ -141,7 +155,7 @@ const SubscriptionRequired = () => {
                   />
                 ) : null}
               </>
-            ) : isPresident ? (
+            ) : authorizedForBilling ? (
               <FeedbackBanner
                 message="Billing status is read-only in the mobile app."
               />

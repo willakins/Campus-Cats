@@ -341,7 +341,7 @@ describe('station collection route', () => {
     expect(screen.getByText('Officer-only page')).toBeOnTheScreen();
     expect(
       screen.getByText(
-        'This page is only visible to officers of the club. Officers can view, create, and update station locations and stocking details.',
+        'Officer-level access is required to view or manage feeding-station operations.',
       ),
     ).toBeOnTheScreen();
     expect(

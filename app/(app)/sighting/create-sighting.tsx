@@ -1,11 +1,20 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 
 import { useRouter } from 'expo-router';
 
 import { FormScreen } from '@/components/forms';
 import { appModules } from '@/composition/appModules';
-import { parseUser } from '@/core/domain';
-import { SightingForm, SightingFormData } from '@/forms/SightingForm';
+import { CatalogRecord, parseUser } from '@/core/domain';
+import {
+  firstSightingErrorField,
+  SightingForm,
+  SightingFormData,
+  SightingFormErrors,
+  SightingFormSection,
+  SightingRequiredField,
+  sightingSectionForField,
+  validateSightingForm,
+} from '@/forms/SightingForm';
 import { useAuth } from '@/providers';
 
 const timeItems = [
@@ -23,6 +32,26 @@ const SightingCreateScreen = () => {
   const [open, setOpen] = useState(false);
   const [items, setItems] = useState(timeItems);
   const [photos, setPhotos] = useState<string[]>([]);
+  const [catalogEntries, setCatalogEntries] = useState<readonly CatalogRecord[]>([]);
+  const [catalogLoading, setCatalogLoading] = useState(true);
+  const [catalogError, setCatalogError] = useState<string>();
+  const [validationErrors, setValidationErrors] =
+    useState<SightingFormErrors>({});
+  const [toast, setToast] = useState<{ id: number; message: string }>();
+  const [scrollRequest, setScrollRequest] = useState<{
+    id: number;
+    y: number;
+  }>();
+  const validationAttempt = useRef(0);
+  const sectionOffsets = useRef<Partial<Record<SightingFormSection, number>>>({});
+  const requiredFieldOffsets = useRef<
+    Partial<
+      Record<
+        SightingRequiredField,
+        { section: SightingFormSection; y: number }
+      >
+    >
+  >({});
   const [formData, setFormData] = useState<SightingFormData>({
     name: '',
     info: '',
@@ -32,10 +61,63 @@ const SightingCreateScreen = () => {
     date: new Date(),
   });
 
+  useEffect(() => {
+    let active = true;
+    const actor = parseUser(user);
+    setCatalogLoading(true);
+    setCatalogError(undefined);
+    void appModules.catalog.list(actor).then((result) => {
+      if (!active) return;
+      if (result.ok) {
+        setCatalogEntries(result.value);
+        setCatalogError(result.warnings.map(({ message }) => message).join(' ') || undefined);
+      } else {
+        setCatalogEntries([]);
+        setCatalogError(result.error.message);
+      }
+      setCatalogLoading(false);
+    });
+    return () => {
+      active = false;
+    };
+  }, [user.id, user.role]);
+
+  useEffect(() => {
+    if (validationAttempt.current === 0) return;
+    setValidationErrors(
+      validateSightingForm({
+        formData,
+        timeOfDay: value,
+        photos,
+        currentDate: new Date(),
+      }),
+    );
+  }, [formData, photos, value]);
+
   const createSighting = async () => {
     if (busy) return;
-    setBusy(true);
     setError(undefined);
+    const nextValidationErrors = validateSightingForm({
+      formData,
+      timeOfDay: value,
+      photos,
+      currentDate: new Date(),
+    });
+    const firstError = firstSightingErrorField(nextValidationErrors);
+    if (firstError) {
+      const id = ++validationAttempt.current;
+      setValidationErrors(nextValidationErrors);
+      setToast({ id, message: 'Please fill in the missing information.' });
+      const fieldOffset = requiredFieldOffsets.current[firstError];
+      const section = fieldOffset?.section ?? sightingSectionForField(firstError);
+      setScrollRequest({
+        id,
+        y: (sectionOffsets.current[section] ?? 0) + (fieldOffset?.y ?? 0),
+      });
+      return;
+    }
+    setValidationErrors({});
+    setBusy(true);
     const actor = parseUser(user);
     const result = await appModules.sightings.create(actor, {
       ...formData,
@@ -62,6 +144,8 @@ const SightingCreateScreen = () => {
       savingLabel="Creating report…"
       busy={busy}
       error={error}
+      scrollRequest={scrollRequest}
+      toast={toast}
       onBack={() => router.push('/(app)/(tabs)')}
       onSave={() => void createSighting()}
     >
@@ -76,6 +160,16 @@ const SightingCreateScreen = () => {
         setItems={setItems}
         photos={photos}
         setPhotos={setPhotos}
+        catalogEntries={catalogEntries}
+        catalogLoading={catalogLoading}
+        catalogError={catalogError}
+        errors={validationErrors}
+        onSectionLayout={(section, y) => {
+          sectionOffsets.current[section] = y;
+        }}
+        onRequiredFieldLayout={(field, section, y) => {
+          requiredFieldOffsets.current[field] = { section, y };
+        }}
         isCreate
       />
     </FormScreen>

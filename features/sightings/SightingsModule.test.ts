@@ -29,6 +29,7 @@ const officer = parseUser({
   email: 'officer@gatech.edu',
   role: Role.Officer,
 });
+const clock = new FixedClock(new Date(2025, 3, 15, 12));
 
 function buildModule(ids: readonly string[] = ['sighting-1', 'profile-1']) {
   const documents = new InMemoryDocumentStore();
@@ -42,6 +43,7 @@ function buildModule(ids: readonly string[] = ['sighting-1', 'profile-1']) {
     codec: codecs.contentContributor,
   });
   const module = new SightingsModule({
+    clock,
     documents,
     media,
     mediaCoordinator: new MediaCoordinator(media, generator),
@@ -89,6 +91,23 @@ describe('SightingsModule', () => {
     expect(media.ids()).toEqual([
       'cat-sightings/sighting-1/profile-profile-1.jpg',
     ]);
+  });
+
+  it('rejects a sighting dated after the current calendar day', async () => {
+    const { module } = buildModule();
+
+    await expect(
+      module.create(member, {
+        ...validDraft,
+        date: new Date(2025, 3, 16, 12),
+      }),
+    ).resolves.toEqual({
+      ok: false,
+      error: {
+        code: 'validation',
+        message: 'Sightings cannot be reported for a future date.',
+      },
+    });
   });
 
   it('stores contributor identity separately and redacts it from members by default', async () => {

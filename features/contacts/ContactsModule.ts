@@ -5,10 +5,12 @@ import {
   IdGenerator,
   Outcome,
   User,
-  canManageFeature,
+  canAccessRolePolicy,
   failure,
   parseContact,
   success,
+  roleAccessPolicies,
+  roleAccessRequirement,
 } from '../../core/domain';
 import { DocumentStore } from '../../core/ports';
 
@@ -136,8 +138,11 @@ export class ContactsModule {
 
 function mutationDenied(actor: User | undefined): Outcome<never> | undefined {
   if (!actor) return failure('unauthenticated', 'Sign in to manage contacts');
-  if (!canManageFeature(actor.role)) {
-    return failure('forbidden', 'Only officers may manage contacts');
+  if (!canAccessRolePolicy(actor.role, roleAccessPolicies.manageContacts)) {
+    return failure(
+      'forbidden',
+      roleAccessRequirement(roleAccessPolicies.manageContacts),
+    );
   }
   return undefined;
 }

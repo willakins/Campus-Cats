@@ -13,6 +13,7 @@ import {
 interface CallableNominationResult {
   readonly action: CommunityNominationAction;
   readonly candidateId?: string;
+  readonly pitch?: string;
   readonly submittedAtMillis: number;
 }
 
@@ -31,20 +32,33 @@ export class FirebaseCommunityVotingGateway
     _actor: User,
     vote: CommunityVote,
     action: CommunityNominationAction,
+    pitch?: string,
   ): Promise<CommunityNominationSubmission> {
     try {
+      const normalizedPitch = pitch?.trim();
       const result = await httpsCallable<
-        { readonly voteId: string; readonly action: CommunityNominationAction },
+        {
+          readonly voteId: string;
+          readonly action: CommunityNominationAction;
+          readonly pitch?: string;
+        },
         CallableNominationResult
       >(this.functions, 'submitCommunityNomination')({
         voteId: vote.id,
         action,
+        ...(action === 'nominate' && normalizedPitch
+          ? { pitch: normalizedPitch }
+          : {}),
       });
       if (
         (result.data.action !== 'nominate' && result.data.action !== 'abstain') ||
         (result.data.candidateId !== undefined &&
           (typeof result.data.candidateId !== 'string' ||
             !result.data.candidateId)) ||
+        (result.data.pitch !== undefined &&
+          (typeof result.data.pitch !== 'string' ||
+            !result.data.pitch.trim() ||
+            result.data.pitch.length > 500)) ||
         (result.data.action === 'nominate' && !result.data.candidateId)
       ) {
         throw new Error('Community nomination returned an invalid receipt');
@@ -54,6 +68,7 @@ export class FirebaseCommunityVotingGateway
         ...(result.data.candidateId
           ? { candidateId: result.data.candidateId }
           : {}),
+        ...(result.data.pitch ? { pitch: result.data.pitch } : {}),
         submittedAt: validDate(result.data.submittedAtMillis),
       };
     } catch (error) {

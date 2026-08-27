@@ -12,10 +12,12 @@ import ViewSighting from '../../app/(app)/sighting/view-sighting';
 import { AppThemeProvider } from '../../theme';
 
 const mockPush = jest.fn();
+const mockBack = jest.fn();
 const mockGet = jest.fn();
 const mockMedia = jest.fn();
 const mockLinkedReporter = jest.fn();
 const mockProfileGet = jest.fn();
+const mockCommentsList = jest.fn();
 let mockUserId = 'member-1';
 let mockRole: Role = Role.Member;
 let mockAnonymous = true;
@@ -26,7 +28,7 @@ jest.mock('expo-router', () => {
     useFocusEffect: (effect: () => void | (() => void)) =>
       mockReact.useEffect(effect, [effect]),
     useLocalSearchParams: () => ({ id: 'sighting-1' }),
-    useRouter: () => ({ push: mockPush, back: jest.fn() }),
+    useRouter: () => ({ push: mockPush, back: mockBack }),
   };
 });
 
@@ -38,6 +40,9 @@ jest.mock('../../composition/appModules', () => ({
       linkedReporter: (...args: unknown[]) => mockLinkedReporter(...args),
     },
     profiles: { getOrSync: (...args: unknown[]) => mockProfileGet(...args) },
+    comments: {
+      list: (...args: unknown[]) => mockCommentsList(...args),
+    },
   },
 }));
 
@@ -129,6 +134,7 @@ const importedSighting: InaturalistSightingRecord = {
 describe('view sighting route', () => {
   beforeEach(() => {
     mockPush.mockReset();
+    mockBack.mockReset();
     mockProfileGet.mockClear();
     mockUserId = 'member-1';
     mockRole = Role.Member;
@@ -144,6 +150,7 @@ describe('view sighting route', () => {
       ok: false,
       error: { code: 'not_found', message: 'Member profile not found' },
     });
+    mockCommentsList.mockResolvedValue({ ok: true, value: [], warnings: [] });
   });
 
   it('renders the page header and detail geometry before data resolves', async () => {
@@ -170,6 +177,20 @@ describe('view sighting route', () => {
       pathname: '/sighting/edit-sighting',
       params: { id: 'sighting-1' },
     });
+    expect(mockCommentsList).toHaveBeenCalledWith(
+      expect.objectContaining({ id: 'member-1' }),
+      { kind: 'sighting', id: 'sighting-1' },
+    );
+  });
+
+  it('returns to the route that opened the sighting', async () => {
+    const user = userEvent.setup();
+    await renderSighting();
+
+    await user.press(screen.getByRole('button', { name: 'Go back' }));
+
+    expect(mockBack).toHaveBeenCalledTimes(1);
+    expect(mockPush).not.toHaveBeenCalledWith('/(app)/(tabs)');
   });
 
   it('opens the Campus Cats reporter’s public profile', async () => {

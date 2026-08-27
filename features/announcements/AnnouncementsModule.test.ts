@@ -95,12 +95,23 @@ describe('AnnouncementsModule', () => {
       createdAt: new Date('2025-04-10T12:00:00.000Z'),
       createdBy: admin,
     });
-    await documents.put(COLLECTIONS.announcements, older.id, codecs.announcement.encode(older));
-    await documents.put(COLLECTIONS.announcements, newer.id, codecs.announcement.encode(newer));
+    await documents.put(
+      COLLECTIONS.announcements,
+      older.id,
+      codecs.announcement.encode(older),
+    );
+    await documents.put(
+      COLLECTIONS.announcements,
+      newer.id,
+      codecs.announcement.encode(newer),
+    );
 
-    await expect(module.list()).resolves.toMatchObject({
+    await expect(module.list(admin)).resolves.toMatchObject({
       ok: true,
-      value: [{ id: 'newer' }, { id: 'older' }],
+      value: [
+        { id: 'newer', read: false },
+        { id: 'older', read: false },
+      ],
     });
     await expect(module.get('older')).resolves.toMatchObject({
       ok: true,
@@ -108,10 +119,107 @@ describe('AnnouncementsModule', () => {
     });
   });
 
+  it('lists read status for the current member and records reads idempotently', async () => {
+    const { module, documents } = buildModule();
+    const announcement = parseAnnouncement({
+      id: 'announcement-1',
+      ...draft,
+      createdAt: now,
+      createdBy: admin,
+    });
+    await documents.put(
+      COLLECTIONS.announcements,
+      announcement.id,
+      codecs.announcement.encode(announcement),
+    );
+
+    await expect(module.markRead(member, announcement.id)).resolves.toEqual({
+      ok: true,
+      value: undefined,
+      warnings: [],
+    });
+    await expect(
+      module.markRead(member, announcement.id),
+    ).resolves.toMatchObject({
+      ok: true,
+    });
+    await expect(module.list(member)).resolves.toMatchObject({
+      ok: true,
+      value: [{ id: announcement.id, read: true }],
+    });
+    await expect(module.list(admin)).resolves.toMatchObject({
+      ok: true,
+      value: [{ id: announcement.id, read: false }],
+    });
+    await expect(
+      documents.get(
+        COLLECTIONS.announcementReadReceipts,
+        `${member.id}__${announcement.id}`,
+      ),
+    ).resolves.toMatchObject({
+      data: {
+        userId: member.id,
+        announcementId: announcement.id,
+        readAt: now,
+      },
+    });
+  });
+
+  it('rejects anonymous read tracking and reports receipt failures', async () => {
+    const { module, documents } = buildModule();
+
+    await expect(module.list(undefined)).resolves.toMatchObject({
+      ok: false,
+      error: { code: 'unauthenticated' },
+    });
+    await expect(
+      module.markRead(undefined, 'announcement-1'),
+    ).resolves.toMatchObject({
+      ok: false,
+      error: { code: 'unauthenticated' },
+    });
+    await expect(module.markRead(member, ' ')).resolves.toMatchObject({
+      ok: false,
+      error: { code: 'validation' },
+    });
+    documents.failNext('put', new Error('offline'));
+    await expect(
+      module.markRead(member, 'announcement-1'),
+    ).resolves.toMatchObject({
+      ok: false,
+      error: { code: 'dependency_failure' },
+    });
+  });
+
+  it('keeps announcements available when read receipts cannot be loaded', async () => {
+    const { module, documents } = buildModule();
+    const announcement = parseAnnouncement({
+      id: 'announcement-1',
+      ...draft,
+      createdAt: now,
+      createdBy: admin,
+    });
+    await documents.put(
+      COLLECTIONS.announcements,
+      announcement.id,
+      codecs.announcement.encode(announcement),
+    );
+    documents.failNext('listWhereEqual', new Error('permission denied'));
+
+    await expect(module.list(member)).resolves.toMatchObject({
+      ok: true,
+      value: [{ id: announcement.id, read: false }],
+      warnings: [{ code: 'partial_completion' }],
+    });
+  });
+
   it('persists before best-effort notification and reports delivery failure as a warning', async () => {
     let documents: InMemoryDocumentStore;
     const notifyAnnouncement = jest.fn(async () => {
-      const stored = await documents.get(COLLECTIONS.announcements, 'announcement-1');
+      const stored = await documents.get(
+        COLLECTIONS.announcements,
+        'announcement-1',
+      );
       expect(stored).toBeDefined();
       throw new Error('push provider unavailable');
     });
@@ -160,9 +268,7 @@ describe('AnnouncementsModule', () => {
       ok: true,
       value: { title: 'Updated workday', createdAt: now },
     });
-    expect(media.ids()).toEqual([
-      'announcements/announcement-1/media-1.jpg',
-    ]);
+    expect(media.ids()).toEqual(['announcements/announcement-1/media-1.jpg']);
   });
 
   it('rejects unauthorized and invalid mutations', async () => {
@@ -175,20 +281,24 @@ describe('AnnouncementsModule', () => {
       ok: false,
       error: { code: 'forbidden' },
     });
-    await expect(module.create(admin, { ...draft, title: ' ' })).resolves.toEqual({
+    await expect(
+      module.create(admin, { ...draft, title: ' ' }),
+    ).resolves.toEqual({
       ok: false,
       error: { code: 'validation', message: 'Title cannot be empty.' },
     });
-    await expect(module.create(admin, { ...draft, info: '' })).resolves.toEqual({
-      ok: false,
-      error: { code: 'validation', message: 'Description cannot be empty.' },
-    });
+    await expect(module.create(admin, { ...draft, info: '' })).resolves.toEqual(
+      {
+        ok: false,
+        error: { code: 'validation', message: 'Description cannot be empty.' },
+      },
+    );
   });
 
   it('returns dependency, not-found, and cleanup outcomes', async () => {
     const { module, documents, media } = buildModule();
     documents.failNext('list', new Error('offline'));
-    await expect(module.list()).resolves.toMatchObject({
+    await expect(module.list(admin)).resolves.toMatchObject({
       ok: false,
       error: { code: 'dependency_failure' },
     });
@@ -199,10 +309,12 @@ describe('AnnouncementsModule', () => {
 
     await module.create(admin, { ...draft, photos: ['file://one.jpg'] });
     media.failNext('remove', new Error('storage offline'));
-    await expect(module.remove(admin, 'announcement-1')).resolves.toMatchObject({
-      ok: true,
-      warnings: [{ code: 'cleanup_failed' }],
-    });
+    await expect(module.remove(admin, 'announcement-1')).resolves.toMatchObject(
+      {
+        ok: true,
+        warnings: [{ code: 'cleanup_failed' }],
+      },
+    );
   });
 
   it('covers update authorization, validation, not-found, and media failures', async () => {
@@ -253,7 +365,9 @@ describe('AnnouncementsModule', () => {
   it('covers create and delete dependency paths', async () => {
     const createFailure = buildModule();
     createFailure.media.failNext('list', new Error('storage offline'));
-    await expect(createFailure.module.create(admin, draft)).resolves.toMatchObject({
+    await expect(
+      createFailure.module.create(admin, draft),
+    ).resolves.toMatchObject({
       ok: false,
       error: { code: 'dependency_failure' },
     });

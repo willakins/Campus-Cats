@@ -9,6 +9,7 @@ import { AppThemeProvider } from '../../theme';
 const mockPush = jest.fn();
 const mockGet = jest.fn();
 const mockMedia = jest.fn();
+const mockMarkRead = jest.fn();
 let mockRole: Role = Role.Officer;
 
 jest.mock('expo-router', () => {
@@ -26,6 +27,7 @@ jest.mock('../../composition/appModules', () => ({
     announcements: {
       get: (...args: unknown[]) => mockGet(...args),
       media: (...args: unknown[]) => mockMedia(...args),
+      markRead: (...args: unknown[]) => mockMarkRead(...args),
     },
   },
 }));
@@ -42,8 +44,11 @@ jest.mock('../../components/entries/AnnouncementEntry', () => {
   const mockReact = require('react');
   const { Text: MockText } = require('react-native');
   return {
-    AnnouncementEntry: ({ announcement }: { announcement: { title: string } }) =>
-      mockReact.createElement(MockText, null, announcement.title),
+    AnnouncementEntry: ({
+      announcement,
+    }: {
+      announcement: { title: string };
+    }) => mockReact.createElement(MockText, null, announcement.title),
   };
 });
 
@@ -73,6 +78,12 @@ describe('view announcement route', () => {
     mockRole = Role.Officer;
     mockGet.mockResolvedValue({ ok: true, value: announcement, warnings: [] });
     mockMedia.mockResolvedValue({ ok: true, value: [], warnings: [] });
+    mockMarkRead.mockReset();
+    mockMarkRead.mockResolvedValue({
+      ok: true,
+      value: undefined,
+      warnings: [],
+    });
   });
 
   it('renders the page header and detail geometry before data resolves', async () => {
@@ -89,9 +100,15 @@ describe('view announcement route', () => {
     const user = userEvent.setup();
     await renderAnnouncement();
 
-    expect(await screen.findByText('Feeding station workday')).toBeOnTheScreen();
+    expect(
+      await screen.findByText('Feeding station workday'),
+    ).toBeOnTheScreen();
     await user.press(screen.getByRole('button', { name: 'Edit announcement' }));
     expect(mockGet).toHaveBeenCalledWith('announcement-1');
+    expect(mockMarkRead).toHaveBeenCalledWith(
+      { id: 'admin-1', email: 'admin@gatech.edu', role: Role.Officer },
+      'announcement-1',
+    );
     expect(mockPush).toHaveBeenCalledWith({
       pathname: '/announcements/edit-ann',
       params: { id: 'announcement-1' },
@@ -102,8 +119,12 @@ describe('view announcement route', () => {
     mockRole = Role.Member;
     await renderAnnouncement();
 
-    expect(await screen.findByText('Feeding station workday')).toBeOnTheScreen();
-    expect(screen.queryByRole('button', { name: 'Edit announcement' })).not.toBeOnTheScreen();
+    expect(
+      await screen.findByText('Feeding station workday'),
+    ).toBeOnTheScreen();
+    expect(
+      screen.queryByRole('button', { name: 'Edit announcement' }),
+    ).not.toBeOnTheScreen();
   });
 
   it('renders a module error instead of a selected global record', async () => {

@@ -5,17 +5,22 @@ import {
   PersistenceCodec,
   IdGenerator,
   Outcome,
+  OutcomeMessage,
+  OutcomeWarningCode,
   User,
-  canManageFeature,
+  canAccessRolePolicy,
   failure,
   parseAnnouncement,
   success,
+  roleAccessPolicies,
+  roleAccessRequirement,
 } from '../../core/domain';
 import { MediaCoordinator, MediaSelection, localMedia } from '../../core/media';
 import {
   ApplicationEffects,
   DocumentStore,
   MediaStore,
+  StoredDocument,
   StoredMediaAsset,
 } from '../../core/ports';
 
@@ -33,6 +38,10 @@ export interface AnnouncementUpdate {
   readonly photos: readonly MediaSelection[];
 }
 
+export type AnnouncementListItem = Announcement & {
+  readonly read: boolean;
+};
+
 interface AnnouncementsDependencies {
   readonly documents: DocumentStore;
   readonly media: MediaStore;
@@ -46,21 +55,76 @@ interface AnnouncementsDependencies {
 export class AnnouncementsModule {
   constructor(private readonly dependencies: AnnouncementsDependencies) {}
 
-  async list(): Promise<Outcome<readonly Announcement[]>> {
+  async list(
+    actor: User | undefined,
+  ): Promise<Outcome<readonly AnnouncementListItem[]>> {
+    if (!actor)
+      return failure('unauthenticated', 'Sign in to view announcements');
     try {
       const documents = await this.dependencies.documents.list(
         COLLECTIONS.announcements,
       );
-      const announcements = documents.map(({ id, data }) =>
-        this.dependencies.codecs.announcement.decode(id, data),
+      let receiptDocuments: readonly StoredDocument[] = [];
+      let receiptWarning: readonly OutcomeMessage<OutcomeWarningCode>[] = [];
+      try {
+        receiptDocuments = await this.dependencies.documents.listWhereEqual(
+          COLLECTIONS.announcementReadReceipts,
+          'userId',
+          actor.id,
+        );
+      } catch {
+        receiptWarning = [
+          {
+            code: 'partial_completion',
+            message: 'Announcements loaded, but read status is unavailable',
+          },
+        ];
+      }
+      const readAnnouncementIds = new Set(
+        receiptDocuments.flatMap(({ data }) =>
+          typeof data.announcementId === 'string' ? [data.announcementId] : [],
+        ),
       );
+      const announcements = documents.map(({ id, data }) => ({
+        ...this.dependencies.codecs.announcement.decode(id, data),
+        read: readAnnouncementIds.has(id),
+      }));
       return success(
         announcements.sort(
           (left, right) => right.createdAt.getTime() - left.createdAt.getTime(),
         ),
+        receiptWarning,
       );
     } catch {
       return failure('dependency_failure', 'Could not load announcements');
+    }
+  }
+
+  async markRead(
+    actor: User | undefined,
+    announcementId: string,
+  ): Promise<Outcome<void>> {
+    if (!actor)
+      return failure('unauthenticated', 'Sign in to read announcements');
+    if (!announcementId.trim()) {
+      return failure('validation', 'Announcement ID is required');
+    }
+    try {
+      await this.dependencies.documents.put(
+        COLLECTIONS.announcementReadReceipts,
+        `${actor.id}__${announcementId}`,
+        {
+          userId: actor.id,
+          announcementId,
+          readAt: this.dependencies.clock.now(),
+        },
+      );
+      return success(undefined);
+    } catch {
+      return failure(
+        'dependency_failure',
+        'Could not record the announcement as read',
+      );
     }
   }
 
@@ -113,16 +177,17 @@ export class AnnouncementsModule {
       createdAt: this.dependencies.clock.now(),
       createdBy: actor,
     });
-    const mediaResult = await this.dependencies.mediaCoordinator.reconcileGallery({
-      folder: `${COLLECTIONS.announcements}/${id}`,
-      gallery: draft.photos.map(localMedia),
-      persist: async () =>
-        this.dependencies.documents.put(
-          COLLECTIONS.announcements,
-          id,
-          this.dependencies.codecs.announcement.encode(announcement),
-        ),
-    });
+    const mediaResult =
+      await this.dependencies.mediaCoordinator.reconcileGallery({
+        folder: `${COLLECTIONS.announcements}/${id}`,
+        gallery: draft.photos.map(localMedia),
+        persist: async () =>
+          this.dependencies.documents.put(
+            COLLECTIONS.announcements,
+            id,
+            this.dependencies.codecs.announcement.encode(announcement),
+          ),
+      });
     if (!mediaResult.ok) return mediaResult;
 
     const warnings = [...mediaResult.warnings];
@@ -160,16 +225,17 @@ export class AnnouncementsModule {
       createdAt: this.dependencies.clock.now(),
       createdBy: actor,
     });
-    const mediaResult = await this.dependencies.mediaCoordinator.reconcileGallery({
-      folder: `${COLLECTIONS.announcements}/${id}`,
-      gallery: update.photos,
-      persist: async () =>
-        this.dependencies.documents.put(
-          COLLECTIONS.announcements,
-          id,
-          this.dependencies.codecs.announcement.encode(announcement),
-        ),
-    });
+    const mediaResult =
+      await this.dependencies.mediaCoordinator.reconcileGallery({
+        folder: `${COLLECTIONS.announcements}/${id}`,
+        gallery: update.photos,
+        persist: async () =>
+          this.dependencies.documents.put(
+            COLLECTIONS.announcements,
+            id,
+            this.dependencies.codecs.announcement.encode(announcement),
+          ),
+      });
     return mediaResult.ok
       ? success(announcement, mediaResult.warnings)
       : mediaResult;
@@ -192,7 +258,9 @@ export class AnnouncementsModule {
         `${COLLECTIONS.announcements}/${id}`,
       );
       const cleanup = await Promise.allSettled(
-        assets.map(({ id: mediaId }) => this.dependencies.media.remove(mediaId)),
+        assets.map(({ id: mediaId }) =>
+          this.dependencies.media.remove(mediaId),
+        ),
       );
       return success(
         undefined,
@@ -217,9 +285,13 @@ export class AnnouncementsModule {
 }
 
 function mutationDenied(actor: User | undefined): Outcome<never> | undefined {
-  if (!actor) return failure('unauthenticated', 'Sign in to manage announcements');
-  if (!canManageFeature(actor.role)) {
-    return failure('forbidden', 'Only officers may manage announcements');
+  if (!actor)
+    return failure('unauthenticated', 'Sign in to manage announcements');
+  if (!canAccessRolePolicy(actor.role, roleAccessPolicies.manageAnnouncements)) {
+    return failure(
+      'forbidden',
+      roleAccessRequirement(roleAccessPolicies.manageAnnouncements),
+    );
   }
   return undefined;
 }

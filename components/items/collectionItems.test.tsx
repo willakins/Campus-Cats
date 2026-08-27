@@ -1,6 +1,11 @@
 import React from 'react';
 
-import { render, screen, userEvent, waitFor } from '@testing-library/react-native';
+import {
+  render,
+  screen,
+  userEvent,
+  waitFor,
+} from '@testing-library/react-native';
 
 import {
   CatalogRecord,
@@ -30,7 +35,11 @@ jest.mock('../../composition/appModules', () => ({
   },
 }));
 
-const actor = parseUser({ id: 'admin-1', email: 'admin@gatech.edu', role: Role.Officer });
+const actor = parseUser({
+  id: 'admin-1',
+  email: 'admin@gatech.edu',
+  role: Role.Officer,
+});
 const announcement = parseAnnouncement({
   id: 'announcement-1',
   title: 'Volunteer workday',
@@ -39,26 +48,28 @@ const announcement = parseAnnouncement({
   createdBy: actor,
   authorAlias: 'Campus Cats Team',
 });
-const catalogEntry = localCatalogRecord(parseCatalogEntry({
-  id: 'catalog-1',
-  cat: {
-    name: 'Goldie',
-    descShort: 'A friendly orange cat.',
-    descLong: 'Often naps near the library.',
-    colorPattern: 'Orange tabby',
-    behavior: 'Friendly',
-    yearsRecorded: '2022–present',
-    AoR: 'Library',
-    currentStatus: 'Feral',
-    furLength: 'Short',
-    furPattern: 'Tabby',
-    tnr: 'Yes',
-    sex: 'Female',
-  },
-  credits: 'Campus Cats volunteers',
-  createdAt: new Date('2026-06-01T12:00:00.000Z'),
-  createdBy: actor,
-}));
+const catalogEntry = localCatalogRecord(
+  parseCatalogEntry({
+    id: 'catalog-1',
+    cat: {
+      name: 'Goldie',
+      descShort: 'A friendly orange cat.',
+      descLong: 'Often naps near the library.',
+      colorPattern: 'Orange tabby',
+      behavior: 'Friendly',
+      yearsRecorded: '2022–present',
+      AoR: 'Library',
+      currentStatus: 'Feral',
+      furLength: 'Short',
+      furPattern: 'Tabby',
+      tnr: 'Yes',
+      sex: 'Female',
+    },
+    credits: 'Campus Cats volunteers',
+    createdAt: new Date('2026-06-01T12:00:00.000Z'),
+    createdBy: actor,
+  }),
+);
 const importedCatalogEntry: CatalogRecord = {
   source: 'inaturalist',
   id: 'inat-guide-2001',
@@ -83,7 +94,9 @@ const station = parseStation({
 });
 
 const renderThemed = async (content: React.ReactElement) =>
-  await render(<AppThemeProvider colorScheme="light">{content}</AppThemeProvider>);
+  await render(
+    <AppThemeProvider colorScheme="light">{content}</AppThemeProvider>,
+  );
 
 describe('collection cards', () => {
   beforeEach(() => {
@@ -92,16 +105,37 @@ describe('collection cards', () => {
     mockStationMedia.mockResolvedValue({ ok: true, value: [], warnings: [] });
   });
 
-  it('keeps announcement attribution visible and routes by ID', async () => {
+  it('keeps announcement attribution visible, marks unread cards, and routes by ID', async () => {
     const user = userEvent.setup();
-    await renderThemed(<AnnouncementItem {...announcement} />);
+    const view = await renderThemed(
+      <AnnouncementItem {...announcement} read={false} />,
+    );
 
-    expect(screen.getByText('By Campus Cats Team')).toBeOnTheScreen();
-    await user.press(screen.getByRole('button', { name: 'Read announcement: Volunteer workday' }));
+    expect(screen.getByText(/By Campus Cats Team/)).toBeOnTheScreen();
+    expect(screen.getByLabelText('Unread')).toHaveStyle({
+      backgroundColor: '#C65F00',
+    });
+    await user.press(
+      screen.getByRole('button', {
+        name: 'Unread announcement: Volunteer workday',
+      }),
+    );
     expect(mockPush).toHaveBeenCalledWith({
       pathname: '/announcements/view-ann',
       params: { id: 'announcement-1' },
     });
+
+    await view.rerender(
+      <AppThemeProvider colorScheme="light">
+        <AnnouncementItem {...announcement} read />
+      </AppThemeProvider>,
+    );
+    expect(screen.queryByLabelText('Unread')).not.toBeOnTheScreen();
+    expect(
+      screen.getByRole('button', {
+        name: 'Read announcement: Volunteer workday',
+      }),
+    ).toBeOnTheScreen();
   });
 
   it('provides a catalog photo fallback and routes by ID', async () => {
@@ -120,12 +154,32 @@ describe('collection cards', () => {
     expect(screen.getByText('Community cat')).toBeOnTheScreen();
     expect(screen.getByText('Needs medication')).toBeOnTheScreen();
     expect(screen.queryByText('iNaturalist profile')).not.toBeOnTheScreen();
-    await waitFor(() => expect(mockCatalogMedia).toHaveBeenCalledWith('catalog-1'));
+    await waitFor(() =>
+      expect(mockCatalogMedia).toHaveBeenCalledWith('catalog-1'),
+    );
     await user.press(screen.getByRole('button', { name: 'View cat: Goldie' }));
     expect(mockPush).toHaveBeenCalledWith({
       pathname: '/catalog/view-entry',
       params: { id: 'catalog-1' },
     });
+  });
+
+  it('lets selection flows replace catalog profile navigation', async () => {
+    const onSelect = jest.fn();
+    const user = userEvent.setup();
+    await renderThemed(
+      <CatalogItem
+        {...catalogEntry}
+        accessibilityLabel="Select Goldie for this sighting"
+        onPress={onSelect}
+      />,
+    );
+
+    await user.press(
+      screen.getByRole('button', { name: 'Select Goldie for this sighting' }),
+    );
+    expect(onSelect).toHaveBeenCalledTimes(1);
+    expect(mockPush).not.toHaveBeenCalled();
   });
 
   it('keeps favorite selection separate from profile navigation', async () => {
@@ -170,7 +224,9 @@ describe('collection cards', () => {
 
     expect(screen.getByText('Stocked')).toBeOnTheScreen();
     expect(screen.getByText('Known cats: Goldie')).toBeOnTheScreen();
-    await user.press(screen.getByRole('button', { name: 'View station: Library station' }));
+    await user.press(
+      screen.getByRole('button', { name: 'View station: Library station' }),
+    );
     expect(mockPush).toHaveBeenCalledWith({
       pathname: '/stations/view-station',
       params: { id: 'station-1' },

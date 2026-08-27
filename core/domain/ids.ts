@@ -19,6 +19,7 @@ export const communityVoteOptionIdSchema =
 export const whitelistApplicationIdSchema =
   nonEmptyId.brand<'WhitelistApplicationId'>();
 export const contactIdSchema = nonEmptyId.brand<'ContactId'>();
+export const commentIdSchema = nonEmptyId.brand<'CommentId'>();
 
 export type UserId = z.infer<typeof userIdSchema>;
 export type SightingId = z.infer<typeof sightingIdSchema>;
@@ -39,3 +40,4 @@ export type WhitelistApplicationId = z.infer<
   typeof whitelistApplicationIdSchema
 >;
 export type ContactId = z.infer<typeof contactIdSchema>;
+export type CommentId = z.infer<typeof commentIdSchema>;

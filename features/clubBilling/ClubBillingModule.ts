@@ -3,17 +3,22 @@ import {
   ClubBillingSummary,
   CollectionMethod,
   Outcome,
-  Role,
   User,
   failure,
+  canAccessRolePolicy,
+  roleAccessPolicies,
+  roleAccessRequirement,
   success,
 } from '../../core/domain';
 import { BillingRedirect, ClubBillingPort } from '../../core/ports';
 
 const manageDenied = (actor: User | undefined): Outcome<never> | undefined => {
   if (!actor) return failure('unauthenticated', 'Sign in to manage club billing');
-  if (actor.role !== Role.President) {
-    return failure('forbidden', 'Only the club President may manage billing');
+  if (!canAccessRolePolicy(actor.role, roleAccessPolicies.manageClubBilling)) {
+    return failure(
+      'forbidden',
+      roleAccessRequirement(roleAccessPolicies.manageClubBilling),
+    );
   }
   return undefined;
 };

@@ -16,11 +16,16 @@ iNaturalist observations, guide profiles, or media.
 | Observation time           | Actual timestamp when supplied; otherwise the source calendar date with date-only precision   |
 | Public `geojson` point     | Map marker and detail inset; observations without a public point remain detail-visible        |
 | Observer and quality grade | Source metadata shown on imported detail pages                                                |
+| Observation comments       | Read-only, source-attributed discussion merged into the Campus Cats sighting thread           |
 | Observation field `16302`  | Raw Georgia Tech Cats value plus an exact catalog relationship when uniquely resolvable       |
 | Guide tags                 | Optional years, areas, status, fur length/pattern, sex, and TNR fields                        |
 | Licensed source photos     | External display assets with source, photographer attribution, license code, and license link |
 
 Imported observations never receive app-only `fed`, `health`, or `createdBy` values.
+Imported comments retain their iNaturalist comment ID, author, timestamp, and source
+link. They are never eligible for Campus Cats warnings or bans. Officer deletion hides
+the local copy with a persistent moderation marker, so a later sync cannot restore it;
+the source comment remains unchanged on iNaturalist.
 Eight current guide profiles have no display name; they remain importable under the
 deterministic label `Unnamed cat #{guide-taxon-id}` rather than borrowing a description
 as a fabricated identity. Missing source facts remain visibly unknown and may be

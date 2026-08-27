@@ -8,10 +8,12 @@ import {
   StationStockStatus,
   User,
   calculateStationStockStatus,
-  canManageFeature,
+  canAccessRolePolicy,
   failure,
   parseStation,
   success,
+  roleAccessPolicies,
+  roleAccessRequirement,
 } from '../../core/domain';
 import { MediaCoordinator, MediaSelection, localMedia } from '../../core/media';
 import { DocumentStore, MediaStore, StoredMediaAsset } from '../../core/ports';
@@ -191,8 +193,11 @@ export class StationsModule {
 
 function mutationDenied(actor: User | undefined): Outcome<never> | undefined {
   if (!actor) return failure('unauthenticated', 'Sign in to manage feeding stations');
-  if (!canManageFeature(actor.role)) {
-    return failure('forbidden', 'Only officers may manage feeding stations');
+  if (!canAccessRolePolicy(actor.role, roleAccessPolicies.manageStations)) {
+    return failure(
+      'forbidden',
+      roleAccessRequirement(roleAccessPolicies.manageStations),
+    );
   }
   return undefined;
 }

@@ -47,12 +47,17 @@ const officer = parseUser({
   role: Role.Officer,
 });
 
-const survey = (anonymous: boolean, status: Survey['status'] = 'open') =>
+const survey = (
+  anonymous: boolean,
+  status: Survey['status'] = 'open',
+  participationAudience: Survey['participationAudience'] = 'all_members',
+) =>
   parseSurvey({
     id: 'survey-1',
     title: 'Volunteer interests',
     details: 'Help plan the next activity.',
     anonymous,
+    participationAudience,
     status,
     questions: [
       {
@@ -66,7 +71,7 @@ const survey = (anonymous: boolean, status: Survey['status'] = 'open') =>
       },
       {
         id: 'question-2',
-        type: 'short_text',
+        type: 'long_text',
         prompt: 'Anything else?',
         options: [],
       },
@@ -120,7 +125,7 @@ describe('survey response route', () => {
       ),
     ).toBeOnTheScreen();
     await user.press(screen.getByRole('radio', { name: 'Workshop' }));
-    await user.type(screen.getByLabelText('Short answer'), 'Weekend mornings');
+    await user.type(screen.getByLabelText('Free response'), 'Weekend mornings');
     await user.press(
       screen.getByRole('button', { name: 'Submit Response With My Name' }),
     );
@@ -141,6 +146,23 @@ describe('survey response route', () => {
     await renderRoute();
 
     expect(await screen.findByText('This survey is closed')).toBeOnTheScreen();
+    expect(
+      screen.queryByRole('button', { name: 'Submit Anonymous Response' }),
+    ).not.toBeOnTheScreen();
+  });
+
+  it('shows officer-only surveys to members without response controls', async () => {
+    mockGet.mockResolvedValue({
+      ok: true,
+      value: survey(true, 'open', 'officers_only'),
+      warnings: [],
+    });
+    await renderRoute();
+
+    expect(
+      await screen.findByText('Officer participation only'),
+    ).toBeOnTheScreen();
+    expect(screen.queryByRole('radio', { name: 'Workshop' })).not.toBeOnTheScreen();
     expect(
       screen.queryByRole('button', { name: 'Submit Anonymous Response' }),
     ).not.toBeOnTheScreen();

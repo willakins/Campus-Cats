@@ -3,10 +3,9 @@ import { Alert, View } from 'react-native';
 
 import { useRouter } from 'expo-router';
 
+import { RestrictedScreen } from '@/components/access';
 import {
   AccessBanner,
-  AccessDeniedState,
-  AppHeader,
   Button,
   Card,
   CardListSkeleton,
@@ -15,15 +14,15 @@ import {
   FeedbackBanner,
   FormSection,
   IconButton,
-  Screen,
 } from '@/components/design';
 import { FormTextInput } from '@/components/forms';
 import { appModules } from '@/composition/appModules';
 import {
   CatalogTag,
   Outcome,
-  canManageFeature,
+  canAccessRolePolicy,
   parseUser,
+  roleAccessPolicies,
 } from '@/core/domain';
 import { useAuth } from '@/providers';
 import { useAppTheme } from '@/theme';
@@ -32,7 +31,10 @@ const ManageCatalogTags = () => {
   const router = useRouter();
   const actor = parseUser(useAuth().user);
   const theme = useAppTheme();
-  const authorized = canManageFeature(actor.role);
+  const authorized = canAccessRolePolicy(
+    actor.role,
+    roleAccessPolicies.manageCatalogTags,
+  );
   const [tags, setTags] = useState<readonly CatalogTag[]>([]);
   const [savedTags, setSavedTags] = useState<readonly CatalogTag[]>([]);
   const [newLabel, setNewLabel] = useState('');
@@ -135,15 +137,15 @@ const ManageCatalogTags = () => {
   };
 
   return (
-    <Screen scroll keyboardAware>
-      <AppHeader
-        title="Manage catalog tags"
-        eyebrow="Officer tools"
-        onBack={() => router.back()}
-      />
-      {!authorized ? (
-        <AccessDeniedState message="Only officers may manage catalog tags." />
-      ) : loading ? (
+    <RestrictedScreen
+      scroll
+      keyboardAware
+      title="Manage catalog tags"
+      eyebrow="Officer tools"
+      onBack={() => router.back()}
+      access={{ policy: roleAccessPolicies.manageCatalogTags, role: actor.role }}
+    >
+      {loading ? (
         <CardListSkeleton label="Loading catalog tags" count={4} />
       ) : error && tags.length === 0 ? (
         <ErrorState title="Could not load catalog tags" message={error} onRetry={load} />
@@ -223,7 +225,7 @@ const ManageCatalogTags = () => {
           </FormSection>
         </View>
       )}
-    </Screen>
+    </RestrictedScreen>
   );
 };
 

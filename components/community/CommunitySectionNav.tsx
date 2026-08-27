@@ -4,14 +4,10 @@ import { Pressable, ScrollView, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
 import { useAppTheme } from '../../theme';
-import { AppText, Card } from '../design';
+import { AppText, Card, UnreadIndicator } from '../design';
 
 export type CommunitySection =
-  | 'announcements'
-  | 'events'
-  | 'surveys'
-  | 'votes'
-  | 'chat';
+  'announcements' | 'events' | 'surveys' | 'votes' | 'donate' | 'chat';
 
 const sections: readonly {
   readonly value: CommunitySection;
@@ -55,12 +51,21 @@ const sections: readonly {
     icon: 'checkmark-done-circle-outline',
     color: 'gold',
   },
+  {
+    value: 'donate',
+    label: 'Donate',
+    description: 'Support food, care, and rescue work',
+    icon: 'heart-outline',
+    color: 'coral',
+  },
 ];
 
 export const CommunitySectionGrid = ({
   onChange,
+  needsAttention = {},
 }: {
   readonly onChange: (value: CommunitySection) => void;
+  readonly needsAttention?: Partial<Record<CommunitySection, boolean>>;
 }) => {
   const theme = useAppTheme();
   const palettes = {
@@ -103,15 +108,28 @@ export const CommunitySectionGrid = ({
           >
             <View
               style={{
-                width: 52,
-                height: 52,
-                alignItems: 'center',
-                justifyContent: 'center',
-                borderRadius: theme.radii.pill,
-                backgroundColor: theme.colors.surface,
+                flexDirection: 'row',
+                alignItems: 'flex-start',
+                justifyContent: 'space-between',
               }}
             >
-              <Ionicons name={section.icon} size={28} color={foreground} />
+              <View
+                style={{
+                  width: 52,
+                  height: 52,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  borderRadius: theme.radii.pill,
+                  backgroundColor: theme.colors.surface,
+                }}
+              >
+                <Ionicons name={section.icon} size={28} color={foreground} />
+              </View>
+              {needsAttention[section.value] ? (
+                <UnreadIndicator
+                  accessibilityLabel={attentionLabel[section.value]}
+                />
+              ) : null}
             </View>
             <View style={{ gap: theme.spacing.xxs }}>
               <AppText variant="section" style={{ color: foreground }}>
@@ -124,6 +142,15 @@ export const CommunitySectionGrid = ({
       })}
     </ScrollView>
   );
+};
+
+const attentionLabel: Record<CommunitySection, string> = {
+  announcements: 'Unread announcements',
+  events: 'Unread events',
+  surveys: 'Incomplete surveys',
+  votes: 'Votes awaiting your ballot',
+  donate: 'Donation needs attention',
+  chat: 'Chat needs attention',
 };
 
 export const CommunitySectionNav = ({
@@ -139,7 +166,10 @@ export const CommunitySectionNav = ({
       horizontal
       accessibilityLabel="Community sections"
       showsHorizontalScrollIndicator={false}
-      contentContainerStyle={{ gap: theme.spacing.xs, paddingBottom: theme.spacing.md }}
+      contentContainerStyle={{
+        gap: theme.spacing.xs,
+        paddingBottom: theme.spacing.md,
+      }}
     >
       {sections.map((section) => {
         const selected = value === section.value;
@@ -156,7 +186,9 @@ export const CommunitySectionNav = ({
               paddingHorizontal: theme.spacing.md,
               borderRadius: theme.radii.pill,
               borderWidth: 1,
-              borderColor: selected ? theme.colors.primary : theme.colors.border,
+              borderColor: selected
+                ? theme.colors.primary
+                : theme.colors.border,
               backgroundColor: selected
                 ? theme.colors.primary
                 : theme.colors.surface,

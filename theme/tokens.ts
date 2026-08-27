@@ -30,6 +30,7 @@ export interface AppColors {
   readonly successSurface: string;
   readonly warning: string;
   readonly warningSurface: string;
+  readonly unread: string;
   readonly danger: string;
   readonly dangerSurface: string;
   readonly info: string;
@@ -140,6 +141,7 @@ const lightColors: AppColors = {
   successSurface: '#DFEFE6',
   warning: '#9A6500',
   warningSurface: '#F8EDCA',
+  unread: '#C65F00',
   danger: '#B23A3A',
   dangerSurface: '#F8DEDE',
   info: '#28647D',
@@ -170,6 +172,7 @@ const darkColors: AppColors = {
   successSurface: '#183A2D',
   warning: '#F0C85A',
   warningSurface: '#3C3212',
+  unread: '#FF9A3D',
   danger: '#FF8F85',
   dangerSurface: '#45282B',
   info: '#78C6E5',
@@ -270,20 +273,26 @@ const hex = (channels: readonly number[]): string =>
     .map((channel) => Math.round(channel).toString(16).padStart(2, '0'))
     .join('')}`.toUpperCase();
 
-const mix = (foreground: string, background: string, amount: number): string => {
+const mix = (
+  foreground: string,
+  background: string,
+  amount: number,
+): string => {
   const front = rgb(foreground);
   const back = rgb(background);
-  return hex(front.map((channel, index) =>
-    channel * amount + back[index] * (1 - amount),
-  ));
+  return hex(
+    front.map(
+      (channel, index) => channel * amount + back[index] * (1 - amount),
+    ),
+  );
 };
 
 const luminance = (color: string): number => {
-  const channels = rgb(color).map((channel) => channel / 255).map((channel) =>
-    channel <= 0.03928
-      ? channel / 12.92
-      : ((channel + 0.055) / 1.055) ** 2.4,
-  );
+  const channels = rgb(color)
+    .map((channel) => channel / 255)
+    .map((channel) =>
+      channel <= 0.03928 ? channel / 12.92 : ((channel + 0.055) / 1.055) ** 2.4,
+    );
   return 0.2126 * channels[0] + 0.7152 * channels[1] + 0.0722 * channels[2];
 };
 
@@ -336,5 +345,9 @@ export const resolveAppTheme = (
   brand?: AppBrandColors,
 ): AppTheme => {
   const dark = scheme === 'dark';
-  return brand ? createBrandedTheme(dark, brand) : dark ? darkTheme : lightTheme;
+  return brand
+    ? createBrandedTheme(dark, brand)
+    : dark
+      ? darkTheme
+      : lightTheme;
 };

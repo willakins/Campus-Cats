@@ -1,5 +1,14 @@
 import { createHash, randomBytes, randomUUID } from 'node:crypto';
 
+export {
+  cleanupDeletedCatalogComments,
+  cleanupDeletedImportedCatalogComments,
+  cleanupDeletedImportedSightingComments,
+  cleanupDeletedSightingComments,
+  cleanupDeletedStationComments,
+} from './commentCleanup';
+export {runInaturalistSync, syncInaturalistDaily} from './inaturalistFunctions';
+
 import sgMail from '@sendgrid/mail';
 import { getApps, initializeApp } from 'firebase-admin/app';
 import { getAuth } from 'firebase-admin/auth';
@@ -37,7 +46,6 @@ import {
   handleSendWhitelistEmail,
   handleSubmitWhitelistApplication,
   handleSetUserBanned,
-  handleSyncPublicProfile,
   handleTransferPresidency,
   handleUpdateUserRole,
   handleUpdatePublicProfile,
@@ -57,15 +65,11 @@ import {
 import { deleteAuthUserIfPresent } from './firebaseAuth';
 import { FirebaseInaturalistRepository } from './firebaseInaturalist';
 import { FirebaseInaturalistAccountLinkRepository } from './firebaseInaturalistAccountLinks';
-import {
-  InaturalistHttpGateway,
-  runInaturalistSync as executeInaturalistSync,
-} from './inaturalist';
+import {synchronizeInaturalist} from './inaturalistFunctions';
 import {
   InaturalistHandlerDependencies,
   handleLinkInaturalistCatalog,
   handleModerateInaturalistRecord,
-  handleRunInaturalistSync,
   handleUpdateInaturalistCatalog,
 } from './inaturalistHandlers';
 import {
@@ -86,10 +90,13 @@ import {
   CommunityVotingDependencies,
   StoredCommunityVote,
   handleGetCommunityVoteResults,
-  handleSubmitCommunityBallot,
   handleSubmitCommunityNomination,
   notifyStartedPresidentialVotes,
 } from './communityVoting';
+import {
+  assertCanParticipate,
+  parseParticipationAudience,
+} from './participation';
 import { handleSignedStripeWebhook } from './stripeWebhook';
 import { ClubProvisioningService } from './clubProvisioning';
 import { UniversityCatalogService } from './universityCatalog';
@@ -152,7 +159,6 @@ const firestore = getFirestore();
 const auth = getAuth();
 const storage = getStorage();
 const billingReader = createGoogleCloudBillingReader();
-const inaturalistGateway = new InaturalistHttpGateway();
 const inaturalistAccountRepository =
   new FirebaseInaturalistAccountLinkRepository(firestore);
 const tenantCollection = (clubId: string, collectionName: string) =>
@@ -717,16 +723,42 @@ const dependencies: HandlerDependencies = {
           });
         }
       } else if (actor?.role === 4) {
-        if (!presidentSnapshots.empty) {
+        if (presidentSnapshots.size > 1) {
           throw new HandlerError(
-            'already-exists',
-            'A President already exists; only that President can transfer the role',
+            'failed-precondition',
+            'Multiple Presidents exist; repair the role data before transferring the presidency',
           );
+        }
+        const currentPresident = presidentSnapshots.docs[0];
+        if (currentPresident) {
+          const currentPresidentPublicReference = tenantCollection(
+            clubId,
+            'public-profiles',
+          ).doc(currentPresident.id);
+          const currentPresidentPublicSnapshot = await transaction.get(
+            currentPresidentPublicReference,
+          );
+          transaction.update(currentPresident.ref, { role: 1 });
+          if (currentPresidentPublicSnapshot.exists) {
+            transaction.update(currentPresidentPublicReference, {
+              role: 1,
+              achievementIds: FieldValue.arrayUnion('president'),
+            });
+          } else {
+            transaction.set(currentPresidentPublicReference, {
+              ...publicProfileDefaults(
+                String(currentPresident.data()?.email ?? ''),
+                1,
+                clubId,
+              ),
+              achievementIds: ['president'],
+            });
+          }
         }
       } else {
         throw new HandlerError(
           'permission-denied',
-          'Only the current President may transfer the presidency',
+          'President-level access is required to transfer the presidency',
         );
       }
 
@@ -880,14 +912,6 @@ const dependencies: HandlerDependencies = {
   },
 };
 
-const synchronizeInaturalist = (clubId: string) =>
-  executeInaturalistSync({
-    gateway: inaturalistGateway,
-    repository: new FirebaseInaturalistRepository(firestore, clubId),
-    clock: { now: () => new Date() },
-    runId: randomUUID,
-  });
-
 const surveySubmissionDependencies: SurveySubmissionDependencies = {
   getUser: dependencies.getUser,
   async submit({ actor, surveyId, answers, responseId }) {
@@ -921,6 +945,11 @@ const surveySubmissionDependencies: SurveySubmissionDependencies = {
       if (!surveyData) {
         throw new HandlerError('internal', 'Stored survey is invalid');
       }
+      assertCanParticipate(
+        surveyData.participationAudience,
+        actor.role,
+        'survey',
+      );
       validateSurveyAnswers(surveyData, answers);
 
       const submittedAt = Timestamp.now();
@@ -999,6 +1028,9 @@ const storedCommunityVote = (
     clubId,
     kind: data.kind,
     title: typeof data.title === 'string' ? data.title : undefined,
+    participationAudience: parseParticipationAudience(
+      data.participationAudience,
+    ),
     votingStartsAtMillis: votingStartsAt.toMillis(),
     votingEndsAtMillis: votingEndsAt.toMillis(),
     options,
@@ -1017,7 +1049,7 @@ const communityVotingDependencies: CommunityVotingDependencies = {
       ? storedCommunityVote(snapshot.id, clubId, snapshot.data())
       : undefined;
   },
-  async submitNomination({ actor, vote, action, submittedAt }) {
+  async submitNomination({ actor, vote, action, pitch, submittedAt }) {
     const voteReference = tenantCollection(vote.clubId, 'community-votes').doc(
       vote.id,
     );
@@ -1056,6 +1088,11 @@ const communityVotingDependencies: CommunityVotingDependencies = {
         vote.clubId,
         voteSnapshot.data(),
       );
+      assertCanParticipate(
+        canonical.participationAudience,
+        actor.role,
+        'vote',
+      );
       if (canonical.kind !== 'presidential_election') {
         throw new HandlerError(
           'failed-precondition',
@@ -1081,6 +1118,7 @@ const communityVotingDependencies: CommunityVotingDependencies = {
           voteId: vote.id,
           userId: actor.id,
           displayName: displayName || 'Campus Cats member',
+          ...(pitch ? { pitch } : {}),
           nominatedAt: now,
           writeSource: 'user',
           billingActorId: actor.id,
@@ -1089,6 +1127,7 @@ const communityVotingDependencies: CommunityVotingDependencies = {
       return {
         action,
         ...(action === 'nominate' ? { candidateId: actor.id } : {}),
+        ...(pitch ? { pitch } : {}),
         submittedAt,
       };
     });
@@ -1119,6 +1158,11 @@ const communityVotingDependencies: CommunityVotingDependencies = {
         voteSnapshot.id,
         vote.clubId,
         voteSnapshot.data(),
+      );
+      assertCanParticipate(
+        canonical.participationAudience,
+        actor.role,
+        'vote',
       );
       const now = Timestamp.fromDate(submittedAt);
       if (now.toMillis() < canonical.votingStartsAtMillis) {
@@ -1425,10 +1469,6 @@ export const migrateContributorPrivacy = onCall((request) =>
   ),
 );
 
-export const syncPublicProfile = onCall((request) =>
-  execute(() => handleSyncPublicProfile(requestFor(request), dependencies)),
-);
-
 export const updatePublicProfile = onCall((request) =>
   execute(() => handleUpdatePublicProfile(requestFor(request), dependencies)),
 );
@@ -1490,27 +1530,12 @@ export const submitCommunityNomination = onCall((request) =>
   ),
 );
 
-export const submitCommunityBallot = onCall((request) =>
-  execute(() =>
-    handleSubmitCommunityBallot(
-      requestFor(request),
-      communityVotingDependencies,
-    ),
-  ),
-);
-
 export const getCommunityVoteResults = onCall((request) =>
   execute(() =>
     handleGetCommunityVoteResults(
       requestFor(request),
       communityVotingDependencies,
     ),
-  ),
-);
-
-export const runInaturalistSync = onCall((request) =>
-  execute(() =>
-    handleRunInaturalistSync(requestFor(request), inaturalistDependencies),
   ),
 );
 
@@ -1589,33 +1614,6 @@ export const inaturalistAccountCallback = onRequest(
         302,
         `${INATURALIST_APP_RETURN_URI.value()}?result=error`,
       );
-    }
-  },
-);
-
-export const syncInaturalistDaily = onSchedule(
-  {
-    schedule: '17 3 * * *',
-    timeZone: 'America/New_York',
-    retryCount: 3,
-    maxInstances: 1,
-    timeoutSeconds: 540,
-  },
-  async () => {
-    const clubs = await firestore.collection('clubs').get();
-    const failures: string[] = [];
-    for (const club of clubs.docs) {
-      const summary = await synchronizeInaturalist(club.id);
-      logger.info('iNaturalist synchronization completed', {
-        clubId: club.id,
-        ...summary,
-      });
-      if (summary.status === 'partial' || summary.status === 'failed') {
-        failures.push(`${club.id}:${summary.status}`);
-      }
-    }
-    if (failures.length) {
-      throw new Error(`iNaturalist synchronization failures: ${failures.join(', ')}`);
     }
   },
 );

@@ -2,19 +2,20 @@ import {
   APP_SETTINGS_DOCUMENT_ID,
   AppSettings,
   COLLECTIONS,
+  DonationPageDraft,
   PersistenceCodec,
   Outcome,
   User,
-  canManageAppSettings,
+  canAccessRolePolicy,
   failure,
   parseAppSettings,
+  parseDonationPageDraft,
   success,
+  roleAccessPolicies,
+  roleAccessRequirement,
 } from '../../core/domain';
-import { MediaCoordinator, localMedia } from '../../core/media';
-import {
-  AppSettingsReader,
-  DocumentStore,
-} from '../../core/ports';
+import { MediaCoordinator, MediaSelection, localMedia } from '../../core/media';
+import { AppSettingsReader, DocumentStore } from '../../core/ports';
 
 export interface AppSettingsDraft {
   readonly logoUrl: string;
@@ -59,14 +60,25 @@ export class AppSettingsModule implements AppSettingsReader {
     draft: AppSettingsDraft,
     logoLocalUri?: string,
   ): Promise<Outcome<AppSettings>> {
-    if (!actor) return failure('unauthenticated', 'Sign in to manage app settings');
-    if (!canManageAppSettings(actor.role)) {
-      return failure('forbidden', 'Only the President may manage app settings');
+    if (!actor)
+      return failure('unauthenticated', 'Sign in to manage app settings');
+    if (!canAccessRolePolicy(actor.role, roleAccessPolicies.manageAppSettings)) {
+      return failure(
+        'forbidden',
+        roleAccessRequirement(roleAccessPolicies.manageAppSettings),
+      );
+    }
+
+    let existing: AppSettings;
+    try {
+      existing = await this.getSettings();
+    } catch {
+      return failure('dependency_failure', 'Could not load app settings');
     }
 
     let settings: AppSettings;
     try {
-      settings = parseAppSettings(draft);
+      settings = parseAppSettings({ ...existing, ...draft });
     } catch {
       return failure(
         'validation',
@@ -104,6 +116,64 @@ export class AppSettingsModule implements AppSettingsReader {
       : mediaResult;
   }
 
+  async saveDonationPage(
+    actor: User | undefined,
+    draft: DonationPageDraft,
+    images: readonly MediaSelection[],
+  ): Promise<Outcome<AppSettings>> {
+    if (!actor)
+      return failure('unauthenticated', 'Sign in to manage donations');
+    if (!canAccessRolePolicy(actor.role, roleAccessPolicies.manageDonations)) {
+      return failure(
+        'forbidden',
+        roleAccessRequirement(roleAccessPolicies.manageDonations),
+      );
+    }
+    if (images.length > 1) {
+      return failure('validation', 'You can add one donation photo');
+    }
+
+    let donationPage: DonationPageDraft;
+    try {
+      donationPage = parseDonationPageDraft(draft);
+    } catch {
+      return failure(
+        'validation',
+        'Add a title, description, and valid donation link',
+      );
+    }
+    if (donationPage.method === 'direct') {
+      return failure('validation', 'In-app donations are coming soon');
+    }
+
+    let settings: AppSettings;
+    try {
+      settings = await this.getSettings();
+    } catch {
+      return failure('dependency_failure', 'Could not load donation settings');
+    }
+
+    const mediaResult =
+      await this.dependencies.mediaCoordinator.reconcileGallery({
+        folder: 'donations',
+        ownerId: actor.id,
+        gallery: images,
+        persist: async (gallery) => {
+          settings = parseAppSettings({
+            ...settings,
+            donationPage: {
+              ...donationPage,
+              images: gallery.map(({ id, url }) => ({ id, url })),
+            },
+          });
+          await this.persist(settings);
+        },
+      });
+    return mediaResult.ok
+      ? success(settings, mediaResult.warnings)
+      : mediaResult;
+  }
+
   private persist(settings: AppSettings): Promise<void> {
     return this.dependencies.documents.put(
       COLLECTIONS.appSettings,
@@ -112,14 +182,18 @@ export class AppSettingsModule implements AppSettingsReader {
     );
   }
 
-  private async needsContributorMigration(settings: AppSettings): Promise<boolean> {
+  private async needsContributorMigration(
+    settings: AppSettings,
+  ): Promise<boolean> {
     if (!settings.sightingsAnonymous) return false;
     const existing = await this.dependencies.documents.get(
       COLLECTIONS.appSettings,
       APP_SETTINGS_DOCUMENT_ID,
     );
     if (!existing) return true;
-    return !this.dependencies.codecs.appSettings.decode(existing.id, existing.data)
-      .sightingsAnonymous;
+    return !this.dependencies.codecs.appSettings.decode(
+      existing.id,
+      existing.data,
+    ).sightingsAnonymous;
   }
 }

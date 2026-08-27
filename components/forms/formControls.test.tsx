@@ -4,12 +4,20 @@ import { Alert } from 'react-native';
 import { fireEvent, render, screen, userEvent, waitFor } from '@testing-library/react-native';
 
 import { AppThemeProvider } from '../../theme';
-import { FormTextInput, LocationField, PhotoField, ToggleField } from './index';
+import { DateField, FormTextInput, LocationField, PhotoField, SelectField, ToggleField } from './index';
 
 const mockTakePhoto = jest.fn();
 const mockPickFromLibrary = jest.fn();
 
 jest.mock('@expo/vector-icons', () => ({ Ionicons: () => null }));
+jest.mock('@react-native-community/datetimepicker', () => {
+  const ReactRuntime = require('react');
+  const { View: NativeView } = require('react-native');
+  return {
+    __esModule: true,
+    default: (props: object) => ReactRuntime.createElement(NativeView, props),
+  };
+});
 jest.mock('../../composition/appModules', () => ({
   appModules: {
     imageSelection: {
@@ -50,6 +58,55 @@ describe('form controls', () => {
 
     await fireEvent(screen.getByRole('switch', { name: 'Cat was fed' }), 'valueChange', true);
     expect(onValueChange).toHaveBeenCalledWith(true);
+  });
+
+  it('lets users choose a date while preventing future calendar days', async () => {
+    const currentDate = new Date(2026, 7, 20, 9);
+    const selectedDate = new Date(2026, 7, 18, 12);
+    const onChange = jest.fn();
+    await renderThemed(
+      <DateField
+        label="Day of sighting"
+        date={currentDate}
+        maximumDate={currentDate}
+        onChange={onChange}
+      />,
+    );
+
+    fireEvent.press(screen.getByText('Day of sighting *'));
+    const picker = await screen.findByTestId('dateTimePicker');
+    expect(picker).toHaveProp('maximumDate', currentDate);
+
+    fireEvent(picker, 'valueChange', { nativeEvent: {} }, selectedDate);
+    expect(onChange).toHaveBeenCalledWith(selectedDate);
+  });
+
+  it('opens select options in a compact popup and closes after selection', async () => {
+    await renderThemed(<TimeOfSightingField />);
+
+    fireEvent.press(
+      screen.getByRole('button', { name: 'Time of sighting' }),
+    );
+    await waitFor(() =>
+      expect(
+        screen.getByLabelText('Time of sighting options'),
+      ).toBeOnTheScreen(),
+    );
+    expect(screen.getByLabelText('Time of sighting options')).toHaveStyle({
+      position: 'absolute',
+      maxHeight: 90,
+    });
+    expect(screen.getByText('Morning')).toBeOnTheScreen();
+    expect(screen.getByText('Afternoon')).toBeOnTheScreen();
+
+    fireEvent.press(screen.getByLabelText('Select Afternoon'));
+
+    await waitFor(() => {
+      expect(screen.getByText('Afternoon')).toBeOnTheScreen();
+      expect(
+        screen.queryByLabelText('Time of sighting options'),
+      ).not.toBeOnTheScreen();
+    });
   });
 
   it('selects a named location by moving the map beneath a fixed pin', async () => {
@@ -123,3 +180,20 @@ describe('form controls', () => {
     await waitFor(() => expect(onAddPhoto).toHaveBeenCalledWith('file://three.jpg'));
   });
 });
+
+const TimeOfSightingField = () => {
+  const [value, setValue] = React.useState('');
+  const [open, setOpen] = React.useState(false);
+  const [items, setItems] = React.useState([
+    { label: 'Morning', value: 'Morning' },
+    { label: 'Afternoon', value: 'Afternoon' },
+  ]);
+  return (
+    <SelectField
+      label="Time of sighting"
+      required
+      placeholder="Select a time of day"
+      picker={{ value, setValue, open, setOpen, items, setItems }}
+    />
+  );
+};

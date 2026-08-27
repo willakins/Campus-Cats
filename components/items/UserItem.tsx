@@ -147,7 +147,9 @@ export const UserItem = React.memo(function UserItem({
   const confirmPresidency = () => {
     const outgoingMessage = actor.role === Role.President
       ? 'This cannot be undone from your account. You will immediately become an Officer and lose presidential authority.'
-      : 'This creates the first President. Afterward, only that President can transfer the presidency.';
+      : hasPresident
+        ? 'The current President will become an Officer. Your Developer access will remain unchanged.'
+        : 'This appoints the first President. Your Developer access will remain unchanged.';
     Alert.alert(
       'Crown New President',
       `${user.email} will become President. ${outgoingMessage}`,

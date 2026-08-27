@@ -86,6 +86,27 @@ describe('ProfilesModule', () => {
     });
   });
 
+  it('keeps an existing profile available when achievement synchronization fails', async () => {
+    const { module, documents, effects } = await buildModule();
+    effects.failNext('syncPublicProfile', new Error('offline'));
+
+    await expect(module.sync(actor)).resolves.toMatchObject({
+      ok: true,
+      value: { id: actor.id },
+      warnings: [{
+        code: 'partial_completion',
+        message: 'Could not update profile achievements',
+      }],
+    });
+
+    await documents.remove(COLLECTIONS.publicProfiles, actor.id);
+    effects.failNext('syncPublicProfile', new Error('offline'));
+    await expect(module.sync(actor)).resolves.toMatchObject({
+      ok: false,
+      error: { code: 'dependency_failure' },
+    });
+  });
+
   it('maps profile reads and legacy sync failures without retry loops', async () => {
     const failedRead = await buildModule();
     failedRead.documents.failNext('get', new Error('offline'));
@@ -119,7 +140,7 @@ describe('ProfilesModule', () => {
     ]);
   });
 
-  it('validates edits, title selection, authentication, and dependency failures', async () => {
+  it('validates edits, title selection, and authentication', async () => {
     const { module, effects } = await buildModule();
 
     await expect(
@@ -151,11 +172,6 @@ describe('ProfilesModule', () => {
     expect(effects.operations).toContain(
       'select-profile-title:first-sighting',
     );
-    effects.failNext('syncPublicProfile', new Error('offline'));
-    await expect(module.sync(actor)).resolves.toMatchObject({
-      ok: false,
-      error: { code: 'dependency_failure' },
-    });
   });
 
   it('supports removing an existing photo', async () => {
