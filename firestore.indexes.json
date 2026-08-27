@@ -32,6 +32,22 @@
         { "fieldPath": "active", "order": "ASCENDING" },
         { "fieldPath": "searchPrefixes", "arrayConfig": "CONTAINS" }
       ]
+    },
+    {
+      "collectionGroup": "chat-messages",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "dayKey", "order": "ASCENDING" },
+        { "fieldPath": "createdAt", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "chat-messages",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "isClubPing", "order": "ASCENDING" },
+        { "fieldPath": "createdAt", "order": "DESCENDING" }
+      ]
     }
   ],
   "fieldOverrides": []

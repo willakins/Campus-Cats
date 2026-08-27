@@ -13,6 +13,7 @@ import {
 import { ExpoSamlCredentialProvider } from './ExpoSamlCredentialProvider';
 import { FirebaseBillingReader } from './FirebaseBillingReader';
 import { FirebaseClubBilling } from './FirebaseClubBilling';
+import { FirebaseChatGateway } from './FirebaseChatGateway';
 import { FirebaseCallableEffects } from './FirebaseCallableEffects';
 import { FirebaseCommunityVotingGateway } from './FirebaseCommunityVotingGateway';
 import { FirebaseDocumentStore } from './FirebaseDocumentStore';
@@ -44,6 +45,7 @@ const firebaseDates = {
 
 export function createFirebaseBackend(): AppBackend {
   const functions = getFunctions(app);
+  const codecs = createPersistenceCodecs(firebaseDates);
   const firebaseEffects = new FirebaseCallableEffects(functions);
   const firebaseClubBilling = new FirebaseClubBilling(db, functions);
   const tenantScope = new FirebaseTenantScope();
@@ -58,6 +60,12 @@ export function createFirebaseBackend(): AppBackend {
   return {
     documents,
     media,
+    chat: new FirebaseChatGateway(db, functions, tenantScope, {
+      message: codecs.chatMessage,
+      reaction: codecs.chatReaction,
+      restriction: codecs.chatRestriction,
+      pingReadState: codecs.chatPingReadState,
+    }),
     effects: createApplicationEffectsGateway(firebaseEffects),
     billing: {
       reader: new FirebaseBillingReader(functions),
@@ -81,6 +89,6 @@ export function createFirebaseBackend(): AppBackend {
     whitelistSubmissions: new FirebaseWhitelistSubmission(functions, tenantScope),
     universityOnboarding: createUniversityOnboardingGateway(functions),
     universitySelections: new AsyncStorageUniversitySelection(tenantScope),
-    codecs: createPersistenceCodecs(firebaseDates),
+    codecs,
   };
 }

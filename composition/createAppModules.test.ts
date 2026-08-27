@@ -64,6 +64,24 @@ describe('createAppModules', () => {
           throw new Error('Not used by this composition test');
         },
       },
+      chat: {
+        observeDay: () => () => undefined,
+        findPreviousActiveDay: async () => undefined,
+        sendMessage: async () => {
+          throw new Error('Not used by this composition test');
+        },
+        setReaction: async () => undefined,
+        observePingState: () => () => undefined,
+        markPingsRead: async () => undefined,
+        observeCurrentRestriction: () => () => undefined,
+        getRestriction: async () => undefined,
+        muteForOneHour: async () => {
+          throw new Error('Not used by this composition test');
+        },
+        setChatBanned: async () => {
+          throw new Error('Not used by this composition test');
+        },
+      },
       inaturalist: {
         reader: new InMemoryInaturalistReader(),
         effects: new InMemoryInaturalistEffects(),

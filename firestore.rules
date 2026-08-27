@@ -458,6 +458,28 @@ service cloud.firestore {
         allow write: if false;
       }
 
+      match /chat-messages/{messageId} {
+        allow read: if isActiveUser(clubId);
+        allow write: if false;
+      }
+
+      match /chat-reactions/{reactionId} {
+        allow read: if isActiveUser(clubId);
+        allow write: if false;
+      }
+
+      match /chat-restrictions/{userId} {
+        allow get: if isActiveUser(clubId)
+          && (request.auth.uid == userId || isAdmin(clubId));
+        allow list: if isAdmin(clubId);
+        allow write: if false;
+      }
+
+      match /chat-ping-reads/{userId} {
+        allow get: if isActiveUser(clubId) && request.auth.uid == userId;
+        allow list, write: if false;
+      }
+
       match /cat-sightings/{sightingId} {
         allow read: if isActiveUser(clubId)
           && (canReadContributors(clubId) || !('createdBy' in resource.data));
