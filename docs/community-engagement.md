@@ -3,8 +3,34 @@
 The **Community** bottom tab groups Announcements, Events, Surveys, Votes, and Chat without
 increasing the five-item bottom navigation. Announcements remains the default section
 so the existing update workflow stays one tap away. The labeled section controls
-scroll horizontally when text does not fit. Chat is intentionally a non-interactive
-placeholder until a messaging design and moderation policy are approved.
+scroll horizontally when text does not fit.
+
+## Club chat
+
+Chat is one shared, club-scoped conversation. It opens on the club's current calendar
+day and remains live while the screen is open. Reaching the top loads the nearest
+earlier day containing messages, skips empty dates, and preserves the reader's place.
+History is retained indefinitely. Each message shows its current public profile name
+and photo, with a neutral member fallback if that profile is unavailable.
+
+Members can send messages of up to 1,000 characters, including emoji, and keep one
+reaction on each message. Selecting the same reaction removes it; selecting another
+replaces it. Direct writes to `chat-messages`, `chat-reactions`,
+`chat-restrictions`, and `chat-ping-reads` are denied. Trusted callable Functions
+validate membership, club boundaries, restrictions, timestamps, club day keys,
+officer permissions, and reaction shape before writing.
+
+Ordinary messages are silent. An Officer can mark a message as a club ping. The
+message is saved before Expo push delivery is attempted, and recipients keep an
+orange unread Chat indicator until opening Chat even if some pushes fail. Pings go to
+active, non-banned club accounts other than the sender; chat-muted and chat-banned
+members still receive them because they retain read-only access.
+
+An Officer's message menu is available only on another Member's messages. It supports
+an exact one-hour mute, chat ban or unban, a written disciplinary warning, and a
+confirmed whole-club account ban. A chat ban clears any temporary mute. Chat-restricted
+members can continue reading messages and pings but cannot send or react. Message
+editing and deletion are intentionally unsupported.
 
 ## Events
 
@@ -86,19 +112,22 @@ member-readable. Each account can read only its own participation receipts. The
 
 Before deployment:
 
-1. Run root quality, unit, coverage, and emulator checks.
-2. Deploy Firestore and Storage rules plus Functions before releasing the Community
-   client.
-3. As an Officer, create an image-backed event and both an anonymous and named survey.
-4. As a Member, confirm the privacy disclosure, submit once, and confirm a second
+1. Run root quality, unit, coverage, Functions, and emulator checks.
+2. Deploy `firestore.indexes.json` and wait for the chat indexes to become ready.
+3. Deploy Firestore rules and Functions before releasing the Community client.
+4. As an Officer, create an image-backed event and both an anonymous and named survey.
+5. As a Member, confirm the privacy disclosure, submit once, and confirm a second
    submission is rejected.
-5. Confirm Officer results show identity only for the named response.
-6. Advance an event beyond its expiration date and confirm Members no longer see it
+6. Confirm Officer results show identity only for the named response.
+7. Advance an event beyond its expiration date and confirm Members no longer see it
    while Officers see it under Expired.
-7. As an Officer, create an image-backed contest and confirm each account can vote once
+8. As an Officer, create an image-backed contest and confirm each account can vote once
    and results remain hidden until close.
-8. As the President, start an election at both duration boundaries, exercise nominate
+9. As the President, start an election at both duration boundaries, exercise nominate
    and abstain with separate accounts, and verify the second-round notification and
    nominee-only ballot.
+10. On iOS, Android, and web, verify the searchable emoji picker, live reactions,
+    stable earlier-day loading, chat-restriction banners, unread clearing, and
+    accessible controls. Confirm a real device receives a club ping push.
 
 Do not deploy Firebase resources from an ordinary contributor branch.

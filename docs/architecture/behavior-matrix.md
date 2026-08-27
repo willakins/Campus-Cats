@@ -24,6 +24,11 @@ club roles.
 | Nominate/abstain and cast one private vote | Deny            | Allow                        | Allow                 | Allow                 | Allow                 | Allow                  |
 | Create a general contest                   | Deny            | Deny                         | Allow                 | Allow                 | Allow                 | Allow                  |
 | Start a presidential election              | Deny            | Deny                         | Deny                  | Deny                  | Allow                 | Deny                   |
+| Read club chat and reactions               | Deny            | Allow                        | Allow                 | Allow                 | Allow                 | Allow                  |
+| Send chat messages and reactions           | Deny            | Allow unless restricted      | Allow                 | Allow                 | Allow                 | Allow                  |
+| Send a whole-club chat ping                | Deny            | Deny                         | Callable only         | Callable only         | Callable only         | Callable only          |
+| Mute or chat-ban another Member            | Deny            | Deny                         | Callable only         | Callable only         | Callable only         | Callable only          |
+| Read another Member's chat restriction     | Deny            | Deny                         | Allow                 | Allow                 | Allow                 | Allow                  |
 | Manage contacts and whitelist applications | Deny            | Deny                         | Allow                 | Allow                 | Allow                 | Allow                  |
 | Manage members                             | Deny            | Deny                         | Allow, excluding self | Allow, excluding self | Allow, excluding self | Allow, excluding self  |
 | Manage officers                            | Deny            | Deny                         | Deny                  | Allow, excluding self | Allow, excluding self | Allow, excluding self  |
@@ -50,6 +55,12 @@ club roles.
 
 - Announcement data is persisted before notification delivery is attempted. A
   notification failure is reported as a warning and does not erase the announcement.
+- A chat ping is persisted before notification delivery is attempted. Every eligible
+  batch is attempted; any delivery failure is reported as a warning and does not erase
+  the message or its unread marker. Ordinary chat activity does not notify users.
+- Chat restrictions remove send and reaction access without removing read access. A
+  one-hour mute expires by server time, a chat ban clears any temporary mute, and only
+  another Member account may be targeted from chat moderation.
 - A whitelist user is provisioned before credentials are emailed. If email delivery
   fails, the newly provisioned user is removed as compensation.
 - Ordinary promotion stops at Vice-President. Presidential succession is a separate

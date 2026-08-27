@@ -33,7 +33,7 @@ Campus Cats brings those workflows into one mobile experience. Members can recor
 | **Cat-alog**                   | Maintain a visual directory of known campus cats with profiles, identifying details, and recent sightings.                                      |
 | **Feeding stations**           | Track station locations and restocking information, with stocked/unstocked filtering for faster coordination.                                   |
 | **Announcements**              | Give officers a central place to publish updates and send push notifications to members.                                                        |
-| **Community engagement**       | Group announcements, image-backed events, clearly labeled surveys, response history, and future chat in one Community tab.                     |
+| **Community engagement**       | Group announcements, events, surveys, voting, and a club-wide chat with reactions, officer pings, and moderation in one Community tab.          |
 | **Community access**           | Discover a university club, retain Georgia Tech SSO, and provide tenant-aware email access workflows.                                          |
 | **Club onboarding**            | Search a verified U.S. university directory and securely invite a school-domain President to launch a branded club.                            |
 | **Role-aware administration**  | Separate club roles from global platform administration, with an atomic presidential succession workflow.                                    |
