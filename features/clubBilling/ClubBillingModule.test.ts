@@ -14,6 +14,12 @@ const member = parseUser({
   role: Role.Member,
   clubId: 'campus-cats',
 });
+const developer = parseUser({
+  id: 'developer-1',
+  email: 'developer@example.com',
+  role: Role.Developer,
+  clubId: 'campus-cats',
+});
 const access: ClubAccess = parseClubAccess({
   clubId: 'campus-cats',
   clubName: 'Campus Cats',
@@ -78,7 +84,7 @@ describe('ClubBillingModule', () => {
     expect(observe).toHaveBeenCalledWith('campus-cats', onChange, undefined);
   });
 
-  it('allows Presidents to manage billing and denies other club roles', async () => {
+  it('allows President-level roles to manage billing and denies lower club roles', async () => {
     const port = buildPort();
     const update = jest.spyOn(port, 'updateBillingEmail');
     const module = new ClubBillingModule(port);
@@ -89,6 +95,9 @@ describe('ClubBillingModule', () => {
     await expect(
       module.updateBillingEmail(president, 'billing@example.com'),
     ).resolves.toMatchObject({ ok: true });
-    expect(update).toHaveBeenCalledTimes(1);
+    await expect(
+      module.updateBillingEmail(developer, 'billing@example.com'),
+    ).resolves.toMatchObject({ ok: true });
+    expect(update).toHaveBeenCalledTimes(2);
   });
 });

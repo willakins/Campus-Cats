@@ -4,23 +4,23 @@ import { FlatList, View } from 'react-native';
 import { useFocusEffect, useRouter } from 'expo-router';
 
 import {
-  AccessBanner,
-  AccessDeniedState,
-  AppHeader,
   AppText,
   CardListSkeleton,
   EmptyState,
   ErrorState,
   FloatingActionButton,
-  IconButton,
-  Screen,
   SearchField,
   SegmentedControl,
 } from '@/components/design';
+import { RestrictedScreen } from '@/components/access';
 import { StationItem } from '@/components/items/StationItem';
 import { virtualizedListPerformanceProps } from '@/components/collections/virtualizedListPerformance';
 import { appModules } from '@/composition/appModules';
-import { canManageFeature, Station } from '@/core/domain';
+import {
+  canAccessRolePolicy,
+  roleAccessPolicies,
+  Station,
+} from '@/core/domain';
 import { useAuth } from '@/providers';
 import { useAppTheme } from '@/theme';
 
@@ -30,11 +30,13 @@ const Stations = () => {
   const { user } = useAuth();
   const router = useRouter();
   const theme = useAppTheme();
-  const isAdmin = canManageFeature(user.role);
+  const isAdmin = canAccessRolePolicy(
+    user.role,
+    roleAccessPolicies.manageStations,
+  );
   const [stations, setStations] = useState<readonly Station[]>([]);
   const [filter, setFilter] = useState<StationFilter>('All');
   const [query, setQuery] = useState('');
-  const [showOfficerExplanation, setShowOfficerExplanation] = useState(false);
   const [loading, setLoading] = useState(isAdmin);
   const [error, setError] = useState<string>();
 
@@ -54,15 +56,6 @@ const Stations = () => {
     }, [load]),
   );
 
-  if (!isAdmin) {
-    return (
-      <Screen>
-        <AppHeader title="Feeding stations" eyebrow="Officer tools" />
-        <AccessDeniedState message="Officer access is required to view feeding-station operations." />
-      </Screen>
-    );
-  }
-
   const normalizedQuery = query.trim().toLocaleLowerCase();
   const filteredStations = stations.filter((station) => {
     const { isStocked } = appModules.stations.stockStatus(station);
@@ -76,7 +69,10 @@ const Stations = () => {
   );
 
   return (
-    <Screen
+    <RestrictedScreen
+      title="Feeding stations"
+      eyebrow="Officer operations"
+      access={{ policy: roleAccessPolicies.manageStations, role: user.role }}
       floatingAction={(
         <FloatingActionButton
           accessibilityLabel="Create station"
@@ -85,28 +81,7 @@ const Stations = () => {
         />
       )}
     >
-      <AppHeader
-        title="Feeding stations"
-        eyebrow="Officer operations"
-        action={
-          !showOfficerExplanation ? (
-            <IconButton
-              icon="shield-checkmark-outline"
-              accessibilityLabel="Explain officer-only access"
-              onPress={() => setShowOfficerExplanation(true)}
-            />
-          ) : undefined
-        }
-      />
       <View style={{ gap: theme.spacing.md, flex: 1 }}>
-        {showOfficerExplanation ? (
-          <AccessBanner
-            title="Officer-only page"
-            message="This page is only visible to officers of the club. Officers can view, create, and update station locations and stocking details."
-            dismissLabel="Hide officer-only explanation"
-            onDismiss={() => setShowOfficerExplanation(false)}
-          />
-        ) : null}
         <SearchField
           accessibilityLabel="Search feeding stations"
           placeholder="Search stations or known cats"
@@ -157,7 +132,7 @@ const Stations = () => {
           />
         )}
       </View>
-    </Screen>
+    </RestrictedScreen>
   );
 };
 

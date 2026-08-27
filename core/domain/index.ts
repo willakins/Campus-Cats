@@ -5,6 +5,8 @@ export * from './inaturalist';
 export * from './models';
 export * from './outcome';
 export * from './roles';
+export * from './roleAccess';
+export * from './participation';
 export * from './stationStatus';
 export * from './dependencies';
 export * from './appSettings';

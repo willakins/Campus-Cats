@@ -16,11 +16,17 @@ import {
   Screen,
   StatusPill,
 } from '@/components/design';
+import { FormTextInput } from '@/components/forms';
+import {
+  CommunityVotingChoiceCard,
+  communityVoteTimingLabel,
+} from '@/components/community';
 import { ProgressiveImage } from '@/components/ui/ProgressiveImage';
 import { appModules } from '@/composition/appModules';
 import {
   CommunityVote,
   CommunityVotePhase,
+  canParticipate,
   communityVotePhase,
   parseUser,
 } from '@/core/domain';
@@ -43,6 +49,7 @@ const ViewCommunityVote = () => {
   const [submittedNomination, setSubmittedNomination] = useState(false);
   const [submittedBallot, setSubmittedBallot] = useState(false);
   const [selectedOptionId, setSelectedOptionId] = useState<string>();
+  const [nominationPitch, setNominationPitch] = useState('');
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string>();
@@ -64,27 +71,33 @@ const ViewCommunityVote = () => {
     }
     const loadedVote = voteResult.value;
     const currentPhase = communityVotePhase(loadedVote, new Date());
+    const eligible = canParticipate(
+      actor.role,
+      loadedVote.participationAudience,
+    );
     setVote(loadedVote);
     setPhase(currentPhase);
     setChoices([]);
     setResults(undefined);
 
     if (currentPhase === 'nominations') {
-      const submitted = await appModules.communityVoting.hasSubmittedNomination(
-        actor,
-        id,
-      );
-      if (submitted.ok) setSubmittedNomination(submitted.value);
-      else setError(submitted.error.message);
+      if (eligible) {
+        const submitted =
+          await appModules.communityVoting.hasSubmittedNomination(actor, id);
+        if (submitted.ok) setSubmittedNomination(submitted.value);
+        else setError(submitted.error.message);
+      }
     } else if (currentPhase === 'voting') {
-      const [submitted, choiceResult] = await Promise.all([
-        appModules.communityVoting.hasSubmittedBallot(actor, id),
-        appModules.communityVoting.choices(actor, loadedVote),
-      ]);
-      if (submitted.ok) setSubmittedBallot(submitted.value);
-      else setError(submitted.error.message);
-      if (choiceResult.ok) setChoices(choiceResult.value);
-      else setError(choiceResult.error.message);
+      if (eligible) {
+        const [submitted, choiceResult] = await Promise.all([
+          appModules.communityVoting.hasSubmittedBallot(actor, id),
+          appModules.communityVoting.choices(actor, loadedVote),
+        ]);
+        if (submitted.ok) setSubmittedBallot(submitted.value);
+        else setError(submitted.error.message);
+        if (choiceResult.ok) setChoices(choiceResult.value);
+        else setError(choiceResult.error.message);
+      }
     } else {
       const result = await appModules.communityVoting.results(actor, id);
       if (result.ok) setResults(result.value);
@@ -109,6 +122,7 @@ const ViewCommunityVote = () => {
       actor,
       vote.id,
       action,
+      action === 'nominate' ? nominationPitch : undefined,
     );
     setBusy(false);
     if (!result.ok) {
@@ -142,7 +156,11 @@ const ViewCommunityVote = () => {
   };
 
   const footer =
-    vote && phase === 'voting' && choices.length > 0 && !submittedBallot ? (
+    vote &&
+    canParticipate(actor.role, vote.participationAudience) &&
+    phase === 'voting' &&
+    choices.length > 0 &&
+    !submittedBallot ? (
       <Button
         label="Submit Vote"
         loading={busy}
@@ -181,22 +199,22 @@ const ViewCommunityVote = () => {
               </View>
               <AppText variant="pageTitle">{vote.title}</AppText>
               {vote.details ? <AppText color="muted">{vote.details}</AppText> : null}
-              {vote.kind === 'presidential_election' ? (
-                <AppText color="muted" variant="caption">
-                  Nominations close {formatDateTime(vote.votingStartsAt)} · Voting closes {formatDateTime(vote.votingEndsAt)}
-                </AppText>
-              ) : (
-                <AppText color="muted" variant="caption">
-                  Voting closes {formatDateTime(vote.votingEndsAt)}
-                </AppText>
-              )}
+              <AppText color="muted" variant="caption">
+                {communityVoteTimingLabel(vote, phase, formatDateTime)}
+              </AppText>
             </View>
           </Card>
 
           {error ? <FeedbackBanner tone="danger" message={error} /> : null}
           {feedback ? <FeedbackBanner tone="success" message={feedback} /> : null}
 
-          {phase === 'nominations' ? (
+          {phase !== 'closed' &&
+          !canParticipate(actor.role, vote.participationAudience) ? (
+            <EmptyState
+              title="Officer participation only"
+              message="Only officers can participate in this vote."
+            />
+          ) : phase === 'nominations' ? (
             submittedNomination ? (
               <EmptyState
                 title="Nomination response recorded"
@@ -208,6 +226,15 @@ const ViewCommunityVote = () => {
                   <AccessBanner
                     title="Round one: nominations"
                     message="Nominate yourself for club president or abstain. You can make this choice once."
+                  />
+                  <FormTextInput
+                    label="Campaign pitch"
+                    value={nominationPitch}
+                    onChangeText={setNominationPitch}
+                    multiline
+                    maxLength={500}
+                    placeholder="Why would you be a good club president?"
+                    helper={`${nominationPitch.length}/500 characters. This will appear on the ballot.`}
                   />
                   <Button
                     label="Nominate Myself"
@@ -246,28 +273,18 @@ const ViewCommunityVote = () => {
                 {choices.map((choice) => {
                   const selected = selectedOptionId === choice.id;
                   return (
-                    <Card
+                    <CommunityVotingChoiceCard
                       key={choice.id}
-                      accent={selected ? theme.colors.primary : undefined}
-                      style={choice.imageUrl ? { padding: 0 } : undefined}
-                    >
-                      {choice.imageUrl ? (
-                        <ProgressiveImage
-                          uri={choice.imageUrl}
-                          accessibilityLabel={`Voting option: ${choice.label}`}
-                          style={{ width: '100%', aspectRatio: 1 }}
-                        />
-                      ) : null}
-                      <View style={{ gap: theme.spacing.sm, ...(choice.imageUrl ? { padding: theme.spacing.md } : {}) }}>
-                        <AppText variant="cardTitle">{choice.label}</AppText>
-                        <Button
-                          label={selected ? `${choice.label} selected` : `Choose ${choice.label}`}
-                          variant={selected ? 'primary' : 'secondary'}
-                          fullWidth
-                          onPress={() => setSelectedOptionId(choice.id)}
-                        />
-                      </View>
-                    </Card>
+                      choice={choice}
+                      selected={selected}
+                      onProfilePress={(userId) =>
+                        router.push({
+                          pathname: '/profile/view-profile',
+                          params: { id: userId },
+                        })
+                      }
+                      onSelect={setSelectedOptionId}
+                    />
                   );
                 })}
               </View>

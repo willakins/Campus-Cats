@@ -58,10 +58,11 @@ export class FirebaseSession implements SessionPort {
               return;
             }
             try {
-              const profile = parseManagedUser({
-                id: snapshot.id,
-                ...snapshot.data(),
-              });
+              const profile = parseAuthenticatedProfile(
+                authenticated,
+                snapshot.id,
+                snapshot.data(),
+              );
               if (profile.banned) {
                 this.tenantScope?.clearAuthenticatedClub();
                 onChange(undefined);
@@ -163,7 +164,11 @@ export class FirebaseSession implements SessionPort {
       await signOut(this.auth);
       throw new UnprovisionedAccountError();
     }
-    const profile = parseManagedUser({ id: snapshot.id, ...snapshot.data() });
+    const profile = parseAuthenticatedProfile(
+      user,
+      snapshot.id,
+      snapshot.data(),
+    );
     this.tenantScope?.setAuthenticatedClub(profile.clubId);
     return profile;
   }
@@ -176,6 +181,15 @@ export class FirebaseSession implements SessionPort {
     }
     return profile;
   }
+}
+
+function parseAuthenticatedProfile(
+  user: FirebaseUser,
+  id: string,
+  data: Record<string, unknown>,
+): ManagedUser {
+  if (!user.email) throw new Error('Authenticated account has no email');
+  return parseManagedUser({ id, ...data, email: user.email });
 }
 
 function isDisabledAccountError(error: unknown): boolean {

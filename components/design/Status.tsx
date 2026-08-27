@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, View, ViewProps } from 'react-native';
 
 import { Ionicons } from '@expo/vector-icons';
@@ -271,6 +271,52 @@ export const FeedbackBanner = ({
     >
       <Ionicons name={tone === 'danger' ? 'alert-circle' : 'information-circle'} size={20} color={foreground} />
       <AppText style={{ color: foreground, flex: 1 }}>{message}</AppText>
+    </View>
+  );
+};
+
+export const Toast = ({
+  message,
+  duration = 3000,
+}: {
+  message: string;
+  duration?: number;
+}) => {
+  const theme = useAppTheme();
+  const [visible, setVisible] = useState(true);
+  useEffect(() => {
+    const timeout = setTimeout(() => setVisible(false), duration);
+    return () => clearTimeout(timeout);
+  }, [duration]);
+  if (!visible) return null;
+  return (
+    <View
+      accessible
+      accessibilityLabel={message}
+      accessibilityLiveRegion="assertive"
+      accessibilityRole="alert"
+      style={[
+        theme.elevation.floating,
+        {
+          maxWidth: theme.layout.maxContentWidth,
+          paddingHorizontal: theme.spacing.md,
+          paddingVertical: theme.spacing.sm,
+          borderRadius: theme.radii.field,
+          backgroundColor: theme.colors.danger,
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: theme.spacing.xs,
+        },
+      ]}
+    >
+      <Ionicons
+        name="alert-circle"
+        size={20}
+        color={theme.colors.onPrimary}
+      />
+      <AppText style={{ flex: 1, color: theme.colors.onPrimary }}>
+        {message}
+      </AppText>
     </View>
   );
 };

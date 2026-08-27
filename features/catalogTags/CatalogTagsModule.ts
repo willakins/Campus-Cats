@@ -9,12 +9,14 @@ import {
   Outcome,
   PersistenceCodec,
   User,
-  canManageFeature,
+  canAccessRolePolicy,
   failure,
   parseCatalogTag,
   parseCatalogTagAssignment,
   parseCatalogTagSettings,
   success,
+  roleAccessPolicies,
+  roleAccessRequirement,
 } from '../../core/domain';
 import { DocumentStore } from '../../core/ports';
 
@@ -200,8 +202,11 @@ export class CatalogTagsModule {
 
 function mutationDenied(actor: User | undefined): Outcome<never> | undefined {
   if (!actor) return failure('unauthenticated', 'Sign in to manage catalog tags');
-  if (!canManageFeature(actor.role)) {
-    return failure('forbidden', 'Only officers may manage catalog tags');
+  if (!canAccessRolePolicy(actor.role, roleAccessPolicies.manageCatalogTags)) {
+    return failure(
+      'forbidden',
+      roleAccessRequirement(roleAccessPolicies.manageCatalogTags),
+    );
   }
   return undefined;
 }

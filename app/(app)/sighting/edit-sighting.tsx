@@ -4,12 +4,21 @@ import { Alert } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 
 import { AppHeader, ErrorState, FormSkeleton, Screen } from '@/components/design';
-import { FormScreen } from '@/components/forms';
+import { FormScreen, useFormValidation } from '@/components/forms';
 import { appModules } from '@/composition/appModules';
 import { parseUser, Sighting } from '@/core/domain';
 import { localMedia, storedMedia } from '@/core/media';
 import { StoredMediaAsset } from '@/core/ports';
-import { SightingForm, SightingFormData } from '@/forms/SightingForm';
+import {
+  firstSightingErrorField,
+  SightingForm,
+  SightingFormData,
+  SightingFormErrors,
+  SightingFormSection,
+  SightingRequiredField,
+  sightingSectionForField,
+  validateSightingForm,
+} from '@/forms/SightingForm';
 import { useAuth } from '@/providers';
 
 const timeItems = [
@@ -17,6 +26,26 @@ const timeItems = [
   { label: 'Afternoon', value: 'Afternoon' },
   { label: 'Night', value: 'Night' },
 ];
+
+const validateEditSightingForm = ({
+  formData,
+  timeOfDay,
+  profile,
+}: {
+  formData: SightingFormData;
+  timeOfDay: string;
+  profile: string;
+}): SightingFormErrors => {
+  const errors = validateSightingForm({
+    formData,
+    timeOfDay,
+    photos: profile ? [profile] : [],
+    currentDate: new Date(),
+  });
+  return errors.photos
+    ? { ...errors, photos: 'At least one profile photo is required.' }
+    : errors;
+};
 
 const SightingEditScreen = () => {
   const router = useRouter();
@@ -39,6 +68,19 @@ const SightingEditScreen = () => {
     health: false,
     location: { latitude: 0, longitude: 0 },
     date: new Date(),
+  });
+  const validation = useFormValidation<
+    SightingFormSection,
+    SightingRequiredField,
+    SightingFormErrors
+  >({
+    errors: validateEditSightingForm({
+      formData,
+      timeOfDay: value,
+      profile,
+    }),
+    firstError: firstSightingErrorField,
+    sectionForField: sightingSectionForField,
   });
 
   useEffect(() => {
@@ -94,12 +136,9 @@ const SightingEditScreen = () => {
   };
   const save = async () => {
     if (!sighting || busy) return;
-    if (!profile) {
-      setError('Please select a profile photo.');
-      return;
-    }
-    setBusy(true);
     setError(undefined);
+    if (!validation.validate()) return;
+    setBusy(true);
     const result = await appModules.sightings.update(parseUser(user), sighting.id, {
       ...formData,
       timeOfDay: value,
@@ -163,6 +202,8 @@ const SightingEditScreen = () => {
       savingLabel="Saving report…"
       busy={busy}
       error={error}
+      scrollRequest={validation.scrollRequest}
+      toast={validation.toast}
       onBack={() => router.back()}
       onSave={() => void save()}
       onDelete={confirmDelete}
@@ -183,6 +224,9 @@ const SightingEditScreen = () => {
         onPromotePhoto={promotePhoto}
         onDeletePhoto={removePhoto}
         isCreate={false}
+        errors={validation.errors}
+        onSectionLayout={validation.onSectionLayout}
+        onRequiredFieldLayout={validation.onRequiredFieldLayout}
       />
     </FormScreen>
   );

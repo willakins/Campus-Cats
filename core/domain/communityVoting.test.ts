@@ -42,6 +42,7 @@ describe('community voting domain', () => {
       voteId: vote.id,
       userId: 'member-1',
       displayName: 'Alex',
+      pitch: '  I will publish clear feeding-station plans.  ',
       nominatedAt: startsAt,
     });
 
@@ -49,6 +50,10 @@ describe('community voting domain', () => {
     expect(Object.isFrozen(vote.options)).toBe(true);
     expect(Object.isFrozen(vote.options[0])).toBe(true);
     expect(Object.isFrozen(nominee)).toBe(true);
+    expect(vote.participationAudience).toBe('all_members');
+    expect(nominee.pitch).toBe(
+      'I will publish clear feeding-station plans.',
+    );
     expect(() =>
       parseCommunityVoteNominee({
         voteId: vote.id,
@@ -57,6 +62,24 @@ describe('community voting domain', () => {
         nominatedAt: startsAt,
       }),
     ).toThrow();
+    expect(() =>
+      parseCommunityVoteNominee({
+        voteId: vote.id,
+        userId: 'member-1',
+        displayName: 'Alex',
+        pitch: 'x'.repeat(501),
+        nominatedAt: startsAt,
+      }),
+    ).toThrow();
+  });
+
+  it('retains an explicit officer-only participation audience', () => {
+    expect(
+      parseCommunityVote({
+        ...contest(),
+        participationAudience: 'officers_only',
+      }).participationAudience,
+    ).toBe('officers_only');
   });
 
   it.each([

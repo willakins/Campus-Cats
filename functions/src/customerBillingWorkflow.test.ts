@@ -392,8 +392,8 @@ describe('customer billing workflows', () => {
   it('starts a first automatic subscription with one 30-day trial aligned to the next local month', async () => {
     const context = setup(new Date('2026-08-17T16:00:00.000Z'));
     context.firestore.seed('users/president-1', {
-      email: 'president@example.com',
-      role: 3,
+      email: 'developer@example.com',
+      role: 4,
       clubId: 'alpha',
     });
     context.firestore.seed(

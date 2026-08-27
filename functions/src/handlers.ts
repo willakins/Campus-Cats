@@ -85,6 +85,14 @@ export interface HandlerDependencies {
   }>;
 }
 
+export type ProfileSyncDependencies = Pick<
+  HandlerDependencies,
+  | 'getUser'
+  | 'getPublicProfile'
+  | 'putPublicProfile'
+  | 'countUserSightings'
+>;
+
 export type HandlerErrorCode =
   | 'unauthenticated'
   | 'permission-denied'
@@ -130,10 +138,10 @@ export async function handleMigrateContributorPrivacy(
   dependencies: HandlerDependencies,
 ): Promise<{ readonly sightings: number; readonly catalog: number }> {
   const actor = await requireUser(request.authUid, dependencies);
-  if (actor.role !== 3) {
+  if (actor.role < 3) {
     throw new HandlerError(
       'permission-denied',
-      'Only the President may manage contributor privacy',
+      'President-level access is required to manage contributor privacy',
     );
   }
   return dependencies.migrateContributorPrivacy(actor.clubId);
@@ -141,7 +149,7 @@ export async function handleMigrateContributorPrivacy(
 
 export async function handleSyncPublicProfile(
   request: HandlerRequest<{ readonly userId?: unknown }>,
-  dependencies: HandlerDependencies,
+  dependencies: ProfileSyncDependencies,
 ): Promise<PublicProfile> {
   const requestingUser = await requireUser(request.authUid, dependencies);
   const requestedUserId =
@@ -446,7 +454,7 @@ export async function handleTransferPresidency(
   if (actor.id === target.id || (actor.role !== 3 && actor.role !== 4)) {
     throw new HandlerError(
       'permission-denied',
-      'Only the current President, or a Developer when none exists, may crown a President',
+      'President-level access is required to crown a President',
     );
   }
   await dependencies.transferPresidency(actor.id, target.id);
@@ -506,7 +514,7 @@ async function requireAdmin(
 
 async function requireUser(
   uid: string | undefined,
-  dependencies: HandlerDependencies,
+  dependencies: Pick<HandlerDependencies, 'getUser'>,
 ): Promise<ManagedUser> {
   if (!uid) throw new HandlerError('unauthenticated', 'Authentication required');
   const user = await dependencies.getUser(uid);

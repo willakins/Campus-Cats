@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
 import { Linking, View } from 'react-native';
 
-import { CatalogRecord, SightingRecord } from '@/core/domain';
+import { CatalogRecord, PublicProfile, SightingRecord } from '@/core/domain';
 import { DisplayMediaAsset } from '@/core/ports';
 import { useAppTheme } from '@/theme';
 import { AppText, Button, StatusPill } from '../design';
-import { DetailHero, FieldNoteSection, MapInset, MetadataRow } from '../details';
+import { DetailHero, FieldNoteSection, MetadataRow, SightingHistoryMap } from '../details';
+import { MemberIdentity } from '../profile/MemberIdentity';
 
 interface CatalogEntryElementProps {
   readonly entry: CatalogRecord;
@@ -15,6 +16,9 @@ interface CatalogEntryElementProps {
   readonly isFavorite?: boolean;
   readonly favoriteBusy?: boolean;
   readonly onToggleFavorite?: () => void;
+  readonly onSightingPress?: (sighting: SightingRecord) => void;
+  readonly contributorProfile?: PublicProfile;
+  readonly onContributorPress?: () => void;
 }
 
 const CatalogEntryElement: React.FC<CatalogEntryElementProps> = ({
@@ -25,6 +29,9 @@ const CatalogEntryElement: React.FC<CatalogEntryElementProps> = ({
   isFavorite = false,
   favoriteBusy = false,
   onToggleFavorite,
+  onSightingPress,
+  contributorProfile,
+  onContributorPress,
 }) => {
   const theme = useAppTheme();
   const [showDetails, setShowDetails] = useState(false);
@@ -71,15 +78,11 @@ const CatalogEntryElement: React.FC<CatalogEntryElementProps> = ({
       <FieldNoteSection title="Profile" icon="book-outline">
         <AppText>{cat.descLong || cat.descShort}</AppText>
       </FieldNoteSection>
-      <FieldNoteSection title="Recent sightings" icon="location-outline">
-        <MapInset
-          label={`Map showing sightings of ${cat.name}`}
-          markers={sightings.flatMap((sighting) => sighting.location ? [{
-            id: sighting.id,
-            location: sighting.location,
-            title: sighting.name,
-            description: sighting.info,
-          }] : [])}
+      <FieldNoteSection title="Sighting history" icon="navigate-outline">
+        <SightingHistoryMap
+          catName={cat.name}
+          sightings={sightings}
+          onSightingPress={onSightingPress}
         />
       </FieldNoteSection>
       <Button
@@ -113,12 +116,23 @@ const CatalogEntryElement: React.FC<CatalogEntryElementProps> = ({
             View in the Georgia Tech Cats guide
           </AppText>
           {entry.localContribution?.createdBy ? (
-            <MetadataRow label="Campus Cats contributor" value={entry.localContribution.createdBy.id} />
+            <View style={{ gap: theme.spacing.xs }}>
+              <AppText color="muted">Campus Cats contributor</AppText>
+              <MemberIdentity
+                profile={contributorProfile}
+                fallbackEmail={entry.localContribution.createdBy.email}
+                onPress={onContributorPress ?? (() => undefined)}
+              />
+            </View>
           ) : null}
         </FieldNoteSection>
       ) : entry.createdBy ? (
         <FieldNoteSection title="Contribution" icon="person-outline">
-          <MetadataRow label="Author" value={entry.createdBy.id} />
+          <MemberIdentity
+            profile={contributorProfile}
+            fallbackEmail={entry.createdBy.email}
+            onPress={onContributorPress ?? (() => undefined)}
+          />
           <MetadataRow label="Posted" value={entry.createdAt.toLocaleDateString()} />
         </FieldNoteSection>
       ) : null}

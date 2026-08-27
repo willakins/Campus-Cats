@@ -54,8 +54,8 @@ club roles.
   fails, the newly provisioned user is removed as compensation.
 - Ordinary promotion stops at Vice-President. Presidential succession is a separate
   Firestore transaction: the successor becomes President at the same time the outgoing
-  President becomes Officer. A Developer may appoint the first President only when no
-  President exists.
+  President becomes Officer. A Developer may run the same succession workflow while
+  retaining the Developer role; any current President becomes an Officer.
 - Officer, Vice-President, President, and Developer are classified as power roles.
   Power roles may discipline, ban, and unban Member accounts, but no power-role
   account may be targeted by those moderation controls.
@@ -84,9 +84,10 @@ club roles.
 - Club content and public profiles are tenant-scoped. A suspended user may read only
   their own global identity and `clubs/{clubId}/access/public`; the President retains
   server billing endpoints.
-- The legacy Developer role is migration-only. `platformAdmin` is an independent
-  global flag: it permits infrastructure-cost reports and provider console links, but
-  every club-content decision continues to use the account's ordinary club role.
+- Club authorization follows the numeric role hierarchy: Developer (`4`) inherits
+  every President (`3`) action, President inherits Vice-President, and so on.
+  `platformAdmin` remains an independent global flag for infrastructure-cost reports
+  and provider console links; that flag alone does not add club-content permissions.
 
 ## Platform administration
 

@@ -4,13 +4,38 @@ import { Alert } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 
 import { AppHeader, ErrorState, FormSkeleton, Screen } from '@/components/design';
-import { FormScreen } from '@/components/forms';
+import { FormScreen, useFormValidation } from '@/components/forms';
 import { appModules } from '@/composition/appModules';
-import { parseUser, Station } from '@/core/domain';
+import { parseUser, roleAccessPolicies, Station } from '@/core/domain';
 import { localMedia, storedMedia } from '@/core/media';
 import { StoredMediaAsset } from '@/core/ports';
-import { StationForm, StationFormData } from '@/forms/StationForm';
+import {
+  firstStationErrorField,
+  StationForm,
+  StationFormData,
+  StationFormErrors,
+  StationFormSection,
+  StationRequiredField,
+  stationSectionForField,
+  validateStationForm,
+} from '@/forms/StationForm';
 import { useAuth } from '@/providers';
+
+const validateEditStationForm = ({
+  formData,
+  profile,
+}: {
+  formData: StationFormData;
+  profile: string;
+}): StationFormErrors => {
+  const errors = validateStationForm({
+    formData,
+    photos: profile ? [profile] : [],
+  });
+  return errors.photos
+    ? { ...errors, photos: 'At least one profile photo is required.' }
+    : errors;
+};
 
 const EditStation = () => {
   const router = useRouter();
@@ -25,6 +50,15 @@ const EditStation = () => {
   const [loadError, setLoadError] = useState<string>();
   const [formData, setFormData] = useState<StationFormData>({
     name: '', location: { latitude: 0, longitude: 0 }, lastStocked: new Date(), stockingFreq: 7, knownCats: '',
+  });
+  const validation = useFormValidation<
+    StationFormSection,
+    StationRequiredField,
+    StationFormErrors
+  >({
+    errors: validateEditStationForm({ formData, profile }),
+    firstError: firstStationErrorField,
+    sectionForField: stationSectionForField,
   });
 
   useEffect(() => {
@@ -55,6 +89,7 @@ const EditStation = () => {
       },
     );
   }, [id]);
+
   const selectionFor = (uri: string) => {
     const stored = storedAssets.find((asset) => asset.url === uri);
     return stored ? storedMedia(stored.id) : localMedia(uri);
@@ -69,12 +104,9 @@ const EditStation = () => {
   };
   const save = async () => {
     if (!station || busy) return;
-    if (!profile) {
-      setError('Please select a profile photo.');
-      return;
-    }
-    setBusy(true);
     setError(undefined);
+    if (!validation.validate()) return;
+    setBusy(true);
     const result = await appModules.stations.update(parseUser(user), station.id, {
       ...formData,
       profile: selectionFor(profile),
@@ -128,10 +160,13 @@ const EditStation = () => {
     <FormScreen
       title="Edit station"
       eyebrow="Officer operations"
+      access={{ policy: roleAccessPolicies.manageStations, role: user.role }}
       saveLabel="Save Station"
       savingLabel="Saving station…"
       busy={busy}
       error={error}
+      scrollRequest={validation.scrollRequest}
+      toast={validation.toast}
       onBack={() => router.back()}
       onSave={() => void save()}
       onDelete={confirmDelete}
@@ -145,7 +180,9 @@ const EditStation = () => {
         setPhotos={setPhotos}
         onPromotePhoto={promotePhoto}
         onDeletePhoto={removePhoto}
-        isCreate={false}
+        errors={validation.errors}
+        onSectionLayout={validation.onSectionLayout}
+        onRequiredFieldLayout={validation.onRequiredFieldLayout}
       />
     </FormScreen>
   );

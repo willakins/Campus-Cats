@@ -1,22 +1,41 @@
 import { useState } from 'react';
 import { Pressable, View } from 'react-native';
 
-import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
+import DateTimePicker, {
+  DateTimePickerChangeEvent,
+} from '@react-native-community/datetimepicker';
 
 import { useAppTheme } from '@/theme';
 import { AppText } from '../design';
 
 type DateTimeInputProps = {
   date: Date;
+  maximumDate?: Date;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
   setDate: (date: Date) => void;
 };
 
-export const DateTimeInput: React.FC<DateTimeInputProps> = ({ date, setDate }) => {
+export const DateTimeInput: React.FC<DateTimeInputProps> = ({
+  date,
+  maximumDate,
+  open,
+  onOpenChange,
+  setDate,
+}) => {
   const theme = useAppTheme();
-  const [showPicker, setShowPicker] = useState(false);
-  const onChange = (_event: DateTimePickerEvent, selectedDate?: Date) => {
+  const [internalOpen, setInternalOpen] = useState(false);
+  const showPicker = open ?? internalOpen;
+  const setShowPicker = (nextOpen: boolean) => {
+    if (open === undefined) setInternalOpen(nextOpen);
+    onOpenChange?.(nextOpen);
+  };
+  const onValueChange = (
+    _event: DateTimePickerChangeEvent,
+    selectedDate: Date,
+  ) => {
     setShowPicker(false);
-    if (selectedDate) setDate(selectedDate);
+    setDate(selectedDate);
   };
 
   return (
@@ -42,9 +61,11 @@ export const DateTimeInput: React.FC<DateTimeInputProps> = ({ date, setDate }) =
         <DateTimePicker
           testID="dateTimePicker"
           value={date}
+          maximumDate={maximumDate}
           mode="date"
           display="default"
-          onChange={onChange}
+          onValueChange={onValueChange}
+          onDismiss={() => setShowPicker(false)}
         />
       ) : null}
     </View>

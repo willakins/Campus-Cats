@@ -40,7 +40,8 @@ const ViewProfileScreen = () => {
   const { id } = useLocalSearchParams<{ id?: string }>();
   const { user } = useAuth();
   const actor = parseUser(user);
-  const isOwnProfile = id === actor.id;
+  const targetId = id ?? actor.id;
+  const isOwnProfile = targetId === actor.id;
   const [profile, setProfile] = useState<PublicProfile>();
   const [sightings, setSightings] = useState<readonly SightingRecord[]>([]);
   const [favorite, setFavorite] = useState<CatalogRecord>();
@@ -60,25 +61,25 @@ const ViewProfileScreen = () => {
       setWarning(undefined);
       setFavorite(undefined);
       setFavoritePhoto(undefined);
-      if (!id) {
-        setError('Missing member profile ID');
-        setLoading(false);
-        return () => {
-          active = false;
-        };
-      }
 
       const load = async () => {
         const [profileResult, sightingsResult, favoriteResult] =
           await Promise.all([
             isOwnProfile
               ? appModules.profiles.sync(actor)
-              : appModules.profiles.getOrSync(id),
-            appModules.sightings.listByReporter(actor, id),
-            appModules.catalog.favoriteForUser(id),
+              : appModules.profiles.getOrSync(targetId),
+            appModules.sightings.listByReporter(actor, targetId),
+            appModules.catalog.favoriteForUser(targetId),
           ]);
         if (!active) return;
-        if (profileResult.ok) setProfile(profileResult.value);
+        if (profileResult.ok) {
+          setProfile(profileResult.value);
+          if (profileResult.warnings.length > 0) {
+            setWarning(
+              profileResult.warnings.map(({ message }) => message).join(' '),
+            );
+          }
+        }
         else setError(profileResult.error.message);
         if (sightingsResult.ok) {
           setSightings(sightingsResult.value);
@@ -105,7 +106,7 @@ const ViewProfileScreen = () => {
       return () => {
         active = false;
       };
-    }, [actor.id, id, isOwnProfile]),
+    }, [actor.id, isOwnProfile, targetId]),
   );
 
   const chooseTitle = async (achievementId: AchievementId | '') => {

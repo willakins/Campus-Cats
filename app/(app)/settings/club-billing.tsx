@@ -2,6 +2,7 @@ import { useCallback, useState } from 'react';
 import { Linking, Platform, View } from 'react-native';
 import { useFocusEffect, useRouter } from 'expo-router';
 
+import { RestrictedAccess, roleAccessPresentation } from '@/components/access';
 import {
   AccessDeniedState,
   AppHeader,
@@ -20,9 +21,10 @@ import { appModules } from '@/composition/appModules';
 import {
   ClubAccess,
   ClubBillingSummary,
-  Role,
   clubIsInTrial,
   clubSubscriptionLabel,
+  canAccessRolePolicy,
+  roleAccessPolicies,
 } from '@/core/domain';
 import { useAuth, useClub } from '@/providers';
 import { useAppTheme } from '@/theme';
@@ -32,7 +34,10 @@ const ClubBilling = () => {
   const { access } = useClub();
   const router = useRouter();
   const theme = useAppTheme();
-  const authorized = user.role === Role.President;
+  const authorized = canAccessRolePolicy(
+    user.role,
+    roleAccessPolicies.manageClubBilling,
+  );
   const development = process.env.EXPO_PUBLIC_APP_ENV === 'development';
   const [summary, setSummary] = useState<ClubBillingSummary>();
   const [loading, setLoading] = useState(authorized);
@@ -130,11 +135,20 @@ const ClubBilling = () => {
         title="Club billing"
         eyebrow="President tools"
         onBack={() => router.back()}
+        action={
+          !development && Platform.OS === 'web' ? (
+            <RestrictedAccess policy={roleAccessPolicies.manageClubBilling} />
+          ) : undefined
+        }
       />
       {development || Platform.OS !== 'web' ? (
         <NativeBillingStatus access={access} />
       ) : !authorized ? (
-        <AccessDeniedState message="Only the club President may manage billing." />
+        <AccessDeniedState
+          message={roleAccessPresentation(
+            roleAccessPolicies.manageClubBilling,
+          ).message}
+        />
       ) : loading ? (
         <CardListSkeleton label="Loading club billing" layout="actions" />
       ) : error && !summary ? (

@@ -6,9 +6,11 @@ import {
   InaturalistSyncStatus,
   Outcome,
   User,
-  canManageFeature,
+  canAccessRolePolicy,
   failure,
   success,
+  roleAccessPolicies,
+  roleAccessRequirement,
 } from '../../core/domain';
 import {
   InaturalistEffects,
@@ -173,10 +175,10 @@ function adminDenied(actor: User | undefined): Outcome<never> | undefined {
   if (!actor) {
     return failure('unauthenticated', 'Sign in to manage iNaturalist data');
   }
-  if (!canManageFeature(actor.role)) {
+  if (!canAccessRolePolicy(actor.role, roleAccessPolicies.manageInaturalist)) {
     return failure(
       'forbidden',
-      'Only officers may manage iNaturalist data',
+      roleAccessRequirement(roleAccessPolicies.manageInaturalist),
     );
   }
   return undefined;

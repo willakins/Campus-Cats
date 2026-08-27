@@ -12,6 +12,7 @@ import {
   parseCommunityVote,
   parseCommunityVoteNominee,
   parseUser,
+  communityVoteReceiptId,
 } from '../../core/domain';
 import { MediaCoordinator } from '../../core/media';
 import {
@@ -38,6 +39,11 @@ const president = parseUser({
   id: 'president-1',
   email: 'president@gatech.edu',
   role: Role.President,
+});
+const developer = parseUser({
+  id: 'developer-1',
+  email: 'developer@gatech.edu',
+  role: Role.Developer,
 });
 
 function buildModule({
@@ -174,6 +180,7 @@ describe('CommunityVotingModule', () => {
         kind: 'contest',
         title: 'Choose our new club logo',
         details: 'Pick the design that should represent Campus Cats.',
+        participationAudience: 'officers_only',
         votingDays: 7,
         options: [
           { label: 'Calico crest', imageLocalUri: 'file://calico.png' },
@@ -185,6 +192,7 @@ describe('CommunityVotingModule', () => {
       value: {
         id: 'vote-1',
         kind: 'contest',
+        participationAudience: 'officers_only',
         votingStartsAt: now,
         votingEndsAt: new Date('2026-08-13T12:00:00.000Z'),
         options: [
@@ -204,7 +212,7 @@ describe('CommunityVotingModule', () => {
     );
   });
 
-  it('lets only the President start a timed presidential election', async () => {
+  it('lets President-level roles start a timed presidential election', async () => {
     const { module } = buildModule();
     const draft = {
       kind: 'presidential_election' as const,
@@ -226,6 +234,27 @@ describe('CommunityVotingModule', () => {
         votingStartsAt: new Date('2026-08-20T12:00:00.000Z'),
         votingEndsAt: new Date('2026-08-27T12:00:00.000Z'),
         options: [],
+      },
+    });
+    await expect(
+      buildModule().module.create(developer, draft),
+    ).resolves.toMatchObject({
+      ok: true,
+      value: { kind: 'presidential_election' },
+    });
+  });
+
+  it('allows only one presidential election to remain open at a time', async () => {
+    const { module } = buildModule();
+
+    await expect(module.create(president, electionDraft)).resolves.toMatchObject({
+      ok: true,
+    });
+    await expect(module.create(president, electionDraft)).resolves.toEqual({
+      ok: false,
+      error: {
+        code: 'conflict',
+        message: 'A presidential election is already open',
       },
     });
   });
@@ -279,6 +308,69 @@ describe('CommunityVotingModule', () => {
       value: [{ id: 'vote-1' }],
       warnings: [{ code: 'partial_completion' }],
     });
+  });
+
+  it('reports whether any currently open ballot still needs a vote', async () => {
+    const built = buildModule();
+    const contest = storedContest();
+
+    await expect(
+      built.module.hasUnsubmittedOpenBallot(member, [contest]),
+    ).resolves.toMatchObject({ ok: true, value: true });
+
+    await built.documents.put(
+      COLLECTIONS.communityVoteBallotReceipts,
+      communityVoteReceiptId(contest.id, member.id),
+      { voteId: contest.id, userId: member.id },
+    );
+    await expect(
+      built.module.hasUnsubmittedOpenBallot(member, [contest]),
+    ).resolves.toMatchObject({ ok: true, value: false });
+
+    await expect(
+      built.module.hasUnsubmittedOpenBallot(member, [storedElection()]),
+    ).resolves.toMatchObject({ ok: true, value: false });
+  });
+
+  it('enforces officer-only voting and excludes it from member attention', async () => {
+    const built = buildModule();
+    const contest = parseCommunityVote({
+      ...storedContest(),
+      participationAudience: 'officers_only',
+    });
+    await storeVote(built, contest);
+
+    await expect(
+      built.module.hasUnsubmittedOpenBallot(member, [contest]),
+    ).resolves.toMatchObject({ ok: true, value: false });
+    await expect(
+      built.module.hasUnsubmittedOpenBallot(officer, [contest]),
+    ).resolves.toMatchObject({ ok: true, value: true });
+    await expect(
+      built.module.submitBallot(member, contest.id, 'stored-option-1'),
+    ).resolves.toEqual({
+      ok: false,
+      error: {
+        code: 'forbidden',
+        message: 'Only officers can participate in this vote',
+      },
+    });
+    await expect(
+      built.module.submitBallot(officer, contest.id, 'stored-option-1'),
+    ).resolves.toMatchObject({ ok: true });
+
+    const electionBuild = buildModule();
+    const election = parseCommunityVote({
+      ...storedElection(),
+      participationAudience: 'officers_only',
+    });
+    await storeVote(electionBuild, election);
+    await expect(
+      electionBuild.module.submitNomination(member, election.id, 'abstain'),
+    ).resolves.toMatchObject({ ok: false, error: { code: 'forbidden' } });
+    await expect(
+      electionBuild.module.submitNomination(officer, election.id, 'abstain'),
+    ).resolves.toMatchObject({ ok: true });
   });
 
   it('requires authentication and maps vote document failures', async () => {
@@ -379,7 +471,7 @@ describe('CommunityVotingModule', () => {
     });
 
     const electionFailure = buildModule();
-    electionFailure.documents.failNext('put', new Error('offline'));
+    electionFailure.documents.failNext('commit', new Error('offline'));
     await expect(
       electionFailure.module.create(president, electionDraft),
     ).resolves.toMatchObject({
@@ -437,6 +529,7 @@ describe('CommunityVotingModule', () => {
         voteId: 'stored-election',
         userId: 'member-1',
         displayName: 'Alex',
+        pitch: 'I will coordinate reliable volunteer coverage.',
         nominatedAt: now,
       }),
     ];
@@ -464,8 +557,13 @@ describe('CommunityVotingModule', () => {
     ).resolves.toMatchObject({
       ok: true,
       value: [
-        { id: 'member-1', label: 'Alex' },
-        { id: 'member-2', label: 'Zoe' },
+        {
+          id: 'member-1',
+          label: 'Alex',
+          pitch: 'I will coordinate reliable volunteer coverage.',
+          profileUserId: 'member-1',
+        },
+        { id: 'member-2', label: 'Zoe', profileUserId: 'member-2' },
       ],
     });
     await expect(
@@ -492,12 +590,38 @@ describe('CommunityVotingModule', () => {
     const built = buildModule();
     const election = storedElection();
     await storeVote(built, election);
+    const submitNomination = jest.spyOn(
+      built.gateway,
+      'submitNomination',
+    );
 
     await expect(
-      built.module.submitNomination(member, election.id, 'nominate'),
+      built.module.submitNomination(
+        member,
+        election.id,
+        'nominate',
+        '  I will improve volunteer coordination.  ',
+      ),
     ).resolves.toMatchObject({
       ok: true,
       value: { action: 'nominate', candidateId: member.id },
+    });
+    expect(submitNomination).toHaveBeenCalledWith(
+      member,
+      election,
+      'nominate',
+      'I will improve volunteer coordination.',
+    );
+    await expect(
+      built.module.submitNomination(
+        member,
+        election.id,
+        'nominate',
+        'x'.repeat(501),
+      ),
+    ).resolves.toMatchObject({
+      ok: false,
+      error: { code: 'validation' },
     });
     await expect(
       built.module.submitNomination(undefined, election.id, 'nominate'),

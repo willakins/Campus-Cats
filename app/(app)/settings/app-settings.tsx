@@ -4,8 +4,6 @@ import { View } from 'react-native';
 import { useFocusEffect, useRouter } from 'expo-router';
 
 import {
-  AccessDeniedState,
-  AppHeader,
   AppText,
   Button,
   Card,
@@ -13,16 +11,17 @@ import {
   ErrorState,
   FeedbackBanner,
   FormSection,
-  Screen,
 } from '@/components/design';
+import { RestrictedScreen } from '@/components/access';
 import { AppLogo, resolveAppLogoSource } from '@/components/branding';
 import { FormTextInput, ToggleField } from '@/components/forms';
 import { appModules } from '@/composition/appModules';
 import {
   AppSettings,
   DEFAULT_APP_SETTINGS,
-  canManageAppSettings,
+  canAccessRolePolicy,
   parseUser,
+  roleAccessPolicies,
 } from '@/core/domain';
 import { loadBundledClubLogoUri } from '@/features/appSettings/bundledBranding';
 import { useAppSettings } from '@/providers/AppSettingsProvider';
@@ -33,7 +32,10 @@ const AppSettingsScreen = () => {
   const router = useRouter();
   const theme = useAppTheme();
   const actor = parseUser(useAuth().user);
-  const authorized = canManageAppSettings(actor.role);
+  const authorized = canAccessRolePolicy(
+    actor.role,
+    roleAccessPolicies.manageAppSettings,
+  );
   const { applySettings } = useAppSettings();
   const [settings, setSettings] = useState<AppSettings>(DEFAULT_APP_SETTINGS);
   const [logoLocalUri, setLogoLocalUri] = useState<string>();
@@ -117,15 +119,15 @@ const AppSettingsScreen = () => {
     : theme.colors.surface;
 
   return (
-    <Screen scroll keyboardAware>
-      <AppHeader
-        title="App settings"
-        eyebrow="President tools"
-        onBack={() => router.back()}
-      />
-      {!authorized ? (
-        <AccessDeniedState message="Only the President may manage app settings." />
-      ) : loading ? (
+    <RestrictedScreen
+      scroll
+      keyboardAware
+      title="App settings"
+      eyebrow="President tools"
+      onBack={() => router.back()}
+      access={{ policy: roleAccessPolicies.manageAppSettings, role: actor.role }}
+    >
+      {loading ? (
         <CardListSkeleton label="Loading app settings" layout="actions" />
       ) : error && !hasLoaded ? (
         <ErrorState title="App settings unavailable" message={error} onRetry={load} />
@@ -237,7 +239,7 @@ const AppSettingsScreen = () => {
           />
         </View>
       )}
-    </Screen>
+    </RestrictedScreen>
   );
 };
 

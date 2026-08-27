@@ -67,13 +67,25 @@ describe('president app settings route', () => {
     mockLoadBundledClubLogoUri.mockResolvedValue('file://current-club-logo.png');
   });
 
-  it('does not load settings for non-presidents, including developers', async () => {
-    mockRole = Role.Developer;
+  it('does not load settings below the President role', async () => {
+    mockRole = Role.VicePresident;
     await renderScreen();
 
     expect(screen.getByText('Access restricted')).toBeOnTheScreen();
-    expect(screen.getByText('Only the President may manage app settings.')).toBeOnTheScreen();
+    expect(
+      screen.getByText(
+        'President-level access is required to manage app settings.',
+      ),
+    ).toBeOnTheScreen();
     expect(mockGet).not.toHaveBeenCalled();
+  });
+
+  it('loads settings for Developers through cascading authorization', async () => {
+    mockRole = Role.Developer;
+    await renderScreen();
+
+    expect(await screen.findByLabelText('Primary color')).toBeOnTheScreen();
+    expect(mockGet).toHaveBeenCalledTimes(1);
   });
 
   it('does not offer editable defaults when the saved settings cannot be loaded', async () => {

@@ -26,7 +26,7 @@ const mockSightingsListByReporter = jest.fn();
 const mockFavoriteForUser = jest.fn();
 const mockCatalogGet = jest.fn();
 const mockCatalogMedia = jest.fn();
-let mockProfileId = 'member-1';
+let mockProfileId: string | undefined = 'member-1';
 let mockUserId = 'member-1';
 
 jest.mock('expo-router', () => {
@@ -189,6 +189,16 @@ describe('member profile routes', () => {
       screen.getByRole('button', { name: 'Remove displayed title' }),
     );
     expect(mockSelectTitle).toHaveBeenCalledWith(actor, '');
+  });
+
+  it('opens the signed-in member profile when the route omits an ID', async () => {
+    mockProfileId = undefined;
+
+    await renderThemed(<ViewProfile />);
+
+    expect(await screen.findByText('Cat Watcher')).toBeOnTheScreen();
+    expect(screen.queryByText('Profile unavailable')).not.toBeOnTheScreen();
+    expect(mockProfileSync).toHaveBeenCalledWith(actor);
   });
 
   it('renders its skeleton while profile data is loading', async () => {
