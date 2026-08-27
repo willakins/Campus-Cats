@@ -58,6 +58,16 @@ import {
   parseCommunityVote,
   parseCommunityVoteNominee,
 } from './communityVoting';
+import {
+  ChatMessage,
+  ChatPingReadState,
+  ChatReaction,
+  ChatRestriction,
+  parseChatMessage,
+  parseChatPingReadState,
+  parseChatReaction,
+  parseChatRestriction,
+} from './chat';
 
 export const COLLECTIONS = {
   sightings: 'cat-sightings',
@@ -93,6 +103,10 @@ export const COLLECTIONS = {
   catalogComments: 'catalog-comments',
   stationComments: 'station-comments',
   inaturalistCommentModeration: 'inaturalist-comment-moderation',
+  chatMessages: 'chat-messages',
+  chatReactions: 'chat-reactions',
+  chatRestrictions: 'chat-restrictions',
+  chatPingReadStates: 'chat-ping-reads',
 } as const;
 
 export const APP_SETTINGS_DOCUMENT_ID = 'public';
@@ -198,6 +212,68 @@ export function createPersistenceCodecs<EncodedDate>(
         createdAt: dates.encode(createdAt),
       };
     },
+  };
+
+  const chatMessage: PersistenceCodec<ChatMessage> = {
+    decode: (id, value) => {
+      const data = record(value);
+      return parseChatMessage({
+        id,
+        ...data,
+        createdAt: dates.decode(data.createdAt),
+      });
+    },
+    encode: ({ id: _id, author: _author, createdAt, ...value }) => ({
+      ...value,
+      createdAt: dates.encode(createdAt),
+    }),
+  };
+
+  const chatReaction: PersistenceCodec<ChatReaction> = {
+    decode: (_id, value) => {
+      const data = record(value);
+      return parseChatReaction({
+        ...data,
+        updatedAt: dates.decode(data.updatedAt),
+      });
+    },
+    encode: ({ updatedAt, ...value }) => ({
+      ...value,
+      updatedAt: dates.encode(updatedAt),
+    }),
+  };
+
+  const chatRestriction: PersistenceCodec<ChatRestriction> = {
+    decode: (id, value) => {
+      const data = record(value);
+      return parseChatRestriction({
+        userId: id,
+        ...data,
+        mutedUntil:
+          data.mutedUntil === undefined ? undefined : dates.decode(data.mutedUntil),
+        updatedAt: dates.decode(data.updatedAt),
+      });
+    },
+    encode: ({ userId: _userId, mutedUntil, updatedAt, ...value }) => ({
+      ...value,
+      ...(mutedUntil ? { mutedUntil: dates.encode(mutedUntil) } : {}),
+      updatedAt: dates.encode(updatedAt),
+    }),
+  };
+
+  const chatPingReadState: PersistenceCodec<ChatPingReadState> = {
+    decode: (id, value) => {
+      const data = record(value);
+      return parseChatPingReadState({
+        userId: id,
+        ...data,
+        lastReadPingAt: dates.decode(data.lastReadPingAt),
+      });
+    },
+    encode: ({ userId: _userId, lastReadPingAt, ...value }) => ({
+      ...value,
+      lastReadPingAt: dates.encode(lastReadPingAt),
+    }),
   };
 
   const sighting: PersistenceCodec<Sighting> = {
@@ -609,6 +685,10 @@ export function createPersistenceCodecs<EncodedDate>(
     user,
     publicProfile,
     comment,
+    chatMessage,
+    chatReaction,
+    chatRestriction,
+    chatPingReadState,
     sighting,
     catalog,
     catalogFavorite,

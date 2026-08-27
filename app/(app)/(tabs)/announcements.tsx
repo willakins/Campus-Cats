@@ -13,6 +13,7 @@ import {
   AnnouncementToolbar,
   SurveyItem,
 } from '@/components/community';
+import { ChatSection } from '@/components/chat';
 import { virtualizedListPerformanceProps } from '@/components/collections/virtualizedListPerformance';
 import {
   AppHeader,
@@ -90,6 +91,7 @@ const Community = () => {
   const [votes, setVotes] = useState<readonly CommunityVote[]>([]);
   const [hasIncompleteSurvey, setHasIncompleteSurvey] = useState(false);
   const [hasUnsubmittedBallot, setHasUnsubmittedBallot] = useState(false);
+  const [hasUnreadChatPing, setHasUnreadChatPing] = useState(false);
   const [loading, setLoading] = useState(true);
   const [errors, setErrors] = useState<
     Partial<Record<CommunitySection, string>>
@@ -98,6 +100,14 @@ const Community = () => {
   useEffect(() => {
     if (section === 'donate') void refreshSettings();
   }, [refreshSettings, section]);
+
+  useEffect(
+    () =>
+      appModules.chat.observeUnreadPing(actor, (result) => {
+        if (result.ok) setHasUnreadChatPing(result.value.unread);
+      }),
+    [actor.id],
+  );
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -385,9 +395,10 @@ const Community = () => {
     }
     if (section === 'chat')
       return (
-        <EmptyState
-          title="Chat is coming soon"
-          message="This space is reserved for future Campus Cats conversations."
+        <ChatSection
+          key={`${actor.id}:${access?.timezone ?? 'UTC'}`}
+          actor={actor}
+          timeZone={access?.timezone ?? 'UTC'}
         />
       );
     if (section === 'donate') {
@@ -403,6 +414,7 @@ const Community = () => {
 
   return (
     <Screen
+      keyboardAware={section === 'chat'}
       floatingAction={
         section === 'donate' && canManageDonations ? (
           <FloatingActionButton
@@ -449,6 +461,7 @@ const Community = () => {
             ),
             surveys: hasIncompleteSurvey,
             votes: hasUnsubmittedBallot,
+            chat: hasUnreadChatPing,
           }}
         />
       ) : null}

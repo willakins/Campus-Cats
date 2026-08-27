@@ -23,6 +23,7 @@ const mockSurveyList = jest.fn();
 const mockSurveyAttention = jest.fn();
 const mockVoteList = jest.fn();
 const mockVoteAttention = jest.fn();
+const mockObserveUnreadPing = jest.fn();
 const mockPush = jest.fn();
 const mockRefreshSettings = jest.fn();
 let mockRole: Role = Role.Officer;
@@ -55,8 +56,16 @@ jest.mock('../../composition/appModules', () => ({
       hasUnsubmittedOpenBallot: (...args: unknown[]) =>
         mockVoteAttention(...args),
     },
+    chat: {
+      observeUnreadPing: (...args: unknown[]) => mockObserveUnreadPing(...args),
+    },
   },
 }));
+
+jest.mock('../../components/chat', () => {
+  const { Text } = require('react-native');
+  return { ChatSection: () => <Text>Club chat</Text> };
+});
 
 jest.mock('../../providers', () => ({
   useAuth: () => ({
@@ -108,6 +117,12 @@ const event = parseClubEvent({
 
 describe('announcements list route', () => {
   beforeEach(() => {
+    mockObserveUnreadPing.mockImplementation(
+      (_actor: unknown, observer: (result: unknown) => void) => {
+        observer({ ok: true, value: { unread: false }, warnings: [] });
+        return jest.fn();
+      },
+    );
     mockList.mockReset();
     mockPush.mockReset();
     mockRefreshSettings.mockReset();
@@ -407,7 +422,7 @@ describe('announcements list route', () => {
 
     mockSection = 'chat';
     const chatView = await renderAnnouncements();
-    expect(screen.getByText('Chat is coming soon')).toBeOnTheScreen();
+    expect(screen.getByText('Club chat')).toBeOnTheScreen();
     expect(
       screen.queryByRole('button', { name: 'Create chat' }),
     ).not.toBeOnTheScreen();

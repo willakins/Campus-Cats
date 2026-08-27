@@ -4,6 +4,7 @@ import {
   ApplicationEffects,
   BillingProviderPresentation,
   BillingReader,
+  ChatGateway,
   CommunityVotingGateway,
   ClubBillingPort,
   DocumentStore,
@@ -25,6 +26,7 @@ import {
 } from '../features/appSettings';
 import { BillingModule } from '../features/billing';
 import { ClubBillingModule } from '../features/clubBilling';
+import { ChatModule } from '../features/chat';
 import { CommentsModule } from '../features/comments';
 import { CatalogModule } from '../features/catalog';
 import { CatalogTagsModule } from '../features/catalogTags';
@@ -52,6 +54,7 @@ export interface AppBackend {
     readonly presentation: BillingProviderPresentation;
   };
   readonly clubBilling: ClubBillingPort;
+  readonly chat: ChatGateway;
   readonly inaturalist: {
     readonly reader: InaturalistReader;
     readonly effects: InaturalistEffects;
@@ -79,6 +82,7 @@ export interface AppModules {
   readonly appSettings: AppSettingsModule;
   readonly billing: BillingModule;
   readonly clubBilling: ClubBillingModule;
+  readonly chat: ChatModule;
   readonly comments: CommentsModule;
   readonly catalog: CatalogModule;
   readonly catalogTags: CatalogTagsModule;
@@ -104,6 +108,7 @@ export function createAppModules(
   const {
     billing,
     clubBilling,
+    chat,
     clock,
     codecs,
     documents,
@@ -146,6 +151,12 @@ export function createAppModules(
     appSettings,
     billing: new BillingModule(billing),
     clubBilling: new ClubBillingModule(clubBilling),
+    chat: new ChatModule({
+      gateway: chat,
+      documents,
+      ids,
+      codecs: { publicProfile: codecs.publicProfile },
+    }),
     comments: new CommentsModule({
       documents,
       ids,

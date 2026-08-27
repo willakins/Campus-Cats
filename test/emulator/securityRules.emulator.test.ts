@@ -21,6 +21,7 @@ import {
   doc as firebaseDoc,
   getDoc,
   getDocs,
+  orderBy,
   query,
   setDoc,
   Timestamp,
@@ -443,6 +444,89 @@ describe('Firebase authorization matrix', () => {
       doc(member, 'content-contributors', 'sighting__sighting-1'),
     );
     await assertSucceeds(deleteSighting.commit());
+  });
+
+  it('keeps chat tenant-readable while reserving every mutation for callables', async () => {
+    await environment.withSecurityRulesDisabled(async (context) => {
+      const firestore = context.firestore();
+      await Promise.all([
+        setDoc(doc(firestore, 'chat-messages', 'message-1'), {
+          body: 'Hello club',
+          createdById: 'member-2',
+          createdAt: Timestamp.fromDate(new Date('2026-08-27T15:00:00.000Z')),
+          dayKey: '2026-08-27',
+          isClubPing: false,
+        }),
+        setDoc(doc(firestore, 'chat-reactions', 'message-1__member-2'), {
+          messageId: 'message-1',
+          messageDayKey: '2026-08-27',
+          userId: 'member-2',
+          emoji: '👍',
+          updatedAt: Timestamp.fromDate(new Date('2026-08-27T15:01:00.000Z')),
+        }),
+        setDoc(doc(firestore, 'chat-restrictions', 'member-1'), {
+          chatBanned: false,
+          mutedUntil: Timestamp.fromDate(new Date('2026-08-27T16:00:00.000Z')),
+          updatedAt: Timestamp.fromDate(new Date('2026-08-27T15:00:00.000Z')),
+          updatedById: 'admin-1',
+        }),
+        setDoc(doc(firestore, 'chat-restrictions', 'member-2'), {
+          chatBanned: true,
+          updatedAt: Timestamp.fromDate(new Date('2026-08-27T15:00:00.000Z')),
+          updatedById: 'admin-1',
+        }),
+        setDoc(doc(firestore, 'chat-ping-reads', 'member-1'), {
+          lastReadPingId: 'ping-1',
+          lastReadPingAt: Timestamp.fromDate(new Date('2026-08-27T14:00:00.000Z')),
+        }),
+      ]);
+    });
+    const member = environment.authenticatedContext('member-1', {
+      email: 'member@gatech.edu',
+    }).firestore();
+    const officer = environment.authenticatedContext('admin-1', {
+      email: 'admin@gatech.edu',
+    }).firestore();
+    const banned = environment.authenticatedContext('banned-1', {
+      email: 'banned@gatech.edu',
+    }).firestore();
+
+    await assertSucceeds(
+      getDocs(
+        query(
+          collection(member, 'chat-messages'),
+          where('dayKey', '==', '2026-08-27'),
+          orderBy('createdAt', 'asc'),
+        ),
+      ),
+    );
+    await assertSucceeds(getDocs(collection(member, 'chat-reactions')));
+    await assertFails(getDocs(collection(banned, 'chat-messages')));
+    await assertFails(
+      setDoc(doc(member, 'chat-messages', 'direct-message'), {
+        body: 'Clients cannot write chat',
+      }),
+    );
+    await assertFails(
+      setDoc(doc(member, 'chat-reactions', 'message-1__member-1'), {
+        emoji: '❤️',
+      }),
+    );
+    await assertSucceeds(getDoc(doc(member, 'chat-restrictions', 'member-1')));
+    await assertFails(getDoc(doc(member, 'chat-restrictions', 'member-2')));
+    await assertSucceeds(getDoc(doc(officer, 'chat-restrictions', 'member-2')));
+    await assertFails(
+      updateDoc(doc(officer, 'chat-restrictions', 'member-2'), {
+        chatBanned: false,
+      }),
+    );
+    await assertSucceeds(getDoc(doc(member, 'chat-ping-reads', 'member-1')));
+    await assertFails(getDoc(doc(member, 'chat-ping-reads', 'member-2')));
+    await assertFails(
+      updateDoc(doc(member, 'chat-ping-reads', 'member-1'), {
+        lastReadPingId: 'ping-2',
+      }),
+    );
   });
 
   it('keeps legacy members without a banned field active', async () => {
@@ -1594,9 +1678,9 @@ describe('Firebase authorization matrix', () => {
         email: 'developer@gatech.edu',
       })
       .firestore();
-    const createdAt = Timestamp.fromDate(new Date('2026-08-06T12:00:00.000Z'));
+    const createdAt = Timestamp.fromMillis(Date.now());
     const votingEndsAt = Timestamp.fromDate(
-      new Date('2026-08-13T12:00:00.000Z'),
+      new Date(createdAt.toMillis() + 7 * 24 * 60 * 60 * 1_000),
     );
     const contest = {
       kind: 'contest',
@@ -1622,7 +1706,7 @@ describe('Firebase authorization matrix', () => {
     await assertSucceeds(getDoc(doc(member, 'community-votes', 'contest')));
 
     const nominationEndsAt = Timestamp.fromDate(
-      new Date('2026-08-20T12:00:00.000Z'),
+      new Date(createdAt.toMillis() + 14 * 24 * 60 * 60 * 1_000),
     );
     const election = {
       kind: 'presidential_election',
@@ -1633,7 +1717,9 @@ describe('Firebase authorization matrix', () => {
       createdBy: userSnapshot('president-1', 'president@gatech.edu', 3),
       nominationEndsAt,
       votingStartsAt: nominationEndsAt,
-      votingEndsAt: Timestamp.fromDate(new Date('2026-08-27T12:00:00.000Z')),
+      votingEndsAt: Timestamp.fromDate(
+        new Date(createdAt.toMillis() + 21 * 24 * 60 * 60 * 1_000),
+      ),
     };
     await assertFails(
       setDoc(doc(officer, 'community-votes', 'officer-election'), election),
