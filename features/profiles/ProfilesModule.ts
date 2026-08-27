@@ -52,6 +52,15 @@ export class ProfilesModule {
     try {
       await this.dependencies.effects.syncPublicProfile(actor.id);
     } catch {
+      const existing = await this.get(actor.id);
+      if (existing.ok) {
+        return success(existing.value, [
+          {
+            code: 'partial_completion',
+            message: 'Could not update profile achievements',
+          },
+        ]);
+      }
       return failure('dependency_failure', 'Could not update profile achievements');
     }
     return this.get(actor.id);

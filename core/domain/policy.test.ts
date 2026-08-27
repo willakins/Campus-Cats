@@ -11,8 +11,11 @@ import {
   canViewContributors,
   classifyRole,
   failure,
+  hasMinimumRole,
   success,
   RoleClassification,
+  canAccessRolePolicy,
+  roleAccessPolicies,
 } from './index';
 
 describe('typed outcomes', () => {
@@ -127,9 +130,30 @@ describe('authorization policy', () => {
     [Role.Officer, false],
     [Role.VicePresident, false],
     [Role.President, true],
-    [Role.Developer, false],
-  ])('reserves app settings for the President for role %s', (role, allowed) => {
+    [Role.Developer, true],
+  ])('requires President-level access for app settings for role %s', (role, allowed) => {
     expect(canManageAppSettings(role)).toBe(allowed);
+  });
+
+  it('cascades authorization through the numeric role hierarchy', () => {
+    expect(hasMinimumRole(Role.Developer, Role.President)).toBe(true);
+    expect(hasMinimumRole(Role.President, Role.President)).toBe(true);
+    expect(hasMinimumRole(Role.VicePresident, Role.President)).toBe(false);
+  });
+
+  it('uses capability policies as the cascading authorization source of truth', () => {
+    expect(
+      canAccessRolePolicy(Role.Officer, roleAccessPolicies.manageAnnouncements),
+    ).toBe(true);
+    expect(
+      canAccessRolePolicy(Role.President, roleAccessPolicies.manageDonations),
+    ).toBe(true);
+    expect(
+      canAccessRolePolicy(Role.Developer, roleAccessPolicies.manageDonations),
+    ).toBe(true);
+    expect(
+      canAccessRolePolicy(Role.VicePresident, roleAccessPolicies.manageDonations),
+    ).toBe(false);
   });
 
   it('shows anonymous contributors only to officers', () => {
@@ -147,7 +171,7 @@ describe('authorization policy', () => {
     ).toBe(false);
   });
 
-  it('reserves presidential succession for a President or bootstrap developer', () => {
+  it('allows President-level roles to run presidential succession', () => {
     const vicePresident = { id: 'vice', role: Role.VicePresident };
     expect(
       canTransferPresidency(
@@ -169,7 +193,7 @@ describe('authorization policy', () => {
         vicePresident,
         true,
       ),
-    ).toBe(false);
+    ).toBe(true);
     expect(
       canTransferPresidency(
         { id: 'president', role: Role.President },

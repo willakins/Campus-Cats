@@ -5,6 +5,7 @@ export type CommunityNominationAction = 'nominate' | 'abstain';
 export interface CommunityNominationSubmission {
   readonly action: CommunityNominationAction;
   readonly candidateId?: string;
+  readonly pitch?: string;
   readonly submittedAt: Date;
 }
 
@@ -42,6 +43,7 @@ export interface CommunityVotingGateway {
     actor: User,
     vote: CommunityVote,
     action: CommunityNominationAction,
+    pitch?: string,
   ): Promise<CommunityNominationSubmission>;
   submitBallot(
     actor: User,

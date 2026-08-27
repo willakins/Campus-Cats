@@ -166,7 +166,7 @@ describe('callable handlers', () => {
     );
   });
 
-  it('restricts contributor privacy migration to the President', async () => {
+  it('restricts contributor privacy migration to President-level roles', async () => {
     const { dependencies, operations } = buildDependencies();
 
     await rejectsWithCode(
@@ -181,15 +181,6 @@ describe('callable handlers', () => {
         ),
       'permission-denied',
     );
-    await rejectsWithCode(
-      () =>
-        handleMigrateContributorPrivacy(
-          { authUid: 'developer-1', data: {} },
-          dependencies,
-        ),
-      'permission-denied',
-    );
-
     assert.deepEqual(
       await handleMigrateContributorPrivacy(
         { authUid: 'president-1', data: {} },
@@ -197,7 +188,17 @@ describe('callable handlers', () => {
       ),
       { sightings: 0, catalog: 0 },
     );
-    assert.deepEqual(operations, ['migrate-contributor-privacy']);
+    assert.deepEqual(
+      await handleMigrateContributorPrivacy(
+        { authUid: 'developer-1', data: {} },
+        dependencies,
+      ),
+      { sightings: 0, catalog: 0 },
+    );
+    assert.deepEqual(operations, [
+      'migrate-contributor-privacy',
+      'migrate-contributor-privacy',
+    ]);
   });
 
   it('authorizes announcements and batches distinct push tokens by 100', async () => {

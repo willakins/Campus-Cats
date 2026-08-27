@@ -1459,13 +1459,13 @@ export class CustomerBillingService {
     if (
       !snapshot.exists ||
       data?.banned === true ||
-      data?.role !== 3 ||
+      (data?.role !== 3 && data?.role !== 4) ||
       typeof data.email !== 'string' ||
       typeof data.clubId !== 'string'
     ) {
       throw new HandlerError(
         'permission-denied',
-        'Only the club President may manage billing',
+        'President-level access is required to manage billing',
       );
     }
     const actor: BillingActor = {

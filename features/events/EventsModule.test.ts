@@ -88,6 +88,49 @@ describe('EventsModule', () => {
     ]);
   });
 
+  it('tracks event reads per member', async () => {
+    const { module, documents } = buildModule();
+    await module.create(officer, draft);
+
+    await expect(module.list(member)).resolves.toMatchObject({
+      ok: true,
+      value: [{ id: 'event-1', read: false }],
+    });
+    await expect(module.markRead(member, 'event-1')).resolves.toMatchObject({
+      ok: true,
+    });
+    await expect(module.list(member)).resolves.toMatchObject({
+      ok: true,
+      value: [{ id: 'event-1', read: true }],
+    });
+    await expect(
+      documents.get(
+        COLLECTIONS.eventReadReceipts,
+        'member-1__event-1',
+      ),
+    ).resolves.toMatchObject({
+      data: { userId: 'member-1', eventId: 'event-1', readAt: now },
+    });
+  });
+
+  it('validates event read receipts and maps persistence failures', async () => {
+    const built = buildModule();
+
+    await expect(built.module.markRead(undefined, 'event-1')).resolves.toMatchObject({
+      ok: false,
+      error: { code: 'unauthenticated' },
+    });
+    await expect(built.module.markRead(member, ' ')).resolves.toMatchObject({
+      ok: false,
+      error: { code: 'validation' },
+    });
+    built.documents.failNext('put', new Error('offline'));
+    await expect(built.module.markRead(member, 'event-1')).resolves.toMatchObject({
+      ok: false,
+      error: { code: 'dependency_failure' },
+    });
+  });
+
   it('hides expired events from members while retaining officer history', async () => {
     const { module, documents } = buildModule();
     const expired = parseClubEvent({

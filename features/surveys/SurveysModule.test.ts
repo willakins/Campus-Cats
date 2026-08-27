@@ -225,11 +225,17 @@ describe('SurveysModule', () => {
   it('creates immutable open surveys with stable question and option IDs', async () => {
     const { module } = buildModule();
 
-    await expect(module.create(officer, draft)).resolves.toMatchObject({
+    await expect(
+      module.create(officer, {
+        ...draft,
+        participationAudience: 'officers_only',
+      }),
+    ).resolves.toMatchObject({
       ok: true,
       value: {
         id: 'survey-1',
         anonymous: true,
+        participationAudience: 'officers_only',
         status: 'open',
         questions: [
           {
@@ -243,6 +249,55 @@ describe('SurveysModule', () => {
     await expect(module.list(member)).resolves.toMatchObject({
       ok: true,
       value: [{ id: 'survey-1' }],
+    });
+  });
+
+  it('reports whether any open survey still needs a response', async () => {
+    const { module, documents } = buildModule();
+    const survey = await createSurvey(module);
+
+    await expect(
+      module.hasIncompleteOpenSurvey(member, [survey]),
+    ).resolves.toMatchObject({ ok: true, value: true });
+
+    await documents.put(
+      COLLECTIONS.surveySubmissionReceipts,
+      surveyReceiptId(survey.id, member.id),
+      { surveyId: survey.id },
+    );
+    await expect(
+      module.hasIncompleteOpenSurvey(member, [survey]),
+    ).resolves.toMatchObject({ ok: true, value: false });
+
+    await expect(
+      module.hasIncompleteOpenSurvey(member, [
+        parseSurvey({ ...survey, status: 'closed', closedAt: now }),
+      ]),
+    ).resolves.toMatchObject({ ok: true, value: false });
+  });
+
+  it('enforces officer-only survey participation and excludes it from member attention', async () => {
+    const { module, documents } = buildModule();
+    const survey = await seedSurvey(documents, {
+      participationAudience: 'officers_only',
+    });
+    const answers = validCompleteAnswers();
+
+    await expect(
+      module.hasIncompleteOpenSurvey(member, [survey]),
+    ).resolves.toMatchObject({ ok: true, value: false });
+    await expect(module.submit(member, survey.id, answers)).resolves.toEqual({
+      ok: false,
+      error: {
+        code: 'forbidden',
+        message: 'Only officers can participate in this survey',
+      },
+    });
+    await expect(
+      module.hasIncompleteOpenSurvey(officer, [survey]),
+    ).resolves.toMatchObject({ ok: true, value: true });
+    await expect(module.submit(officer, survey.id, answers)).resolves.toMatchObject({
+      ok: true,
     });
   });
 

@@ -28,6 +28,7 @@ interface ScreenProps {
   readonly floatingAction?: React.ReactNode;
   readonly contentStyle?: StyleProp<ViewStyle>;
   readonly testID?: string;
+  readonly scrollRef?: React.RefObject<ScrollView | null>;
 }
 
 export const Screen = ({
@@ -39,6 +40,7 @@ export const Screen = ({
   floatingAction,
   contentStyle,
   testID,
+  scrollRef,
 }: ScreenProps) => {
   const theme = useAppTheme();
   const reducedMotion = useReducedMotion();
@@ -72,6 +74,8 @@ export const Screen = ({
   ];
   const body = scroll ? (
     <ScrollView
+      ref={scrollRef}
+      testID="screen-scroll-view"
       keyboardShouldPersistTaps="handled"
       contentContainerStyle={content}
       style={{ flex: 1 }}

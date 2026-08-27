@@ -9,6 +9,7 @@ import {
   userIdSchema,
 } from './ids';
 import { userSchema } from './models';
+import { participationAudienceSchema } from './participation';
 
 const requiredText = z.string().trim().min(1);
 const validDate = z.date().refine((date) => !Number.isNaN(date.getTime()), {
@@ -78,6 +79,7 @@ export const surveySchema = z
     title: requiredText.max(120),
     details: z.string().trim().max(5000),
     anonymous: z.boolean(),
+    participationAudience: participationAudienceSchema,
     status: z.enum(['open', 'closed']),
     questions: z.array(surveyQuestionSchema).min(1).max(40),
     createdAt: validDate,

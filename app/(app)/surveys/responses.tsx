@@ -5,8 +5,6 @@ import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 
 import { SurveyPrivacyBanner } from '@/components/community';
 import {
-  AccessDeniedState,
-  AppHeader,
   AppText,
   Button,
   Card,
@@ -14,17 +12,18 @@ import {
   EmptyState,
   ErrorState,
   FeedbackBanner,
-  Screen,
   StatusPill,
 } from '@/components/design';
+import { RestrictedScreen } from '@/components/access';
 import { appModules } from '@/composition/appModules';
 import {
   Survey,
   SurveyAnswer,
   SurveyQuestion,
   SurveyResponse,
-  canManageFeature,
+  canAccessRolePolicy,
   parseUser,
+  roleAccessPolicies,
 } from '@/core/domain';
 import { useAuth } from '@/providers';
 import { useAppTheme } from '@/theme';
@@ -47,7 +46,10 @@ const SurveyResponses = () => {
   const { id } = useLocalSearchParams<{ id?: string }>();
   const actor = parseUser(useAuth().user);
   const theme = useAppTheme();
-  const authorized = canManageFeature(actor.role);
+  const authorized = canAccessRolePolicy(
+    actor.role,
+    roleAccessPolicies.viewSurveyResponses,
+  );
   const [survey, setSurvey] = useState<Survey>();
   const [responses, setResponses] = useState<readonly SurveyResponse[]>([]);
   const [loading, setLoading] = useState(authorized);
@@ -100,11 +102,14 @@ const SurveyResponses = () => {
   };
 
   return (
-    <Screen scroll>
-      <AppHeader title="Survey responses" eyebrow="Officer tools" onBack={() => router.back()} />
-      {!authorized ? (
-        <AccessDeniedState message="Only officers may view survey responses." />
-      ) : loading ? (
+    <RestrictedScreen
+      scroll
+      title="Survey responses"
+      eyebrow="Officer tools"
+      onBack={() => router.back()}
+      access={{ policy: roleAccessPolicies.viewSurveyResponses, role: actor.role }}
+    >
+      {loading ? (
         <CardListSkeleton label="Loading survey responses" />
       ) : survey ? (
         <View style={{ gap: theme.spacing.lg, paddingBottom: theme.spacing.xl }}>
@@ -163,7 +168,7 @@ const SurveyResponses = () => {
       ) : (
         <ErrorState title="Responses unavailable" message={error || 'Survey not found'} />
       )}
-    </Screen>
+    </RestrictedScreen>
   );
 };
 

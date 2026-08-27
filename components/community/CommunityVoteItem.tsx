@@ -10,6 +10,7 @@ import {
 import { useAppTheme } from '../../theme';
 import { AppText, Card, StatusPill } from '../design';
 import { ProgressiveImage } from '../ui/ProgressiveImage';
+import { communityVoteTimingLabel } from './communityVotePresentation';
 
 export const CommunityVoteItem = React.memo(function CommunityVoteItem({
   vote,
@@ -69,11 +70,7 @@ export const CommunityVoteItem = React.memo(function CommunityVoteItem({
           <AppText color="muted" numberOfLines={3}>{vote.details}</AppText>
         ) : null}
         <AppText color="muted" variant="caption">
-          {phase === 'nominations'
-            ? `Nominations close ${formatDate(vote.votingStartsAt)}`
-            : phase === 'voting'
-              ? `Voting closes ${formatDate(vote.votingEndsAt)}`
-              : `Closed ${formatDate(vote.votingEndsAt)}`}
+          {communityVoteTimingLabel(vote, phase, formatDate)}
         </AppText>
       </View>
     </Card>

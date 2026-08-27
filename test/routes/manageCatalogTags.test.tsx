@@ -82,6 +82,32 @@ describe('manage catalog tags route', () => {
     expect(mockList).not.toHaveBeenCalled();
   });
 
+  it('expands and collapses the officer-only explanation from the header', async () => {
+    const user = userEvent.setup();
+    await renderRoute();
+
+    await user.press(
+      screen.getByRole('button', { name: 'Explain officer-only access' }),
+    );
+    expect(screen.getByText('Officer-only page')).toBeOnTheScreen();
+    expect(
+      screen.getByText(
+        'Officer-level access is required to manage catalog tags.',
+      ),
+    ).toBeOnTheScreen();
+    expect(
+      screen.queryByRole('button', { name: 'Explain officer-only access' }),
+    ).not.toBeOnTheScreen();
+
+    await user.press(
+      screen.getByRole('button', { name: 'Hide officer-only explanation' }),
+    );
+    expect(screen.queryByText('Officer-only page')).not.toBeOnTheScreen();
+    expect(
+      screen.getByRole('button', { name: 'Explain officer-only access' }),
+    ).toBeOnTheScreen();
+  });
+
   it('lets officers rename existing defaults and add custom tags', async () => {
     const user = userEvent.setup();
     await renderRoute();

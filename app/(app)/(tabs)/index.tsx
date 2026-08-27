@@ -67,6 +67,7 @@ const HomeScreen = () => {
           style={[
             theme.elevation.floating,
             {
+              alignSelf: 'flex-start',
               backgroundColor: theme.colors.coral,
               borderColor: theme.colors.coral,
             },

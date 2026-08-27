@@ -6,14 +6,20 @@ import {
   IdGenerator,
   Outcome,
   User,
-  canManageFeature,
+  canAccessRolePolicy,
   failure,
   isExpiredEvent,
   parseClubEvent,
   success,
+  roleAccessPolicies,
+  roleAccessRequirement,
 } from '../../core/domain';
 import { MediaCoordinator, MediaSelection, localMedia } from '../../core/media';
 import { DocumentStore, MediaStore } from '../../core/ports';
+
+export type EventListItem = ClubEvent & {
+  readonly read: boolean;
+};
 
 export interface EventDraft {
   readonly title: string;
@@ -45,16 +51,43 @@ interface EventsDependencies {
 export class EventsModule {
   constructor(private readonly dependencies: EventsDependencies) {}
 
-  async list(actor: User | undefined): Promise<Outcome<readonly ClubEvent[]>> {
+  async list(actor: User | undefined): Promise<Outcome<readonly EventListItem[]>> {
     if (!actor) return failure('unauthenticated', 'Sign in to view events');
     try {
       const documents = await this.dependencies.documents.list(COLLECTIONS.events);
+      let receiptDocuments: Awaited<
+        ReturnType<DocumentStore['listWhereEqual']>
+      > = [];
+      let receiptWarnings: readonly {
+        readonly code: 'partial_completion';
+        readonly message: string;
+      }[] = [];
+      try {
+        receiptDocuments = await this.dependencies.documents.listWhereEqual(
+          COLLECTIONS.eventReadReceipts,
+          'userId',
+          actor.id,
+        );
+      } catch {
+        receiptWarnings = [
+          {
+            code: 'partial_completion',
+            message: 'Events loaded, but read status is unavailable',
+          },
+        ];
+      }
+      const readEventIds = new Set(
+        receiptDocuments.flatMap(({ data }) =>
+          typeof data.eventId === 'string' ? [data.eventId] : [],
+        ),
+      );
       const now = this.dependencies.clock.now();
       let invalidCount = 0;
       const events = documents
         .flatMap(({ id, data }) => {
           try {
-            return [this.dependencies.codec.decode(id, data)];
+            const event = this.dependencies.codec.decode(id, data);
+            return [{ ...event, read: readEventIds.has(id) }];
           } catch {
             invalidCount += 1;
             return [];
@@ -62,22 +95,50 @@ export class EventsModule {
         })
         .filter(
           (event) =>
-            canManageFeature(actor.role) || !isExpiredEvent(event, now),
+            canAccessRolePolicy(actor.role, roleAccessPolicies.manageEvents) ||
+            !isExpiredEvent(event, now),
         )
         .sort((left, right) => left.startsAt.getTime() - right.startsAt.getTime());
       return success(
         events,
-        invalidCount
+        [
+          ...receiptWarnings,
+          ...(invalidCount
           ? [
               {
-                code: 'partial_completion',
+                code: 'partial_completion' as const,
                 message: `${invalidCount} invalid ${invalidCount === 1 ? 'event was' : 'events were'} excluded.`,
               },
             ]
-          : [],
+          : []),
+        ],
       );
     } catch {
       return failure('dependency_failure', 'Could not load events');
+    }
+  }
+
+  async markRead(
+    actor: User | undefined,
+    eventId: string,
+  ): Promise<Outcome<void>> {
+    if (!actor) return failure('unauthenticated', 'Sign in to read events');
+    if (!eventId.trim()) {
+      return failure('validation', 'Event ID is required');
+    }
+    try {
+      await this.dependencies.documents.put(
+        COLLECTIONS.eventReadReceipts,
+        `${actor.id}__${eventId}`,
+        {
+          userId: actor.id,
+          eventId,
+          readAt: this.dependencies.clock.now(),
+        },
+      );
+      return success(undefined);
+    } catch {
+      return failure('dependency_failure', 'Could not record the event as read');
     }
   }
 
@@ -90,7 +151,10 @@ export class EventsModule {
       const document = await this.dependencies.documents.get(COLLECTIONS.events, id);
       if (!document) return failure('not_found', 'Event not found');
       const event = this.dependencies.codec.decode(document.id, document.data);
-      if (!canManageFeature(actor.role) && isExpiredEvent(event, this.dependencies.clock.now())) {
+      if (
+        !canAccessRolePolicy(actor.role, roleAccessPolicies.manageEvents) &&
+        isExpiredEvent(event, this.dependencies.clock.now())
+      ) {
         return failure('not_found', 'Event not found');
       }
       return success(event);
@@ -104,8 +168,11 @@ export class EventsModule {
     draft: EventDraft,
   ): Promise<Outcome<ClubEvent>> {
     if (!actor) return failure('unauthenticated', 'Sign in to manage events');
-    if (!canManageFeature(actor.role)) {
-      return failure('forbidden', 'Only officers may manage events');
+    if (!canAccessRolePolicy(actor.role, roleAccessPolicies.manageEvents)) {
+      return failure(
+        'forbidden',
+        roleAccessRequirement(roleAccessPolicies.manageEvents),
+      );
     }
     const validation = validateEvent(draft, draft.imageLocalUri);
     if (validation) return failure('validation', validation);
@@ -148,8 +215,11 @@ export class EventsModule {
     update: EventUpdate,
   ): Promise<Outcome<ClubEvent>> {
     if (!actor) return failure('unauthenticated', 'Sign in to manage events');
-    if (!canManageFeature(actor.role)) {
-      return failure('forbidden', 'Only officers may manage events');
+    if (!canAccessRolePolicy(actor.role, roleAccessPolicies.manageEvents)) {
+      return failure(
+        'forbidden',
+        roleAccessRequirement(roleAccessPolicies.manageEvents),
+      );
     }
     const validation = validateEvent(update, 'selected');
     if (validation) return failure('validation', validation);
@@ -186,8 +256,11 @@ export class EventsModule {
 
   async remove(actor: User | undefined, id: string): Promise<Outcome<void>> {
     if (!actor) return failure('unauthenticated', 'Sign in to manage events');
-    if (!canManageFeature(actor.role)) {
-      return failure('forbidden', 'Only officers may manage events');
+    if (!canAccessRolePolicy(actor.role, roleAccessPolicies.manageEvents)) {
+      return failure(
+        'forbidden',
+        roleAccessRequirement(roleAccessPolicies.manageEvents),
+      );
     }
     const existing = await this.get(actor, id);
     if (!existing.ok) return existing;

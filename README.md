@@ -66,7 +66,7 @@ flowchart LR
 ```
 
 The client is organized as behavior-first vertical modules for sightings, catalog,
-stations, announcements, events, surveys, contacts, users, whitelist, session, image selection, and
+stations, comments, announcements, events, surveys, contacts, users, whitelist, session, image selection, and
 iNaturalist integration workflows.
 Screens own presentation and navigation; modules return typed outcomes; narrow ports
 isolate Firebase and Expo. Deterministic in-memory adapters and Firebase Emulator

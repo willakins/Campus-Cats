@@ -1,6 +1,6 @@
 import React from 'react';
 
-import { render, screen, userEvent } from '@testing-library/react-native';
+import { fireEvent, render, screen, userEvent } from '@testing-library/react-native';
 
 import {
   Role,
@@ -22,16 +22,31 @@ import { CatalogEntryElement } from './CatalogEntryElement';
 import { SightingEntry } from './SightingEntry';
 import { StationEntry } from './StationEntry';
 
+const mockMapMount = jest.fn();
+const mockMapRender = jest.fn();
+
 jest.mock('@expo/vector-icons', () => ({ Ionicons: () => null }));
 jest.mock('../ui/MapView', () => {
   const mockReact = require('react');
   const { View: MockView } = require('react-native');
-  return { MapView: ({ children }: React.PropsWithChildren) => mockReact.createElement(MockView, null, children) };
+  return {
+    MapView: ({ children, ...props }: React.PropsWithChildren<Record<string, unknown>>) => {
+      mockMapRender(props);
+      mockReact.useEffect(() => {
+        mockMapMount();
+      }, []);
+      return mockReact.createElement(MockView, null, children);
+    },
+  };
 });
 jest.mock('react-native-maps', () => {
   const mockReact = require('react');
-  const { View: MockView } = require('react-native');
-  return { Marker: () => mockReact.createElement(MockView) };
+  const { Pressable: MockPressable, View: MockView } = require('react-native');
+  return {
+    Marker: ({ children, ...props }: React.PropsWithChildren<Record<string, unknown>>) =>
+      mockReact.createElement(MockPressable, props, children),
+    Polyline: (props: Record<string, unknown>) => mockReact.createElement(MockView, props),
+  };
 });
 
 const actor = parseUser({ id: 'member-1', email: 'member@gatech.edu', role: Role.Member });
@@ -161,6 +176,120 @@ describe('detail entries', () => {
     await user.press(screen.getByRole('button', { name: 'Show all field notes' }));
     expect(screen.getByText('Orange tabby')).toBeOnTheScreen();
     expect(screen.getByText('Campus Cats volunteers')).toBeOnTheScreen();
+  });
+
+  it('lets users walk backward through mapped sightings in chronological order', async () => {
+    mockMapMount.mockClear();
+    mockMapRender.mockClear();
+    const onSightingPress = jest.fn();
+    const user = userEvent.setup();
+    const oldest = localSightingRecord(parseSighting({
+      ...sighting,
+      id: 'sighting-oldest',
+      date: new Date('2026-07-30T12:00:00.000Z'),
+      timeOfDay: 'Morning',
+      location: { latitude: 33.774, longitude: -84.398 },
+    }));
+    const middle: InaturalistSightingRecord = {
+      ...importedSighting,
+      id: 'inat-observation-middle',
+      sourceId: 1002,
+      date: new Date('2026-07-31T18:45:00.000Z'),
+      observedOn: '2026-07-31',
+      location: { latitude: 33.775, longitude: -84.397 },
+    };
+
+    await renderThemed(
+      <CatalogEntryElement
+        entry={catalogEntry}
+        media={[]}
+        sightings={[sighting, oldest, middle]}
+        onSightingPress={onSightingPress}
+      />,
+    );
+
+    expect(screen.getByText('Sighting 3 of 3')).toBeOnTheScreen();
+    expect(screen.getByText('Afternoon of August 1, 2026')).toBeOnTheScreen();
+    expect(screen.getByText('Path through 3 mapped sightings')).toBeOnTheScreen();
+    expect(mockMapMount).toHaveBeenCalledTimes(1);
+    const initialViewport = mockMapRender.mock.calls.at(-1)?.[0].initialViewport;
+
+    await user.press(screen.getByRole('button', {
+      name: 'View Goldie sighting from Afternoon of August 1, 2026',
+    }));
+    expect(onSightingPress).toHaveBeenCalledWith(sighting);
+
+    await fireEvent(
+      screen.getByRole('adjustable', { name: 'Sighting timeline' }),
+      'onAccessibilityAction',
+      { nativeEvent: { actionName: 'decrement' } },
+    );
+
+    expect(screen.getByText('Sighting 2 of 3')).toBeOnTheScreen();
+    expect(screen.getByText(/July 31, 2026/)).toBeOnTheScreen();
+    expect(screen.getByText('Path through 2 mapped sightings')).toBeOnTheScreen();
+    expect(mockMapMount).toHaveBeenCalledTimes(1);
+    expect(mockMapRender.mock.calls.at(-1)?.[0].initialViewport).toBe(initialViewport);
+  });
+
+  it('shows a single mapped sighting without a meaningless timeline control', async () => {
+    await renderThemed(
+      <CatalogEntryElement
+        entry={catalogEntry}
+        media={[]}
+        sightings={[sighting]}
+      />,
+    );
+
+    expect(screen.getByText('Sighting 1 of 1')).toBeOnTheScreen();
+    expect(screen.getByText('Path through 1 mapped sighting')).toBeOnTheScreen();
+    expect(
+      screen.queryByRole('adjustable', { name: 'Sighting timeline' }),
+    ).not.toBeOnTheScreen();
+  });
+
+  it('orders same-day local sightings by their reported time of day', async () => {
+    const localAt = (id: string, timeOfDay: string, longitude: number) =>
+      localSightingRecord(parseSighting({
+        ...sighting,
+        id,
+        date: new Date('2026-08-01T12:00:00.000Z'),
+        timeOfDay,
+        location: { latitude: 33.776, longitude },
+      }));
+
+    await renderThemed(
+      <CatalogEntryElement
+        entry={catalogEntry}
+        media={[]}
+        sightings={[
+          localAt('a-night', 'Night', -84.394),
+          localAt('z-morning', 'Morning', -84.396),
+          localAt('y-afternoon', 'Afternoon', -84.395),
+        ]}
+      />,
+    );
+
+    expect(screen.getByText('Night of August 1, 2026')).toBeOnTheScreen();
+    await fireEvent(
+      screen.getByRole('adjustable', { name: 'Sighting timeline' }),
+      'onAccessibilityAction',
+      { nativeEvent: { actionName: 'decrement' } },
+    );
+    expect(screen.getByText('Afternoon of August 1, 2026')).toBeOnTheScreen();
+  });
+
+  it('explains when a cat has no sighting history yet', async () => {
+    await renderThemed(
+      <CatalogEntryElement entry={catalogEntry} media={[]} sightings={[]} />,
+    );
+
+    expect(
+      screen.getByText('No sightings have been recorded for Goldie yet.'),
+    ).toBeOnTheScreen();
+    expect(
+      screen.queryByRole('adjustable', { name: 'Sighting timeline' }),
+    ).not.toBeOnTheScreen();
   });
 
   it('shows the favorite count and exposes a single-account favorite action', async () => {

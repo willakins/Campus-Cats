@@ -42,7 +42,10 @@ service firebase.storage {
 
     function isActiveUser(clubId) {
       return sameClub(clubId)
-        && userDocument().data.banned != true
+        && (
+          !('banned' in userDocument().data)
+          || userDocument().data.banned != true
+        )
         && clubHasAccess(clubId);
     }
 
@@ -54,8 +57,8 @@ service firebase.storage {
       return role(clubId) >= 1;
     }
 
-    function isPresident(clubId) {
-      return role(clubId) == 3;
+    function hasPresidentAccess(clubId) {
+      return role(clubId) >= 3;
     }
 
     function validImage() {
@@ -135,8 +138,14 @@ service firebase.storage {
 
     match /clubs/{clubId}/app-branding/{fileName} {
       allow read: if !signedIn() || isActiveUser(clubId);
-      allow create, update: if isPresident(clubId) && validImage();
-      allow delete: if isPresident(clubId);
+      allow create, update: if hasPresidentAccess(clubId) && validImage();
+      allow delete: if hasPresidentAccess(clubId);
+    }
+
+    match /clubs/{clubId}/donations/{fileName} {
+      allow read: if isActiveUser(clubId);
+      allow create, update: if hasPresidentAccess(clubId) && validImage();
+      allow delete: if hasPresidentAccess(clubId);
     }
 
     match /{allPaths=**} {

@@ -3,13 +3,27 @@ import { Alert } from 'react-native';
 
 import { useLocalSearchParams, useRouter } from 'expo-router';
 
-import { AppHeader, ErrorState, FormSkeleton, Screen } from '@/components/design';
-import { FormScreen } from '@/components/forms';
+import { RestrictedAccess } from '@/components/access';
+import {
+  AppHeader,
+  ErrorState,
+  FormSkeleton,
+  Screen,
+} from '@/components/design';
+import { FormScreen, useFormValidation } from '@/components/forms';
 import { appModules } from '@/composition/appModules';
-import { Announcement, parseUser } from '@/core/domain';
+import { Announcement, parseUser, roleAccessPolicies } from '@/core/domain';
 import { localMedia, storedMedia } from '@/core/media';
 import { StoredMediaAsset } from '@/core/ports';
-import { AnnouncementForm, AnnouncementFormData } from '@/forms/AnnouncementForm';
+import {
+  AnnouncementForm,
+  AnnouncementFormData,
+  AnnouncementFormErrors,
+  AnnouncementFormSection,
+  AnnouncementRequiredField,
+  firstAnnouncementErrorField,
+  validateAnnouncementForm,
+} from '@/forms/AnnouncementForm';
 import { useAuth } from '@/providers/AuthProvider';
 
 const EditAnnouncement = () => {
@@ -17,7 +31,9 @@ const EditAnnouncement = () => {
   const { id } = useLocalSearchParams<{ id?: string }>();
   const { user } = useAuth();
   const [announcement, setAnnouncement] = useState<Announcement>();
-  const [storedAssets, setStoredAssets] = useState<readonly StoredMediaAsset[]>([]);
+  const [storedAssets, setStoredAssets] = useState<readonly StoredMediaAsset[]>(
+    [],
+  );
   const [photos, setPhotos] = useState<string[]>([]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string>();
@@ -26,6 +42,15 @@ const EditAnnouncement = () => {
     title: '',
     info: '',
     authorAlias: '',
+  });
+  const validation = useFormValidation<
+    AnnouncementFormSection,
+    AnnouncementRequiredField,
+    AnnouncementFormErrors
+  >({
+    errors: validateAnnouncementForm(formData),
+    firstError: firstAnnouncementErrorField,
+    sectionForField: () => 'basics',
   });
 
   useEffect(() => {
@@ -60,8 +85,9 @@ const EditAnnouncement = () => {
   };
   const save = async () => {
     if (!announcement || busy) return;
-    setBusy(true);
     setError(undefined);
+    if (!validation.validate()) return;
+    setBusy(true);
     const result = await appModules.announcements.update(
       parseUser(user),
       announcement.id,
@@ -86,16 +112,17 @@ const EditAnnouncement = () => {
         style: 'destructive',
         onPress: () => {
           setBusy(true);
-          void appModules.announcements.remove(parseUser(user), announcement.id).then((result) => {
-            setBusy(false);
-            if (result.ok) {
-              router.replace({
-                pathname: '/announcements',
-                params: { section: 'announcements' },
-              });
-            }
-            else setError(result.error.message);
-          });
+          void appModules.announcements
+            .remove(parseUser(user), announcement.id)
+            .then((result) => {
+              setBusy(false);
+              if (result.ok) {
+                router.replace({
+                  pathname: '/announcements',
+                  params: { section: 'announcements' },
+                });
+              } else setError(result.error.message);
+            });
         },
       },
     ]);
@@ -108,6 +135,9 @@ const EditAnnouncement = () => {
           title="Edit announcement"
           eyebrow="Campus Cats update"
           onBack={() => router.back()}
+          action={
+            <RestrictedAccess policy={roleAccessPolicies.manageAnnouncements} />
+          }
         />
         <FormSkeleton label="Loading announcement form" fields={3} />
       </Screen>
@@ -116,8 +146,17 @@ const EditAnnouncement = () => {
   if (!announcement) {
     return (
       <Screen>
-        <AppHeader title="Edit announcement" onBack={() => router.back()} />
-        <ErrorState title="Could not load announcement" message={loadError || 'Announcement not found'} />
+        <AppHeader
+          title="Edit announcement"
+          onBack={() => router.back()}
+          action={
+            <RestrictedAccess policy={roleAccessPolicies.manageAnnouncements} />
+          }
+        />
+        <ErrorState
+          title="Could not load announcement"
+          message={loadError || 'Announcement not found'}
+        />
       </Screen>
     );
   }
@@ -125,10 +164,13 @@ const EditAnnouncement = () => {
     <FormScreen
       title="Edit announcement"
       eyebrow="Campus Cats update"
+      access={{ policy: roleAccessPolicies.manageAnnouncements, role: user.role }}
       saveLabel="Save Announcement"
       savingLabel="Saving announcement…"
       busy={busy}
       error={error}
+      scrollRequest={validation.scrollRequest}
+      toast={validation.toast}
       onBack={() => router.back()}
       onSave={() => void save()}
       onDelete={confirmDelete}
@@ -139,6 +181,9 @@ const EditAnnouncement = () => {
         setFormData={setFormData}
         photos={photos}
         setPhotos={setPhotos}
+        errors={validation.errors}
+        onSectionLayout={validation.onSectionLayout}
+        onRequiredFieldLayout={validation.onRequiredFieldLayout}
       />
     </FormScreen>
   );

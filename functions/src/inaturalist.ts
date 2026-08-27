@@ -51,12 +51,31 @@ export interface ObservationImport {
   readonly guideTaxonId?: number;
   readonly observationLicenseCode?: string;
   readonly photos: readonly ExternalMediaImport[];
+  readonly comments: readonly ObservationCommentImport[];
   readonly sourceActive: boolean;
   readonly visible: boolean;
   readonly importedAt: Date;
   readonly syncedAt: Date;
   readonly lastSeenRunId: string;
   readonly moderation: ImportModeration;
+}
+
+export interface ObservationCommentImport {
+  readonly schemaVersion: 1;
+  readonly id: number;
+  readonly uuid: string;
+  readonly observationId: number;
+  readonly sourceUrl: string;
+  readonly body: string;
+  readonly createdAt: Date;
+  readonly sourceUpdatedAt: Date;
+  readonly author: Readonly<{
+    id: number;
+    login: string;
+    displayName?: string;
+    sourceUrl: string;
+  }>;
+  readonly lastSeenRunId: string;
 }
 
 export interface CatalogMetadataImport {
@@ -133,6 +152,8 @@ const OBSERVATION_FIELDS =
   'description:!t,quality_grade:!t,license_code:!t,positional_accuracy:!t,' +
   'geojson:(coordinates:!t,type:!t),ofvs:(field_id:!t,value:!t),' +
   'photos:(id:!t,url:!t,license_code:!t,attribution:!t),' +
+  'comments:(id:!t,uuid:!t,body:!t,created_at:!t,updated_at:!t,hidden:!t,' +
+  'user:(id:!t,login:!t,name:!t)),' +
   'user:(id:!t,login:!t,name:!t))';
 
 export class InaturalistHttpGateway implements InaturalistGateway {
@@ -243,6 +264,9 @@ export interface ImportRepository {
     seen: ReadonlySet<number>,
     now: Date,
   ): Promise<number>;
+  removeMissingObservationComments(
+    seen: ReadonlySet<string>,
+  ): Promise<number>;
   deactivateMissingCatalog(
     seen: ReadonlySet<number>,
     now: Date,
@@ -351,6 +375,7 @@ export async function runInaturalistSync(
 
     try {
       const seen = new Set<number>();
+      const seenComments = new Set<string>();
       let afterId: number | undefined;
       for (;;) {
         const page = await dependencies.gateway.listObservations(afterId);
@@ -360,7 +385,10 @@ export async function runInaturalistSync(
         const mapped = page.results.map((value) =>
           mapObservation(value, guideIndex, startedAt, runId),
         );
-        for (const item of mapped) seen.add(item.id);
+        for (const item of mapped) {
+          seen.add(item.id);
+          item.comments.forEach(({uuid}) => seenComments.add(uuid));
+        }
         observations.fetched += mapped.length;
         if (mapped.length > 0) {
           const counts =
@@ -380,6 +408,9 @@ export async function runInaturalistSync(
           seen,
           startedAt,
         );
+      await dependencies.repository.removeMissingObservationComments(
+        seenComments,
+      );
     } catch (error) {
       observations.errors.push(errorMessage(error));
     }
@@ -533,6 +564,11 @@ export function mapObservation(
       ...photo,
       role: index === 0 ? ('profile' as const) : ('gallery' as const),
     }));
+  const comments = array(data.comments, 'observation.comments')
+    .map((comment) => mapObservationComment(comment, id, runId))
+    .filter(
+      (comment): comment is ObservationCommentImport => comment !== undefined,
+    );
 
   return {
     schemaVersion: 1,
@@ -554,6 +590,7 @@ export function mapObservation(
     guideTaxonId,
     observationLicenseCode,
     photos,
+    comments,
     sourceActive: true,
     visible: true,
     importedAt: new Date(now),
@@ -561,6 +598,52 @@ export function mapObservation(
     lastSeenRunId: runId,
     moderation: { hidden: false, reason: '' },
   };
+}
+
+function mapObservationComment(
+  value: unknown,
+  observationId: number,
+  runId: string,
+): ObservationCommentImport | undefined {
+  try {
+    const data = record(value, 'observation comment');
+    if (data.hidden === true) return undefined;
+    const id = positiveInteger(data.id, 'observation comment.id');
+    const uuid = requiredString(data.uuid, 'observation comment.uuid');
+    if (!/^[0-9a-f]{8}-[0-9a-f-]{27}$/i.test(uuid)) {
+      throw new Error('observation comment.uuid must be a UUID');
+    }
+    const body = requiredString(data.body, 'observation comment.body');
+    const createdAt = validDate(
+      data.created_at,
+      'observation comment.created_at',
+    );
+    const sourceUpdatedAt = optionalDate(data.updated_at) ?? createdAt;
+    const user = record(data.user, 'observation comment.user');
+    const login = requiredString(user.login, 'observation comment.user.login');
+    const displayName = optionalString(user.name)?.trim();
+    return {
+      schemaVersion: 1,
+      id,
+      uuid,
+      observationId,
+      sourceUrl:
+        `https://www.inaturalist.org/observations/${observationId}` +
+        `#comment-${id}`,
+      body,
+      createdAt,
+      sourceUpdatedAt,
+      author: {
+        id: positiveInteger(user.id, 'observation comment.user.id'),
+        login,
+        ...(displayName ? {displayName} : {}),
+        sourceUrl: `https://www.inaturalist.org/people/${encodeURIComponent(login)}`,
+      },
+      lastSeenRunId: runId,
+    };
+  } catch {
+    return undefined;
+  }
 }
 
 export function mapGuideTaxon(

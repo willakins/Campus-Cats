@@ -5,15 +5,18 @@ import {
   CommunityVoteNominee,
   IdGenerator,
   Outcome,
+  ParticipationAudience,
   PersistenceCodec,
-  Role,
   User,
-  canManageFeature,
+  canAccessRolePolicy,
+  canParticipate,
   communityVotePhase,
   communityVoteReceiptId,
   failure,
   parseCommunityVote,
   success,
+  roleAccessPolicies,
+  roleAccessRequirement,
 } from '../../core/domain';
 import { MediaCoordinator, localMedia } from '../../core/media';
 import {
@@ -36,6 +39,7 @@ export interface ContestDraft {
   readonly kind: 'contest';
   readonly title: string;
   readonly details: string;
+  readonly participationAudience?: ParticipationAudience;
   readonly votingDays: number;
   readonly options: readonly ContestOptionDraft[];
 }
@@ -44,16 +48,21 @@ export interface PresidentialElectionDraft {
   readonly kind: 'presidential_election';
   readonly title: string;
   readonly details: string;
+  readonly participationAudience?: ParticipationAudience;
   readonly nominationDays: number;
   readonly votingDays: number;
 }
 
 export type CommunityVoteDraft = ContestDraft | PresidentialElectionDraft;
 
+const ACTIVE_PRESIDENTIAL_ELECTION_ID = 'presidential-election';
+
 export interface CommunityVotingChoice {
   readonly id: string;
   readonly label: string;
   readonly imageUrl?: string;
+  readonly pitch?: string;
+  readonly profileUserId?: string;
 }
 
 interface CommunityVotingDependencies {
@@ -138,6 +147,49 @@ export class CommunityVotingModule {
     const validation = validateDraft(draft);
     if (validation) return failure('validation', validation);
 
+    if (draft.kind === 'presidential_election') {
+      try {
+        const state = await this.dependencies.documents.get(
+          COLLECTIONS.communityVoteState,
+          ACTIVE_PRESIDENTIAL_ELECTION_ID,
+        );
+        if (state) {
+          const activeVoteId = state.data.voteId;
+          if (typeof activeVoteId !== 'string' || !activeVoteId) {
+            return failure(
+              'dependency_failure',
+              'Could not verify the active presidential election',
+            );
+          }
+          const activeDocument = await this.dependencies.documents.get(
+            COLLECTIONS.communityVotes,
+            activeVoteId,
+          );
+          if (activeDocument) {
+            const activeVote = this.dependencies.codecs.vote.decode(
+              activeDocument.id,
+              activeDocument.data,
+            );
+            if (
+              activeVote.kind === 'presidential_election' &&
+              communityVotePhase(activeVote, this.dependencies.clock.now()) !==
+                'closed'
+            ) {
+              return failure(
+                'conflict',
+                'A presidential election is already open',
+              );
+            }
+          }
+        }
+      } catch {
+        return failure(
+          'dependency_failure',
+          'Could not verify the active presidential election',
+        );
+      }
+    }
+
     const id = this.dependencies.ids.next();
     const createdAt = this.dependencies.clock.now();
     const votingStartsAt =
@@ -152,6 +204,7 @@ export class CommunityVotingModule {
         kind: draft.kind,
         title: draft.title,
         details: draft.details,
+        participationAudience: draft.participationAudience,
         options: [],
         createdAt,
         createdBy: actor,
@@ -160,7 +213,24 @@ export class CommunityVotingModule {
         votingEndsAt,
       });
       try {
-        await this.persist(vote);
+        const encoded = this.dependencies.codecs.vote.encode(vote);
+        await this.dependencies.documents.commit([
+          {
+            operation: 'put',
+            collection: COLLECTIONS.communityVotes,
+            id: vote.id,
+            data: encoded,
+          },
+          {
+            operation: 'put',
+            collection: COLLECTIONS.communityVoteState,
+            id: ACTIVE_PRESIDENTIAL_ELECTION_ID,
+            data: {
+              voteId: vote.id,
+              votingEndsAt: encoded.votingEndsAt,
+            },
+          },
+        ]);
       } catch {
         return failure('dependency_failure', 'Could not create the election');
       }
@@ -180,6 +250,7 @@ export class CommunityVotingModule {
         kind: draft.kind,
         title: draft.title,
         details: draft.details,
+        participationAudience: draft.participationAudience,
         options: draft.options.map((option, index) => {
           const imageUrl = option.imageLocalUri?.trim()
             ? imageUrls[imageIndex++]
@@ -235,6 +306,36 @@ export class CommunityVotingModule {
     );
   }
 
+  async hasUnsubmittedOpenBallot(
+    actor: User | undefined,
+    votes: readonly CommunityVote[],
+  ): Promise<Outcome<boolean>> {
+    if (!actor) {
+      return failure('unauthenticated', 'Sign in to view voting participation');
+    }
+    const openBallots = votes.filter(
+      (vote) =>
+        communityVotePhase(vote, this.dependencies.clock.now()) === 'voting' &&
+        canParticipate(actor.role, vote.participationAudience),
+    );
+    try {
+      const receipts = await Promise.all(
+        openBallots.map(({ id }) =>
+          this.dependencies.documents.get(
+            COLLECTIONS.communityVoteBallotReceipts,
+            communityVoteReceiptId(id, actor.id),
+          ),
+        ),
+      );
+      return success(receipts.some((receipt) => !receipt));
+    } catch {
+      return failure(
+        'dependency_failure',
+        'Could not check open voting participation',
+      );
+    }
+  }
+
   async nominees(
     actor: User | undefined,
     voteId: string,
@@ -286,6 +387,8 @@ export class CommunityVotingModule {
           nominees.value.map((nominee) => ({
             id: nominee.userId,
             label: nominee.displayName,
+            ...(nominee.pitch ? { pitch: nominee.pitch } : {}),
+            profileUserId: nominee.userId,
           })),
           nominees.warnings,
         )
@@ -296,10 +399,30 @@ export class CommunityVotingModule {
     actor: User | undefined,
     voteId: string,
     action: CommunityNominationAction,
+    pitch?: string,
   ): Promise<Outcome<CommunityNominationSubmission>> {
     if (!actor) return failure('unauthenticated', 'Sign in to join nominations');
+    if (pitch !== undefined && pitch.length > 500) {
+      return failure(
+        'validation',
+        'Nomination pitch must be 500 characters or fewer',
+      );
+    }
+    const normalizedPitch = pitch?.trim();
+    if (action === 'abstain' && normalizedPitch) {
+      return failure(
+        'validation',
+        'A pitch can only be included when nominating yourself',
+      );
+    }
     const vote = await this.get(actor, voteId);
     if (!vote.ok) return vote;
+    if (!canParticipate(actor.role, vote.value.participationAudience)) {
+      return failure(
+        'forbidden',
+        'Only officers can participate in this vote',
+      );
+    }
     if (
       vote.value.kind !== 'presidential_election' ||
       communityVotePhase(vote.value, this.dependencies.clock.now()) !==
@@ -318,6 +441,7 @@ export class CommunityVotingModule {
           actor,
           vote.value,
           action,
+          normalizedPitch,
         ),
       );
     } catch (error) {
@@ -333,6 +457,12 @@ export class CommunityVotingModule {
     if (!actor) return failure('unauthenticated', 'Sign in to vote');
     const vote = await this.get(actor, voteId);
     if (!vote.ok) return vote;
+    if (!canParticipate(actor.role, vote.value.participationAudience)) {
+      return failure(
+        'forbidden',
+        'Only officers can participate in this vote',
+      );
+    }
     if (
       communityVotePhase(vote.value, this.dependencies.clock.now()) !== 'voting'
     ) {
@@ -435,14 +565,26 @@ function creationDenied(
   kind: CommunityVoteDraft['kind'],
 ): Outcome<never> | undefined {
   if (!actor) return failure('unauthenticated', 'Sign in to create votes');
-  if (kind === 'presidential_election' && actor.role !== Role.President) {
+  if (
+    kind === 'presidential_election' &&
+    !canAccessRolePolicy(
+      actor.role,
+      roleAccessPolicies.createPresidentialElections,
+    )
+  ) {
     return failure(
       'forbidden',
-      'Only the President may start a presidential election',
+      roleAccessRequirement(roleAccessPolicies.createPresidentialElections),
     );
   }
-  if (kind === 'contest' && !canManageFeature(actor.role)) {
-    return failure('forbidden', 'Only officers may create contests');
+  if (
+    kind === 'contest' &&
+    !canAccessRolePolicy(actor.role, roleAccessPolicies.createContests)
+  ) {
+    return failure(
+      'forbidden',
+      roleAccessRequirement(roleAccessPolicies.createContests),
+    );
   }
   return undefined;
 }

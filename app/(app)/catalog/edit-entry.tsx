@@ -3,8 +3,14 @@ import { Alert } from 'react-native';
 
 import { useLocalSearchParams, useRouter } from 'expo-router';
 
-import { AppHeader, ErrorState, FormSkeleton, Screen } from '@/components/design';
-import { FormScreen } from '@/components/forms';
+import { RestrictedAccess } from '@/components/access';
+import {
+  AppHeader,
+  ErrorState,
+  FormSkeleton,
+  Screen,
+} from '@/components/design';
+import { FormScreen, useFormValidation } from '@/components/forms';
 import { appModules } from '@/composition/appModules';
 import {
   Cat,
@@ -14,31 +20,78 @@ import {
   CatStatus,
   Fur,
   parseUser,
+  roleAccessPolicies,
   Sex,
   TNRStatus,
 } from '@/core/domain';
 import { localMedia, storedMedia } from '@/core/media';
-import { DisplayMediaAsset, StoredMediaAsset, isExternalMediaAsset } from '@/core/ports';
+import {
+  DisplayMediaAsset,
+  StoredMediaAsset,
+  isExternalMediaAsset,
+} from '@/core/ports';
 import {
   defaultCatalogTagIdsForCat,
   isSourceManagedCatalogEntry,
 } from '@/features/catalog/catalogDiscovery';
-import { CatalogForm, CatalogFormData } from '@/forms/CatalogForm';
+import {
+  catalogSectionForField,
+  CatalogForm,
+  CatalogFormData,
+  CatalogFormErrors,
+  CatalogFormSection,
+  CatalogRequiredField,
+  firstCatalogErrorField,
+  validateCatalogForm,
+} from '@/forms/CatalogForm';
 import { useAuth } from '@/providers';
 import { PickerConfig } from '@/types';
 
-const statusItems = ['Adopted', 'Deceased', 'Feral', 'Frat Cat', 'Unknown'].map((value) => ({ label: value, value }));
-const tnrItems = ['Yes', 'No', 'Unknown'].map((value) => ({ label: value, value }));
-const sexItems = ['Male', 'Female', 'Unknown'].map((value) => ({ label: value, value }));
-const furItems = ['Short', 'Medium', 'Long', 'Unknown'].map((value) => ({ label: value, value }));
+const statusItems = ['Adopted', 'Deceased', 'Feral', 'Frat Cat', 'Unknown'].map(
+  (value) => ({ label: value, value }),
+);
+const tnrItems = ['Yes', 'No', 'Unknown'].map((value) => ({
+  label: value,
+  value,
+}));
+const sexItems = ['Male', 'Female', 'Unknown'].map((value) => ({
+  label: value,
+  value,
+}));
+const furItems = ['Short', 'Medium', 'Long', 'Unknown'].map((value) => ({
+  label: value,
+  value,
+}));
+const validateEditCatalogForm = ({
+  formData,
+  profile,
+  sourceManaged,
+}: {
+  formData: CatalogFormData;
+  profile: string;
+  sourceManaged: boolean;
+}): CatalogFormErrors => {
+  if (sourceManaged) return {};
+  const errors = validateCatalogForm({
+    formData,
+    photos: profile ? [profile] : [],
+  });
+  return errors.photos
+    ? { ...errors, photos: 'At least one profile photo is required.' }
+    : errors;
+};
 
 const EditEntry = () => {
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id?: string }>();
   const { user } = useAuth();
   const [entry, setEntry] = useState<CatalogRecord>();
-  const [storedAssets, setStoredAssets] = useState<readonly StoredMediaAsset[]>([]);
-  const [displayAssets, setDisplayAssets] = useState<readonly DisplayMediaAsset[]>([]);
+  const [storedAssets, setStoredAssets] = useState<readonly StoredMediaAsset[]>(
+    [],
+  );
+  const [displayAssets, setDisplayAssets] = useState<
+    readonly DisplayMediaAsset[]
+  >([]);
   const [availableTags, setAvailableTags] = useState<readonly CatalogTag[]>([]);
   const [selectedTagIds, setSelectedTagIds] = useState<readonly string[]>();
   const [tagsReady, setTagsReady] = useState(false);
@@ -60,15 +113,60 @@ const EditEntry = () => {
   const [furOpen, setFurOpen] = useState(false);
   const [furOptions, setFurOptions] = useState(furItems);
   const [formData, setFormData] = useState<CatalogFormData>({
-    name: '', descShort: '', descLong: '', colorPattern: '', behavior: '',
-    yearsRecorded: '', AoR: '', furPattern: '', credits: '',
+    name: '',
+    descShort: '',
+    descLong: '',
+    colorPattern: '',
+    behavior: '',
+    yearsRecorded: '',
+    AoR: '',
+    furPattern: '',
+    credits: '',
   });
   const pickers = {
-    statusPicker: { value: statusValue, setValue: setStatusValue, open: statusOpen, setOpen: setStatusOpen, items: statusOptions, setItems: setStatusOptions } as PickerConfig<CatStatus>,
-    tnrPicker: { value: tnrValue, setValue: setTnrValue, open: tnrOpen, setOpen: setTnrOpen, items: tnrOptions, setItems: setTnrOptions } as PickerConfig<TNRStatus>,
-    sexPicker: { value: sexValue, setValue: setSexValue, open: sexOpen, setOpen: setSexOpen, items: sexOptions, setItems: setSexOptions } as PickerConfig<Sex>,
-    furPicker: { value: furValue, setValue: setFurValue, open: furOpen, setOpen: setFurOpen, items: furOptions, setItems: setFurOptions } as PickerConfig<Fur>,
+    statusPicker: {
+      value: statusValue,
+      setValue: setStatusValue,
+      open: statusOpen,
+      setOpen: setStatusOpen,
+      items: statusOptions,
+      setItems: setStatusOptions,
+    } as PickerConfig<CatStatus>,
+    tnrPicker: {
+      value: tnrValue,
+      setValue: setTnrValue,
+      open: tnrOpen,
+      setOpen: setTnrOpen,
+      items: tnrOptions,
+      setItems: setTnrOptions,
+    } as PickerConfig<TNRStatus>,
+    sexPicker: {
+      value: sexValue,
+      setValue: setSexValue,
+      open: sexOpen,
+      setOpen: setSexOpen,
+      items: sexOptions,
+      setItems: setSexOptions,
+    } as PickerConfig<Sex>,
+    furPicker: {
+      value: furValue,
+      setValue: setFurValue,
+      open: furOpen,
+      setOpen: setFurOpen,
+      items: furOptions,
+      setItems: setFurOptions,
+    } as PickerConfig<Fur>,
   };
+  const sourceManaged = entry ? isSourceManagedCatalogEntry(entry) : false;
+  const validation = useFormValidation<
+    CatalogFormSection,
+    CatalogRequiredField,
+    CatalogFormErrors
+  >({
+    errors: validateEditCatalogForm({ formData, profile, sourceManaged }),
+    firstError: firstCatalogErrorField,
+    sectionForField: catalogSectionForField,
+  });
 
   useEffect(() => {
     if (!id) {
@@ -80,65 +178,80 @@ const EditEntry = () => {
       appModules.catalog.media(id),
       appModules.catalogTags.list(parseUser(user)),
       appModules.catalogTags.assignments(parseUser(user)),
-    ]).then(
-      ([entryResult, mediaResult, tagsResult, assignmentsResult]) => {
-        if (!entryResult.ok) {
-          setLoadError(entryResult.error.message);
-          return;
-        }
-        const loaded = entryResult.value;
-        setEntry(loaded);
-        setFormData({
-          name: loaded.cat.name,
-          descShort: loaded.cat.descShort,
-          descLong: loaded.cat.descLong ?? '',
-          colorPattern: loaded.cat.colorPattern ?? '',
-          behavior: loaded.cat.behavior ?? '',
-          yearsRecorded: loaded.cat.yearsRecorded ?? '',
-          AoR: loaded.cat.AoR ?? '',
-          furPattern: loaded.cat.furPattern ?? '',
-          credits:
-            loaded.source === 'inaturalist' && loaded.localContribution
-              ? loaded.localContribution.credits
-              : loaded.credits,
-        });
-        setStatusValue(loaded.cat.currentStatus ?? 'Unknown');
-        setTnrValue(loaded.cat.tnr ?? 'Unknown');
-        setSexValue(loaded.cat.sex ?? 'Unknown');
-        setFurValue(loaded.cat.furLength ?? 'Unknown');
-        if (tagsResult.ok && assignmentsResult.ok) {
-          setAvailableTags(tagsResult.value);
-          setSelectedTagIds(
-            assignmentsResult.value.find(
-              ({ catalogId }) => catalogId === loaded.id,
-            )?.tagIds,
-          );
-          setTagsReady(true);
-        } else if (!tagsResult.ok) setError(tagsResult.error.message);
-        else if (!assignmentsResult.ok) setError(assignmentsResult.error.message);
-        if (mediaResult.ok) {
-          setDisplayAssets(mediaResult.value);
-          setStoredAssets(
-            mediaResult.value.filter(
-              (asset): asset is StoredMediaAsset => !isExternalMediaAsset(asset),
-            ),
-          );
-          setProfile(mediaResult.value.find(({ role }) => role === 'profile')?.url ?? '');
-          setPhotos(mediaResult.value.filter(({ role }) => role === 'gallery').map(({ url }) => url));
-        } else setError(mediaResult.error.message);
-      },
-    );
+    ]).then(([entryResult, mediaResult, tagsResult, assignmentsResult]) => {
+      if (!entryResult.ok) {
+        setLoadError(entryResult.error.message);
+        return;
+      }
+      const loaded = entryResult.value;
+      setEntry(loaded);
+      setFormData({
+        name: loaded.cat.name,
+        descShort: loaded.cat.descShort,
+        descLong: loaded.cat.descLong ?? '',
+        colorPattern: loaded.cat.colorPattern ?? '',
+        behavior: loaded.cat.behavior ?? '',
+        yearsRecorded: loaded.cat.yearsRecorded ?? '',
+        AoR: loaded.cat.AoR ?? '',
+        furPattern: loaded.cat.furPattern ?? '',
+        credits:
+          loaded.source === 'inaturalist' && loaded.localContribution
+            ? loaded.localContribution.credits
+            : loaded.credits,
+      });
+      setStatusValue(loaded.cat.currentStatus ?? 'Unknown');
+      setTnrValue(loaded.cat.tnr ?? 'Unknown');
+      setSexValue(loaded.cat.sex ?? 'Unknown');
+      setFurValue(loaded.cat.furLength ?? 'Unknown');
+      if (tagsResult.ok && assignmentsResult.ok) {
+        setAvailableTags(tagsResult.value);
+        setSelectedTagIds(
+          assignmentsResult.value.find(
+            ({ catalogId }) => catalogId === loaded.id,
+          )?.tagIds,
+        );
+        setTagsReady(true);
+      } else if (!tagsResult.ok) setError(tagsResult.error.message);
+      else if (!assignmentsResult.ok) setError(assignmentsResult.error.message);
+      if (mediaResult.ok) {
+        setDisplayAssets(mediaResult.value);
+        setStoredAssets(
+          mediaResult.value.filter(
+            (asset): asset is StoredMediaAsset => !isExternalMediaAsset(asset),
+          ),
+        );
+        setProfile(
+          mediaResult.value.find(({ role }) => role === 'profile')?.url ?? '',
+        );
+        setPhotos(
+          mediaResult.value
+            .filter(({ role }) => role === 'gallery')
+            .map(({ url }) => url),
+        );
+      } else setError(mediaResult.error.message);
+    });
   }, [id, user.id, user.role]);
-  const cat = (): Cat => ({ ...formData, currentStatus: statusValue, furLength: furValue, tnr: tnrValue, sex: sexValue });
+
+  const cat = (): Cat => ({
+    ...formData,
+    currentStatus: statusValue,
+    furLength: furValue,
+    tnr: tnrValue,
+    sex: sexValue,
+  });
   const resolvedTagIds = (
     selectedTagIds ?? defaultCatalogTagIdsForCat(cat())
-  ).filter((tagId) => availableTags.some(({ id: configuredId }) => configuredId === tagId));
+  ).filter((tagId) =>
+    availableTags.some(({ id: configuredId }) => configuredId === tagId),
+  );
   const selectionFor = (uri: string) => {
     const stored = storedAssets.find((asset) => asset.url === uri);
     return stored ? storedMedia(stored.id) : localMedia(uri);
   };
   const promotePhoto = (uri: string) => {
-    setPhotos((current) => [profile, ...current.filter((photo) => photo !== uri)].filter(Boolean));
+    setPhotos((current) =>
+      [profile, ...current.filter((photo) => photo !== uri)].filter(Boolean),
+    );
     setProfile(uri);
   };
   const removePhoto = (uri: string) => {
@@ -147,19 +260,13 @@ const EditEntry = () => {
   };
   const save = async () => {
     if (!entry || busy) return;
+    setError(undefined);
+    if (!validation.validate()) return;
     if (!tagsReady) {
       setError('Catalog tags could not be loaded. Please try again.');
       return;
     }
-    if (
-      (entry.source === 'campus-cats' || entry.linkedLocalCatalogId) &&
-      !profile
-    ) {
-      setError('Please select a profile photo.');
-      return;
-    }
     setBusy(true);
-    setError(undefined);
     const actor = parseUser(user);
     const selectedCover = displayAssets.find(({ url }) => url === profile);
     const overrides: CatalogOverride = {
@@ -219,7 +326,10 @@ const EditEntry = () => {
       }
     }
     setBusy(false);
-    router.replace({ pathname: '/catalog/view-entry', params: { id: entry.id } });
+    router.replace({
+      pathname: '/catalog/view-entry',
+      params: { id: entry.id },
+    });
   };
   const confirmDelete = () => {
     if (!entry || busy) return;
@@ -230,26 +340,28 @@ const EditEntry = () => {
         ? 'Hide this iNaturalist profile from members? The source record will be retained.'
         : 'Delete this entry forever?',
       [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: imported ? 'Hide Profile' : 'Delete Forever', style: 'destructive', onPress: () => {
-          setBusy(true);
-          const operation = imported
-            ? appModules.inaturalist.setVisibility(
-                parseUser(user),
-                'catalog',
-                entry.sourceId,
-                false,
-                'Hidden by an officer from the catalog editor',
-              )
-            : appModules.catalog.remove(parseUser(user), entry.id);
-          void operation.then((result) => {
-            setBusy(false);
-            if (result.ok) router.replace('/catalog');
-            else setError(result.error.message);
-          });
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: imported ? 'Hide Profile' : 'Delete Forever',
+          style: 'destructive',
+          onPress: () => {
+            setBusy(true);
+            const operation = imported
+              ? appModules.inaturalist.setVisibility(
+                  parseUser(user),
+                  'catalog',
+                  entry.sourceId,
+                  false,
+                  'Hidden by an officer from the catalog editor',
+                )
+              : appModules.catalog.remove(parseUser(user), entry.id);
+            void operation.then((result) => {
+              setBusy(false);
+              if (result.ok) router.replace('/catalog');
+              else setError(result.error.message);
+            });
+          },
         },
-      },
       ],
     );
   };
@@ -261,6 +373,9 @@ const EditEntry = () => {
           title="Edit catalog entry"
           eyebrow="Campus field guide"
           onBack={() => router.back()}
+          action={
+            <RestrictedAccess policy={roleAccessPolicies.manageCatalog} />
+          }
         />
         <FormSkeleton label="Loading catalog form" fields={6} />
       </Screen>
@@ -269,8 +384,17 @@ const EditEntry = () => {
   if (!entry) {
     return (
       <Screen>
-        <AppHeader title="Edit catalog entry" onBack={() => router.back()} />
-        <ErrorState title="Could not load entry" message={loadError || 'Catalog entry not found'} />
+        <AppHeader
+          title="Edit catalog entry"
+          onBack={() => router.back()}
+          action={
+            <RestrictedAccess policy={roleAccessPolicies.manageCatalog} />
+          }
+        />
+        <ErrorState
+          title="Could not load entry"
+          message={loadError || 'Catalog entry not found'}
+        />
       </Screen>
     );
   }
@@ -278,14 +402,21 @@ const EditEntry = () => {
     <FormScreen
       title="Edit catalog entry"
       eyebrow="Campus field guide"
+      access={{ policy: roleAccessPolicies.manageCatalog, role: user.role }}
       saveLabel="Save Entry"
       savingLabel="Saving entry…"
       busy={busy}
       error={error}
+      scrollRequest={validation.scrollRequest}
+      toast={validation.toast}
       onBack={() => router.back()}
       onSave={() => void save()}
       onDelete={confirmDelete}
-      deleteLabel={entry.source === 'inaturalist' ? 'Hide Imported Profile' : 'Delete Catalog Entry'}
+      deleteLabel={
+        entry.source === 'inaturalist'
+          ? 'Hide Imported Profile'
+          : 'Delete Catalog Entry'
+      }
     >
       <CatalogForm
         formData={formData}
@@ -296,11 +427,13 @@ const EditEntry = () => {
         setPhotos={setPhotos}
         onPromotePhoto={promotePhoto}
         onDeletePhoto={removePhoto}
-        isCreate={false}
-        sourceManaged={isSourceManagedCatalogEntry(entry)}
+        sourceManaged={sourceManaged}
         availableTags={availableTags}
         selectedTagIds={resolvedTagIds}
         onSelectedTagIdsChange={setSelectedTagIds}
+        errors={validation.errors}
+        onSectionLayout={validation.onSectionLayout}
+        onRequiredFieldLayout={validation.onRequiredFieldLayout}
       />
     </FormScreen>
   );

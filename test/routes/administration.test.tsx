@@ -10,6 +10,7 @@ import {
 } from '@testing-library/react-native';
 
 import Settings from '../../app/(app)/(tabs)/settings';
+import Account from '../../app/(app)/settings/account';
 import InaturalistAdministration from '../../app/(app)/settings/inaturalist';
 import ManageUsers from '../../app/(app)/settings/manage_users';
 import ManageWhitelist from '../../app/(app)/settings/manage_whitelist';
@@ -246,11 +247,13 @@ describe('settings and administration routes', () => {
     jest.spyOn(Linking, 'openURL').mockResolvedValue(undefined);
   });
 
-  it('organizes More for members and signs out from an explicit account action', async () => {
+  it('opens the private account page from the More header', async () => {
     const user = userEvent.setup();
     await renderThemed(<Settings />);
 
-    expect(screen.getByText('Account')).toBeOnTheScreen();
+    expect(screen.queryByText('Account')).not.toBeOnTheScreen();
+    await user.press(screen.getByRole('button', { name: 'Open account' }));
+    expect(mockPush).toHaveBeenCalledWith('/settings/account');
     expect(screen.getByText('Club contacts')).toBeOnTheScreen();
     expect(await screen.findByText('Campus Cats Officers')).toBeOnTheScreen();
     await user.press(screen.getByRole('button', { name: 'Instagram' }));
@@ -276,19 +279,47 @@ describe('settings and administration routes', () => {
     ).toBeOnTheScreen();
     expect(screen.queryByText('Officer tools')).not.toBeOnTheScreen();
 
-    await user.press(screen.getByRole('button', { name: 'Sign Out' }));
-    await waitFor(() => expect(mockReplace).toHaveBeenCalledWith('/login'));
+    expect(
+      screen.queryByRole('button', { name: 'Sign out' }),
+    ).not.toBeOnTheScreen();
   });
 
-  it('keeps account content visible while contacts load independently', async () => {
+  it('keeps the account entry point visible while contacts load independently', async () => {
     mockListContacts.mockImplementation(() => new Promise(() => undefined));
     await renderThemed(<Settings />);
 
-    expect(screen.getByText('Account')).toBeOnTheScreen();
+    expect(
+      screen.getByRole('button', { name: 'Open account' }),
+    ).toBeOnTheScreen();
     expect(screen.getByText('Club contacts')).toBeOnTheScreen();
     expect(
       screen.getByRole('progressbar', { name: 'Loading club contacts' }),
     ).toBeOnTheScreen();
+  });
+
+  it('keeps profile, sign-out, and iNaturalist connection actions on the account page', async () => {
+    const user = userEvent.setup();
+    await renderThemed(<Account />);
+
+    expect(screen.getByText('actor@gatech.edu')).toBeOnTheScreen();
+    expect(screen.getByText('Campus Cats account')).toBeOnTheScreen();
+    expect(screen.getByText('Connected accounts')).toBeOnTheScreen();
+    expect(screen.getByText('iNaturalist')).toBeOnTheScreen();
+    expect(screen.queryByText('Sign Out')).not.toBeOnTheScreen();
+
+    await user.press(screen.getByRole('button', { name: 'View my profile' }));
+    expect(mockPush).toHaveBeenCalledWith({
+      pathname: '/profile/view-profile',
+      params: { id: 'actor-1' },
+    });
+
+    await user.press(
+      screen.getByRole('button', { name: 'Manage iNaturalist connection' }),
+    );
+    expect(mockPush).toHaveBeenCalledWith('/settings/inaturalist-account');
+
+    await user.press(screen.getByRole('button', { name: 'Sign out' }));
+    await waitFor(() => expect(mockReplace).toHaveBeenCalledWith('/login'));
   });
 
   it('shows officer tools to administrators without changing their routes', async () => {
@@ -337,7 +368,8 @@ describe('settings and administration routes', () => {
 
     mockRole = Role.Developer;
     await renderThemed(<Settings />);
-    expect(screen.queryByText('President tools')).not.toBeOnTheScreen();
+    expect(screen.getByText('President tools')).toBeOnTheScreen();
+    expect(screen.getByText('App Settings')).toBeOnTheScreen();
   });
 
   it('edits and saves contact information through the contacts module', async () => {

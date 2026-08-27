@@ -25,6 +25,7 @@ import {
 } from '../features/appSettings';
 import { BillingModule } from '../features/billing';
 import { ClubBillingModule } from '../features/clubBilling';
+import { CommentsModule } from '../features/comments';
 import { CatalogModule } from '../features/catalog';
 import { CatalogTagsModule } from '../features/catalogTags';
 import { ContactsModule } from '../features/contacts';
@@ -78,6 +79,7 @@ export interface AppModules {
   readonly appSettings: AppSettingsModule;
   readonly billing: BillingModule;
   readonly clubBilling: ClubBillingModule;
+  readonly comments: CommentsModule;
   readonly catalog: CatalogModule;
   readonly catalogTags: CatalogTagsModule;
   readonly contacts: ContactsModule;
@@ -144,6 +146,15 @@ export function createAppModules(
     appSettings,
     billing: new BillingModule(billing),
     clubBilling: new ClubBillingModule(clubBilling),
+    comments: new CommentsModule({
+      documents,
+      ids,
+      clock,
+      codecs: {
+        comment: codecs.comment,
+        publicProfile: codecs.publicProfile,
+      },
+    }),
     catalog: new CatalogModule({
       documents,
       media,
@@ -200,6 +211,7 @@ export function createAppModules(
     }),
     session: new SessionModule({ session }),
     sightings: new SightingsModule({
+      clock,
       documents,
       media,
       mediaCoordinator: mediaCoordinator(),

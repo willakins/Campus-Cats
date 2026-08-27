@@ -14,6 +14,7 @@ import {
   importedSightingRecord,
   localSightingRecord,
   parseSighting,
+  sightingDateError,
   success,
 } from '../../core/domain';
 import {
@@ -47,6 +48,7 @@ export interface SightingUpdate
 }
 
 interface SightingsDependencies {
+  readonly clock: Clock;
   readonly documents: DocumentStore;
   readonly media: MediaStore;
   readonly mediaCoordinator: MediaCoordinator;
@@ -351,7 +353,11 @@ export class SightingsModule {
     if (!actor) {
       return failure('unauthenticated', 'Sign in to create a sighting');
     }
-    const validation = validateDraft(draft, draft.photos.length);
+    const validation = validateDraft(
+      draft,
+      draft.photos.length,
+      this.dependencies.clock.now(),
+    );
     if (validation) {
       return failure('validation', validation);
     }
@@ -406,7 +412,7 @@ export class SightingsModule {
     if (!existingResult.value.createdBy || !canModifySighting(actor.id, existingResult.value.createdBy.id)) {
       return failure('forbidden', 'Only the creator may update this sighting');
     }
-    const validation = validateDraft(update, 1);
+    const validation = validateDraft(update, 1, this.dependencies.clock.now());
     if (validation) {
       return failure('validation', validation);
     }
@@ -520,6 +526,7 @@ function importedObservationId(id: string): number | undefined {
 function validateDraft(
   draft: Omit<SightingDraft, 'photos'>,
   photoCount: number,
+  currentDate: Date,
 ): string | undefined {
   if (!draft.name.trim()) {
     return 'Please enter a name for the cat.';
@@ -535,6 +542,8 @@ function validateDraft(
   if (!draft.timeOfDay) {
     return 'Please select a time of day for the sighting.';
   }
+  const dateError = sightingDateError(draft.date, currentDate);
+  if (dateError) return dateError;
   if (photoCount === 0) {
     return 'Please select a photo.';
   }

@@ -15,7 +15,13 @@ import {
 } from '@/components/design';
 import { ProgressiveImage } from '@/components/ui/ProgressiveImage';
 import { appModules } from '@/composition/appModules';
-import { ClubEvent, canManageFeature, isExpiredEvent, parseUser } from '@/core/domain';
+import {
+  ClubEvent,
+  canAccessRolePolicy,
+  isExpiredEvent,
+  parseUser,
+  roleAccessPolicies,
+} from '@/core/domain';
 import { useAuth } from '@/providers';
 import { useAppTheme } from '@/theme';
 
@@ -24,7 +30,10 @@ const ViewEvent = () => {
   const { id } = useLocalSearchParams<{ id?: string }>();
   const actor = parseUser(useAuth().user);
   const theme = useAppTheme();
-  const isOfficer = canManageFeature(actor.role);
+  const isOfficer = canAccessRolePolicy(
+    actor.role,
+    roleAccessPolicies.manageEvents,
+  );
   const [event, setEvent] = useState<ClubEvent>();
   const [error, setError] = useState<string>();
   const [loading, setLoading] = useState(true);
@@ -42,7 +51,10 @@ const ViewEvent = () => {
       }
       void appModules.events.get(actor, id).then((result) => {
         if (!active) return;
-        if (result.ok) setEvent(result.value);
+        if (result.ok) {
+          setEvent(result.value);
+          void appModules.events.markRead(actor, id);
+        }
         else setError(result.error.message);
         setLoading(false);
       });

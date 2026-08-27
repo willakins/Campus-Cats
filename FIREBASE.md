@@ -86,7 +86,16 @@ npx firebase-tools deploy --only functions:submitSurveyResponse
 ## Deploy community voting callables and schedule
 
 ```bash
-npx firebase-tools deploy --only functions:submitCommunityNomination,functions:submitCommunityBallot,functions:getCommunityVoteResults,functions:notifyPresidentialVotingStarted
+npx firebase-tools deploy --only functions:campuscats:submitCommunityNomination,functions:core:submitCommunityBallot,functions:campuscats:getCommunityVoteResults,functions:campuscats:notifyPresidentialVotingStarted
+```
+
+The ballot callable shares the tested handlers from `functions/`, but deploys from the
+secret-free `core` codebase. This keeps unrelated SendGrid and Stripe parameters from
+blocking ballot deployments. Profile achievement synchronization uses the same
+codebase:
+
+```bash
+npx firebase-tools deploy --only functions:core:syncPublicProfile
 ```
 
 ## Deploy Firestore indexes

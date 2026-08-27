@@ -12,6 +12,7 @@ import {
   SightingRecord,
   localSightingRecord,
   parseCatalogEntry,
+  parsePublicProfile,
   parseSighting,
   parseStation,
   parseUser,
@@ -29,6 +30,8 @@ const mockStationGet = jest.fn();
 const mockStationMedia = jest.fn();
 const mockStationRestock = jest.fn();
 const mockStationStatus = jest.fn();
+const mockCommentsList = jest.fn();
+const mockProfileGetOrSync = jest.fn();
 let mockRouteId = 'catalog-1';
 let mockRole: Role = Role.Officer;
 const mockAuthUser = {
@@ -64,6 +67,12 @@ jest.mock('../../composition/appModules', () => ({
       restock: (...args: unknown[]) => mockStationRestock(...args),
       stockStatus: (...args: unknown[]) => mockStationStatus(...args),
     },
+    comments: {
+      list: (...args: unknown[]) => mockCommentsList(...args),
+    },
+    profiles: {
+      getOrSync: (...args: unknown[]) => mockProfileGetOrSync(...args),
+    },
   },
 }));
 
@@ -78,16 +87,35 @@ jest.mock('../../components/entries/CatalogEntryElement', () => {
     CatalogEntryElement: ({
       entry,
       heartCount,
+      sightings,
       onToggleFavorite,
+      onSightingPress,
+      contributorProfile,
+      onContributorPress,
     }: {
       entry: { cat: { name: string } };
       heartCount: number;
+      sightings: readonly { id: string; name: string }[];
       onToggleFavorite?: () => void;
+      onSightingPress?: (sighting: { id: string; name: string }) => void;
+      contributorProfile?: { displayName: string };
+      onContributorPress?: () => void;
     }) => mockReact.createElement(
       MockView,
       null,
       mockReact.createElement(MockText, null, entry.cat.name),
       mockReact.createElement(MockText, null, `${heartCount} route hearts`),
+      contributorProfile && onContributorPress
+        ? mockReact.createElement(
+            MockPressable,
+            {
+              accessibilityRole: 'button',
+              accessibilityLabel: `View ${contributorProfile.displayName}'s profile`,
+              onPress: onContributorPress,
+            },
+            mockReact.createElement(MockText, null, contributorProfile.displayName),
+          )
+        : null,
       onToggleFavorite
         ? mockReact.createElement(
             MockPressable,
@@ -99,22 +127,64 @@ jest.mock('../../components/entries/CatalogEntryElement', () => {
             mockReact.createElement(MockText, null, 'Favorite'),
           )
         : null,
+      sightings[0] && onSightingPress
+        ? mockReact.createElement(
+            MockPressable,
+            {
+              accessibilityRole: 'button',
+              accessibilityLabel: `View history sighting: ${sightings[0].name}`,
+              onPress: () => onSightingPress(sightings[0]),
+            },
+            mockReact.createElement(MockText, null, sightings[0].name),
+          )
+        : null,
     ),
   };
 });
 
 jest.mock('../../components/entries/StationEntry', () => {
   const mockReact = require('react');
-  const { Text: MockText } = require('react-native');
+  const { Pressable: MockPressable, Text: MockText, View: MockView } = require('react-native');
   return {
-    StationEntry: ({ station }: { station: { name: string } }) =>
+    StationEntry: ({
+      station,
+      contributorProfile,
+      onContributorPress,
+    }: {
+      station: { name: string };
+      contributorProfile?: { displayName: string };
+      onContributorPress?: () => void;
+    }) => mockReact.createElement(
+      MockView,
+      null,
       mockReact.createElement(MockText, null, station.name),
+      contributorProfile && onContributorPress
+        ? mockReact.createElement(
+            MockPressable,
+            {
+              accessibilityRole: 'button',
+              accessibilityLabel: `View ${contributorProfile.displayName}'s profile`,
+              onPress: onContributorPress,
+            },
+            mockReact.createElement(MockText, null, contributorProfile.displayName),
+          )
+        : null,
+    ),
   };
 });
 
 jest.mock('@expo/vector-icons', () => ({ Ionicons: () => null }));
 
 const actor = parseUser({ id: 'admin-1', email: 'admin@gatech.edu', role: Role.Officer });
+const contributorProfile = parsePublicProfile({
+  id: actor.id,
+  displayName: 'Campus Officer',
+  bio: '',
+  profilePhotoUrl: '',
+  role: Role.Officer,
+  achievementIds: [],
+  selectedTitleId: '',
+});
 const catalogEntry = parseCatalogEntry({
   id: 'catalog-1',
   cat: {
@@ -135,6 +205,17 @@ const catalogEntry = parseCatalogEntry({
   createdAt: new Date('2026-06-01T12:00:00.000Z'),
   createdBy: actor,
 });
+const catalogSighting = localSightingRecord(parseSighting({
+  id: 'sighting-1',
+  name: 'Goldie',
+  info: 'Resting near Tech Tower.',
+  fed: true,
+  health: false,
+  date: new Date('2026-08-01T12:00:00.000Z'),
+  location: { latitude: 33.776, longitude: -84.396 },
+  createdBy: actor,
+  timeOfDay: 'Afternoon',
+}));
 const station = parseStation({
   id: 'station-1',
   name: 'Library station',
@@ -162,6 +243,12 @@ describe('catalog detail route', () => {
       warnings: [],
     });
     mockCatalogSetFavorite.mockResolvedValue({ ok: true, value: {}, warnings: [] });
+    mockCommentsList.mockResolvedValue({ ok: true, value: [], warnings: [] });
+    mockProfileGetOrSync.mockResolvedValue({
+      ok: true,
+      value: contributorProfile,
+      warnings: [],
+    });
   });
 
   it('renders catalog chrome and detail geometry while data loads', async () => {
@@ -188,6 +275,10 @@ describe('catalog detail route', () => {
       pathname: '/catalog/edit-entry',
       params: { id: 'catalog-1' },
     });
+    expect(mockCommentsList).toHaveBeenCalledWith(
+      expect.objectContaining({ id: 'admin-1' }),
+      { kind: 'catalog', id: 'catalog-1' },
+    );
   });
 
   it('renders errors in place', async () => {
@@ -219,6 +310,40 @@ describe('catalog detail route', () => {
       'catalog-1',
     );
     expect(await screen.findByText('Goldie is now your favorite cat.')).toBeOnTheScreen();
+  });
+
+  it('links the catalog contributor to their member profile', async () => {
+    const user = userEvent.setup();
+    await renderThemed(<ViewCatalogEntry />);
+
+    await user.press(await screen.findByRole('button', {
+      name: "View Campus Officer's profile",
+    }));
+
+    expect(mockProfileGetOrSync).toHaveBeenCalledWith('admin-1');
+    expect(mockPush).toHaveBeenCalledWith({
+      pathname: '/profile/view-profile',
+      params: { id: 'admin-1' },
+    });
+  });
+
+  it('opens a sighting selected from the catalog history map', async () => {
+    mockSightingsList.mockResolvedValue({
+      ok: true,
+      value: [catalogSighting],
+      warnings: [],
+    });
+    const user = userEvent.setup();
+    await renderThemed(<ViewCatalogEntry />);
+
+    await user.press(await screen.findByRole('button', {
+      name: 'View history sighting: Goldie',
+    }));
+
+    expect(mockPush).toHaveBeenCalledWith({
+      pathname: '/sighting/view-sighting',
+      params: { id: 'sighting-1' },
+    });
   });
 
   it('keeps local sightings in a linked imported catalog profile', async () => {
@@ -286,6 +411,12 @@ describe('station detail route', () => {
     mockStationMedia.mockResolvedValue({ ok: true, value: [], warnings: [] });
     mockStationRestock.mockResolvedValue({ ok: true, value: station, warnings: [] });
     mockStationStatus.mockReturnValue({ isStocked: true, daysRemaining: 7 });
+    mockCommentsList.mockResolvedValue({ ok: true, value: [], warnings: [] });
+    mockProfileGetOrSync.mockResolvedValue({
+      ok: true,
+      value: contributorProfile,
+      warnings: [],
+    });
   });
 
   it('renders station chrome and detail geometry while data loads', async () => {
@@ -319,6 +450,10 @@ describe('station detail route', () => {
       pathname: '/stations/edit-station',
       params: { id: 'station-1' },
     });
+    expect(mockCommentsList).toHaveBeenCalledWith(
+      expect.objectContaining({ id: 'admin-1' }),
+      { kind: 'station', id: 'station-1' },
+    );
   });
 
   it('denies direct member access to station operations', async () => {
@@ -327,6 +462,21 @@ describe('station detail route', () => {
 
     expect(screen.getByText('Access restricted')).toBeOnTheScreen();
     expect(mockStationGet).not.toHaveBeenCalled();
+  });
+
+  it('links the station contributor to their member profile', async () => {
+    const user = userEvent.setup();
+    await renderThemed(<ViewStation />);
+
+    await user.press(await screen.findByRole('button', {
+      name: "View Campus Officer's profile",
+    }));
+
+    expect(mockProfileGetOrSync).toHaveBeenCalledWith('admin-1');
+    expect(mockPush).toHaveBeenCalledWith({
+      pathname: '/profile/view-profile',
+      params: { id: 'admin-1' },
+    });
   });
 
   it('renders station load errors in place', async () => {

@@ -4,18 +4,22 @@ import {
   PersistenceCodec,
   IdGenerator,
   Outcome,
+  ParticipationAudience,
   Survey,
   SurveyAnswer,
   SurveyQuestion,
   SurveyQuestionType,
   SurveyResponse,
   User,
-  canManageFeature,
+  canAccessRolePolicy,
+  canParticipate,
   failure,
   parseSurvey,
   parseSurveyResponse,
   success,
   surveyReceiptId,
+  roleAccessPolicies,
+  roleAccessRequirement,
 } from '../../core/domain';
 import {
   DocumentStore,
@@ -33,6 +37,7 @@ export interface SurveyDraft {
   readonly title: string;
   readonly details: string;
   readonly anonymous: boolean;
+  readonly participationAudience?: ParticipationAudience;
   readonly questions: readonly SurveyQuestionDraft[];
 }
 
@@ -108,6 +113,7 @@ export class SurveysModule {
         title: draft.title,
         details: draft.details,
         anonymous: draft.anonymous,
+        participationAudience: draft.participationAudience,
         status: 'open',
         questions: draft.questions.map((question) => ({
           id: this.dependencies.ids.next(),
@@ -178,6 +184,36 @@ export class SurveysModule {
     }
   }
 
+  async hasIncompleteOpenSurvey(
+    actor: User | undefined,
+    surveys: readonly Survey[],
+  ): Promise<Outcome<boolean>> {
+    if (!actor) {
+      return failure('unauthenticated', 'Sign in to view survey participation');
+    }
+    const openSurveys = surveys.filter(
+      (survey) =>
+        survey.status === 'open' &&
+        canParticipate(actor.role, survey.participationAudience),
+    );
+    try {
+      const receipts = await Promise.all(
+        openSurveys.map(({ id }) =>
+          this.dependencies.documents.get(
+            COLLECTIONS.surveySubmissionReceipts,
+            surveyReceiptId(id, actor.id),
+          ),
+        ),
+      );
+      return success(receipts.some((receipt) => !receipt));
+    } catch {
+      return failure(
+        'dependency_failure',
+        'Could not check open survey participation',
+      );
+    }
+  }
+
   async submit(
     actor: User | undefined,
     surveyId: string,
@@ -188,6 +224,17 @@ export class SurveysModule {
     if (!surveyResult.ok) return surveyResult;
     if (surveyResult.value.status !== 'open') {
       return failure('conflict', 'This survey is closed');
+    }
+    if (
+      !canParticipate(
+        actor.role,
+        surveyResult.value.participationAudience,
+      )
+    ) {
+      return failure(
+        'forbidden',
+        'Only officers can participate in this survey',
+      );
     }
 
     const submitted = await this.hasSubmitted(actor, surveyId);
@@ -224,7 +271,10 @@ export class SurveysModule {
     actor: User | undefined,
     surveyId: string,
   ): Promise<Outcome<readonly SurveyResponse[]>> {
-    const denied = managementDenied(actor);
+    const denied = managementDenied(
+      actor,
+      roleAccessPolicies.viewSurveyResponses,
+    );
     if (denied) return denied;
     try {
       const documents = await this.dependencies.documents.listWhereEqual(
@@ -263,10 +313,16 @@ export class SurveysModule {
   }
 }
 
-function managementDenied(actor: User | undefined): Outcome<never> | undefined {
+function managementDenied(
+  actor: User | undefined,
+  policy = roleAccessPolicies.manageSurveys,
+): Outcome<never> | undefined {
   if (!actor) return failure('unauthenticated', 'Sign in to manage surveys');
-  if (!canManageFeature(actor.role)) {
-    return failure('forbidden', 'Only officers may manage surveys');
+  if (!canAccessRolePolicy(actor.role, policy)) {
+    return failure(
+      'forbidden',
+      roleAccessRequirement(policy),
+    );
   }
   return undefined;
 }

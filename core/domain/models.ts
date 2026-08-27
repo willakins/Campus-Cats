@@ -5,6 +5,7 @@ import {
   catalogEntryIdSchema,
   catalogTagIdSchema,
   contactIdSchema,
+  commentIdSchema,
   sightingIdSchema,
   stationIdSchema,
   userIdSchema,
@@ -31,6 +32,26 @@ const optionalHttpUrl = z
 const validDate = z.date().refine((date) => !Number.isNaN(date.getTime()), {
   message: 'Expected a valid date',
 });
+
+export const sightingDateError = (
+  date: Date,
+  currentDate: Date,
+): string | undefined => {
+  if (Number.isNaN(date.getTime())) return 'Please select a valid sighting date.';
+  const selectedDay = new Date(
+    date.getFullYear(),
+    date.getMonth(),
+    date.getDate(),
+  ).getTime();
+  const currentDay = new Date(
+    currentDate.getFullYear(),
+    currentDate.getMonth(),
+    currentDate.getDate(),
+  ).getTime();
+  return selectedDay > currentDay
+    ? 'Sightings cannot be reported for a future date.'
+    : undefined;
+};
 
 export const coordinatesSchema = z.object({
   latitude: z.number().finite().min(-90).max(90),
@@ -88,6 +109,74 @@ export const publicProfileSchema = z
         code: 'custom',
         path: ['selectedTitleId'],
         message: 'The displayed title must be unlocked',
+      });
+    }
+  });
+
+export const commentTargetSchema = z.object({
+  kind: z.enum(['sighting', 'catalog', 'station']),
+  id: z.string().trim().min(1).max(200),
+});
+
+export const COMMENT_CHARACTER_LIMIT = 300;
+
+const externalCommentAuthorSchema = z.object({
+  id: z.number().int().positive(),
+  login: requiredText,
+  displayName: z.string().trim().min(1).max(120).optional(),
+  sourceUrl: z.string().url(),
+});
+
+export const commentSchema = z
+  .object({
+    id: commentIdSchema,
+    target: commentTargetSchema,
+    body: z.string().trim().min(1).max(10000),
+    createdAt: validDate,
+    source: z.enum(['campus-cats', 'inaturalist']).default('campus-cats'),
+    createdById: userIdSchema.optional(),
+    author: publicProfileSchema.optional(),
+    externalAuthor: externalCommentAuthorSchema.optional(),
+    sourceCommentId: z.number().int().positive().optional(),
+    sourceCommentUuid: z.string().uuid().optional(),
+    sourceUrl: z.string().url().optional(),
+    sourceUpdatedAt: validDate.optional(),
+    lastSeenRunId: requiredText.optional(),
+  })
+  .superRefine((comment, context) => {
+    if (comment.source === 'campus-cats' && !comment.createdById) {
+      context.addIssue({
+        code: 'custom',
+        path: ['createdById'],
+        message: 'Campus Cats comments require a member author',
+      });
+    }
+    if (
+      comment.source === 'campus-cats' &&
+      comment.body.length > COMMENT_CHARACTER_LIMIT
+    ) {
+      context.addIssue({
+        code: 'too_big',
+        maximum: COMMENT_CHARACTER_LIMIT,
+        origin: 'string',
+        inclusive: true,
+        path: ['body'],
+        message: `Campus Cats comments cannot exceed ${COMMENT_CHARACTER_LIMIT} characters`,
+      });
+    }
+    if (
+      comment.source === 'inaturalist' &&
+      (!comment.externalAuthor ||
+        !comment.sourceCommentId ||
+        !comment.sourceCommentUuid ||
+        !comment.sourceUrl ||
+        !comment.sourceUpdatedAt ||
+        !comment.lastSeenRunId)
+    ) {
+      context.addIssue({
+        code: 'custom',
+        path: ['source'],
+        message: 'iNaturalist comments require source attribution',
       });
     }
   });
@@ -230,6 +319,8 @@ export type DisciplinaryNotice = Readonly<
 >;
 export type ManagedUser = Readonly<z.infer<typeof managedUserSchema>>;
 export type PublicProfile = Readonly<z.infer<typeof publicProfileSchema>>;
+export type CommentTarget = Readonly<z.infer<typeof commentTargetSchema>>;
+export type Comment = Readonly<z.infer<typeof commentSchema>>;
 export type Sighting = Readonly<z.infer<typeof sightingSchema>>;
 export type Cat = Readonly<z.infer<typeof catSchema>>;
 export type CatStatus = Cat['currentStatus'];
@@ -276,6 +367,10 @@ export const parseManagedUser = (value: unknown): ManagedUser =>
   parseImmutable(managedUserSchema, value);
 export const parsePublicProfile = (value: unknown): PublicProfile =>
   parseImmutable(publicProfileSchema, value);
+export const parseCommentTarget = (value: unknown): CommentTarget =>
+  parseImmutable(commentTargetSchema, value);
+export const parseComment = (value: unknown): Comment =>
+  parseImmutable(commentSchema, value);
 export const parseSighting = (value: unknown): Sighting =>
   parseImmutable(sightingSchema, value);
 export const parseCatalogEntry = (value: unknown): CatalogEntry =>

@@ -1,8 +1,8 @@
 # App settings and contributor privacy
 
-The President can open **More → App Settings** to manage the club logo, the primary
-and accent colors, and contributor privacy. The Developer role intentionally does not
-have access to these controls.
+Presidents and Developers can open **More → App Settings** to manage the club logo,
+the primary and accent colors, and contributor privacy. Developer access follows the
+same cascading role hierarchy used throughout the app.
 
 ## Behavior
 
@@ -25,7 +25,7 @@ have access to these controls.
 
 Public branding and privacy preferences live at `app-settings/public`. Logo images
 live under `app-branding/` in Cloud Storage and are publicly readable so the signed-out
-login screen can display them. Only the President can write either resource.
+login screen can display them. President-level roles can write either resource.
 
 The installed iOS and Android home-screen icon remains a bundled asset. Mobile
 operating systems do not allow the app to replace that icon with an arbitrary image
@@ -48,17 +48,17 @@ one-sided deletion.
 ## Existing-logo migration
 
 The previous native icon artwork remains bundled at `assets/images/icon.png` solely
-as a migration source. When `logoUrl` is empty, the President sees **Publish Current
-Club Logo** in App Settings. That action uploads the artwork to `app-branding/`, writes
+as a migration source. When `logoUrl` is empty, President-level roles see **Publish
+Current Club Logo** in App Settings. That action uploads the artwork to `app-branding/`, writes
 its public download URL to `app-settings/public`, and immediately applies it in the
 running app. Once the URL exists, the migration control is hidden.
 
 ## Existing contributor-data migration
 
 Older `cat-sightings` and `catalog` documents contain an embedded `createdBy` map. The
-President's first save with anonymity enabled calls `migrateContributorPrivacy`, which
+first President-level save after deployment calls `migrateContributorPrivacy`, which
 moves valid embedded identities into `content-contributors` and removes `createdBy`
-atomically in batches. The callable is President-only and idempotent. Later saves do
+atomically in batches. The callable requires President-level access and is idempotent. Later saves do
 not rescan unless anonymity is changed from off to on.
 
 The migration changes the stored document shape. Release it during a maintenance
@@ -69,7 +69,8 @@ Use this order:
 2. Deploy the new callable Functions.
 3. Begin the maintenance window and make the compatible client release available.
 4. Deploy the new Firestore and Storage rules together with that client release.
-5. Sign in as the President, open App Settings, leave anonymity enabled, and save once.
+5. Sign in with President-level access, open App Settings, leave anonymity enabled,
+   and save once.
 6. Confirm every migrated public document lacks `createdBy`, has one matching
    `content-contributors` document, and remains readable to a Member.
 7. Confirm a Member cannot read another contributor record, while an Officer can.
