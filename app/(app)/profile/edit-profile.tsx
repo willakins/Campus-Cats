@@ -153,9 +153,13 @@ const EditProfileScreen = () => {
         />
       ) : (
         <>
-          <FormSection title="Profile picture">
+          <FormSection title="Profile photo">
             <PhotoField
               photos={photo ? [photo.uri] : []}
+              label="Profile photo"
+              mode="single"
+              hideLabel
+              helper="Choose one photo to represent you across Campus Cats."
               coverUri={photo?.uri}
               onAddPhoto={(uri) =>
                 setPhoto({ uri, selection: { kind: 'local', localUri: uri } })

@@ -66,8 +66,10 @@ const EditStation = () => {
       setLoadError('Missing station ID');
       return;
     }
+    let active = true;
     void Promise.all([appModules.stations.get(id), appModules.stations.media(id)]).then(
       ([stationResult, mediaResult]) => {
+        if (!active) return;
         if (!stationResult.ok) {
           setLoadError(stationResult.error.message);
           return;
@@ -88,6 +90,9 @@ const EditStation = () => {
         } else setError(mediaResult.error.message);
       },
     );
+    return () => {
+      active = false;
+    };
   }, [id]);
 
   const selectionFor = (uri: string) => {

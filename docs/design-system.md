@@ -49,11 +49,15 @@ definitions allowed to contain color literals.
 - `Screen` owns safe areas, responsive content width, scrolling, keyboard avoidance,
   and sticky footers. `AppHeader` owns page identity, back navigation, and authorized
   actions.
-- `AppText`, `Card`, and `ListRow` establish consistent information hierarchy.
+- `AppText`, `Card`, `CardContent`, and `ListRow` establish consistent information
+  hierarchy. Card-like loading and form surfaces share the same card foundation.
 - `Button`, `IconButton`, `Chip`, `SegmentedControl`, and `StatusPill` provide named,
   accessible actions and states.
-- `FormField`, `FormSection`, the controls in `components/forms`, and `MediaPicker`
-  keep labels persistent and photo promotion/removal explicit.
+- `FormField`, `FormSection`, `FormTextInput`, `ChoiceField`, `ChoiceGroup`, and the
+  other controls in `components/forms` keep labels and selection semantics
+  consistent while making photo promotion/removal explicit.
+- `Dialog` and `BottomSheet` own modal overlays, dismissal behavior, responsive
+  widths, and surface geometry.
 - `Skeleton`, `EmptyState`, `ErrorState`, `AccessDeniedState`, and `FeedbackBanner`
   make asynchronous and permission states visible and screen-reader friendly.
 

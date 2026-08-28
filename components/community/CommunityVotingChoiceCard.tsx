@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Pressable, View } from 'react-native';
 
 import { useAppTheme } from '../../theme';
-import { AppText, Button, Card } from '../design';
+import { AppText, Button, Card, CardContent } from '../design';
 import { focusRingStyle } from '../design/focus';
 import { ProgressiveImage } from '../ui/ProgressiveImage';
 
@@ -37,7 +37,7 @@ export const CommunityVotingChoiceCard = ({
           style={{ width: '100%', aspectRatio: 1 }}
         />
       ) : null}
-      <View style={{ gap: theme.spacing.sm, padding: theme.spacing.md }}>
+      <CardContent style={{ gap: theme.spacing.sm }}>
         <AppText variant="cardTitle">{choice.label}</AppText>
         {choice.pitch ? (
           <View style={{ gap: theme.spacing.xxs }}>
@@ -52,13 +52,13 @@ export const CommunityVotingChoiceCard = ({
             Tap this card to view the nominee’s profile and activity history.
           </AppText>
         ) : null}
-      </View>
+      </CardContent>
     </>
   );
   return (
     <Card
       accent={selected ? theme.colors.primary : undefined}
-      style={{ padding: 0 }}
+      padded={false}
     >
       {profileUserId ? (
         <Pressable

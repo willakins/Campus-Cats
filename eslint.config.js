@@ -75,5 +75,32 @@ module.exports = defineConfig([
       ],
     },
   },
+  {
+    files: ['app/**/*.tsx', 'forms/**/*.tsx', 'components/**/*.tsx'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          paths: [
+            {
+              name: 'react-native',
+              importNames: ['TextInput'],
+              message:
+                'Use FormTextInput or SearchField so field styling and accessibility stay centralized.',
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
+    files: [
+      'components/design/Forms.tsx',
+      'components/forms/FormControls.tsx',
+    ],
+    rules: {
+      'no-restricted-imports': 'off',
+    },
+  },
   prettierConfig,
 ]);

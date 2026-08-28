@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Pressable, View } from 'react-native';
+import { View } from 'react-native';
 
 import { useRouter } from 'expo-router';
 
@@ -13,6 +13,8 @@ import {
 } from '@/components/design';
 import { RestrictedScreen } from '@/components/access';
 import {
+  ChoiceField,
+  ChoiceGroup,
   FormScreen,
   FormTextInput,
   PhotoField,
@@ -69,54 +71,6 @@ const firstDonationError = (
 const sectionForField = (field: DonationField): DonationSection =>
   field === 'externalUrl' ? 'method' : 'content';
 
-const DonationMethodOption = ({
-  label,
-  selected,
-  onPress,
-}: {
-  readonly label: string;
-  readonly selected: boolean;
-  readonly onPress: () => void;
-}) => {
-  const theme = useAppTheme();
-  return (
-    <Pressable
-      accessibilityRole="radio"
-      accessibilityLabel={label}
-      accessibilityState={{ checked: selected }}
-      onPress={onPress}
-      style={({ pressed }) => ({
-        minHeight: theme.layout.minTouchTarget,
-        paddingHorizontal: theme.spacing.md,
-        paddingVertical: theme.spacing.sm,
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: theme.spacing.sm,
-        borderWidth: 1,
-        borderColor: selected ? theme.colors.primary : theme.colors.border,
-        borderRadius: theme.radii.field,
-        backgroundColor: selected
-          ? theme.colors.primarySurface
-          : theme.colors.surface,
-        opacity: pressed ? 0.8 : 1,
-      })}
-    >
-      <View
-        style={{
-          width: 20,
-          height: 20,
-          borderRadius: 10,
-          borderWidth: selected ? 6 : 2,
-          borderColor: selected ? theme.colors.primary : theme.colors.textMuted,
-        }}
-      />
-      <AppText variant="label" style={{ flex: 1 }}>
-        {label}
-      </AppText>
-    </Pressable>
-  );
-};
-
 const EditDonationPage = () => {
   const router = useRouter();
   const actor = parseUser(useAuth().user);
@@ -150,9 +104,11 @@ const EditDonationPage = () => {
 
   useEffect(() => {
     if (!authorized) return;
+    let active = true;
     setLoading(true);
     setError(undefined);
     void appModules.appSettings.get().then((result) => {
+      if (!active) return;
       setLoading(false);
       if (!result.ok) {
         setError(result.error.message);
@@ -174,6 +130,9 @@ const EditDonationPage = () => {
       );
       setLoaded(true);
     });
+    return () => {
+      active = false;
+    };
   }, [actor.id, authorized]);
 
   const update = <Key extends keyof DonationPageDraft>(
@@ -296,18 +255,20 @@ const EditDonationPage = () => {
           validation.onSectionLayout('method', nativeEvent.layout.y);
         }}
       >
-        <View accessibilityRole="radiogroup" style={{ gap: theme.spacing.sm }}>
-          <DonationMethodOption
+        <ChoiceGroup label="Donation method">
+          <ChoiceField
+            kind="radio"
             label="Link to an external donation website"
-            selected={formData.method === 'external'}
-            onPress={() => update('method', 'external')}
+            checked={formData.method === 'external'}
+            onChange={() => update('method', 'external')}
           />
-          <DonationMethodOption
+          <ChoiceField
+            kind="radio"
             label="Integrate donations directly"
-            selected={formData.method === 'direct'}
-            onPress={() => update('method', 'direct')}
+            checked={formData.method === 'direct'}
+            onChange={() => update('method', 'direct')}
           />
-        </View>
+        </ChoiceGroup>
         {formData.method === 'external' ? (
           <View
             onLayout={({ nativeEvent }) => {

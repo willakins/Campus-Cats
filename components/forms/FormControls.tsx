@@ -4,11 +4,13 @@ import {
   Modal,
   Pressable,
   ScrollView,
+  StyleProp,
   Switch,
   TextInput,
   TextInputProps,
   useWindowDimensions,
   View,
+  ViewStyle,
 } from 'react-native';
 
 import { Ionicons } from '@expo/vector-icons';
@@ -28,6 +30,7 @@ interface FormTextInputProps extends TextInputProps {
   readonly helper?: string;
   readonly required?: boolean;
   readonly error?: string;
+  readonly containerStyle?: StyleProp<ViewStyle>;
 }
 
 export const FormTextInput = ({
@@ -36,8 +39,11 @@ export const FormTextInput = ({
   required,
   helper,
   error,
+  containerStyle,
   style,
   multiline,
+  onFocus,
+  onBlur,
   ...props
 }: FormTextInputProps) => {
   const theme = useAppTheme();
@@ -49,6 +55,7 @@ export const FormTextInput = ({
       required={required}
       helper={helper}
       error={error}
+      style={containerStyle}
     >
       {({ inputId, describedBy }) => (
         <TextInput
@@ -61,11 +68,11 @@ export const FormTextInput = ({
           selectionColor={theme.colors.primary}
           onFocus={(event) => {
             setFocused(true);
-            props.onFocus?.(event);
+            onFocus?.(event);
           }}
           onBlur={(event) => {
             setFocused(false);
-            props.onBlur?.(event);
+            onBlur?.(event);
           }}
           style={[
             theme.typography.body,
@@ -453,6 +460,8 @@ const sameCoordinates = (left: Coordinates, right: Coordinates) =>
 
 interface PhotoFieldProps {
   readonly photos: readonly string[];
+  readonly label?: string;
+  readonly mode?: 'gallery' | 'single';
   readonly hideLabel?: boolean;
   readonly helper?: string;
   readonly required?: boolean;
@@ -465,8 +474,10 @@ interface PhotoFieldProps {
 
 export const PhotoField = ({
   photos,
+  label = 'Photos',
+  mode = 'gallery',
   hideLabel,
-  helper = 'The cover photo appears first on cards and detail pages.',
+  helper,
   required,
   validationError,
   coverUri,
@@ -476,6 +487,11 @@ export const PhotoField = ({
 }: PhotoFieldProps) => {
   const theme = useAppTheme();
   const [error, setError] = useState<string>();
+  const guidance =
+    helper ??
+    (mode === 'gallery'
+      ? 'The cover photo appears first on cards and detail pages.'
+      : undefined);
   const select = async (camera: boolean) => {
     const result = camera
       ? await appModules.imageSelection.takePhoto()
@@ -486,8 +502,12 @@ export const PhotoField = ({
     }
     if (result.value) onAddPhoto?.(result.value.localUri);
   };
+  const promptTitle =
+    mode === 'single'
+      ? `Choose a ${label.toLocaleLowerCase()}`
+      : 'Add a photo';
   const prompt = () =>
-    Alert.alert('Add a photo', 'Choose a photo source.', [
+    Alert.alert(promptTitle, 'Choose a photo source.', [
       { text: 'Take photo', onPress: () => void select(true) },
       { text: 'Choose from library', onPress: () => void select(false) },
       { text: 'Cancel', style: 'cancel' },
@@ -495,14 +515,14 @@ export const PhotoField = ({
 
   return (
     <FormField
-      label="Photos"
+      label={label}
       hideLabel={hideLabel}
       required={required}
       error={validationError}
-      helper={helper}
+      helper={guidance}
     >
       <View
-        accessibilityLabel="Photos field"
+        accessibilityLabel={`${label} field`}
         style={{
           padding: validationError ? theme.spacing.xs : 0,
           borderWidth: validationError ? 2 : 0,
@@ -513,6 +533,8 @@ export const PhotoField = ({
         <MediaPicker
           photos={photos}
           coverUri={coverUri}
+          mode={mode}
+          photoLabel={label}
           onAdd={onAddPhoto ? prompt : undefined}
           onPromote={onPromotePhoto}
           onRemove={onRemovePhoto}

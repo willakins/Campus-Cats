@@ -1,7 +1,7 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { FlatList, Linking, View } from 'react-native';
 
-import { useFocusEffect, useRouter } from 'expo-router';
+import { useRouter } from 'expo-router';
 
 import {
   AppText,
@@ -16,6 +16,7 @@ import {
   StatusPill,
 } from '@/components/design';
 import { RestrictedScreen } from '@/components/access';
+import { useFocusTask } from '@/components/hooks/useFocusTask';
 import { FormTextInput } from '@/components/forms';
 import { virtualizedListPerformanceProps } from '@/components/collections/virtualizedListPerformance';
 import { appModules } from '@/composition/appModules';
@@ -70,7 +71,7 @@ const InaturalistAdministration = () => {
   const [error, setError] = useState<string>();
   const [feedback, setFeedback] = useState<string>();
 
-  const load = useCallback(() => {
+  const load = useCallback((isActive: () => boolean = () => true) => {
     if (!authorized) return;
     setLoading(true);
     setError(undefined);
@@ -79,6 +80,7 @@ const InaturalistAdministration = () => {
       appModules.inaturalist.records(actor),
       appModules.catalog.list(actor),
     ]).then(([statusResult, recordsResult, catalogResult]) => {
+      if (!isActive()) return;
       setLoading(false);
       if (!statusResult.ok) {
         setError(statusResult.error.message);
@@ -112,7 +114,7 @@ const InaturalistAdministration = () => {
     });
   }, [actor.id, authorized]);
 
-  useFocusEffect(load);
+  useFocusTask(load);
 
   const runSync = async () => {
     if (syncing) return;
@@ -188,10 +190,18 @@ const InaturalistAdministration = () => {
     load();
   };
 
-  const records: readonly AdministrationRecord[] =
-    section === 'catalog'
+  const records: readonly AdministrationRecord[] = useMemo(
+    () => section === 'catalog'
       ? catalog.map((value) => ({ kind: 'catalog' as const, value }))
-      : observations.map((value) => ({ kind: 'observation' as const, value }));
+      : observations.map((value) => ({ kind: 'observation' as const, value })),
+    [catalog, observations, section],
+  );
+  const localCatalogHelper = useMemo(
+    () => localCatalog.length > 0
+      ? `Available: ${localCatalog.map(({ id, name }) => `${name} (${id})`).join(', ')}`
+      : 'No unlinked local catalog entries are currently available.',
+    [localCatalog],
+  );
 
   return (
     <RestrictedScreen
@@ -310,11 +320,7 @@ const InaturalistAdministration = () => {
                     <>
                       <FormTextInput
                         label={`Local catalog ID for ${title}`}
-                        helper={
-                          localCatalog.length > 0
-                            ? `Available: ${localCatalog.map(({ id, name }) => `${name} (${id})`).join(', ')}`
-                            : 'No unlinked local catalog entries are currently available.'
-                        }
+                        helper={localCatalogHelper}
                         value={linkTargets[item.value.id] ?? ''}
                         editable={!item.value.linkedLocalCatalogId}
                         autoCapitalize="none"

@@ -5,11 +5,11 @@ shows the latest 12 invoice months for the deployed Firebase project. Firebase
 projects are Google Cloud projects, so this report includes Firebase, Maps, Cloud
 Functions, BigQuery, and other Google Cloud costs attributed to the same project.
 
-Only signed-in users with role `1`, `2`, `3`, or `4` can request the report. The callable
+Only signed-in users with the Developer role (`4`) can request the report. The callable
 Cloud Function checks that role in Firestore before it runs BigQuery. Google
 credentials remain in the Functions runtime and are never returned to the app. The
-Firebase Console, Google Cloud Billing, and billing-export setup links render only for
-the Developer role (`4`).
+Firebase Console, Google Cloud Billing, and billing-export setup links follow the same
+Developer-only policy.
 
 ## One-time Google Cloud setup
 
@@ -49,7 +49,7 @@ and change:
 
 The query filters every row to the deployed Firebase project ID, applies credits,
 uses BigQuery's result cache, and caps each query at 100 MiB billed. It runs only when
-an authorized officer opens or retries the screen; there is no new scheduled sync.
+an authorized Developer opens or retries the screen; there is no new scheduled sync.
 
 ## What the amounts mean
 

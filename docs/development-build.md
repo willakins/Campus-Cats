@@ -116,6 +116,21 @@ Do not deploy `requestClubSetup`, `verifyClubSetup`, billing, or email Functions
 this development trial. The isolated `catalog` Functions codebase contains no
 email, Stripe, onboarding, or secret-bound exports.
 
+Development chat reads directly from Firestore and reserves mutations for five
+callable Functions. Enable it without deploying the rest of the main Functions
+codebase:
+
+```sh
+npx firebase deploy --project dev --config firebase.development.json \
+  --only firestore:rules,firestore:indexes,functions:chat
+```
+
+Ordinary chat messages remain inside the development Firebase project. An officer
+club ping can send a push notification, but only to device tokens registered by
+users in that development project. The isolated `chat` Functions codebase contains
+only those five secret-free callables; never bulk-deploy the `campuscats` codebase
+to enable chat.
+
 ## Build and install the iOS development app
 
 1. Confirm the Firebase project shown in the console is **Campus Cats Development**.
@@ -175,9 +190,9 @@ email, Stripe, onboarding, or secret-bound exports.
 - Never run a Firebase deployment without an explicit project alias. Use
   `npx firebase deploy --project dev` for development.
 - Do not deploy functions to `prod` while testing.
-- The development project has only the read-only `searchUniversities` and
-  `getUniversity` Functions. It has no deployed email or billing Functions, so the
-  development app cannot send club emails or create Stripe subscriptions.
+- The development project has the read-only university catalog Functions and the
+  explicitly listed chat Functions. It has no deployed email or billing Functions,
+  so the development app cannot send club emails or create Stripe subscriptions.
 - Firebase client identifiers are stored in EAS instead of source control. They
   remain public in the compiled mobile app and are not server credentials. Stripe,
   SendGrid, and Firebase Admin secret keys must never use an `EXPO_PUBLIC_` name or

@@ -131,6 +131,37 @@ describe('CommentsSection', () => {
     expect(screen.getByLabelText('Add a comment')).toHaveProp('value', '');
   });
 
+  it('bounds the initial nested render while keeping recent comments visible', async () => {
+    mockList.mockResolvedValue({
+      ok: true,
+      value: Array.from({ length: 60 }, (_, index) =>
+        parseComment({
+          id: `comment-${index}`,
+          target,
+          body: `Comment ${index}`,
+          createdAt: new Date(1_780_000_000_000 + index),
+          createdById: member.id,
+          author,
+        }),
+      ),
+      warnings: [],
+    });
+    const user = userEvent.setup();
+    await render(
+      <AppThemeProvider colorScheme="light">
+        <CommentsSection actor={actor} target={target} />
+      </AppThemeProvider>,
+    );
+
+    expect(await screen.findByText('Comment 59')).toBeOnTheScreen();
+    expect(screen.queryByText('Comment 20')).not.toBeOnTheScreen();
+    await user.press(
+      screen.getByRole('button', { name: 'Show 20 earlier comments' }),
+    );
+    expect(screen.getByText('Comment 20')).toBeOnTheScreen();
+    expect(screen.queryByText('Comment 0')).not.toBeOnTheScreen();
+  });
+
   it('limits Campus Cats comment input to 300 characters', async () => {
     await render(
       <AppThemeProvider colorScheme="light">

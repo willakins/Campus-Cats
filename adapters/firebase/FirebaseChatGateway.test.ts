@@ -1,16 +1,20 @@
 import type { Firestore } from 'firebase/firestore';
+import { getDocs } from 'firebase/firestore';
 import type { Functions } from 'firebase/functions';
 
 import {
   Role,
   createPersistenceCodecs,
   dateObjectCodec,
+  parseChatMessage,
+  parseChatReaction,
   parseUser,
 } from '../../core/domain';
 import { FirebaseChatGateway } from './FirebaseChatGateway';
 import { FirebaseTenantScope } from './FirebaseTenantScope';
 
 const mockCallable = jest.fn();
+const mockedGetDocs = jest.mocked(getDocs);
 
 jest.mock('firebase/functions', () => ({
   httpsCallable: (_functions: unknown, name: string) => (data: unknown) =>
@@ -53,7 +57,46 @@ const gateway = () => {
 };
 
 describe('FirebaseChatGateway', () => {
-  beforeEach(() => mockCallable.mockReset());
+  beforeEach(() => {
+    mockCallable.mockReset();
+    mockedGetDocs.mockReset();
+  });
+
+  it('reads historical days without opening realtime listeners', async () => {
+    const codecs = createPersistenceCodecs(dateObjectCodec);
+    const message = parseChatMessage({
+      id: 'message-1',
+      body: 'Earlier message',
+      createdById: actor.id,
+      createdAt: new Date('2026-08-26T14:00:00.000Z'),
+      dayKey: '2026-08-26',
+      isClubPing: false,
+    });
+    const reaction = parseChatReaction({
+      messageId: message.id,
+      messageDayKey: message.dayKey,
+      userId: actor.id,
+      emoji: '👍',
+      updatedAt: new Date('2026-08-26T14:01:00.000Z'),
+    });
+    mockedGetDocs
+      .mockResolvedValueOnce({
+        docs: [{ id: message.id, data: () => codecs.chatMessage.encode(message) }],
+      } as unknown as Awaited<ReturnType<typeof getDocs>>)
+      .mockResolvedValueOnce({
+        docs: [{
+          id: `${message.id}_${actor.id}`,
+          data: () => codecs.chatReaction.encode(reaction),
+        }],
+      } as unknown as Awaited<ReturnType<typeof getDocs>>);
+
+    await expect(gateway().getDay(actor, message.dayKey)).resolves.toMatchObject({
+      dayKey: message.dayKey,
+      messages: [{ id: message.id, body: message.body }],
+      reactions: [{ messageId: message.id, emoji: '👍' }],
+    });
+    expect(mockedGetDocs).toHaveBeenCalledTimes(2);
+  });
 
   it('translates trusted chat callable receipts into domain values', async () => {
     mockCallable

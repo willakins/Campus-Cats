@@ -59,9 +59,25 @@ describe('policy-driven restricted screens', () => {
         'President-level access is required to manage test records.',
       ),
     ).toBeOnTheScreen();
+    expect(screen.getByText('👑')).toBeOnTheScreen();
     await user.press(
       screen.getByRole('button', { name: 'Explain president-level access' }),
     );
     expect(screen.getByText('President-level page')).toBeOnTheScreen();
+  });
+
+  it('uses a distinct developer badge for developer-only policies', async () => {
+    await renderScreen(
+      {
+        minimumRole: Role.Developer,
+        capability: 'view infrastructure costs',
+      },
+      Role.Developer,
+    );
+
+    expect(screen.getByText('</>')).toBeOnTheScreen();
+    expect(
+      screen.getByRole('button', { name: 'Explain developer-only access' }),
+    ).toBeOnTheScreen();
   });
 });

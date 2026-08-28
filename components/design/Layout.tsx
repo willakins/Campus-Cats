@@ -18,6 +18,7 @@ import { AppLogo } from '../branding';
 import { IconButton } from './Actions';
 import { AppText } from './Typography';
 import { focusRingStyle } from './focus';
+import { cardContentStyle, cardSurfaceStyle } from './Surfaces';
 
 interface ScreenProps {
   readonly children: React.ReactNode;
@@ -196,22 +197,36 @@ interface CardProps {
   readonly onPress?: () => void;
   readonly accessibilityLabel?: string;
   readonly accent?: string;
+  readonly padded?: boolean;
   readonly style?: StyleProp<ViewStyle>;
 }
 
-export const Card = ({ children, onPress, accessibilityLabel, accent, style }: CardProps) => {
+interface CardContentProps {
+  readonly children: React.ReactNode;
+  readonly style?: StyleProp<ViewStyle>;
+}
+
+export const CardContent = ({ children, style }: CardContentProps) => {
+  const theme = useAppTheme();
+  return (
+    <View style={[cardContentStyle(theme), style]}>
+      {children}
+    </View>
+  );
+};
+
+export const Card = ({
+  children,
+  onPress,
+  accessibilityLabel,
+  accent,
+  padded = true,
+  style,
+}: CardProps) => {
   const theme = useAppTheme();
   const [focused, setFocused] = useState(false);
   const cardStyle: StyleProp<ViewStyle> = [
-    theme.elevation.card,
-    {
-      backgroundColor: theme.colors.surface,
-      borderRadius: theme.radii.card,
-      padding: theme.spacing.md,
-      overflow: 'hidden',
-      borderLeftWidth: accent ? 5 : undefined,
-      borderLeftColor: accent,
-    },
+    cardSurfaceStyle(theme, { accent, padded }),
     style,
   ];
   return onPress ? (

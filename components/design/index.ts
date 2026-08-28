@@ -3,6 +3,8 @@ export * from './Forms';
 export * from './Layout';
 export * from './Loading';
 export * from './MediaPicker';
+export * from './Overlays';
 export * from './Status';
+export * from './Surfaces';
 export * from './Typography';
 export * from './UnreadIndicator';

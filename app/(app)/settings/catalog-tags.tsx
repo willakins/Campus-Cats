@@ -43,11 +43,12 @@ const ManageCatalogTags = () => {
   const [error, setError] = useState<string>();
   const [message, setMessage] = useState<string>();
 
-  const load = useCallback(async () => {
+  const load = useCallback(async (isActive: () => boolean = () => true) => {
     if (!authorized) return;
     setLoading(true);
     setError(undefined);
     const result = await appModules.catalogTags.list(actor);
+    if (!isActive()) return;
     setLoading(false);
     if (result.ok) {
       setTags(result.value);
@@ -56,7 +57,11 @@ const ManageCatalogTags = () => {
   }, [actor.id, authorized]);
 
   useEffect(() => {
-    void load();
+    let active = true;
+    void load(() => active);
+    return () => {
+      active = false;
+    };
   }, [load]);
 
   const savedLabels = useMemo(

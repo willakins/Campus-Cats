@@ -1,7 +1,7 @@
 import React, { useCallback, useState } from 'react';
 import { View } from 'react-native';
 
-import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 
 import {
   Button,
@@ -11,6 +11,7 @@ import {
 } from '@/components/design';
 import { RestrictedScreen } from '@/components/access';
 import { CommentsSection } from '@/components/comments';
+import { useFocusTask } from '@/components/hooks/useFocusTask';
 import { StationEntry } from '@/components/entries/StationEntry';
 import { appModules } from '@/composition/appModules';
 import {
@@ -42,7 +43,7 @@ const ViewStation = () => {
     roleAccessPolicies.manageStations,
   );
 
-  const load = useCallback(async () => {
+  const load = useCallback(async (isActive: () => boolean = () => true) => {
     if (!isAdmin) return;
     setError(undefined);
     setFeedback(undefined);
@@ -64,6 +65,7 @@ const ViewStation = () => {
         };
       }),
     ]);
+    if (!isActive()) return;
     if (stationResult.ok) setStation(stationResult.value);
     else setError(stationResult.error.message);
     if (mediaResult.ok) setMedia(mediaResult.value);
@@ -76,11 +78,7 @@ const ViewStation = () => {
     }
   }, [id, isAdmin]);
 
-  useFocusEffect(
-    useCallback(() => {
-      void load();
-    }, [load]),
-  );
+  useFocusTask(load);
 
   const restock = async () => {
     if (!station || busy) return;
