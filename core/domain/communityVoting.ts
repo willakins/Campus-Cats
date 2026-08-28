@@ -5,7 +5,7 @@ import {
   communityVoteOptionIdSchema,
   userIdSchema,
 } from './ids';
-import { userSchema } from './models';
+import { userSnapshotSchema } from './models';
 import { participationAudienceSchema } from './participation';
 
 const requiredText = z.string().trim().min(1);
@@ -33,7 +33,7 @@ export const communityVoteSchema = z
     participationAudience: participationAudienceSchema,
     options: z.array(communityVoteOptionSchema).max(20),
     createdAt: validDate,
-    createdBy: userSchema,
+    createdBy: userSnapshotSchema,
     votingStartsAt: validDate,
     votingEndsAt: validDate,
     nominationEndsAt: validDate.optional(),

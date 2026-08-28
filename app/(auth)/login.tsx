@@ -3,6 +3,7 @@ import { useRouter } from 'expo-router';
 
 import { AuthScaffold, AuthTextField } from '@/components/auth';
 import { AppText, Button, FeedbackBanner } from '@/components/design';
+import { LegalLinks } from '@/components/legal';
 import { appModules } from '@/composition/appModules';
 import { useAuth, useUniversitySelection } from '@/providers';
 import { registerForPushNotificationsAsync } from '@/utils/notifications';
@@ -118,6 +119,10 @@ const LoginScreen = () => {
           );
         }}
       />
+      <AppText variant="caption" color="muted" style={{ textAlign: 'center' }}>
+        You will be asked to review and accept the Terms of Service after sign-in.
+      </AppText>
+      <LegalLinks />
     </AuthScaffold>
   );
 };

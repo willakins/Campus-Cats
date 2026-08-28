@@ -14,6 +14,7 @@ const delegate = (): jest.Mocked<SessionPort> => ({
   signInWithSaml: jest.fn(),
   signOut: jest.fn(),
   registerPushToken: jest.fn(),
+  acceptTerms: jest.fn(),
 });
 
 describe('Development session', () => {

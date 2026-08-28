@@ -163,6 +163,34 @@ export class UsersModule {
     }
   }
 
+  async deleteOwnAccount(
+    actor: User | undefined,
+    confirmation: string,
+  ): Promise<Outcome<void>> {
+    if (!actor) return failure('unauthenticated', 'Sign in to delete your account');
+    if (actor.role === Role.President) {
+      return failure(
+        'conflict',
+        'Transfer the club presidency before deleting this account',
+      );
+    }
+    if (confirmation.trim().toLowerCase() !== actor.email.toLowerCase()) {
+      return failure(
+        'validation',
+        'Enter your account email address to confirm deletion',
+      );
+    }
+    try {
+      await this.dependencies.effects.deleteOwnAccount(confirmation.trim());
+      return success(undefined);
+    } catch {
+      return failure(
+        'dependency_failure',
+        'Could not delete the account. Your data has not been removed; please try again.',
+      );
+    }
+  }
+
   private async changeRole(
     actor: User | undefined,
     id: string,

@@ -18,6 +18,7 @@ type Operation =
   | 'setUserBanned'
   | 'transferPresidency'
   | 'removeUser'
+  | 'deleteOwnAccount'
   | 'syncPublicProfile'
   | 'updatePublicProfile'
   | 'selectProfileTitle'
@@ -96,6 +97,11 @@ export class InMemoryCallableEffects implements ApplicationEffects {
   async removeUser(userId: string): Promise<void> {
     this.maybeFail('removeUser');
     this.operations.push(`remove-user:${userId}`);
+  }
+
+  async deleteOwnAccount(confirmation: string): Promise<void> {
+    this.maybeFail('deleteOwnAccount');
+    this.operations.push(`delete-own-account:${confirmation}`);
   }
 
   async syncPublicProfile(userId?: string): Promise<void> {

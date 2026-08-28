@@ -82,6 +82,23 @@ describe('SessionModule', () => {
     });
   });
 
+  it('records the current terms agreement on the authenticated account', async () => {
+    const session = new InMemorySession(member);
+    const module = new SessionModule({ session });
+
+    await expect(module.acceptTerms('2026-08-28')).resolves.toMatchObject({
+      ok: true,
+    });
+    await expect(module.restore()).resolves.toMatchObject({
+      ok: true,
+      value: {
+        agreedToTerms: true,
+        termsVersion: '2026-08-28',
+      },
+    });
+    expect(session.operations).toContain('accept-terms:2026-08-28');
+  });
+
   it('validates credentials and reports adapter failures', async () => {
     const session = new InMemorySession();
     const module = new SessionModule({ session });

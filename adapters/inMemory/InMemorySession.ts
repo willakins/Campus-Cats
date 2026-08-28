@@ -12,7 +12,8 @@ type Operation =
   | 'requestPasswordReset'
   | 'signInWithSaml'
   | 'signOut'
-  | 'registerPushToken';
+  | 'registerPushToken'
+  | 'acceptTerms';
 
 interface EmailAccount {
   readonly password: string;
@@ -82,6 +83,8 @@ export class InMemorySession implements SessionPort {
       id: `created-${email.toLowerCase()}`,
       email,
       role: Role.Member,
+      agreedToTerms: false,
+      termsVersion: '',
     });
     this.addEmailAccount(email, password, user);
     this.#current = user;
@@ -119,6 +122,24 @@ export class InMemorySession implements SessionPort {
     this.maybeFail('registerPushToken');
     if (!this.#current) throw new Error('Not authenticated');
     this.operations.push(`register-token:${token}`);
+  }
+
+  async acceptTerms(version: string): Promise<void> {
+    this.maybeFail('acceptTerms');
+    if (!this.#current) throw new Error('Not authenticated');
+    const accepted = parseUser({
+      ...this.#current,
+      agreedToTerms: true,
+      termsVersion: version,
+    });
+    this.#current = accepted;
+    for (const [email, account] of this.#accounts) {
+      if (account.user.id === accepted.id) {
+        this.#accounts.set(email, { ...account, user: accepted });
+      }
+    }
+    this.operations.push(`accept-terms:${version}`);
+    this.notifyObservers();
   }
 
   private maybeFail(operation: Operation): void {

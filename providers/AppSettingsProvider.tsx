@@ -31,7 +31,12 @@ export const AppSettingsProvider = ({ children }: { readonly children: ReactNode
     }
     const result = await appModules.appSettings.get();
     if (isActive() && result.ok) setSettings(result.value);
-  }, [currentUser?.clubId, university?.club?.id]);
+  }, [
+    currentUser?.agreedToTerms,
+    currentUser?.clubId,
+    currentUser?.termsVersion,
+    university?.club?.id,
+  ]);
 
   useEffect(() => {
     let active = true;

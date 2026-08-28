@@ -45,12 +45,31 @@ service cloud.firestore {
         );
     }
 
-    function isActiveUser(clubId) {
-      return sameClub(clubId)
+    function isEligibleAccount(clubId) {
+      let user = userDocument();
+      return signedIn()
+        && exists(userPath())
+        && user.data.clubId == clubId
         && (
-          !('banned' in userDocument().data)
-          || userDocument().data.banned != true
+          !('banned' in user.data)
+          || user.data.banned != true
         )
+        && clubHasAccess(clubId);
+    }
+
+    function isActiveUser(clubId) {
+      let user = userDocument();
+      return signedIn()
+        && exists(userPath())
+        && user.data.clubId == clubId
+        && (
+          !('banned' in user.data)
+          || user.data.banned != true
+        )
+        && 'agreedToTerms' in user.data
+        && 'termsVersion' in user.data
+        && user.data.agreedToTerms == true
+        && user.data.termsVersion == '2026-08-28'
         && clubHasAccess(clubId);
     }
 
@@ -116,6 +135,7 @@ service cloud.firestore {
     }
 
     function validCurrentUserSnapshot(user, clubId) {
+      let currentUser = userDocument();
       return isActiveUser(clubId)
         && user is map
         && user.keys().hasOnly([
@@ -127,9 +147,9 @@ service cloud.firestore {
         ])
         && user.id == request.auth.uid
         && user.email == request.auth.token.email
-        && user.role == role(clubId)
+        && user.role == currentUser.data.role
         && user.clubId == clubId
-        && user.platformAdmin == (userDocument().data.platformAdmin == true);
+        && user.platformAdmin == (currentUser.data.platformAdmin == true);
     }
 
     function validDonationImage(image) {
@@ -421,7 +441,7 @@ service cloud.firestore {
         && (
           (
             data.kind == 'contest'
-            && isAdmin(clubId)
+            && data.createdBy.role >= 1
             && data.options.size() >= 2
             && !('nominationEndsAt' in data)
             && data.votingStartsAt == data.createdAt
@@ -726,8 +746,7 @@ service cloud.firestore {
 
       match /community-votes/{voteId} {
         allow read: if isActiveUser(clubId);
-        allow create: if isActiveUser(clubId)
-          && validCommunityVote(request.resource.data, clubId, voteId);
+        allow create: if validCommunityVote(request.resource.data, clubId, voteId);
         allow update, delete: if false;
       }
 
@@ -832,9 +851,30 @@ service cloud.firestore {
       allow create: if false;
       allow update: if signedIn()
         && request.auth.uid == userId
-        && isActiveUser(resource.data.clubId)
+        && isEligibleAccount(resource.data.clubId)
         && request.resource.data.diff(resource.data).affectedKeys()
-          .hasOnly(['expoPushToken']);
+          .hasOnly([
+            'expoPushToken',
+            'agreedToTerms',
+            'termsVersion',
+            'termsAgreedAt'
+          ])
+        && (
+          !request.resource.data.diff(resource.data).affectedKeys()
+            .hasAny(['agreedToTerms', 'termsVersion', 'termsAgreedAt'])
+          || (
+            request.resource.data.agreedToTerms == true
+            && request.resource.data.termsVersion == '2026-08-28'
+            && request.resource.data.termsAgreedAt == request.time
+          )
+          || (
+            !('agreedToTerms' in resource.data)
+            && !('termsVersion' in resource.data)
+            && request.resource.data.agreedToTerms == false
+            && request.resource.data.termsVersion == ''
+            && !('termsAgreedAt' in request.resource.data)
+          )
+        );
       allow delete: if false;
     }
 

@@ -139,6 +139,33 @@ describe('UsersModule', () => {
     });
   });
 
+  it('requires email confirmation and a presidency handoff for self-deletion', async () => {
+    const { module, effects } = await buildModule();
+
+    await expect(module.deleteOwnAccount(undefined, member.email)).resolves.toMatchObject({
+      ok: false,
+      error: { code: 'unauthenticated' },
+    });
+    await expect(module.deleteOwnAccount(member, 'wrong@gatech.edu')).resolves.toMatchObject({
+      ok: false,
+      error: { code: 'validation' },
+    });
+    await expect(module.deleteOwnAccount(president, president.email)).resolves.toMatchObject({
+      ok: false,
+      error: { code: 'conflict' },
+    });
+    await expect(
+      module.deleteOwnAccount(member, ' MEMBER@gatech.edu '),
+    ).resolves.toMatchObject({ ok: true });
+    expect(effects.operations).toEqual(['delete-own-account:MEMBER@gatech.edu']);
+
+    effects.failNext('deleteOwnAccount', new Error('functions offline'));
+    await expect(module.deleteOwnAccount(member, member.email)).resolves.toMatchObject({
+      ok: false,
+      error: { code: 'dependency_failure' },
+    });
+  });
+
   it('reports not-found and callable dependency failures', async () => {
     const { module, effects, documents } = await buildModule();
     await expect(module.remove(admin, 'missing')).resolves.toMatchObject({

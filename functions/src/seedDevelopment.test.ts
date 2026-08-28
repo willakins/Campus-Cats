@@ -186,6 +186,8 @@ describe('development project seeder', () => {
       platformAdmin: false,
       banned: false,
       disciplinaryNotices: [],
+      agreedToTerms: false,
+      termsVersion: '',
       updatedAt: new Date('2026-08-17T12:00:00.000Z'),
     });
     assert.equal(
