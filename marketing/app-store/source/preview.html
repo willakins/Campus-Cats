@@ -1,0 +1,607 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Campus Cats — App Store previews</title>
+    <style>
+      @font-face {
+        font-family: "Ionicons";
+        src: url("./Ionicons.ttf") format("truetype");
+        font-style: normal;
+        font-weight: normal;
+      }
+
+      :root {
+        --cream: #fff9f0;
+        --paper: #ffffff;
+        --ink: #22241f;
+        --muted: #62645c;
+        --border: #ddd4c3;
+        --navy: #18314f;
+        --navy-soft: #e2e8ef;
+        --gold: #b58a16;
+        --gold-soft: #f8edca;
+        --coral: #b94c3c;
+        --coral-soft: #f9e2dd;
+        --teal: #287d78;
+        --teal-soft: #ddedea;
+        --green: #26734d;
+        --green-soft: #dfefe6;
+        --violet: #8064a2;
+        --violet-soft: #ece6f3;
+        --shadow: 0 22px 48px rgba(24, 49, 79, 0.2);
+      }
+
+      * { box-sizing: border-box; }
+
+      .ion {
+        display: inline-block;
+        font-family: "Ionicons";
+        font-style: normal;
+        font-weight: normal;
+        line-height: 1;
+        text-rendering: geometricPrecision;
+      }
+
+      html, body {
+        margin: 0;
+        width: 440px;
+        height: 956px;
+        overflow: hidden;
+        background: var(--cream);
+        color: var(--ink);
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      }
+
+      body { position: relative; }
+
+      .slide {
+        width: 440px;
+        height: 956px;
+        padding: 42px 24px 0;
+        position: relative;
+        overflow: hidden;
+        background:
+          radial-gradient(circle at 90% 6%, rgba(181, 138, 22, 0.16), transparent 28%),
+          radial-gradient(circle at 4% 48%, rgba(40, 125, 120, 0.12), transparent 28%),
+          var(--cream);
+      }
+
+      .slide::after {
+        content: "";
+        position: absolute;
+        width: 220px;
+        height: 220px;
+        border: 2px solid rgba(24, 49, 79, 0.06);
+        border-radius: 50%;
+        right: -120px;
+        top: 178px;
+      }
+
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 9px;
+        color: var(--navy);
+        font-size: 11px;
+        font-weight: 800;
+        letter-spacing: 1.8px;
+      }
+
+      .brand img {
+        width: 34px;
+        height: 34px;
+        object-fit: cover;
+        border: 1px solid rgba(24, 49, 79, 0.14);
+        border-radius: 9px;
+        box-shadow: 0 3px 8px rgba(24, 49, 79, 0.12);
+      }
+
+      .kicker {
+        margin-top: 20px;
+        color: var(--teal);
+        font-size: 12px;
+        font-weight: 800;
+        letter-spacing: 1.7px;
+      }
+
+      h1 {
+        margin: 7px 0 8px;
+        max-width: 390px;
+        color: var(--navy);
+        font-size: 42px;
+        line-height: 0.98;
+        letter-spacing: -1.9px;
+      }
+
+      .dek {
+        margin: 0;
+        max-width: 365px;
+        color: var(--muted);
+        font-size: 16px;
+        line-height: 1.4;
+      }
+
+      .phone {
+        position: absolute;
+        top: 260px;
+        left: 57px;
+        width: 326px;
+        height: 688px;
+        padding: 8px;
+        border: 2px solid #132237;
+        border-radius: 44px;
+        background: #132237;
+        box-shadow: var(--shadow);
+        z-index: 2;
+      }
+
+      .screen {
+        position: relative;
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+        border-radius: 36px;
+        background: var(--cream);
+      }
+
+      .island {
+        position: absolute;
+        top: 10px;
+        left: 50%;
+        width: 94px;
+        height: 25px;
+        transform: translateX(-50%);
+        border-radius: 16px;
+        background: #0d1622;
+        z-index: 20;
+      }
+
+      .statusbar {
+        height: 47px;
+        padding: 15px 19px 0;
+        display: flex;
+        justify-content: space-between;
+        color: var(--ink);
+        font-size: 10px;
+        font-weight: 800;
+        position: relative;
+        z-index: 15;
+      }
+
+      .status-icons { letter-spacing: 2px; }
+
+      .app-content {
+        height: calc(100% - 47px);
+        padding-bottom: 59px;
+        overflow: hidden;
+      }
+
+      .app-pad { padding: 18px 16px 12px; }
+
+      .eyebrow {
+        color: var(--navy);
+        font-size: 10px;
+        line-height: 1;
+        font-weight: 800;
+        letter-spacing: 1.25px;
+        text-transform: uppercase;
+      }
+
+      .app-title {
+        margin: 4px 0 14px;
+        color: var(--ink);
+        font-size: 26px;
+        line-height: 1.05;
+        font-weight: 800;
+        letter-spacing: -0.8px;
+      }
+
+      .bottom-nav {
+        position: absolute;
+        z-index: 30;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        height: 59px;
+        display: grid;
+        grid-template-columns: repeat(5, 1fr);
+        align-items: center;
+        padding: 4px 7px 8px;
+        border-top: 1px solid var(--border);
+        background: rgba(255,255,255,0.97);
+      }
+
+      .nav-item {
+        width: 49px;
+        height: 40px;
+        margin: auto;
+        display: grid;
+        place-items: center;
+        border-radius: 13px;
+        color: var(--muted);
+        font-size: 22px;
+      }
+
+      .nav-item.active { background: var(--navy-soft); color: var(--navy); }
+
+      .map {
+        position: absolute;
+        inset: 47px 0 0;
+        background: url('./apple-maps-georgia-tech.png') 50% 50% / cover no-repeat;
+      }
+
+      .map-toolbar {
+        position: absolute;
+        z-index: 10;
+        top: 61px;
+        left: 13px;
+        right: 13px;
+        padding: 7px;
+        display: flex;
+        gap: 4px;
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        background: white;
+        box-shadow: 0 7px 20px rgba(24,49,79,.12);
+      }
+
+      .filter-chip {
+        flex: 1;
+        padding: 7px 2px;
+        border-radius: 10px;
+        color: var(--muted);
+        text-align: center;
+        font-size: 10px;
+        font-weight: 800;
+      }
+
+      .filter-chip.active { background: var(--navy); color: white; }
+
+      .count-pill {
+        position: absolute;
+        z-index: 10;
+        top: 113px;
+        left: 13px;
+        padding: 8px 12px;
+        border-radius: 18px;
+        color: var(--navy);
+        background: white;
+        box-shadow: 0 5px 16px rgba(24,49,79,.12);
+        font-size: 11px;
+        font-weight: 800;
+      }
+
+      .pin {
+        position: absolute;
+        z-index: 8;
+        width: 53px;
+        height: 53px;
+        padding: 3px;
+        border: 3px solid white;
+        border-radius: 50% 50% 50% 5px;
+        background: var(--coral);
+        box-shadow: 0 7px 14px rgba(24,49,79,.24);
+        transform: rotate(-45deg);
+      }
+
+      .pin img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; transform: rotate(45deg); }
+      .pin.one { top: 190px; left: 137px; }
+      .pin.two { top: 330px; left: 52px; }
+      .pin.three { top: 430px; right: 58px; }
+
+      .report-btn {
+        position: absolute;
+        z-index: 12;
+        left: 18px;
+        bottom: 76px;
+        padding: 13px 17px;
+        border-radius: 22px;
+        color: white;
+        background: var(--coral);
+        box-shadow: 0 8px 20px rgba(185,76,60,.3);
+        font-size: 12px;
+        font-weight: 800;
+      }
+
+      .search {
+        height: 45px;
+        padding: 0 14px;
+        display: flex;
+        align-items: center;
+        gap: 9px;
+        border: 1px solid var(--border);
+        border-radius: 15px;
+        color: var(--muted);
+        background: white;
+        font-size: 13px;
+      }
+
+      .toolbar-meta {
+        padding: 8px 0 12px;
+        display: flex;
+        justify-content: space-between;
+        color: var(--muted);
+        font-size: 10px;
+        font-weight: 700;
+      }
+
+      .cat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+      .cat-card {
+        position: relative;
+        overflow: hidden;
+        border-radius: 17px;
+        background: white;
+        box-shadow: 0 7px 18px rgba(24,49,79,.1);
+      }
+
+      .cat-card > img { width: 100%; height: 120px; display: block; object-fit: cover; }
+      .cat-body { padding: 11px 11px 12px; }
+      .cat-name { font-size: 17px; font-weight: 800; }
+      .cat-desc { margin: 5px 0 7px; height: 30px; overflow: hidden; color: var(--muted); font-size: 11px; line-height: 1.35; }
+      .metrics { display: flex; flex-wrap: wrap; gap: 5px 9px; color: var(--muted); font-size: 9px; font-weight: 700; }
+      .metrics span { display: inline-flex; align-items: center; gap: 3px; }
+      .metrics .ion { font-size: 11px; }
+      .heart {
+        position: absolute;
+        top: 8px;
+        right: 8px;
+        width: 34px;
+        height: 34px;
+        display: grid;
+        place-items: center;
+        border: 1px solid var(--border);
+        border-radius: 50%;
+        color: var(--coral);
+        background: white;
+        font-size: 17px;
+      }
+
+      .segments {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 4px;
+        padding: 5px;
+        margin-top: 10px;
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        background: white;
+      }
+
+      .segment { padding: 8px 4px; border-radius: 9px; color: var(--muted); text-align: center; font-size: 10px; font-weight: 800; }
+      .segment.active { color: white; background: var(--navy); }
+      .result-count { margin: 10px 0; color: var(--muted); font-size: 10px; font-weight: 700; }
+
+      .station-list { display: grid; gap: 11px; }
+      .station {
+        padding: 13px;
+        display: grid;
+        grid-template-columns: 78px 1fr;
+        gap: 13px;
+        border-left: 4px solid var(--green);
+        border-radius: 16px;
+        background: white;
+        box-shadow: 0 6px 16px rgba(24,49,79,.09);
+      }
+
+      .station-art {
+        height: 78px;
+        display: grid;
+        place-items: center;
+        border-radius: 12px;
+        background: var(--green-soft);
+        color: var(--green);
+        font-size: 34px;
+      }
+
+      .station-name { margin: 1px 0 6px; font-size: 15px; font-weight: 800; }
+      .status { display: inline-block; padding: 5px 8px; border-radius: 11px; color: var(--green); background: var(--green-soft); font-size: 9px; font-weight: 800; }
+      .status.warn { color: #9a6500; background: var(--gold-soft); }
+      .known { margin-top: 7px; color: var(--muted); font-size: 10px; line-height: 1.35; }
+
+      .community-intro { margin: -3px 0 14px; color: var(--muted); font-size: 12px; line-height: 1.4; }
+      .community-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 11px; }
+      .community-card {
+        height: 142px;
+        padding: 14px;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        border-radius: 17px;
+        background: var(--navy-soft);
+        box-shadow: 0 5px 14px rgba(24,49,79,.07);
+      }
+
+      .community-card.coral { background: var(--coral-soft); }
+      .community-card.teal { background: var(--teal-soft); }
+      .community-card.violet { background: var(--violet-soft); }
+      .community-card.gold { background: var(--gold-soft); }
+      .community-card.green { background: var(--green-soft); }
+      .community-icon { width: 42px; height: 42px; display: grid; place-items: center; border-radius: 50%; background: white; font-size: 22px; }
+      .community-name { color: var(--navy); font-size: 15px; font-weight: 800; }
+      .community-desc { margin-top: 4px; color: var(--muted); font-size: 9px; line-height: 1.3; }
+      .dot { position: absolute; top: 16px; right: 16px; width: 9px; height: 9px; border-radius: 50%; background: #c65f00; box-shadow: 0 0 0 3px white; }
+      .relative { position: relative; }
+
+      .fab {
+        position: absolute;
+        right: 19px;
+        bottom: 74px;
+        width: 50px;
+        height: 50px;
+        display: grid;
+        place-items: center;
+        border-radius: 16px;
+        color: white;
+        background: var(--navy);
+        box-shadow: 0 8px 20px rgba(24,49,79,.28);
+        font-size: 28px;
+        font-weight: 300;
+      }
+
+      .slide[data-slide="2"] .kicker { color: var(--teal); }
+      .slide[data-slide="3"] .kicker { color: var(--green); }
+      .slide[data-slide="4"] .kicker { color: var(--coral); }
+    </style>
+  </head>
+  <body>
+    <main id="root"></main>
+    <script>
+      const glyphs = {
+        'add': 0xf103,
+        'add-circle-outline': 0xf105,
+        'alert-circle': 0xf113,
+        'basket-outline': 0xf17c,
+        'calendar-outline': 0xf1d6,
+        'chatbubbles-outline': 0xf218,
+        'checkmark-circle': 0xf21e,
+        'checkmark-done-circle-outline': 0xf223,
+        'clipboard-outline': 0xf248,
+        'eye-outline': 0xf2ea,
+        'heart': 0xf36a,
+        'heart-outline': 0xf377,
+        'map-outline': 0xf443,
+        'megaphone-outline': 0xf44f,
+        'menu-outline': 0xf452,
+        'paw': 0xf499,
+        'paw-outline': 0xf49a,
+        'people-outline': 0xf4a3,
+        'search-outline': 0xf563,
+        'time-outline': 0xf5de,
+      };
+
+      const icon = (name, className = '') =>
+        `<span class="ion ${className}" aria-hidden="true">${String.fromCodePoint(glyphs[name])}</span>`;
+
+      const cats = {
+        goldie: './cats/goldie.png',
+        mimi: './cats/mimi.png',
+        alex: './cats/alex.png',
+      };
+
+      const nav = (active) => `
+        <div class="bottom-nav">
+          <div class="nav-item ${active === 'map' ? 'active' : ''}" aria-label="Map">${icon('map-outline')}</div>
+          <div class="nav-item ${active === 'community' ? 'active' : ''}" aria-label="Community">${icon('people-outline')}</div>
+          <div class="nav-item ${active === 'stations' ? 'active' : ''}" aria-label="Stations">${icon('basket-outline')}</div>
+          <div class="nav-item ${active === 'cats' ? 'active' : ''}" aria-label="Cats">${icon('paw-outline')}</div>
+          <div class="nav-item" aria-label="More">${icon('menu-outline')}</div>
+        </div>`;
+
+      const phone = (content, active) => `
+        <div class="phone">
+          <div class="screen">
+            <div class="island"></div>
+            <div class="statusbar"><span>9:41</span><span class="status-icons">● ◖ ▰</span></div>
+            <div class="app-content">${content}</div>
+            ${nav(active)}
+          </div>
+        </div>`;
+
+      const shell = ({number, kicker, title, dek, content, active}) => `
+        <section class="slide" data-slide="${number}">
+          <div class="brand"><img src="./default-app-icon.png" alt="" /> CAMPUS CATS</div>
+          <div class="kicker">${kicker}</div>
+          <h1>${title}</h1>
+          <p class="dek">${dek}</p>
+          ${phone(content, active)}
+        </section>`;
+
+      const slides = {
+        1: () => shell({
+          number: 1,
+          kicker: 'LIVE SIGHTING MAP',
+          title: 'Spot cats.<br />Share care.',
+          dek: 'Pin a sighting with a photo and condition—so your community can respond faster.',
+          active: 'map',
+          content: `
+            <div class="map">
+              <div class="pin one"><img src="${cats.goldie}" /></div>
+              <div class="pin two"><img src="${cats.mimi}" /></div>
+              <div class="pin three"><img src="${cats.alex}" /></div>
+            </div>
+            <div class="map-toolbar">
+              <div class="filter-chip">7D</div><div class="filter-chip">30D</div><div class="filter-chip">90D</div><div class="filter-chip">1Y</div><div class="filter-chip active">All</div>
+            </div>
+            <div class="count-pill">${icon('paw')} &nbsp; 18 sightings</div>
+            <div class="report-btn">${icon('add-circle-outline')} &nbsp; Report a sighting</div>`,
+        }),
+        2: () => shell({
+          number: 2,
+          kicker: 'THE CAT-ALOG',
+          title: 'Meet every<br />campus cat.',
+          dek: 'Learn names, markings, histories, and where each familiar face was last seen.',
+          active: 'cats',
+          content: `
+            <div class="app-pad">
+              <div class="eyebrow">Meet the colony</div>
+              <div class="app-title">Cat catalog</div>
+              <div class="search">${icon('search-outline')} <span>Search cats</span></div>
+              <div class="toolbar-meta"><span>Sorted by name: a to z</span><span>3 cats</span></div>
+              <div class="cat-grid">
+                <article class="cat-card">
+                  <img src="${cats.alex}" /><div class="heart">${icon('heart-outline')}</div>
+                  <div class="cat-body"><div class="cat-name">Alex</div><div class="cat-desc">A quiet gray tabby who likes shaded walkways.</div><div class="metrics"><span>${icon('eye-outline')} 7 sightings</span><span>${icon('heart')} 5 hearts</span><span>${icon('time-outline')} Jul 28</span></div></div>
+                </article>
+                <article class="cat-card">
+                  <img src="${cats.goldie}" /><div class="heart" style="color:white;background:var(--navy);border-color:var(--navy)">${icon('heart')}</div>
+                  <div class="cat-body"><div class="cat-name">Goldie</div><div class="cat-desc">A sunny orange regular near the student center.</div><div class="metrics"><span>${icon('eye-outline')} 18 sightings</span><span>${icon('heart')} 9 hearts</span><span>${icon('time-outline')} Aug 4</span></div></div>
+                </article>
+                <article class="cat-card">
+                  <img src="${cats.mimi}" /><div class="heart">${icon('heart-outline')}</div>
+                  <div class="cat-body"><div class="cat-name">Mimi</div><div class="cat-desc">A cautious tuxedo cat who visits at dusk.</div><div class="metrics"><span>${icon('eye-outline')} 12 sightings</span><span>${icon('heart')} 14 hearts</span><span>${icon('time-outline')} Aug 2</span></div></div>
+                </article>
+              </div>
+            </div>`,
+        }),
+        3: () => shell({
+          number: 3,
+          kicker: 'FEEDING STATIONS',
+          title: 'Keep stations<br />ready.',
+          dek: 'See what is stocked, what needs food, and which cats depend on each location.',
+          active: 'stations',
+          content: `
+            <div class="app-pad">
+              <div class="eyebrow">Officer operations</div>
+              <div class="app-title">Feeding stations</div>
+              <div class="search">${icon('search-outline')} <span>Search stations or known cats</span></div>
+              <div class="segments"><div class="segment active">All</div><div class="segment">Stocked</div><div class="segment">Unstocked</div></div>
+              <div class="result-count">3 stations</div>
+              <div class="station-list">
+                <article class="station"><div class="station-art">${icon('basket-outline')}</div><div><div class="station-name">Library Grove</div><span class="status">${icon('checkmark-circle')} &nbsp; Stocked</span><div class="known">Known cats: Goldie, Mimi</div></div></article>
+                <article class="station"><div class="station-art" style="background:var(--gold-soft);color:var(--gold)">${icon('basket-outline')}</div><div><div class="station-name">Tech Green East</div><span class="status warn">${icon('alert-circle')} &nbsp; Needs food</span><div class="known">Known cats: Alex</div></div></article>
+                <article class="station"><div class="station-art">${icon('basket-outline')}</div><div><div class="station-name">Student Center Patio</div><span class="status">${icon('checkmark-circle')} &nbsp; Stocked</span><div class="known">Known cats: Goldie</div></div></article>
+              </div>
+            </div>
+            <div class="fab">${icon('add')}</div>`,
+        }),
+        4: () => shell({
+          number: 4,
+          kicker: 'COMMUNITY HUB',
+          title: 'Turn neighbors<br />into a team.',
+          dek: 'Coordinate news, events, surveys, votes, donations, and chat from one shared home.',
+          active: 'community',
+          content: `
+            <div class="app-pad">
+              <div class="eyebrow">Stay connected</div>
+              <div class="app-title">Community</div>
+              <div class="community-intro">Everything your club needs to organize care and keep volunteers in sync.</div>
+              <div class="community-grid">
+                <article class="community-card relative"><div class="community-icon">${icon('megaphone-outline')}</div><span class="dot"></span><div><div class="community-name">Announcements</div><div class="community-desc">Club news and volunteer updates</div></div></article>
+                <article class="community-card coral relative"><div class="community-icon">${icon('chatbubbles-outline')}</div><span class="dot"></span><div><div class="community-name">Chat</div><div class="community-desc">Conversations with the community</div></div></article>
+                <article class="community-card teal"><div class="community-icon">${icon('calendar-outline')}</div><div><div class="community-name">Events</div><div class="community-desc">Upcoming gatherings and workdays</div></div></article>
+                <article class="community-card violet"><div class="community-icon">${icon('clipboard-outline')}</div><div><div class="community-name">Surveys</div><div class="community-desc">Share feedback with the club</div></div></article>
+                <article class="community-card gold relative"><div class="community-icon">${icon('checkmark-done-circle-outline')}</div><span class="dot"></span><div><div class="community-name">Votes</div><div class="community-desc">Contests and club elections</div></div></article>
+                <article class="community-card green"><div class="community-icon">${icon('heart-outline')}</div><div><div class="community-name">Donate</div><div class="community-desc">Support food, care, and rescue work</div></div></article>
+              </div>
+            </div>`,
+        }),
+      };
+
+      const selected = Number(new URLSearchParams(location.search).get('slide') || 1);
+      document.getElementById('root').innerHTML = (slides[selected] || slides[1])();
+    </script>
+  </body>
+</html>
