@@ -5,31 +5,31 @@
 <h1 align="center">Campus Cats</h1>
 
 <p align="center">
-  A mobile operations and community hub for university groups caring for campus cats.
+  <strong>The mobile home for campus cat communities.</strong>
 </p>
 
 <p align="center">
-  <img alt="Expo 57" src="https://img.shields.io/badge/Expo-57-000020?logo=expo&logoColor=white" />
-  <img alt="React Native 0.86" src="https://img.shields.io/badge/React_Native-0.86-61DAFB?logo=react&logoColor=111827" />
-  <img alt="TypeScript 6" src="https://img.shields.io/badge/TypeScript-6.0-3178C6?logo=typescript&logoColor=white" />
-  <img alt="Firebase" src="https://img.shields.io/badge/Firebase-Cloud_Backend-FFCA28?logo=firebase&logoColor=111827" />
-  <a href="LICENSE"><img alt="Apache 2.0 license" src="https://img.shields.io/badge/License-Apache_2.0-blue.svg" /></a>
+  Map sightings, care for feeding stations, remember every cat, and bring your whole club together.
 </p>
 
-> [!NOTE]
-> Campus Cats was created by a five-person Georgia Tech Computer Science capstone team for the Campus Cats client. This repository represents the team's collective work; contributors are credited below.
+<p align="center">
+  <img alt="iOS" src="https://img.shields.io/badge/iOS-supported-18314F?logo=apple&logoColor=white" />
+  <img alt="Android" src="https://img.shields.io/badge/Android-supported-26734D?logo=android&logoColor=white" />
+  <img alt="Multi-club" src="https://img.shields.io/badge/platform-multi--club-B58A16" />
+  <a href="LICENSE"><img alt="Apache 2.0 license" src="https://img.shields.io/badge/license-Apache_2.0-287D78" /></a>
+</p>
 
-## The project
+Campus cat organizations do far more than leave food outside. They identify cats,
+track health and behavior, coordinate volunteers, maintain feeding stations, share
+urgent updates, welcome new members, and preserve years of community knowledge.
 
-Georgia Tech's Campus Cats volunteers care for a population of stray and feral cats across campus. Without a shared system, sightings, cat histories, feeding-station status, and time-sensitive updates can become fragmented across people and channels.
-
-Campus Cats brings those workflows into one mobile experience. Members can record photo-backed sightings on a live map, follow known cats, and coordinate through announcements, events, surveys, votes, donations, and club chat. Officers can maintain shared data, organize feeding-station restocking, and manage community access.
+Campus Cats puts that work in one place. It is an invite-only, configurable platform
+where every university club receives its own branded workspace, isolated data, member
+community, and operational tools.
 
 ## See Campus Cats in action
 
-The app combines field reporting, a shared cat directory, feeding operations, and
-community coordination in one accessible mobile interface. Select any preview to
-open the full-size App Store image.
+Select any preview to open the full-size App Store image.
 
 <table>
   <tr>
@@ -74,70 +74,77 @@ open the full-size App Store image.
   </tr>
 </table>
 
-The editable preview source and generation notes live in the
-[App Store preview guide](marketing/app-store/README.md).
+## Everything a campus cat club needs
 
-## What we built
+| Experience           | What it gives your community                                                                                                        |
+| -------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| **Sightings**        | Photo-backed reports with location, condition, date, discussion, and map filters from the last seven days through all time.         |
+| **Cat-alog**         | A visual directory of known cats with identifying details, favorites, tags, photos, and recent sighting history.                    |
+| **Feeding stations** | Shared station locations, known cats, restocking details, and stocked or unstocked views for faster volunteer coordination.         |
+| **Community**        | Announcements, push notifications, events, surveys, contests, elections, donations, and a live club chat in one place.              |
+| **Membership**       | University discovery, club-specific sign-in, email access workflows, role-aware navigation, and deliberate presidential succession. |
+| **Moderation**       | Officer pings, chat restrictions, disciplinary notices, account bans, and protected read-only access for restricted members.        |
 
-| Experience                     | What it enables                                                                                                                                 |
-| ------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Live sighting map**          | Report a cat's location, condition, date, and photos; explore sightings with 7-day through all-time filters.                                    |
-| **Cat-alog**                   | Maintain a visual directory of known campus cats with profiles, identifying details, and recent sightings.                                      |
-| **Feeding stations**           | Track station locations and restocking information, with stocked/unstocked filtering for faster coordination.                                   |
-| **Announcements**              | Give officers a central place to publish updates and send push notifications to members.                                                        |
-| **Community engagement**       | Group announcements, events, surveys, voting, and a club-wide chat with reactions, officer pings, and moderation in one Community tab.          |
-| **Community access**           | Discover a university club, retain Georgia Tech SSO, and provide tenant-aware email access workflows.                                           |
-| **Club onboarding**            | Search a verified U.S. university directory and securely invite a school-domain President to launch a branded club.                             |
-| **Role-aware administration**  | Separate club roles from global platform administration, with an atomic presidential succession workflow.                                       |
-| **iNaturalist integration**    | Bring public Georgia Tech project sightings and guide profiles into the existing map and catalog through a daily, attributed, read-only import. |
-| **Subscription billing**       | Give each club isolated data, usage-based Stripe billing, hosted invoices, and President-managed payment controls.                              |
-| **President-managed settings** | Change login branding and accessible app colors, and control whether Campus Cats contributor identities are visible to Members.                 |
-| **Member moderation**          | Power-role users can record disciplinary notices and ban or restore Member accounts with Firebase-enforced login blocking.                      |
+## One platform, uniquely yours
 
-## Why it stands out
+Campus Cats is designed to scale beyond a single campus without flattening every club
+into the same experience.
 
-- **Built for a real community partner:** the team translated Campus Cats' caregiving and coordination needs into a working product.
-- **End-to-end mobile engineering:** one codebase connects maps, geolocation, image uploads, authentication, cloud data, notifications, and email workflows.
-- **Thoughtful permission design:** navigation and editing controls adapt to user roles, while report owners retain control over their own submissions.
-- **Native mobile delivery:** Expo and React Native provide a shared foundation for the supported iOS and Android apps.
-- **Collaborative execution:** five developers worked through iterative sprints on a layered, service-oriented application.
+- **A private workspace for every club.** Content and media live inside isolated club
+  boundaries, and signed-in members always resolve to their own organization.
+- **University-powered discovery.** Clubs are mapped to a verified U.S. university
+  directory so prospective members can find the right community before signing in.
+- **Verified club creation.** A school-domain President can request a new club,
+  verify ownership by email, and launch a deterministic tenant without exposing
+  administrative collections to the client.
+- **Club-controlled branding.** Presidents can upload an in-app logo, choose primary
+  and accent colors, and preview accessible light and dark themes.
+- **Flexible access.** Each club can retain institution-specific authentication while
+  supporting tenant-aware email access for other members.
+- **Independent subscriptions.** Every club has its own entitlement, usage metering,
+  trial, payment status, invoices, and President-managed billing controls.
 
-## Architecture
+## Built around real club roles
 
-```mermaid
-flowchart LR
-    A[Expo Router screens] --> B[Immutable AppModules composition]
-    B --> C[Vertical feature modules]
-    C --> D[Domain models, outcomes, and policies]
-    C --> E[Typed ports]
-    E --> F[Firebase and Expo adapters]
-    E --> G[Deterministic in-memory adapters]
-    F --> H[(Firestore, Storage, Auth)]
-    F --> I[Callable Functions]
-    I --> J[Expo Push API and SendGrid]
-```
+Campus Cats adapts the experience to the responsibility a person holds.
 
-The client is organized as behavior-first vertical modules for sightings, catalog,
-stations, comments, announcements, events, surveys, contacts, users, whitelist, session, image selection, and
-iNaturalist integration workflows.
-Screens own presentation and navigation; modules return typed outcomes; narrow ports
-isolate Firebase and Expo. Deterministic in-memory adapters and Firebase Emulator
-contracts protect behavior during refactors. See the
-[architecture decision](docs/architecture/0001-feature-modules.md) for the dependency
-rules and compatibility constraints.
+| Role                    | Focus                                                                                                                 |
+| ----------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| **Members**             | Report sightings, explore cats, join conversations, attend events, answer surveys, vote, and support the club.        |
+| **Officers**            | Publish updates, manage operational content, coordinate volunteers, inspect responses, and moderate community spaces. |
+| **Vice-Presidents**     | Inherit officer workflows with broader club administration responsibilities.                                          |
+| **Presidents**          | Control club branding, membership leadership, subscription settings, and presidential succession.                     |
+| **Platform Developers** | Operate the multi-club service while remaining distinct from each club's internal leadership.                         |
 
-### Technology
+## Designed for responsible community care
 
-| Area                    | Tools                                                                    |
-| ----------------------- | ------------------------------------------------------------------------ |
-| Client                  | React Native, Expo, Expo Router                                          |
-| Language and validation | TypeScript, React Hook Form, Zod                                         |
-| Location and media      | React Native Maps, Expo Location, Expo Image Picker                      |
-| Backend                 | Firebase Authentication, Cloud Firestore, Cloud Storage, Cloud Functions |
-| Communication           | Expo Notifications, Expo Push API, SendGrid                              |
-| Tooling                 | ESLint, Jest Expo                                                        |
+- **Privacy-aware contributions:** clubs can keep sighting and catalog contributor
+  identities anonymous to ordinary members while preserving owner editing rights and
+  officer accountability.
+- **Private participation:** anonymous surveys separate answers from member identity,
+  and contest ballots remain private until aggregate results are available.
+- **Role-enforced operations:** client presentation, trusted server workflows,
+  Firestore rules, and Storage rules share the same club and permission boundaries.
+- **Safe external enrichment:** optional iNaturalist imports are read-only,
+  source-attributed, license-aware, and kept separate from locally reported facts.
+- **Account control:** public legal pages, versioned consent, and an in-app account
+  deletion workflow support mobile-store and member expectations.
+- **Accessible by design:** semantic color roles, light and dark themes, scalable
+  typography, reduced motion, and 44-point touch targets shape the shared interface.
 
-## Run it locally
+## Under the hood
+
+Campus Cats is a native mobile application built with Expo, React Native, TypeScript,
+and Expo Router. Firebase provides authentication, tenant-scoped Firestore and
+Storage, callable Functions, notifications, and hosted public flows. Stripe powers
+club subscriptions and usage billing; SendGrid supports verified invitations and
+operational email.
+
+The client is organized into behavior-first feature modules behind typed ports, with
+Firebase, Expo, development, and deterministic in-memory adapters. This keeps product
+behavior testable while the platform grows across providers and clubs.
+
+### Run locally
 
 ```bash
 git clone https://github.com/willakins/Campus-Cats.git
@@ -146,34 +153,35 @@ npm ci
 npx expo start
 ```
 
-Use the Expo prompt to open the iOS or Android app. `npm run web` is also available as a local development and smoke-testing convenience, but Campus Cats does not ship or support a production web application.
+Authentication, maps, notifications, email, billing, and data-backed features require
+their corresponding service configuration. Start with the
+[installation guide](Installation-Guide.md) and [testing guide](docs/testing.md).
 
-Authentication, maps, notifications, email, and data-backed features depend on their corresponding service configuration and access. See the [installation guide](Installation-Guide.md) for platform options, configuration notes, and troubleshooting.
+### Documentation
 
-## Project documentation
-
-- [Installation guide](Installation-Guide.md)
 - [System design](system-design.md)
-- [Release notes](CHANGELOG.md)
-- [Detailed design document](Detailed%20Design%20Document.pdf) — the team's original capstone design artifact; it includes planned ideas beyond the final v1 scope
-- [Firebase operations](FIREBASE.md)
-- [Architecture](docs/architecture/0001-feature-modules.md)
 - [Multi-club subscription architecture](docs/architecture/0003-multi-club-subscription-tenancy.md)
+- [University onboarding](docs/university-onboarding.md)
+- [Club subscriptions and tenant migration](docs/billing-operations.md)
+- [App branding and contributor privacy](docs/app-settings.md)
+- [Community engagement](docs/community-engagement.md)
+- [iNaturalist integration](docs/inaturalist-import.md)
 - [Authorization matrix](docs/architecture/behavior-matrix.md)
 - [Campus Field Guide design system](docs/design-system.md)
-- [iNaturalist import and operations](docs/inaturalist-import.md)
-- [App Billing operations](docs/billing.md)
-- [Club subscriptions and tenant migration](docs/billing-operations.md)
-- [University onboarding operations](docs/university-onboarding.md)
-- [App settings and contributor privacy](docs/app-settings.md)
-- [Community engagement](docs/community-engagement.md)
-- [Testing guide](docs/testing.md)
 - [Legal release checklist](docs/legal-release.md)
+- [App Store preview source](marketing/app-store/README.md)
 - [Contributing](CONTRIBUTING.md)
 
-## Team
+## Project history
 
-Developed collaboratively by the following Georgia Tech students (listed alphabetically):
+<p align="center">
+  <img src="assets/images/campus_cats_logo.png" alt="Original Campus Cats heritage logo" width="150" />
+</p>
+
+Campus Cats began as a Georgia Tech Computer Science capstone project built for the
+Georgia Tech Campus Cats organization. The original five-person team translated the
+club's real-world caregiving and coordination needs into the first single-club mobile
+release:
 
 - [Amulya Panakam](https://github.com/apanakam7)
 - [Dragos Lup](https://github.com/Dragos-Lup)
@@ -181,11 +189,17 @@ Developed collaboratively by the following Georgia Tech students (listed alphabe
 - [Robert Zhu](https://github.com/ArchWand)
 - [William Akins](https://github.com/willakins)
 
-The repository's [contributor history](https://github.com/willakins/Campus-Cats/graphs/contributors) provides an additional view of the team's work. Git author aliases may cause one person to appear more than once.
+After the capstone, **William Akins became the project's sole developer and
+maintainer**. He is now evolving Campus Cats from that original deployment into the
+configurable, multi-club platform described above—expanding its architecture,
+community features, onboarding, branding, privacy, moderation, billing, and release
+operations while preserving the foundation created by the full capstone team.
 
-## Project status
-
-The repository contains the team's completed capstone release. Review the [release notes](CHANGELOG.md) for shipped functionality and known limitations. Service-backed features may require credentials or organization-level access that are not available to external evaluators.
+The original [detailed design document](Detailed%20Design%20Document.pdf),
+[version 1.0 release notes](CHANGELOG.md), and
+[contributor history](https://github.com/willakins/Campus-Cats/graphs/contributors)
+preserve that early chapter of the project. Campus Cats is an independent product and
+does not imply institutional endorsement by Georgia Tech.
 
 ## License
 
