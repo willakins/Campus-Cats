@@ -21,6 +21,7 @@ interface OverlaySurfaceProps {
   readonly contentStyle?: StyleProp<ViewStyle>;
   readonly maxWidth?: number;
   readonly maxHeight?: DimensionValue;
+  readonly dismissible?: boolean;
 }
 
 interface OverlayRootProps {
@@ -29,6 +30,7 @@ interface OverlayRootProps {
   readonly alignment: 'center' | 'bottom';
   readonly children: React.ReactNode;
   readonly onClose: () => void;
+  readonly dismissible: boolean;
 }
 
 const OverlayRoot = ({
@@ -37,6 +39,7 @@ const OverlayRoot = ({
   alignment,
   children,
   onClose,
+  dismissible,
 }: OverlayRootProps) => {
   const theme = useAppTheme();
   const reducedMotion = useReducedMotion();
@@ -47,7 +50,7 @@ const OverlayRoot = ({
       animationType={reducedMotion ? 'none' : 'fade'}
       presentationStyle="overFullScreen"
       statusBarTranslucent
-      onRequestClose={onClose}
+      onRequestClose={dismissible ? onClose : () => undefined}
     >
       <KeyboardAvoidingView
         accessibilityViewIsModal
@@ -59,16 +62,26 @@ const OverlayRoot = ({
           padding: alignment === 'center' ? theme.layout.screenGutter : 0,
         }}
       >
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={closeLabel}
-          onPress={onClose}
-          style={{
-            position: 'absolute',
-            inset: 0,
-            backgroundColor: theme.colors.overlay,
-          }}
-        />
+        {dismissible ? (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={closeLabel}
+            onPress={onClose}
+            style={{
+              position: 'absolute',
+              inset: 0,
+              backgroundColor: theme.colors.overlay,
+            }}
+          />
+        ) : (
+          <View
+            style={{
+              position: 'absolute',
+              inset: 0,
+              backgroundColor: theme.colors.overlay,
+            }}
+          />
+        )}
         {children}
       </KeyboardAvoidingView>
     </Modal>
@@ -83,6 +96,7 @@ export const Dialog = ({
   contentStyle,
   maxWidth = 420,
   maxHeight = '90%',
+  dismissible = true,
 }: OverlaySurfaceProps) => {
   const theme = useAppTheme();
   return (
@@ -91,6 +105,7 @@ export const Dialog = ({
       closeLabel={closeLabel}
       alignment="center"
       onClose={onClose}
+      dismissible={dismissible}
     >
       <View
         style={[
@@ -132,6 +147,7 @@ export const BottomSheet = ({
   contentStyle,
   maxWidth,
   maxHeight = '90%',
+  dismissible = true,
 }: OverlaySurfaceProps) => {
   const theme = useAppTheme();
   return (
@@ -140,6 +156,7 @@ export const BottomSheet = ({
       closeLabel={closeLabel}
       alignment="bottom"
       onClose={onClose}
+      dismissible={dismissible}
     >
       <View
         style={[

@@ -36,6 +36,8 @@ describe('Firebase iNaturalist reader adapter', () => {
           clubId: 'campus-cats',
           platformAdmin: false,
           banned: false,
+          agreedToTerms: true,
+          termsVersion: '2026-08-28',
         }),
         setDoc(doc(firestore, 'clubs', 'campus-cats'), {
           name: 'Campus Cats',

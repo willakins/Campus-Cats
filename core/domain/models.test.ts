@@ -24,6 +24,21 @@ const member = parseUser({
 });
 
 describe('canonical domain models', () => {
+  it('defaults legacy accounts to not agreed and preserves recorded terms consent', () => {
+    expect(member.agreedToTerms).toBeUndefined();
+    expect(member.termsVersion).toBeUndefined();
+    expect(
+      parseUser({
+        ...member,
+        agreedToTerms: true,
+        termsVersion: '2026-08-28',
+      }),
+    ).toMatchObject({
+      agreedToTerms: true,
+      termsVersion: '2026-08-28',
+    });
+  });
+
   it('parses immutable records for every persisted feature', () => {
     const createdAt = new Date('2025-04-10T12:00:00.000Z');
     const catalog = parseCatalogEntry({
@@ -319,7 +334,13 @@ describe('persistence codecs', () => {
     ).toEqual({
       kind: 'sighting',
       contentId: 'sighting-1',
-      user: member,
+      user: {
+        id: 'member-1',
+        email: 'member@gatech.edu',
+        role: Role.Member,
+        clubId: 'campus-cats',
+        platformAdmin: false,
+      },
     });
   });
 

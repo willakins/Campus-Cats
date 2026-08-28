@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { View } from 'react-native';
+import { Alert, View } from 'react-native';
 
 import { useRouter } from 'expo-router';
 
@@ -15,6 +15,8 @@ import {
   Screen,
   StatusPill,
 } from '@/components/design';
+import { FormTextInput } from '@/components/forms';
+import { appModules } from '@/composition/appModules';
 import { Role, parseUser } from '@/core/domain';
 import { useAuth } from '@/providers';
 import { useAppTheme } from '@/theme';
@@ -25,6 +27,9 @@ const Account = () => {
   const { signOut, user } = useAuth();
   const actor = parseUser(user);
   const [signingOut, setSigningOut] = useState(false);
+  const [showDeletion, setShowDeletion] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [confirmation, setConfirmation] = useState('');
   const [error, setError] = useState<string>();
 
   const logout = async () => {
@@ -38,6 +43,38 @@ const Account = () => {
       setError(caught instanceof Error ? caught.message : 'Please try again.');
       setSigningOut(false);
     }
+  };
+
+  const deleteAccount = () => {
+    if (deleting || confirmation.trim().toLowerCase() !== actor.email.toLowerCase()) {
+      return;
+    }
+    Alert.alert(
+      'Permanently delete account?',
+      'This cannot be undone. Your account and personal contributions will be removed.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete account',
+          style: 'destructive',
+          onPress: () => {
+            setDeleting(true);
+            setError(undefined);
+            void appModules.users
+              .deleteOwnAccount(actor, confirmation)
+              .then(async (result) => {
+                if (!result.ok) {
+                  setError(result.error.message);
+                  setDeleting(false);
+                  return;
+                }
+                await signOut().catch(() => undefined);
+                router.replace('/login');
+              });
+          },
+        },
+      ],
+    );
   };
 
   return (
@@ -88,6 +125,61 @@ const Account = () => {
                 }
               />
             </View>
+          </Card>
+        </FormSection>
+
+        <FormSection title="Delete account">
+          <Card accent={theme.colors.danger} style={{ gap: theme.spacing.sm }}>
+            <AppText variant="cardTitle">Permanently delete your account</AppText>
+            <AppText color="muted">
+              This removes your sign-in, profile, photos, sightings, comments, chat,
+              reactions, and account-linked survey and voting records. Shared club records
+              are kept only after your identity is removed.
+            </AppText>
+            {actor.role === Role.President ? (
+              <FeedbackBanner
+                message="Transfer the club presidency before deleting this account."
+                tone="warning"
+              />
+            ) : showDeletion ? (
+              <View style={{ gap: theme.spacing.sm }}>
+                <FormTextInput
+                  label="Confirm your account email"
+                  helper={`Enter ${actor.email} to continue.`}
+                  value={confirmation}
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  keyboardType="email-address"
+                  onChangeText={setConfirmation}
+                />
+                <Button
+                  label="Permanently delete account"
+                  variant="danger"
+                  loading={deleting}
+                  loadingLabel="Deleting account…"
+                  disabled={
+                    deleting ||
+                    confirmation.trim().toLowerCase() !== actor.email.toLowerCase()
+                  }
+                  onPress={deleteAccount}
+                />
+                <Button
+                  label="Cancel"
+                  variant="tertiary"
+                  disabled={deleting}
+                  onPress={() => {
+                    setShowDeletion(false);
+                    setConfirmation('');
+                  }}
+                />
+              </View>
+            ) : (
+              <Button
+                label="Delete my account"
+                variant="secondary"
+                onPress={() => setShowDeletion(true)}
+              />
+            )}
           </Card>
         </FormSection>
       </View>

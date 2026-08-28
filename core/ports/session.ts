@@ -30,4 +30,5 @@ export interface SessionPort {
   signInWithSaml(): Promise<ExternalSignInResult>;
   signOut(): Promise<void>;
   registerPushToken(token: string): Promise<void>;
+  acceptTerms(version: string): Promise<void>;
 }

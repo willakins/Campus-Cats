@@ -1,5 +1,5 @@
 import React from 'react';
-import { Linking } from 'react-native';
+import { Alert, Linking } from 'react-native';
 
 import {
   fireEvent,
@@ -34,6 +34,7 @@ const mockCreateContact = jest.fn();
 const mockUpdateContact = jest.fn();
 const mockRemoveContact = jest.fn();
 const mockListUsers = jest.fn();
+const mockDeleteOwnAccount = jest.fn();
 const mockListWhitelist = jest.fn();
 const mockInaturalistStatus = jest.fn();
 const mockInaturalistRecords = jest.fn();
@@ -80,6 +81,7 @@ jest.mock('../../composition/appModules', () => ({
       transferPresidency: jest.fn(),
       addDisciplinaryNotice: jest.fn(),
       setBanned: jest.fn(),
+      deleteOwnAccount: (...args: unknown[]) => mockDeleteOwnAccount(...args),
     },
     whitelist: {
       list: (...args: unknown[]) => mockListWhitelist(...args),
@@ -182,6 +184,11 @@ describe('settings and administration routes', () => {
     mockRole = Role.Member;
     mockPlatformAdmin = false;
     mockSignOut.mockResolvedValue(undefined);
+    mockDeleteOwnAccount.mockResolvedValue({
+      ok: true,
+      value: undefined,
+      warnings: [],
+    });
     mockListContacts.mockResolvedValue({
       ok: true,
       value: [contact],
@@ -325,6 +332,45 @@ describe('settings and administration routes', () => {
 
     await user.press(screen.getByRole('button', { name: 'Sign out' }));
     await waitFor(() => expect(mockReplace).toHaveBeenCalledWith('/login'));
+  });
+
+  it('requires typed confirmation before permanently deleting an account', async () => {
+    const alert = jest.spyOn(Alert, 'alert').mockImplementation((_title, _message, buttons) => {
+      buttons?.find(({ style }) => style === 'destructive')?.onPress?.();
+    });
+    const user = userEvent.setup();
+    await renderThemed(<Account />);
+
+    await user.press(screen.getByRole('button', { name: 'Delete my account' }));
+    const deleteButton = screen.getByRole('button', {
+      name: 'Permanently delete account',
+    });
+    expect(deleteButton).toBeDisabled();
+    await fireEvent.changeText(
+      screen.getByLabelText('Confirm your account email'),
+      'actor@gatech.edu',
+    );
+    await user.press(deleteButton);
+
+    await waitFor(() => {
+      expect(mockDeleteOwnAccount).toHaveBeenCalledWith(
+        expect.objectContaining({ id: 'actor-1' }),
+        'actor@gatech.edu',
+      );
+      expect(mockSignOut).toHaveBeenCalled();
+      expect(mockReplace).toHaveBeenCalledWith('/login');
+    });
+    alert.mockRestore();
+  });
+
+  it('requires a President to transfer the presidency before deletion', async () => {
+    mockRole = Role.President;
+    await renderThemed(<Account />);
+
+    expect(
+      screen.getByText('Transfer the club presidency before deleting this account.'),
+    ).toBeOnTheScreen();
+    expect(screen.queryByRole('button', { name: 'Delete my account' })).not.toBeOnTheScreen();
   });
 
   it('shows officer tools to administrators without changing their routes', async () => {

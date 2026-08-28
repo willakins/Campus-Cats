@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-import { userSchema } from './models';
+import { userSnapshotSchema } from './models';
 
 export const contributionKindSchema = z.enum(['sighting', 'catalog']);
 export type ContributionKind = z.infer<typeof contributionKindSchema>;
@@ -8,7 +8,7 @@ export type ContributionKind = z.infer<typeof contributionKindSchema>;
 export const contentContributorSchema = z.object({
   kind: contributionKindSchema,
   contentId: z.string().trim().min(1).max(200),
-  user: userSchema,
+  user: userSnapshotSchema,
 });
 
 export type ContentContributor = Readonly<

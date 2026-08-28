@@ -23,6 +23,7 @@ import {
   getDocs,
   orderBy,
   query,
+  serverTimestamp,
   setDoc,
   Timestamp,
   updateDoc,
@@ -36,6 +37,10 @@ import {
 } from '../support/firebaseProject';
 
 const CLUB_ID = 'campus-cats';
+const acceptedTerms = {
+  agreedToTerms: true,
+  termsVersion: '2026-08-28',
+} as const;
 const GLOBAL_COLLECTIONS = new Set(['clubs', 'users']);
 const tenantPath = (segments: readonly string[]) =>
   segments[0] === 'clubs' || GLOBAL_COLLECTIONS.has(segments[0] ?? '')
@@ -115,6 +120,7 @@ describe('Firebase authorization matrix', () => {
           clubId: CLUB_ID,
           platformAdmin: false,
           banned: false,
+          ...acceptedTerms,
         }),
         setDoc(doc(firestore, 'users', 'member-2'), {
           email: 'other@gatech.edu',
@@ -122,12 +128,14 @@ describe('Firebase authorization matrix', () => {
           clubId: CLUB_ID,
           platformAdmin: false,
           banned: false,
+          ...acceptedTerms,
         }),
         setDoc(doc(firestore, 'users', 'legacy-member-1'), {
           email: 'legacy-member@gatech.edu',
           role: 0,
           clubId: CLUB_ID,
           platformAdmin: false,
+          ...acceptedTerms,
         }),
         setDoc(doc(firestore, 'users', 'banned-1'), {
           email: 'banned@gatech.edu',
@@ -135,6 +143,7 @@ describe('Firebase authorization matrix', () => {
           clubId: CLUB_ID,
           platformAdmin: false,
           banned: true,
+          ...acceptedTerms,
         }),
         setDoc(doc(firestore, 'users', 'admin-1'), {
           email: 'admin@gatech.edu',
@@ -142,6 +151,7 @@ describe('Firebase authorization matrix', () => {
           clubId: CLUB_ID,
           platformAdmin: false,
           banned: false,
+          ...acceptedTerms,
         }),
         setDoc(doc(firestore, 'users', 'super-1'), {
           email: 'super@gatech.edu',
@@ -149,6 +159,7 @@ describe('Firebase authorization matrix', () => {
           clubId: CLUB_ID,
           platformAdmin: false,
           banned: false,
+          ...acceptedTerms,
         }),
         setDoc(doc(firestore, 'users', 'president-1'), {
           email: 'president@gatech.edu',
@@ -156,12 +167,21 @@ describe('Firebase authorization matrix', () => {
           clubId: CLUB_ID,
           platformAdmin: false,
           banned: false,
+          ...acceptedTerms,
         }),
         setDoc(doc(firestore, 'users', 'developer-1'), {
           email: 'developer@gatech.edu',
           role: 4,
           clubId: CLUB_ID,
           platformAdmin: true,
+          banned: false,
+          ...acceptedTerms,
+        }),
+        setDoc(doc(firestore, 'users', 'unagreed-1'), {
+          email: 'unagreed@gatech.edu',
+          role: 0,
+          clubId: CLUB_ID,
+          platformAdmin: false,
           banned: false,
         }),
         setDoc(doc(firestore, 'public-profiles', 'member-1'), {
@@ -1277,6 +1297,27 @@ describe('Firebase authorization matrix', () => {
         expoPushToken: 'ExponentPushToken[test]',
       }),
     );
+    await assertSucceeds(
+      updateDoc(doc(member, 'users', 'member-1'), {
+        agreedToTerms: true,
+        termsVersion: '2026-08-28',
+        termsAgreedAt: serverTimestamp(),
+      }),
+    );
+    await assertFails(
+      updateDoc(doc(member, 'users', 'member-1'), {
+        agreedToTerms: false,
+        termsVersion: '2026-08-28',
+        termsAgreedAt: serverTimestamp(),
+      }),
+    );
+    await assertFails(
+      updateDoc(doc(member, 'users', 'member-1'), {
+        agreedToTerms: true,
+        termsVersion: 'outdated-version',
+        termsAgreedAt: serverTimestamp(),
+      }),
+    );
     await assertFails(updateDoc(doc(member, 'users', 'member-1'), { role: 1 }));
     await assertFails(
       updateDoc(doc(member, 'users', 'member-2'), {
@@ -1290,6 +1331,30 @@ describe('Firebase authorization matrix', () => {
         email: 'officer@gatech.edu',
       }),
     );
+  });
+
+  it('backfills legacy consent and blocks club data until current terms are accepted', async () => {
+    const unagreed = environment
+      .authenticatedContext('unagreed-1', {
+        email: 'unagreed@gatech.edu',
+      })
+      .firestore();
+    const account = doc(unagreed, 'users', 'unagreed-1');
+
+    await assertSucceeds(getDoc(account));
+    await assertFails(getDoc(doc(unagreed, 'public-profiles', 'member-1')));
+    await assertSucceeds(
+      updateDoc(account, { agreedToTerms: false, termsVersion: '' }),
+    );
+    await assertFails(getDoc(doc(unagreed, 'public-profiles', 'member-1')));
+    await assertSucceeds(
+      updateDoc(account, {
+        agreedToTerms: true,
+        termsVersion: '2026-08-28',
+        termsAgreedAt: serverTimestamp(),
+      }),
+    );
+    await assertSucceeds(getDoc(doc(unagreed, 'public-profiles', 'member-1')));
   });
 
   it('preserves officer data access for the developer role', async () => {

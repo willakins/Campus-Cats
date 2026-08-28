@@ -38,6 +38,10 @@ export class DevelopmentSession implements SessionPort {
   async registerPushToken(token: string): Promise<void> {
     return this.developmentSession.registerPushToken(token);
   }
+
+  async acceptTerms(version: string): Promise<void> {
+    return this.developmentSession.acceptTerms(version);
+  }
 }
 
 export const createSessionGateway = (
