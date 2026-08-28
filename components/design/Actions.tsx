@@ -126,16 +126,22 @@ export const Button = ({
   );
 };
 
-interface IconButtonProps
+type IconButtonContent =
+  | { readonly icon: IconName; readonly symbol?: never }
+  | { readonly icon?: never; readonly symbol: string };
+
+interface IconButtonBaseProps
   extends Omit<PressableProps, 'children' | 'style'> {
-  readonly icon: IconName;
   readonly accessibilityLabel: string;
   readonly variant?: 'surface' | 'primary' | 'danger';
   readonly style?: StyleProp<ViewStyle>;
 }
 
+type IconButtonProps = IconButtonBaseProps & IconButtonContent;
+
 export const IconButton = ({
   icon,
+  symbol,
   accessibilityLabel,
   variant = 'surface',
   style,
@@ -182,13 +188,19 @@ export const IconButton = ({
         style,
       ]}
     >
-      <Ionicons name={icon} size={22} color={palette[1]} />
+      {symbol ? (
+        <AppText style={{ color: palette[1], fontSize: 20, lineHeight: 24 }}>
+          {symbol}
+        </AppText>
+      ) : (
+        <Ionicons name={icon} size={22} color={palette[1]} />
+      )}
     </Pressable>
   );
 };
 
 export interface FloatingActionButtonProps
-  extends Omit<IconButtonProps, 'icon' | 'variant'> {
+  extends Omit<IconButtonBaseProps, 'variant'> {
   readonly icon?: IconName;
 }
 

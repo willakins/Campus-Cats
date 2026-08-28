@@ -1,14 +1,16 @@
 import {
+  onAuthStateChanged,
   sendPasswordResetEmail,
   signInWithEmailAndPassword,
 } from 'firebase/auth';
-import { getDoc } from 'firebase/firestore';
+import { getDoc, onSnapshot } from 'firebase/firestore';
 
 import { FirebaseSession } from './FirebaseSession';
 
 jest.mock('firebase/auth', () => ({
   createUserWithEmailAndPassword: jest.fn(),
   deleteUser: jest.fn(),
+  onAuthStateChanged: jest.fn(),
   sendPasswordResetEmail: jest.fn(),
   signInWithCredential: jest.fn(),
   signInWithEmailAndPassword: jest.fn(),
@@ -18,12 +20,15 @@ jest.mock('firebase/auth', () => ({
 jest.mock('firebase/firestore', () => ({
   doc: jest.fn(),
   getDoc: jest.fn(),
+  onSnapshot: jest.fn(),
   setDoc: jest.fn(),
 }));
 
 const mockedSendPasswordResetEmail = jest.mocked(sendPasswordResetEmail);
 const mockedSignInWithEmailAndPassword = jest.mocked(signInWithEmailAndPassword);
 const mockedGetDoc = jest.mocked(getDoc);
+const mockedOnAuthStateChanged = jest.mocked(onAuthStateChanged);
+const mockedOnSnapshot = jest.mocked(onSnapshot);
 
 const buildSession = (
   auth: ConstructorParameters<typeof FirebaseSession>[0] =
@@ -64,6 +69,45 @@ describe('FirebaseSession authenticated profiles', () => {
       clubId: 'campus-cats',
       platformAdmin: true,
     });
+  });
+
+  it('does not publish an in-flight profile after the observer is disposed', async () => {
+    let authChanged: ((user: unknown) => void) | undefined;
+    let profileChanged: ((snapshot: unknown) => void) | undefined;
+    let resolveProfile: ((snapshot: Awaited<ReturnType<typeof getDoc>>) => void) | undefined;
+    mockedOnAuthStateChanged.mockImplementation((
+      _auth,
+      onChange,
+    ) => {
+      authChanged = onChange as (user: unknown) => void;
+      return jest.fn();
+    });
+    mockedOnSnapshot.mockImplementation((
+      _reference,
+      onChange,
+    ) => {
+      profileChanged = onChange as (snapshot: unknown) => void;
+      return jest.fn();
+    });
+    mockedGetDoc.mockImplementation(
+      () => new Promise((resolve) => {
+        resolveProfile = resolve;
+      }),
+    );
+    const observer = jest.fn();
+    const stop = buildSession().observeCurrentUser(observer);
+
+    authChanged?.({ uid: 'member-1', email: 'member@example.com' });
+    profileChanged?.({ exists: () => false });
+    stop();
+    resolveProfile?.({
+      exists: () => true,
+      id: 'member-1',
+      data: () => ({ role: 0, clubId: 'campus-cats' }),
+    } as Awaited<ReturnType<typeof getDoc>>);
+    await new Promise<void>((resolve) => setImmediate(resolve));
+
+    expect(observer).not.toHaveBeenCalled();
   });
 });
 

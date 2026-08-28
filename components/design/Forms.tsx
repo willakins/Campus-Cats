@@ -1,16 +1,25 @@
 import React, { useId, useState } from 'react';
-import { Pressable, TextInput, View, ViewProps } from 'react-native';
+import {
+  Pressable,
+  StyleProp,
+  TextInput,
+  View,
+  ViewProps,
+  ViewStyle,
+} from 'react-native';
 
 import { Ionicons } from '@expo/vector-icons';
 
 import { useAppTheme } from '../../theme';
 import { AppText } from './Typography';
+import { cardSurfaceStyle } from './Surfaces';
 
 interface SearchFieldProps {
   readonly value: string;
   readonly onChangeText: (value: string) => void;
   readonly accessibilityLabel: string;
   readonly placeholder: string;
+  readonly clearAccessibilityLabel?: string;
 }
 
 export const SearchField = ({
@@ -18,6 +27,7 @@ export const SearchField = ({
   onChangeText,
   accessibilityLabel,
   placeholder,
+  clearAccessibilityLabel,
 }: SearchFieldProps) => {
   const theme = useAppTheme();
   const [focused, setFocused] = useState(false);
@@ -63,7 +73,10 @@ export const SearchField = ({
       {value ? (
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel={`Clear ${accessibilityLabel.toLocaleLowerCase()}`}
+          accessibilityLabel={
+            clearAccessibilityLabel ??
+            `Clear ${accessibilityLabel.toLocaleLowerCase()}`
+          }
           hitSlop={8}
           onPress={() => onChangeText('')}
           style={({ pressed }) => ({ opacity: pressed ? 0.6 : 1 })}
@@ -91,6 +104,7 @@ interface FormFieldProps {
   readonly required?: boolean;
   readonly helper?: string;
   readonly error?: string;
+  readonly style?: StyleProp<ViewStyle>;
   readonly children:
     React.ReactNode | ((props: FormFieldRenderProps) => React.ReactNode);
 }
@@ -102,6 +116,7 @@ export const FormField = ({
   required = false,
   helper,
   error,
+  style,
   children,
 }: FormFieldProps) => {
   const theme = useAppTheme();
@@ -113,7 +128,7 @@ export const FormField = ({
       ? `${inputId}-helper`
       : undefined;
   return (
-    <View style={{ gap: theme.spacing.xxs }}>
+    <View style={[{ gap: theme.spacing.xxs }, style]}>
       {hideLabel ? null : onLabelPress ? (
         <Pressable
           accessibilityRole="button"
@@ -166,14 +181,17 @@ export const FormSection = ({
     <View
       testID={testID}
       onLayout={onLayout}
-      style={{
-        gap: theme.spacing.md,
-        padding: theme.spacing.md,
-        borderRadius: theme.radii.card,
-        backgroundColor: theme.colors.surface,
-        borderWidth: 1,
-        borderColor: theme.colors.border,
-      }}
+      style={[
+        cardSurfaceStyle(theme, {
+          clipsContent: false,
+          elevated: false,
+        }),
+        {
+          gap: theme.spacing.md,
+          borderWidth: 1,
+          borderColor: theme.colors.border,
+        },
+      ]}
     >
       <View
         style={{

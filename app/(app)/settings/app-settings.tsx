@@ -1,7 +1,7 @@
 import { useCallback, useState } from 'react';
 import { View } from 'react-native';
 
-import { useFocusEffect, useRouter } from 'expo-router';
+import { useRouter } from 'expo-router';
 
 import {
   AppText,
@@ -13,8 +13,9 @@ import {
   FormSection,
 } from '@/components/design';
 import { RestrictedScreen } from '@/components/access';
+import { useFocusTask } from '@/components/hooks/useFocusTask';
 import { AppLogo, resolveAppLogoSource } from '@/components/branding';
-import { FormTextInput, ToggleField } from '@/components/forms';
+import { HexColorPicker, ToggleField } from '@/components/forms';
 import { appModules } from '@/composition/appModules';
 import {
   AppSettings,
@@ -23,7 +24,6 @@ import {
   parseUser,
   roleAccessPolicies,
 } from '@/core/domain';
-import { loadBundledClubLogoUri } from '@/features/appSettings/bundledBranding';
 import { useAppSettings } from '@/providers/AppSettingsProvider';
 import { useAuth } from '@/providers/AuthProvider';
 import { useAppTheme } from '@/theme';
@@ -45,11 +45,12 @@ const AppSettingsScreen = () => {
   const [error, setError] = useState<string>();
   const [successMessage, setSuccessMessage] = useState<string>();
 
-  const load = useCallback(() => {
+  const load = useCallback((isActive: () => boolean = () => true) => {
     if (!authorized) return;
     setLoading(true);
     setError(undefined);
     void appModules.appSettings.get().then((result) => {
+      if (!isActive()) return;
       setLoading(false);
       if (result.ok) {
         setSettings(result.value);
@@ -59,7 +60,7 @@ const AppSettingsScreen = () => {
     });
   }, [authorized]);
 
-  useFocusEffect(load);
+  useFocusTask(load);
 
   const chooseLogo = async () => {
     const result = await appModules.imageSelection.pickFromLibrary();
@@ -97,17 +98,6 @@ const AppSettingsScreen = () => {
     await persistSettings(logoLocalUri, 'App settings saved.');
   };
 
-  const publishCurrentClubLogo = async () => {
-    if (saving) return;
-    setError(undefined);
-    try {
-      const uri = await loadBundledClubLogoUri();
-      await persistSettings(uri, 'Current club logo published.');
-    } catch {
-      setError('Could not load the current bundled club logo');
-    }
-  };
-
   const logoSource = logoLocalUri
     ? { uri: logoLocalUri }
     : resolveAppLogoSource(settings.logoUrl);
@@ -136,55 +126,40 @@ const AppSettingsScreen = () => {
           {error ? <FeedbackBanner tone="danger" message={error} /> : null}
           {successMessage ? <FeedbackBanner tone="success" message={successMessage} /> : null}
 
-          <FormSection title="Club logo">
+          <FormSection title="App logo">
             <Card accent={theme.colors.gold}>
               <AppLogo
-                accessibilityLabel="Current club logo"
+                accessibilityLabel="Current app logo"
                 source={logoSource}
                 style={{ width: '100%', height: 160 }}
               />
             </Card>
-            {!settings.logoUrl && !logoLocalUri ? (
-              <>
-                <FeedbackBanner message="The previous app icon is ready to move into president-managed club branding." />
-                <Button
-                  label="Publish Current Club Logo"
-                  icon="cloud-upload-outline"
-                  variant="secondary"
-                  disabled={saving}
-                  onPress={() => void publishCurrentClubLogo()}
-                />
-              </>
-            ) : null}
             <Button
-              label="Choose New Logo"
+              label="Change App Logo"
               icon="images-outline"
               variant="secondary"
               disabled={saving}
               onPress={() => void chooseLogo()}
             />
             <AppText color="muted" variant="caption">
-              The saved logo appears on account-access screens and primary app headers.
+              Choose an image, then save to update account-access screens and
+              primary app headers.
             </AppText>
           </FormSection>
 
           <FormSection title="App colors">
-            <FormTextInput
+            <HexColorPicker
               label="Primary color"
-              helper="Six-digit hex color, for example 18314F prefixed by #"
               value={settings.primaryColor}
-              autoCapitalize="characters"
-              onChangeText={(primaryColor) => {
+              onChange={(primaryColor) => {
                 setSuccessMessage(undefined);
                 setSettings((current) => ({ ...current, primaryColor }));
               }}
             />
-            <FormTextInput
+            <HexColorPicker
               label="Accent color"
-              helper="Six-digit hex color, for example B58A16 prefixed by #"
               value={settings.accentColor}
-              autoCapitalize="characters"
-              onChangeText={(accentColor) => {
+              onChange={(accentColor) => {
                 setSuccessMessage(undefined);
                 setSettings((current) => ({ ...current, accentColor }));
               }}

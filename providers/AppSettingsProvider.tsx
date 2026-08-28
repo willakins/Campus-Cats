@@ -22,17 +22,23 @@ export const AppSettingsProvider = ({ children }: { readonly children: ReactNode
   const { university } = useUniversitySelection();
   const [settings, setSettings] = useState(DEFAULT_APP_SETTINGS);
 
-  const refreshSettings = useCallback(async () => {
+  const refreshSettings = useCallback(async (
+    isActive: () => boolean = () => true,
+  ) => {
     if (!currentUser && !university?.club) {
-      setSettings(DEFAULT_APP_SETTINGS);
+      if (isActive()) setSettings(DEFAULT_APP_SETTINGS);
       return;
     }
     const result = await appModules.appSettings.get();
-    if (result.ok) setSettings(result.value);
+    if (isActive() && result.ok) setSettings(result.value);
   }, [currentUser?.clubId, university?.club?.id]);
 
   useEffect(() => {
-    void refreshSettings();
+    let active = true;
+    void refreshSettings(() => active);
+    return () => {
+      active = false;
+    };
   }, [refreshSettings]);
 
   const value = useMemo<AppSettingsContextValue>(

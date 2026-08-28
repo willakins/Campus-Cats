@@ -1,13 +1,10 @@
 import React from 'react';
-import {
-  TextInput as NativeTextInput,
-  TextInputProps as NativeTextInputProps,
-  View,
-} from 'react-native';
+import { View } from 'react-native';
 
 import { useAppTheme } from '../../theme';
 import { AppLogo } from '../branding';
-import { AppHeader, AppText, Card, FormField, Screen } from '../design';
+import { FormTextInput } from '../forms';
+import { AppHeader, AppText, Card, Screen } from '../design';
 
 interface AuthScaffoldProps {
   readonly title: string;
@@ -58,49 +55,4 @@ export const AuthScaffold = ({ title, subtitle, onBack, children }: AuthScaffold
   );
 };
 
-interface AuthTextFieldProps extends NativeTextInputProps {
-  readonly label: string;
-  readonly required?: boolean;
-  readonly helper?: string;
-  readonly error?: string;
-}
-
-export const AuthTextField = ({
-  label,
-  required,
-  helper,
-  error,
-  style,
-  ...props
-}: AuthTextFieldProps) => {
-  const theme = useAppTheme();
-  return (
-    <FormField label={label} required={required} helper={helper} error={error}>
-      {({ inputId, describedBy }) => (
-        <NativeTextInput
-          accessibilityLabel={label}
-          accessibilityHint={describedBy}
-          nativeID={inputId}
-          maxFontSizeMultiplier={2}
-          placeholderTextColor={theme.colors.textMuted}
-          selectionColor={theme.colors.primary}
-          style={[
-            theme.typography.body,
-            {
-              minHeight: theme.layout.minTouchTarget,
-              paddingHorizontal: theme.spacing.sm,
-              paddingVertical: theme.spacing.xs,
-              borderWidth: 1,
-              borderColor: error ? theme.colors.danger : theme.colors.border,
-              borderRadius: theme.radii.field,
-              backgroundColor: theme.colors.surface,
-              color: theme.colors.text,
-            },
-            style,
-          ]}
-          {...props}
-        />
-      )}
-    </FormField>
-  );
-};
+export const AuthTextField = FormTextInput;

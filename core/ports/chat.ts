@@ -25,6 +25,7 @@ export class ChatGatewayError extends Error {
 }
 
 export interface ChatGateway {
+  getDay(actor: User, dayKey: string): Promise<ChatDay>;
   observeDay(
     actor: User,
     dayKey: string,

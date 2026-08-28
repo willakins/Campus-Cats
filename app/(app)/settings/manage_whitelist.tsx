@@ -1,7 +1,7 @@
 import { useCallback, useState } from 'react';
 import { FlatList, View } from 'react-native';
 
-import { useFocusEffect, useRouter } from 'expo-router';
+import { useRouter } from 'expo-router';
 
 import {
   AppText,
@@ -13,6 +13,7 @@ import {
   SegmentedControl,
 } from '@/components/design';
 import { RestrictedScreen } from '@/components/access';
+import { useFocusTask } from '@/components/hooks/useFocusTask';
 import { WhitelistItem } from '@/components/items/WhitelistItem';
 import { virtualizedListPerformanceProps } from '@/components/collections/virtualizedListPerformance';
 import { appModules } from '@/composition/appModules';
@@ -43,17 +44,18 @@ const ManageWhitelist = () => {
   const [query, setQuery] = useState('');
   const [filter, setFilter] = useState<ApplicationFilter>('all');
 
-  const load = useCallback(() => {
+  const load = useCallback((isActive: () => boolean = () => true) => {
     if (!authorized) return;
     setLoading(true);
     setError(undefined);
     void appModules.whitelist.list(actor).then((result) => {
+      if (!isActive()) return;
       setLoading(false);
       if (result.ok) setApplications(result.value);
       else setError(result.error.message);
     });
   }, [actor.id, authorized]);
-  useFocusEffect(load);
+  useFocusTask(load);
 
   const normalizedQuery = query.trim().toLocaleLowerCase();
   const visibleApplications = applications

@@ -88,6 +88,48 @@ describe('edit profile validation', () => {
     mockProfileMedia.mockResolvedValue({ ok: true, value: [], warnings: [] });
   });
 
+  it('presents profile media as one profile photo instead of a photo gallery', async () => {
+    mockProfileSync.mockResolvedValue({
+      ok: true,
+      value: { ...mockProfile, profilePhotoUrl: 'file://profile.jpg' },
+      warnings: [],
+    });
+    mockProfileMedia.mockResolvedValue({
+      ok: true,
+      value: [
+        { id: 'profile-photo-1', url: 'file://profile.jpg', role: 'profile' },
+      ],
+      warnings: [],
+    });
+
+    await render(
+      <AppThemeProvider colorScheme="light">
+        <EditProfile />
+      </AppThemeProvider>,
+    );
+
+    expect(await screen.findByText('Profile photo')).toBeOnTheScreen();
+    expect(
+      screen.getByText(
+        'Choose one photo to represent you across Campus Cats.',
+      ),
+    ).toBeOnTheScreen();
+    expect(screen.getByLabelText('Profile photo preview')).toBeOnTheScreen();
+    expect(
+      screen.getByRole('button', { name: 'Change profile photo' }),
+    ).toBeOnTheScreen();
+    expect(
+      screen.getByRole('button', { name: 'Remove profile photo' }),
+    ).toBeOnTheScreen();
+    expect(screen.queryByText('Photos')).not.toBeOnTheScreen();
+    expect(screen.queryByText('Cover photo')).not.toBeOnTheScreen();
+    expect(
+      screen.queryByText(
+        'The cover photo appears first on cards and detail pages.',
+      ),
+    ).not.toBeOnTheScreen();
+  });
+
   it('marks a missing display name, scrolls to it, and shows guidance', async () => {
     const user = userEvent.setup();
     await render(

@@ -83,8 +83,11 @@ const renderBilling = async () =>
   );
 
 describe('infrastructure billing route', () => {
+  const originalAppEnvironment = process.env.EXPO_PUBLIC_APP_ENV;
+
   beforeEach(() => {
     jest.clearAllMocks();
+    process.env.EXPO_PUBLIC_APP_ENV = 'production';
     mockRole = Role.Member;
     mockPlatformAdmin = false;
     mockSummary.mockResolvedValue({
@@ -111,7 +114,10 @@ describe('infrastructure billing route', () => {
     jest.spyOn(Linking, 'openURL').mockResolvedValue(undefined);
   });
 
-  afterEach(() => jest.restoreAllMocks());
+  afterEach(() => {
+    process.env.EXPO_PUBLIC_APP_ENV = originalAppEnvironment;
+    jest.restoreAllMocks();
+  });
 
   it('denies members before requesting billing data', async () => {
     await renderBilling();
@@ -120,19 +126,37 @@ describe('infrastructure billing route', () => {
     expect(mockSummary).not.toHaveBeenCalled();
   });
 
+  it('explains that infrastructure costs are only available in production', async () => {
+    process.env.EXPO_PUBLIC_APP_ENV = 'development';
+    mockRole = Role.Developer;
+
+    await renderBilling();
+
+    expect(
+      screen.getByText('Infrastructure costs are only available in production'),
+    ).toBeOnTheScreen();
+    expect(
+      screen.getByText(
+        'Open the production app to review Firebase and Google Cloud costs.',
+      ),
+    ).toBeOnTheScreen();
+    expect(mockSummary).not.toHaveBeenCalled();
+  });
+
   it('keeps the billing header visible while monthly costs load', async () => {
-    mockPlatformAdmin = true;
+    mockRole = Role.Developer;
     mockSummary.mockImplementation(() => new Promise(() => undefined));
     await renderBilling();
 
     expect(screen.getByText('Infrastructure costs')).toBeOnTheScreen();
+    expect(screen.getByText('</>')).toBeOnTheScreen();
     expect(
       screen.getByRole('progressbar', { name: 'Loading app billing' }),
     ).toBeOnTheScreen();
   });
 
-  it('lists monthly usage, credits, and net cost for platform administrators', async () => {
-    mockPlatformAdmin = true;
+  it('lists monthly usage, credits, and net cost for Developers', async () => {
+    mockRole = Role.Developer;
     await renderBilling();
 
     expect(await screen.findByText('August 2026')).toBeOnTheScreen();
@@ -142,16 +166,16 @@ describe('infrastructure billing route', () => {
     expect(screen.getByText('Connected')).toBeOnTheScreen();
   });
 
-  it('denies club officers who are not platform administrators', async () => {
-    mockRole = Role.VicePresident;
+  it('denies Presidents even when they are platform administrators', async () => {
+    mockRole = Role.President;
+    mockPlatformAdmin = true;
     await renderBilling();
     expect(screen.getByText('Access restricted')).toBeOnTheScreen();
     expect(mockSummary).not.toHaveBeenCalled();
   });
 
-  it('links platform administrators to both project consoles', async () => {
-    mockRole = Role.Officer;
-    mockPlatformAdmin = true;
+  it('links Developers to both project consoles', async () => {
+    mockRole = Role.Developer;
     const user = userEvent.setup();
     await renderBilling();
     await screen.findByText('Connected');
@@ -174,7 +198,7 @@ describe('infrastructure billing route', () => {
   });
 
   it('explains how to connect a missing billing export', async () => {
-    mockPlatformAdmin = true;
+    mockRole = Role.Developer;
     mockSummary.mockResolvedValue({
       ok: true,
       warnings: [],
@@ -200,8 +224,8 @@ describe('infrastructure billing route', () => {
     ).toBeOnTheScreen();
   });
 
-  it('shows the billing export setup link to platform administrators', async () => {
-    mockPlatformAdmin = true;
+  it('shows the billing export setup link to Developers', async () => {
+    mockRole = Role.Developer;
     mockSummary.mockResolvedValue({
       ok: true,
       warnings: [],

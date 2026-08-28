@@ -58,10 +58,12 @@ const EditAnnouncement = () => {
       setLoadError('Missing announcement ID');
       return;
     }
+    let active = true;
     void Promise.all([
       appModules.announcements.get(id),
       appModules.announcements.media(id),
     ]).then(([announcementResult, mediaResult]) => {
+      if (!active) return;
       if (!announcementResult.ok) {
         setLoadError(announcementResult.error.message);
         return;
@@ -77,6 +79,9 @@ const EditAnnouncement = () => {
         setPhotos(mediaResult.value.map(({ url }) => url));
       } else setError(mediaResult.error.message);
     });
+    return () => {
+      active = false;
+    };
   }, [id]);
 
   const selectionFor = (uri: string) => {

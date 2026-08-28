@@ -1,7 +1,7 @@
 import React, { useCallback, useState } from 'react';
 import { FlatList, View } from 'react-native';
 
-import { useFocusEffect, useRouter } from 'expo-router';
+import { useRouter } from 'expo-router';
 
 import {
   AppText,
@@ -14,6 +14,7 @@ import {
 } from '@/components/design';
 import { RestrictedScreen } from '@/components/access';
 import { StationItem } from '@/components/items/StationItem';
+import { useFocusTask } from '@/components/hooks/useFocusTask';
 import { virtualizedListPerformanceProps } from '@/components/collections/virtualizedListPerformance';
 import { appModules } from '@/composition/appModules';
 import {
@@ -40,21 +41,18 @@ const Stations = () => {
   const [loading, setLoading] = useState(isAdmin);
   const [error, setError] = useState<string>();
 
-  const load = useCallback(async () => {
+  const load = useCallback(async (isActive: () => boolean = () => true) => {
     if (!isAdmin) return;
     setLoading(true);
     setError(undefined);
     const result = await appModules.stations.list();
+    if (!isActive()) return;
     if (result.ok) setStations(result.value);
     else setError(result.error.message);
     setLoading(false);
   }, [isAdmin]);
 
-  useFocusEffect(
-    useCallback(() => {
-      void load();
-    }, [load]),
-  );
+  useFocusTask(load);
 
   const normalizedQuery = query.trim().toLocaleLowerCase();
   const filteredStations = stations.filter((station) => {

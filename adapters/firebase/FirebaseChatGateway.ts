@@ -66,6 +66,33 @@ export class FirebaseChatGateway implements ChatGateway {
     private readonly codecs: FirebaseChatCodecs,
   ) {}
 
+  async getDay(_actor: User, dayKey: string): Promise<ChatDay> {
+    const [messageSnapshot, reactionSnapshot] = await Promise.all([
+      getDocs(
+        query(
+          collection(this.firestore, this.path(COLLECTIONS.chatMessages)),
+          where('dayKey', '==', dayKey),
+          orderBy('createdAt', 'asc'),
+        ),
+      ),
+      getDocs(
+        query(
+          collection(this.firestore, this.path(COLLECTIONS.chatReactions)),
+          where('messageDayKey', '==', dayKey),
+        ),
+      ),
+    ]);
+    return parseChatDay({
+      dayKey,
+      messages: messageSnapshot.docs.map((item) =>
+        this.codecs.message.decode(item.id, item.data()),
+      ),
+      reactions: reactionSnapshot.docs.map((item) =>
+        this.codecs.reaction.decode(item.id, item.data()),
+      ),
+    });
+  }
+
   observeDay(
     _actor: User,
     dayKey: string,

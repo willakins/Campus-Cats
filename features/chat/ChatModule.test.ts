@@ -30,6 +30,10 @@ class FakeChatGateway implements ChatGateway {
   day = parseChatDay({ dayKey: '2026-08-27', messages: [], reactions: [] });
   restriction = undefined;
 
+  async getDay() {
+    return this.day;
+  }
+
   observeDay(
     _actor: typeof member,
     _dayKey: string,
@@ -188,6 +192,10 @@ describe('ChatModule', () => {
 
   it('exposes live days, ping state, read state, restrictions, and history lookup', async () => {
     const { chat } = await buildModule();
+    await expect(chat.loadDay(member, '2026-08-27')).resolves.toMatchObject({
+      ok: true,
+      value: { dayKey: '2026-08-27' },
+    });
     const dayObserver = jest.fn();
     const stopDay = chat.observeDay(member, '2026-08-27', dayObserver);
     await new Promise<void>((resolve) => setImmediate(resolve));
@@ -240,6 +248,10 @@ describe('ChatModule', () => {
 
   it('returns authentication errors from every read boundary', async () => {
     const { chat } = await buildModule();
+    await expect(chat.loadDay(undefined, '2026-08-27')).resolves.toMatchObject({
+      ok: false,
+      error: { code: 'unauthenticated' },
+    });
     const dayObserver = jest.fn();
     chat.observeDay(undefined, '2026-08-27', dayObserver)();
     expect(dayObserver).toHaveBeenCalledWith(
@@ -379,8 +391,43 @@ describe('ChatModule', () => {
     expect(getProfile).toHaveBeenCalledTimes(1);
   });
 
+  it('deduplicates concurrent profile hydration within a chat day', async () => {
+    const { chat, gateway, documents } = await buildModule();
+    const getProfile = jest.spyOn(documents, 'get');
+    gateway.day = parseChatDay({
+      dayKey: '2026-08-27',
+      messages: ['first', 'second'].map((id, index) =>
+        parseChatMessage({
+          id,
+          body: id,
+          createdById: member.id,
+          createdAt: new Date(1_788_187_600_000 + index),
+          dayKey: '2026-08-27',
+          isClubPing: false,
+        }),
+      ),
+      reactions: [],
+    });
+
+    await expect(chat.loadDay(member, gateway.day.dayKey)).resolves.toMatchObject({
+      ok: true,
+      value: {
+        messages: [
+          { author: { displayName: 'Mina Member' } },
+          { author: { displayName: 'Mina Member' } },
+        ],
+      },
+    });
+    expect(getProfile).toHaveBeenCalledTimes(1);
+  });
+
   it('maps gateway and dependency failures at every public boundary', async () => {
     const { chat, gateway } = await buildModule();
+    jest.spyOn(gateway, 'getDay').mockRejectedValueOnce(new Error('offline'));
+    await expect(chat.loadDay(member, '2026-08-27')).resolves.toMatchObject({
+      ok: false,
+      error: { code: 'dependency_failure' },
+    });
     jest
       .spyOn(gateway, 'findPreviousActiveDay')
       .mockRejectedValueOnce(new Error('offline'));

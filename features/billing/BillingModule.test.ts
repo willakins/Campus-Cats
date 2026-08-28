@@ -6,7 +6,12 @@ import {
 } from '../../core/ports';
 import { BillingModule } from './BillingModule';
 
-const admin = parseUser({
+const developer = parseUser({
+  id: 'developer-1',
+  email: 'developer@gatech.edu',
+  role: Role.Developer,
+});
+const platformAdmin = parseUser({
   id: 'admin-1',
   email: 'admin@gatech.edu',
   role: Role.Member,
@@ -16,11 +21,6 @@ const member = parseUser({
   id: 'member-1',
   email: 'member@gatech.edu',
   role: Role.Member,
-});
-const officer = parseUser({
-  id: 'officer-1',
-  email: 'officer@gatech.edu',
-  role: Role.Officer,
 });
 const summary: BillingSummary = {
   status: 'ready',
@@ -58,11 +58,11 @@ class FakeBillingReader implements BillingReader {
 }
 
 describe('BillingModule', () => {
-  it('loads monthly costs for an administrator', async () => {
+  it('loads monthly costs for a Developer', async () => {
     const reader = new FakeBillingReader();
     const module = new BillingModule({ reader, presentation });
 
-    await expect(module.summary(admin)).resolves.toEqual({
+    await expect(module.summary(developer)).resolves.toEqual({
       ok: true,
       value: summary,
       warnings: [],
@@ -82,13 +82,16 @@ describe('BillingModule', () => {
     expect(reader.calls).toBe(0);
   });
 
-  it('does not infer platform administration from a club officer role', async () => {
+  it('does not infer Developer access from the platform-admin flag', async () => {
     const reader = new FakeBillingReader();
     const module = new BillingModule({ reader, presentation });
 
-    await expect(module.summary(officer)).resolves.toMatchObject({
+    await expect(module.summary(platformAdmin)).resolves.toMatchObject({
       ok: false,
-      error: { code: 'forbidden' },
+      error: {
+        code: 'forbidden',
+        message: 'Developer-only access is required to view infrastructure costs',
+      },
     });
     expect(reader.calls).toBe(0);
   });
@@ -112,7 +115,7 @@ describe('BillingModule', () => {
     };
     const module = new BillingModule({ reader, presentation });
 
-    await expect(module.summary(admin)).resolves.toEqual({
+    await expect(module.summary(developer)).resolves.toEqual({
       ok: false,
       error: {
         code: 'dependency_failure',

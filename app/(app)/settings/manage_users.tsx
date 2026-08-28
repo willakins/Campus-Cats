@@ -1,7 +1,7 @@
 import { useCallback, useState } from 'react';
 import { SectionList, View } from 'react-native';
 
-import { useFocusEffect, useRouter } from 'expo-router';
+import { useRouter } from 'expo-router';
 
 import {
   AppText,
@@ -13,6 +13,7 @@ import {
   SegmentedControl,
 } from '@/components/design';
 import { RestrictedScreen } from '@/components/access';
+import { useFocusTask } from '@/components/hooks/useFocusTask';
 import { roleLabel } from '@/components/administration/rolePresentation';
 import { virtualizedListPerformanceProps } from '@/components/collections/virtualizedListPerformance';
 import { UserItem } from '@/components/items/UserItem';
@@ -62,17 +63,18 @@ const ManageUsers = () => {
   const [filter, setFilter] = useState<UserFilter>('all');
   const [successionMessage, setSuccessionMessage] = useState<string>();
 
-  const load = useCallback(() => {
+  const load = useCallback((isActive: () => boolean = () => true) => {
     if (!authorized) return;
     setLoading(true);
     setError(undefined);
     void appModules.users.list(actor).then((result) => {
+      if (!isActive()) return;
       setLoading(false);
       if (result.ok) setUsers(result.value);
       else setError(result.error.message);
     });
   }, [actor.id, authorized]);
-  useFocusEffect(load);
+  useFocusTask(load);
 
   const normalizedQuery = query.trim().toLocaleLowerCase();
   const developerUsers = users.filter((candidate) =>

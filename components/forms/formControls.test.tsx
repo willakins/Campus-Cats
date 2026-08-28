@@ -4,7 +4,16 @@ import { Alert } from 'react-native';
 import { fireEvent, render, screen, userEvent, waitFor } from '@testing-library/react-native';
 
 import { AppThemeProvider } from '../../theme';
-import { DateField, FormTextInput, LocationField, PhotoField, SelectField, ToggleField } from './index';
+import { IconButton } from '../design';
+import {
+  ChoiceField,
+  DateField,
+  FormTextInput,
+  LocationField,
+  PhotoField,
+  SelectField,
+  ToggleField,
+} from './index';
 
 const mockTakePhoto = jest.fn();
 const mockPickFromLibrary = jest.fn();
@@ -37,6 +46,8 @@ describe('form controls', () => {
 
   it('keeps labels visible and forwards text changes', async () => {
     const onChangeText = jest.fn();
+    const onFocus = jest.fn();
+    const onBlur = jest.fn();
     await renderThemed(
       <FormTextInput
         label="Cat name"
@@ -44,12 +55,19 @@ describe('form controls', () => {
         helper="Use the name volunteers know."
         value="Goldie"
         onChangeText={onChangeText}
+        onFocus={onFocus}
+        onBlur={onBlur}
       />,
     );
 
     expect(screen.getByText('Cat name *')).toBeOnTheScreen();
-    await fireEvent.changeText(screen.getByLabelText('Cat name'), 'Goldie II');
+    const input = screen.getByLabelText('Cat name');
+    await fireEvent(input, 'focus');
+    await fireEvent.changeText(input, 'Goldie II');
+    await fireEvent(input, 'blur');
     expect(onChangeText).toHaveBeenCalledWith('Goldie II');
+    expect(onFocus).toHaveBeenCalledTimes(1);
+    expect(onBlur).toHaveBeenCalledTimes(1);
   });
 
   it('pairs switches with a descriptive label', async () => {
@@ -58,6 +76,60 @@ describe('form controls', () => {
 
     await fireEvent(screen.getByRole('switch', { name: 'Cat was fed' }), 'valueChange', true);
     expect(onValueChange).toHaveBeenCalledWith(true);
+  });
+
+  it('centralizes checkbox and radio selection semantics', async () => {
+    const onCheckboxChange = jest.fn();
+    const onRadioChange = jest.fn();
+    const onTrailingPress = jest.fn();
+    const user = userEvent.setup();
+    await renderThemed(
+      <>
+        <ChoiceField
+          label="Create an announcement"
+          helper="Tell members that the survey is ready."
+          checked={false}
+          trailing={(
+            <IconButton
+              icon="information-outline"
+              accessibilityLabel="Explain announcement access"
+              onPress={onTrailingPress}
+            />
+          )}
+          onChange={onCheckboxChange}
+        />
+        <ChoiceField
+          kind="radio"
+          label="External donation website"
+          checked
+          onChange={onRadioChange}
+        />
+      </>,
+    );
+
+    expect(
+      screen.getByRole('checkbox', { name: 'Create an announcement' }),
+    ).toHaveProp('accessibilityState', { checked: false });
+    expect(
+      screen.getByRole('radio', { name: 'External donation website' }),
+    ).toHaveProp('accessibilityState', { checked: true });
+    expect(
+      screen.getByText('Tell members that the survey is ready.'),
+    ).toBeOnTheScreen();
+
+    await user.press(
+      screen.getByRole('button', { name: 'Explain announcement access' }),
+    );
+    expect(onTrailingPress).toHaveBeenCalledTimes(1);
+    expect(onCheckboxChange).not.toHaveBeenCalled();
+    await user.press(
+      screen.getByRole('checkbox', { name: 'Create an announcement' }),
+    );
+    await user.press(
+      screen.getByRole('radio', { name: 'External donation website' }),
+    );
+    expect(onCheckboxChange).toHaveBeenCalledWith(true);
+    expect(onRadioChange).toHaveBeenCalledWith(true);
   });
 
   it('lets users choose a date while preventing future calendar days', async () => {

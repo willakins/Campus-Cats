@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Pressable, View } from 'react-native';
+import { View } from 'react-native';
 import { useRouter } from 'expo-router';
 
 import { AuthScaffold, AuthTextField } from '@/components/auth';
@@ -84,37 +84,33 @@ const UniversitySearchScreen = () => {
       ) : null}
       <View style={{ gap: theme.spacing.sm }}>
         {results.map((university) => (
-          <Pressable
+          <Card
             key={university.id}
-            accessibilityRole="button"
             accessibilityLabel={`Select ${university.name}`}
             onPress={() => void choose(university)}
+            style={{ gap: theme.spacing.xs }}
           >
-            {({ pressed }) => (
-              <Card style={{ gap: theme.spacing.xs, opacity: pressed ? 0.78 : 1 }}>
-                <AppText variant="cardTitle">{university.name}</AppText>
-                <AppText color="muted">
-                  {university.city}, {university.state}
-                </AppText>
-                <StatusPill
-                  label={
-                    university.status === 'mapped'
-                      ? university.club?.name ?? 'Club available'
-                      : university.status === 'pending'
-                        ? 'Club setup pending'
-                        : 'Start a club'
-                  }
-                  tone={
-                    university.status === 'mapped'
-                      ? 'success'
-                      : university.status === 'pending'
-                        ? 'warning'
-                        : 'primary'
-                  }
-                />
-              </Card>
-            )}
-          </Pressable>
+            <AppText variant="cardTitle">{university.name}</AppText>
+            <AppText color="muted">
+              {university.city}, {university.state}
+            </AppText>
+            <StatusPill
+              label={
+                university.status === 'mapped'
+                  ? university.club?.name ?? 'Club available'
+                  : university.status === 'pending'
+                    ? 'Club setup pending'
+                    : 'Start a club'
+              }
+              tone={
+                university.status === 'mapped'
+                  ? 'success'
+                  : university.status === 'pending'
+                    ? 'warning'
+                    : 'primary'
+              }
+            />
+          </Card>
         ))}
       </View>
       <AppText color="muted" variant="caption" style={{ textAlign: 'center' }}>

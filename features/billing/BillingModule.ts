@@ -1,7 +1,10 @@
 import {
   Outcome,
   User,
+  canAccessRolePolicy,
   failure,
+  roleAccessPolicies,
+  roleAccessRequirement,
   success,
 } from '../../core/domain';
 import {
@@ -26,10 +29,11 @@ export class BillingModule {
     if (!actor) {
       return failure('unauthenticated', 'Sign in to view app billing');
     }
-    if (!actor.platformAdmin) {
+    const accessPolicy = roleAccessPolicies.viewInfrastructureCosts;
+    if (!canAccessRolePolicy(actor.role, accessPolicy)) {
       return failure(
         'forbidden',
-        'Only platform administrators may view app billing',
+        roleAccessRequirement(accessPolicy),
       );
     }
 

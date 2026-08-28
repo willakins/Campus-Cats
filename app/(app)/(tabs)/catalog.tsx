@@ -8,7 +8,7 @@ import React, {
 } from 'react';
 import { FlatList, useWindowDimensions, View } from 'react-native';
 
-import { useFocusEffect, useRouter } from 'expo-router';
+import { useRouter } from 'expo-router';
 
 import {
   AppHeader,
@@ -26,6 +26,7 @@ import {
 import { CatalogToolbar } from '@/components/collections/CatalogToolbar';
 import { virtualizedListPerformanceProps } from '@/components/collections/virtualizedListPerformance';
 import { CatalogItem } from '@/components/items/CatalogItem';
+import { useFocusTask } from '@/components/hooks/useFocusTask';
 import { appModules } from '@/composition/appModules';
 import {
   canAccessRolePolicy,
@@ -88,7 +89,7 @@ const Catalog = () => {
     readonly tone: 'info' | 'warning' | 'danger' | 'success';
   }>();
 
-  const load = useCallback(async () => {
+  const load = useCallback(async (isActive: () => boolean = () => true) => {
     setLoading(true);
     setError(undefined);
     setFeedback(undefined);
@@ -110,6 +111,7 @@ const Catalog = () => {
         ? appModules.catalogTags.assignments(actor)
         : Promise.resolve(undefined),
     ]);
+    if (!isActive()) return;
     const warnings: string[] = [];
     if (catalogResult.ok) {
       setEntries(catalogResult.value);
@@ -152,11 +154,7 @@ const Catalog = () => {
     setLoading(false);
   }, [currentUserId]);
 
-  useFocusEffect(
-    useCallback(() => {
-      void load();
-    }, [load]),
-  );
+  useFocusTask(load);
 
   const catalogItems = useMemo(
     () => buildCatalogItems(entries, sightings, favorites, tags, tagAssignments),

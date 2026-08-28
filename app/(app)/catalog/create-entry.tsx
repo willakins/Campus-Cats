@@ -91,12 +91,17 @@ const CreateEntry = () => {
   ).filter((id) => availableTags.some((tag) => tag.id === id));
 
   useEffect(() => {
+    let active = true;
     void appModules.catalogTags.list(parseUser(user)).then((result) => {
+      if (!active) return;
       if (result.ok) {
         setAvailableTags(result.value);
         setTagsReady(true);
       } else setError(result.error.message);
     });
+    return () => {
+      active = false;
+    };
   }, [user.id, user.role]);
 
   useEffect(() => {

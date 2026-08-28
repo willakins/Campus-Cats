@@ -229,6 +229,18 @@ describe('club billing route', () => {
     expect(mockSummary).not.toHaveBeenCalled();
   });
 
+  it('keeps development billing restricted to President-level roles', async () => {
+    process.env.EXPO_PUBLIC_APP_ENV = 'development';
+    mockRole = Role.Officer;
+
+    await renderRoute();
+
+    expect(screen.getByText('Access restricted')).toBeOnTheScreen();
+    expect(screen.getByText('👑')).toBeOnTheScreen();
+    expect(screen.queryByText('Billing disabled in development')).not.toBeOnTheScreen();
+    expect(mockSummary).not.toHaveBeenCalled();
+  });
+
   it('shows read-only mobile status and warnings without purchasing actions', async () => {
     process.env.EXPO_PUBLIC_APP_ENV = 'production';
     Object.defineProperty(Platform, 'OS', { configurable: true, value: 'ios' });

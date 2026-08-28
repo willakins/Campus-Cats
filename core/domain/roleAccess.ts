@@ -37,6 +37,7 @@ export const roleAccessPolicies = Object.freeze({
   manageSurveys: policy(Role.Officer, 'create or manage surveys'),
   manageCatalogTags: policy(Role.Officer, 'manage catalog tags'),
   manageContacts: policy(Role.Officer, 'manage club contacts'),
+  pingClubMembers: policy(Role.Officer, 'ping all club members'),
   manageMembershipApplications: policy(
     Role.Officer,
     'review membership applications',
@@ -52,6 +53,10 @@ export const roleAccessPolicies = Object.freeze({
   manageAppSettings: policy(Role.President, 'manage app settings'),
   manageDonations: policy(Role.President, 'set up or edit donations'),
   manageClubBilling: policy(Role.President, 'manage club billing'),
+  viewInfrastructureCosts: policy(
+    Role.Developer,
+    'view infrastructure costs',
+  ),
 });
 
 export const canAccessRolePolicy = (

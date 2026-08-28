@@ -1,6 +1,13 @@
 import React from 'react';
+import { Alert } from 'react-native';
 
-import { render, screen, userEvent } from '@testing-library/react-native';
+import {
+  act,
+  render,
+  screen,
+  userEvent,
+  waitFor,
+} from '@testing-library/react-native';
 
 import EditProfile from '../../app/(app)/profile/edit-profile';
 import ProfileSightings from '../../app/(app)/profile/sightings';
@@ -26,8 +33,12 @@ const mockSightingsListByReporter = jest.fn();
 const mockFavoriteForUser = jest.fn();
 const mockCatalogGet = jest.fn();
 const mockCatalogMedia = jest.fn();
+const mockSignOut = jest.fn();
 let mockProfileId: string | undefined = 'member-1';
 let mockUserId = 'member-1';
+const mockAlert = jest
+  .spyOn(Alert, 'alert')
+  .mockImplementation(() => undefined);
 
 jest.mock('expo-router', () => {
   const mockReact = require('react');
@@ -46,6 +57,7 @@ jest.mock('expo-router', () => {
 jest.mock('../../providers', () => ({
   useAuth: () => ({
     user: { id: mockUserId, email: 'member@gatech.edu', role: 0 },
+    signOut: mockSignOut,
   }),
 }));
 
@@ -161,6 +173,7 @@ describe('member profile routes', () => {
       warnings: [],
     });
     mockCatalogMedia.mockResolvedValue({ ok: true, value: [], warnings: [] });
+    mockSignOut.mockResolvedValue(undefined);
     mockSelectTitle.mockResolvedValue({
       ok: true,
       value: { ...profile, selectedTitleId: '' },
@@ -183,6 +196,22 @@ describe('member profile routes', () => {
     expect(screen.getByText('Previous sightings (1)')).toBeOnTheScreen();
     expect(screen.getAllByText('Goldie').length).toBeGreaterThan(0);
 
+    expect(
+      screen.queryByRole('button', { name: 'Open account settings' }),
+    ).not.toBeOnTheScreen();
+    await user.press(screen.getByRole('button', { name: 'Log out' }));
+    expect(mockAlert).toHaveBeenCalledWith(
+      'Log out',
+      'Are you sure you want to log out?',
+      expect.any(Array),
+    );
+    expect(mockSignOut).not.toHaveBeenCalled();
+    const confirmationButtons = mockAlert.mock.calls[0]?.[2] ?? [];
+    await act(async () => {
+      confirmationButtons.find(({ text }) => text === 'Log out')?.onPress?.();
+    });
+    await waitFor(() => expect(mockSignOut).toHaveBeenCalledTimes(1));
+    expect(mockReplace).toHaveBeenCalledWith('/login');
     await user.press(screen.getByRole('button', { name: 'Edit profile' }));
     expect(mockPush).toHaveBeenCalledWith('/profile/edit-profile');
     await user.press(
@@ -199,6 +228,18 @@ describe('member profile routes', () => {
     expect(await screen.findByText('Cat Watcher')).toBeOnTheScreen();
     expect(screen.queryByText('Profile unavailable')).not.toBeOnTheScreen();
     expect(mockProfileSync).toHaveBeenCalledWith(actor);
+  });
+
+  it('manages the signed-in member’s iNaturalist account from their profile', async () => {
+    const user = userEvent.setup();
+    await renderThemed(<ViewProfile />);
+
+    expect(await screen.findByText('Connected accounts')).toBeOnTheScreen();
+    expect(screen.getByText('iNaturalist')).toBeOnTheScreen();
+    await user.press(
+      screen.getByRole('button', { name: 'Manage iNaturalist connection' }),
+    );
+    expect(mockPush).toHaveBeenCalledWith('/settings/inaturalist-account');
   });
 
   it('renders its skeleton while profile data is loading', async () => {
@@ -249,6 +290,10 @@ describe('member profile routes', () => {
     expect(screen.getByText('No favorite cat yet')).toBeOnTheScreen();
     expect(screen.getByText('No sightings yet')).toBeOnTheScreen();
     expect(screen.queryByRole('button', { name: 'Edit profile' })).not.toBeOnTheScreen();
+    expect(
+      screen.queryByRole('button', { name: 'Log out' }),
+    ).not.toBeOnTheScreen();
+    expect(screen.queryByText('Connected accounts')).not.toBeOnTheScreen();
     expect(screen.queryByRole('button', { name: 'Remove displayed title' })).not.toBeOnTheScreen();
     expect(mockProfileGetOrSync).toHaveBeenCalledWith('member-2');
   });

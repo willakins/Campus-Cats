@@ -11,7 +11,6 @@ const mockGet = jest.fn();
 const mockSave = jest.fn();
 const mockPickFromLibrary = jest.fn();
 const mockApplySettings = jest.fn();
-const mockLoadBundledClubLogoUri = jest.fn();
 
 jest.mock('expo-router', () => {
   const mockReact = require('react');
@@ -29,11 +28,6 @@ jest.mock('../../providers/AuthProvider', () => ({
 
 jest.mock('../../providers/AppSettingsProvider', () => ({
   useAppSettings: () => ({ applySettings: mockApplySettings }),
-}));
-
-jest.mock('../../features/appSettings/bundledBranding', () => ({
-  loadBundledClubLogoUri: (...args: unknown[]) =>
-    mockLoadBundledClubLogoUri(...args),
 }));
 
 jest.mock('../../composition/appModules', () => ({
@@ -64,7 +58,6 @@ describe('president app settings route', () => {
     mockGet.mockResolvedValue({ ok: true, value: DEFAULT_APP_SETTINGS, warnings: [] });
     mockSave.mockResolvedValue({ ok: true, value: DEFAULT_APP_SETTINGS, warnings: [] });
     mockPickFromLibrary.mockResolvedValue({ ok: true, value: undefined, warnings: [] });
-    mockLoadBundledClubLogoUri.mockResolvedValue('file://current-club-logo.png');
   });
 
   it('does not load settings below the President role', async () => {
@@ -142,47 +135,62 @@ describe('president app settings route', () => {
     });
   });
 
-  it('publishes the current bundled logo into president-managed branding', async () => {
+  it('updates primary and accent hex values from their color palettes', async () => {
     mockRole = Role.President;
-    const migrated = {
-      ...DEFAULT_APP_SETTINGS,
-      logoUrl: 'https://cdn.example.com/app-branding/club-logo.png',
-    };
-    mockSave.mockResolvedValue({ ok: true, value: migrated, warnings: [] });
     await renderScreen();
 
+    await screen.findByDisplayValue('#18314F');
     await fireEvent.press(
-      await screen.findByRole('button', { name: 'Publish Current Club Logo' }),
+      screen.getByRole('button', {
+        name: 'Set Primary color to #0057B8',
+      }),
+    );
+    await fireEvent.press(
+      screen.getByRole('button', {
+        name: 'Set Accent color to #8064A2',
+      }),
     );
 
-    await waitFor(() => {
-      expect(mockLoadBundledClubLogoUri).toHaveBeenCalledTimes(1);
-      expect(mockSave).toHaveBeenCalledWith(
-        expect.objectContaining({ role: Role.President }),
-        DEFAULT_APP_SETTINGS,
-        'file://current-club-logo.png',
-      );
-      expect(mockApplySettings).toHaveBeenCalledWith(migrated);
+    expect(screen.getByLabelText('Primary color')).toHaveDisplayValue(
+      '#0057B8',
+    );
+    expect(screen.getByLabelText('Accent color')).toHaveDisplayValue('#8064A2');
+    expect(screen.getByLabelText('Primary color preview')).toHaveStyle({
+      backgroundColor: '#0057B8',
     });
-    expect(screen.queryByRole('button', { name: 'Publish Current Club Logo' }))
-      .not.toBeOnTheScreen();
-    expect(screen.getByText('Current club logo published.')).toBeOnTheScreen();
+    expect(screen.getByLabelText('Accent color preview')).toHaveStyle({
+      backgroundColor: '#8064A2',
+    });
   });
 
-  it('does not offer the migration after a database logo exists', async () => {
+  it('shows the current app logo and uploads a chosen replacement when saved', async () => {
     mockRole = Role.President;
-    mockGet.mockResolvedValue({
+    mockPickFromLibrary.mockResolvedValue({
       ok: true,
-      value: {
-        ...DEFAULT_APP_SETTINGS,
-        logoUrl: 'https://cdn.example.com/app-branding/club-logo.png',
-      },
+      value: { localUri: 'file://new-app-logo.png' },
       warnings: [],
     });
     await renderScreen();
 
-    await screen.findByDisplayValue('#18314F');
-    expect(screen.queryByRole('button', { name: 'Publish Current Club Logo' }))
-      .not.toBeOnTheScreen();
+    expect(await screen.findByText('App logo')).toBeOnTheScreen();
+    expect(screen.getByLabelText('Current app logo')).toBeOnTheScreen();
+    expect(
+      screen.queryByRole('button', { name: 'Publish Current Club Logo' }),
+    ).not.toBeOnTheScreen();
+    await fireEvent.press(
+      screen.getByRole('button', { name: 'Change App Logo' }),
+    );
+    expect(mockPickFromLibrary).toHaveBeenCalledTimes(1);
+
+    await fireEvent.press(
+      screen.getByRole('button', { name: 'Save App Settings' }),
+    );
+    await waitFor(() =>
+      expect(mockSave).toHaveBeenCalledWith(
+        expect.objectContaining({ role: Role.President }),
+        DEFAULT_APP_SETTINGS,
+        'file://new-app-logo.png',
+      ),
+    );
   });
 });

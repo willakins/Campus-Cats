@@ -8,7 +8,7 @@ import {
   communityVotePhase,
 } from '../../core/domain';
 import { useAppTheme } from '../../theme';
-import { AppText, Card, StatusPill } from '../design';
+import { AppText, Card, CardContent, StatusPill } from '../design';
 import { ProgressiveImage } from '../ui/ProgressiveImage';
 import { communityVoteTimingLabel } from './communityVotePresentation';
 
@@ -33,13 +33,13 @@ export const CommunityVoteItem = React.memo(function CommunityVoteItem({
     <Card
       accessibilityLabel={`Open vote: ${vote.title}`}
       accent={vote.kind === 'presidential_election' ? theme.colors.gold : theme.colors.violet}
+      padded={!imageUrl}
       onPress={() =>
         router.push({
           pathname: '/votes/view-vote' as never,
           params: { id: vote.id },
         })
       }
-      style={imageUrl ? { padding: 0 } : undefined}
     >
       {imageUrl ? (
         <ProgressiveImage
@@ -48,12 +48,7 @@ export const CommunityVoteItem = React.memo(function CommunityVoteItem({
           style={{ width: '100%', aspectRatio: 16 / 9 }}
         />
       ) : null}
-      <View
-        style={{
-          gap: theme.spacing.xs,
-          ...(imageUrl ? { padding: theme.spacing.md } : {}),
-        }}
-      >
+      <CardContent style={imageUrl ? undefined : { padding: 0 }}>
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: theme.spacing.xs }}>
           <StatusPill
             tone={vote.kind === 'presidential_election' ? 'warning' : 'info'}
@@ -72,7 +67,7 @@ export const CommunityVoteItem = React.memo(function CommunityVoteItem({
         <AppText color="muted" variant="caption">
           {communityVoteTimingLabel(vote, phase, formatDate)}
         </AppText>
-      </View>
+      </CardContent>
     </Card>
   );
 });

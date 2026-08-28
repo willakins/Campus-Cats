@@ -1,12 +1,5 @@
 import React, { useState } from 'react';
-import {
-  Modal,
-  Pressable,
-  ScrollView,
-  TextInput,
-  View,
-} from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { ScrollView, View } from 'react-native';
 
 import {
   CatalogSort,
@@ -14,7 +7,14 @@ import {
 } from '@/features/catalog';
 import { CatalogTag } from '@/core/domain';
 import { useAppTheme } from '@/theme';
-import { AppText, Button, Chip, IconButton } from '../design';
+import {
+  AppText,
+  BottomSheet,
+  Button,
+  Chip,
+  IconButton,
+  SearchField,
+} from '../design';
 
 interface CatalogToolbarProps {
   readonly query: string;
@@ -38,7 +38,6 @@ export const CatalogToolbar = ({
   onSelectedTagIdsChange,
 }: CatalogToolbarProps) => {
   const theme = useAppTheme();
-  const [focused, setFocused] = useState(false);
   const [sortOpen, setSortOpen] = useState(false);
   const [filterOpen, setFilterOpen] = useState(false);
   const selectedSort =
@@ -48,56 +47,14 @@ export const CatalogToolbar = ({
   return (
     <View style={{ gap: theme.spacing.xs }}>
       <View style={{ flexDirection: 'row', gap: theme.spacing.xs }}>
-        <View
-          style={{
-            flex: 1,
-            minHeight: theme.layout.minTouchTarget,
-            flexDirection: 'row',
-            alignItems: 'center',
-            gap: theme.spacing.xs,
-            paddingHorizontal: theme.spacing.sm,
-            borderWidth: focused ? 2 : 1,
-            borderColor: focused ? theme.colors.primary : theme.colors.border,
-            borderRadius: theme.radii.field,
-            backgroundColor: theme.colors.surface,
-          }}
-        >
-          <Ionicons name="search" size={20} color={theme.colors.textMuted} />
-          <TextInput
+        <View style={{ flex: 1 }}>
+          <SearchField
             accessibilityLabel="Search cat profiles"
+            clearAccessibilityLabel="Clear catalog search"
             placeholder="Search cats"
             value={query}
             onChangeText={onQueryChange}
-            onFocus={() => setFocused(true)}
-            onBlur={() => setFocused(false)}
-            autoCapitalize="none"
-            autoCorrect={false}
-            returnKeyType="search"
-            clearButtonMode="while-editing"
-            placeholderTextColor={theme.colors.textMuted}
-            selectionColor={theme.colors.primary}
-            style={[
-              theme.typography.body,
-              {
-                flex: 1,
-                minWidth: 0,
-                height: theme.layout.minTouchTarget,
-                color: theme.colors.text,
-                outlineWidth: 0,
-              },
-            ]}
           />
-          {query ? (
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Clear catalog search"
-              hitSlop={8}
-              onPress={() => onQueryChange('')}
-              style={({ pressed }) => ({ opacity: pressed ? 0.6 : 1 })}
-            >
-              <Ionicons name="close-circle" size={20} color={theme.colors.textMuted} />
-            </Pressable>
-          ) : null}
         </View>
         <IconButton
           icon="swap-vertical"
@@ -136,116 +93,58 @@ export const CatalogToolbar = ({
         ) : null}
       </View>
 
-      <Modal
+      <BottomSheet
         visible={sortOpen}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setSortOpen(false)}
+        closeLabel="Close sort options"
+        onClose={() => setSortOpen(false)}
       >
-        <View
-          accessibilityViewIsModal
-          style={{
-            flex: 1,
-            justifyContent: 'flex-end',
-            backgroundColor: theme.colors.overlay,
-          }}
-        >
-          <Pressable
-            accessibilityRole="button"
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: theme.spacing.sm }}>
+          <View style={{ flex: 1 }}>
+            <AppText variant="section">Sort cat catalog</AppText>
+            <AppText color="muted">Choose how profiles are ordered.</AppText>
+          </View>
+          <IconButton
+            icon="close"
             accessibilityLabel="Close sort options"
             onPress={() => setSortOpen(false)}
-            style={{ position: 'absolute', inset: 0 }}
           />
-          <View
-            style={{
-              width: '100%',
-              maxWidth: theme.layout.maxContentWidth,
-              alignSelf: 'center',
-              gap: theme.spacing.sm,
-              padding: theme.spacing.lg,
-              paddingBottom: theme.spacing.xxl,
-              borderTopLeftRadius: theme.radii.sheet,
-              borderTopRightRadius: theme.radii.sheet,
-              backgroundColor: theme.colors.surface,
-            }}
-          >
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: theme.spacing.sm }}>
-              <View style={{ flex: 1 }}>
-                <AppText variant="section">Sort cat catalog</AppText>
-                <AppText color="muted">Choose how profiles are ordered.</AppText>
-              </View>
-              <IconButton
-                icon="close"
-                accessibilityLabel="Close sort options"
-                onPress={() => setSortOpen(false)}
-              />
-            </View>
-            {catalogSortOptions.map((option) => {
-              const selected = option.value === sort;
-              return (
-                <Button
-                  key={option.value}
-                  label={option.label}
-                  icon={selected ? 'checkmark-circle' : 'ellipse-outline'}
-                  variant={selected ? 'primary' : 'secondary'}
-                  accessibilityState={{ selected }}
-                  fullWidth
-                  onPress={() => {
-                    onSortChange(option.value);
-                    setSortOpen(false);
-                  }}
-                />
-              );
-            })}
-          </View>
         </View>
-      </Modal>
+        {catalogSortOptions.map((option) => {
+          const selected = option.value === sort;
+          return (
+            <Button
+              key={option.value}
+              label={option.label}
+              icon={selected ? 'checkmark-circle' : 'ellipse-outline'}
+              variant={selected ? 'primary' : 'secondary'}
+              accessibilityState={{ selected }}
+              fullWidth
+              onPress={() => {
+                onSortChange(option.value);
+                setSortOpen(false);
+              }}
+            />
+          );
+        })}
+      </BottomSheet>
 
-      <Modal
+      <BottomSheet
         visible={filterOpen}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setFilterOpen(false)}
+        closeLabel="Close filter options"
+        onClose={() => setFilterOpen(false)}
+        contentStyle={{ gap: theme.spacing.md }}
       >
-        <View
-          accessibilityViewIsModal
-          style={{
-            flex: 1,
-            justifyContent: 'flex-end',
-            backgroundColor: theme.colors.overlay,
-          }}
-        >
-          <Pressable
-            accessibilityRole="button"
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: theme.spacing.sm }}>
+          <View style={{ flex: 1 }}>
+            <AppText variant="section">Filter cat catalog</AppText>
+            <AppText color="muted">Cats must match every selected tag.</AppText>
+          </View>
+          <IconButton
+            icon="close"
             accessibilityLabel="Close filter options"
             onPress={() => setFilterOpen(false)}
-            style={{ position: 'absolute', inset: 0 }}
           />
-          <View
-            style={{
-              width: '100%',
-              maxWidth: theme.layout.maxContentWidth,
-              maxHeight: '90%',
-              alignSelf: 'center',
-              gap: theme.spacing.md,
-              padding: theme.spacing.lg,
-              paddingBottom: theme.spacing.xxl,
-              borderTopLeftRadius: theme.radii.sheet,
-              borderTopRightRadius: theme.radii.sheet,
-              backgroundColor: theme.colors.surface,
-            }}
-          >
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: theme.spacing.sm }}>
-              <View style={{ flex: 1 }}>
-                <AppText variant="section">Filter cat catalog</AppText>
-                <AppText color="muted">Cats must match every selected tag.</AppText>
-              </View>
-              <IconButton
-                icon="close"
-                accessibilityLabel="Close filter options"
-                onPress={() => setFilterOpen(false)}
-              />
-            </View>
+        </View>
             <ScrollView
               showsVerticalScrollIndicator={false}
               contentContainerStyle={{
@@ -290,9 +189,7 @@ export const CatalogToolbar = ({
                 />
               </View>
             </View>
-          </View>
-        </View>
-      </Modal>
+      </BottomSheet>
     </View>
   );
 };

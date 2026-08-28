@@ -24,10 +24,10 @@ import {
 function buildDependencies(overrides: Partial<HandlerDependencies> = {}) {
   const users = new Map<string, ManagedUser>([
     ['member-1', { id: 'member-1', email: 'member@example.com', role: 0, clubId: 'campus-cats', banned: false }],
-    ['admin-1', { id: 'admin-1', email: 'admin@example.com', role: 1, clubId: 'campus-cats', banned: false }],
+    ['admin-1', { id: 'admin-1', email: 'admin@example.com', role: 1, clubId: 'campus-cats', platformAdmin: true, banned: false }],
     ['super-1', { id: 'super-1', email: 'super@example.com', role: 2, clubId: 'campus-cats', banned: false }],
     ['president-1', { id: 'president-1', email: 'president@example.com', role: 3, clubId: 'campus-cats', banned: false }],
-    ['developer-1', { id: 'developer-1', email: 'developer@example.com', role: 4, clubId: 'campus-cats', platformAdmin: true, banned: false }],
+    ['developer-1', { id: 'developer-1', email: 'developer@example.com', role: 4, clubId: 'campus-cats', platformAdmin: false, banned: false }],
   ]);
   const operations: string[] = [];
   const batches: number[] = [];
@@ -36,9 +36,9 @@ function buildDependencies(overrides: Partial<HandlerDependencies> = {}) {
     async getUser(id) {
       return users.get(id);
     },
-    async getPlatformAdmin(id) {
+    async getDeveloper(id) {
       const user = users.get(id);
-      return user?.platformAdmin ? user : undefined;
+      return user?.role === 4 && !user.banned ? user : undefined;
     },
     async getBillingSummary() {
       return {
@@ -132,7 +132,7 @@ async function rejectsWithCode(
 }
 
 describe('callable handlers', () => {
-  it('restricts infrastructure billing data to platform administrators', async () => {
+  it('restricts infrastructure billing data to Developers', async () => {
     const { dependencies } = buildDependencies();
 
     await rejectsWithCode(
