@@ -213,6 +213,27 @@ const Settings = () => {
       <View style={{ gap: theme.spacing.lg }}>
         {error ? <FeedbackBanner message={error} tone="danger" /> : null}
 
+        <FormSection title="Legal and privacy">
+          <ListRow
+            title="Terms of Service"
+            subtitle="Rules for using Campus Cats"
+            icon="document-text-outline"
+            onPress={() => router.push('/legal/terms' as never)}
+          />
+          <ListRow
+            title="Privacy Policy"
+            subtitle="How Campus Cats handles your information"
+            icon="shield-checkmark-outline"
+            onPress={() => router.push('/legal/privacy' as never)}
+          />
+          <ListRow
+            title="Account and data"
+            subtitle="Manage or permanently delete your account"
+            icon="person-circle-outline"
+            onPress={() => router.push('/settings/account')}
+          />
+        </FormSection>
+
         {!hasOfficerTools ? (
           <AccessBanner
             title="Officer-only tools"

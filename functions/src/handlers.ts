@@ -45,6 +45,10 @@ export interface PushMessage {
 
 export interface HandlerDependencies {
   getUser(id: string): Promise<ManagedUser | undefined>;
+  getAccountUser(id: string): Promise<ManagedUser | undefined>;
+  getPendingAccountDeletion(id: string): Promise<ManagedUser | undefined>;
+  prepareAccountDeletion(user: ManagedUser): Promise<void>;
+  completeAccountDeletion(id: string): Promise<void>;
   getDeveloper(id: string): Promise<ManagedUser | undefined>;
   getBillingSummary(): Promise<BillingSummary>;
   listPushTokens(clubId: string): Promise<readonly string[]>;
@@ -362,8 +366,44 @@ export async function handleRemoveManagedUser(
       'Presidents and developers cannot be removed through user management',
     );
   }
-  await dependencies.deleteAuthUser(userId);
   await dependencies.deleteUser(userId);
+  await dependencies.deleteAuthUser(userId);
+  return { success: true };
+}
+
+export async function handleDeleteOwnAccount(
+  request: HandlerRequest<{ readonly confirmation?: unknown }>,
+  dependencies: HandlerDependencies,
+): Promise<{ readonly success: true }> {
+  if (!request.authUid) {
+    throw new HandlerError('unauthenticated', 'Sign in to delete your account');
+  }
+  const actor =
+    (await dependencies.getAccountUser(request.authUid)) ??
+    (await dependencies.getPendingAccountDeletion(request.authUid));
+  if (!actor) {
+    throw new HandlerError('not-found', 'Account not found');
+  }
+  if (
+    typeof request.data.confirmation !== 'string' ||
+    request.data.confirmation.trim().toLowerCase() !== actor.email.toLowerCase()
+  ) {
+    throw new HandlerError(
+      'invalid-argument',
+      'Enter your account email address to confirm deletion',
+    );
+  }
+  if (actor.role === 3) {
+    throw new HandlerError(
+      'failed-precondition',
+      'Transfer the club presidency before deleting this account',
+    );
+  }
+
+  await dependencies.prepareAccountDeletion(actor);
+  await dependencies.deleteUser(actor.id);
+  await dependencies.deleteAuthUser(actor.id);
+  await dependencies.completeAccountDeletion(actor.id);
   return { success: true };
 }
 

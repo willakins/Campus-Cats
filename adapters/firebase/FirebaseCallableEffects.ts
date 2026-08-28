@@ -69,6 +69,10 @@ export class FirebaseCallableEffects implements ApplicationEffects {
     await httpsCallable(this.functions, 'removeManagedUser')({ userId });
   }
 
+  async deleteOwnAccount(confirmation: string): Promise<void> {
+    await httpsCallable(this.functions, 'deleteOwnAccount')({ confirmation });
+  }
+
   async syncPublicProfile(userId?: string): Promise<void> {
     await httpsCallable(this.functions, 'syncPublicProfile')(
       userId ? { userId } : {},

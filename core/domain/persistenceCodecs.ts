@@ -162,11 +162,22 @@ export function createPersistenceCodecs<EncodedDate>(
         }),
       });
     },
-    encode: ({ email, role, clubId, platformAdmin, banned, disciplinaryNotices }) => ({
+    encode: ({
       email,
       role,
       clubId,
       platformAdmin,
+      agreedToTerms,
+      termsVersion,
+      banned,
+      disciplinaryNotices,
+    }) => ({
+      email,
+      role,
+      clubId,
+      platformAdmin,
+      ...(agreedToTerms === undefined ? {} : { agreedToTerms }),
+      ...(termsVersion === undefined ? {} : { termsVersion }),
       banned,
       disciplinaryNotices: disciplinaryNotices.map((notice) => ({
         ...notice,
@@ -387,7 +398,11 @@ export function createPersistenceCodecs<EncodedDate>(
 
   const contentContributor: PersistenceCodec<ContentContributor> = {
     decode: (_id, value) => parseContentContributor(record(value)),
-    encode: (value) => ({ ...value }),
+    encode: ({ kind, contentId, user: { id, email, role, clubId, platformAdmin } }) => ({
+      kind,
+      contentId,
+      user: { id, email, role, clubId, platformAdmin },
+    }),
   };
 
   const clubEvent: PersistenceCodec<ClubEvent> = {

@@ -135,6 +135,9 @@ export class ClubProvisioningService {
             platformAdmin: false,
             banned: false,
             disciplinaryNotices: [],
+            ...(existingUser.exists
+              ? {}
+              : { agreedToTerms: false, termsVersion: '' }),
             updatedAt: now,
           },
           { merge: true },

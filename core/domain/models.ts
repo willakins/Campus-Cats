@@ -58,12 +58,17 @@ export const coordinatesSchema = z.object({
   longitude: z.number().finite().min(-180).max(180),
 });
 
-export const userSchema = z.object({
+export const userSnapshotSchema = z.object({
   id: userIdSchema,
   email: z.string().trim().email(),
   role: roleSchema,
   clubId: z.string().trim().min(1).max(120).default('campus-cats'),
   platformAdmin: z.boolean().default(false),
+});
+
+export const userSchema = userSnapshotSchema.extend({
+  agreedToTerms: z.boolean().optional(),
+  termsVersion: z.string().trim().max(40).optional(),
 });
 
 export const disciplinaryNoticeSchema = z.object({
@@ -189,7 +194,7 @@ export const sightingSchema = z.object({
   health: z.boolean(),
   date: validDate,
   location: coordinatesSchema,
-  createdBy: userSchema.optional(),
+  createdBy: userSnapshotSchema.optional(),
   timeOfDay: requiredText,
 });
 
@@ -219,7 +224,7 @@ export const catalogEntrySchema = z.object({
   cat: catSchema,
   credits: z.string(),
   createdAt: validDate,
-  createdBy: userSchema.optional(),
+  createdBy: userSnapshotSchema.optional(),
 });
 
 export const catalogFavoriteSchema = z.object({
@@ -283,7 +288,7 @@ export const stationSchema = z.object({
   lastStocked: validDate,
   stockingFreq: z.number().finite().positive(),
   knownCats: z.string(),
-  createdBy: userSchema,
+  createdBy: userSnapshotSchema,
 });
 
 export const announcementSchema = z.object({
@@ -291,7 +296,7 @@ export const announcementSchema = z.object({
   title: requiredText,
   info: requiredText,
   createdAt: validDate,
-  createdBy: userSchema,
+  createdBy: userSnapshotSchema,
   authorAlias: z.string(),
 });
 

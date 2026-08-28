@@ -3,7 +3,7 @@ import {
   sendPasswordResetEmail,
   signInWithEmailAndPassword,
 } from 'firebase/auth';
-import { getDoc, onSnapshot } from 'firebase/firestore';
+import { getDoc, onSnapshot, serverTimestamp, setDoc } from 'firebase/firestore';
 
 import { FirebaseSession } from './FirebaseSession';
 
@@ -18,9 +18,10 @@ jest.mock('firebase/auth', () => ({
 }));
 
 jest.mock('firebase/firestore', () => ({
-  doc: jest.fn(),
+  doc: jest.fn(() => ({ path: 'users/member-1' })),
   getDoc: jest.fn(),
   onSnapshot: jest.fn(),
+  serverTimestamp: jest.fn(() => 'server-timestamp'),
   setDoc: jest.fn(),
 }));
 
@@ -29,6 +30,7 @@ const mockedSignInWithEmailAndPassword = jest.mocked(signInWithEmailAndPassword)
 const mockedGetDoc = jest.mocked(getDoc);
 const mockedOnAuthStateChanged = jest.mocked(onAuthStateChanged);
 const mockedOnSnapshot = jest.mocked(onSnapshot);
+const mockedSetDoc = jest.mocked(setDoc);
 
 const buildSession = (
   auth: ConstructorParameters<typeof FirebaseSession>[0] =
@@ -68,7 +70,14 @@ describe('FirebaseSession authenticated profiles', () => {
       role: 4,
       clubId: 'campus-cats',
       platformAdmin: true,
+      agreedToTerms: false,
+      termsVersion: '',
     });
+    expect(mockedSetDoc).toHaveBeenCalledWith(
+      expect.anything(),
+      { agreedToTerms: false, termsVersion: '' },
+      { merge: true },
+    );
   });
 
   it('does not publish an in-flight profile after the observer is disposed', async () => {
@@ -141,6 +150,29 @@ describe('FirebaseSession password reset', () => {
     await expect(
       buildSession().requestPasswordReset('member@example.com'),
     ).rejects.toBe(failure);
+  });
+});
+
+describe('FirebaseSession terms agreement', () => {
+  beforeEach(() => jest.clearAllMocks());
+
+  it('records the agreement version with a server timestamp', async () => {
+    const session = buildSession({
+      currentUser: { uid: 'member-1', email: 'member@example.com' },
+    } as ConstructorParameters<typeof FirebaseSession>[0]);
+
+    await session.acceptTerms('2026-08-28');
+
+    expect(serverTimestamp).toHaveBeenCalledTimes(1);
+    expect(mockedSetDoc).toHaveBeenCalledWith(
+      expect.anything(),
+      {
+        agreedToTerms: true,
+        termsVersion: '2026-08-28',
+        termsAgreedAt: 'server-timestamp',
+      },
+      { merge: true },
+    );
   });
 });
 

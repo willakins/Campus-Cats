@@ -116,6 +116,7 @@ Authentication, maps, notifications, email, and data-backed features depend on t
 - [App settings and contributor privacy](docs/app-settings.md)
 - [Community engagement](docs/community-engagement.md)
 - [Testing guide](docs/testing.md)
+- [Legal release checklist](docs/legal-release.md)
 - [Contributing](CONTRIBUTING.md)
 
 ## Team

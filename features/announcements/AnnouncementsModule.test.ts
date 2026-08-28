@@ -41,6 +41,7 @@ function buildModule(effects?: Partial<ApplicationEffects>) {
     setUserBanned: jest.fn(),
     transferPresidency: jest.fn(),
     removeUser: jest.fn(),
+    deleteOwnAccount: jest.fn(),
     syncPublicProfile: jest.fn(),
     updatePublicProfile: jest.fn(),
     selectProfileTitle: jest.fn(),

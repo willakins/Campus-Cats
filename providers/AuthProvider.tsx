@@ -10,6 +10,7 @@ import {
 import { appModules } from '@/composition/appModules';
 import { Role, User, parseUser } from '@/core/domain';
 import { ExternalSignInResult } from '@/core/ports';
+import { LEGAL_TERMS_VERSION } from '@/legal/policies';
 
 type AuthContextType = {
   login: (email: string, password: string) => Promise<User>;
@@ -17,6 +18,7 @@ type AuthContextType = {
   requestPasswordReset: (email: string) => Promise<void>;
   samlSignIn: () => Promise<ExternalSignInResult>;
   signOut: () => Promise<void>;
+  acceptTerms: () => Promise<void>;
   currentUser: User | undefined;
   user: User;
   loading: boolean;
@@ -78,6 +80,11 @@ const AuthProvider = ({ children }: { children: ReactNode }) => {
     setUser(guest);
   };
 
+  const acceptTerms = async () => {
+    const result = await appModules.session.acceptTerms(LEGAL_TERMS_VERSION);
+    if (!result.ok) throw new Error(result.error.message);
+  };
+
   useEffect(() => {
     let receivedLiveProfile = false;
     let mounted = true;
@@ -110,6 +117,7 @@ const AuthProvider = ({ children }: { children: ReactNode }) => {
         requestPasswordReset,
         samlSignIn,
         signOut,
+        acceptTerms,
         currentUser,
         user,
         loading,

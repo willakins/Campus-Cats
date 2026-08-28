@@ -6,6 +6,7 @@ import { Controller, useForm } from 'react-hook-form';
 import { z } from 'zod';
 
 import { AuthTextField } from '@/components/auth';
+import { LegalLinks } from '@/components/legal';
 import { Button, FeedbackBanner } from '@/components/design';
 import { useAppTheme } from '@/theme';
 
@@ -90,11 +91,15 @@ export const LoginForm: React.FC<LoginProps> = ({
         )}
       />
       {error ? <FeedbackBanner message={error} tone="danger" /> : null}
+      {type === 'createAccount' ? (
+        <LegalLinks />
+      ) : null}
       <Button
         label={type === 'login' ? 'Sign in' : 'Create account'}
         fullWidth
         loading={busy}
         loadingLabel={type === 'login' ? 'Signing in…' : 'Creating account…'}
+        disabled={busy}
         onPress={handleSubmit(submitHandler)}
       />
       {onSwitchType ? (

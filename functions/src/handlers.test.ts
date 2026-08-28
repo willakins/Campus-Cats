@@ -7,6 +7,7 @@ import {
   ManagedUser,
   handleAddDisciplinaryNotice,
   handleCreateWhitelistUser,
+  handleDeleteOwnAccount,
   handleGetBillingSummary,
   handleMigrateContributorPrivacy,
   handleSelectProfileTitle,
@@ -30,11 +31,26 @@ function buildDependencies(overrides: Partial<HandlerDependencies> = {}) {
     ['developer-1', { id: 'developer-1', email: 'developer@example.com', role: 4, clubId: 'campus-cats', platformAdmin: false, banned: false }],
   ]);
   const operations: string[] = [];
+  const pendingDeletions = new Map<string, ManagedUser>();
   const batches: number[] = [];
   const publicProfiles = new Map();
   const dependencies: HandlerDependencies = {
     async getUser(id) {
       return users.get(id);
+    },
+    async getAccountUser(id) {
+      return users.get(id);
+    },
+    async getPendingAccountDeletion(id) {
+      return pendingDeletions.get(id);
+    },
+    async prepareAccountDeletion(user) {
+      operations.push(`prepare-deletion:${user.id}`);
+      pendingDeletions.set(user.id, user);
+    },
+    async completeAccountDeletion(id) {
+      operations.push(`complete-deletion:${id}`);
+      pendingDeletions.delete(id);
     },
     async getDeveloper(id) {
       const user = users.get(id);
@@ -376,8 +392,8 @@ describe('callable handlers', () => {
       dependencies,
     );
     assert.deepEqual(operations.slice(-2), [
-      'delete-auth:admin-1',
       'delete-user:admin-1',
+      'delete-auth:admin-1',
     ]);
     await rejectsWithCode(
       () => handleUpdateUserRole(
@@ -392,6 +408,76 @@ describe('callable handlers', () => {
         dependencies,
       ),
       'invalid-argument',
+    );
+  });
+
+  it('lets a signed-in non-President permanently delete their own account', async () => {
+    const { dependencies, users, operations } = buildDependencies();
+
+    await rejectsWithCode(
+      () => handleDeleteOwnAccount({ data: { confirmation: 'member@example.com' } }, dependencies),
+      'unauthenticated',
+    );
+    await rejectsWithCode(
+      () => handleDeleteOwnAccount(
+        { authUid: 'member-1', data: { confirmation: 'wrong@example.com' } },
+        dependencies,
+      ),
+      'invalid-argument',
+    );
+    await rejectsWithCode(
+      () => handleDeleteOwnAccount(
+        { authUid: 'president-1', data: { confirmation: 'president@example.com' } },
+        dependencies,
+      ),
+      'failed-precondition',
+    );
+
+    assert.deepEqual(
+      await handleDeleteOwnAccount(
+        { authUid: 'member-1', data: { confirmation: ' MEMBER@example.com ' } },
+        dependencies,
+      ),
+      { success: true },
+    );
+    assert.equal(users.has('member-1'), false);
+    assert.deepEqual(operations.slice(-4), [
+      'prepare-deletion:member-1',
+      'delete-user:member-1',
+      'delete-auth:member-1',
+      'complete-deletion:member-1',
+    ]);
+  });
+
+  it('can retry self-deletion after cleanup removed the account profile', async () => {
+    let failAuthDeletion = true;
+    const context = buildDependencies({
+      async deleteAuthUser(id) {
+        context.operations.push(`delete-auth:${id}`);
+        if (failAuthDeletion) {
+          failAuthDeletion = false;
+          throw new Error('temporary auth failure');
+        }
+      },
+    });
+    const request = {
+      authUid: 'member-1',
+      data: { confirmation: 'member@example.com' },
+    };
+
+    await assert.rejects(() =>
+      handleDeleteOwnAccount(request, context.dependencies),
+    );
+    assert.equal(context.users.has('member-1'), false);
+
+    assert.deepEqual(
+      await handleDeleteOwnAccount(request, context.dependencies),
+      { success: true },
+    );
+    assert.equal(
+      context.operations.filter((operation) => operation === 'delete-auth:member-1')
+        .length,
+      2,
     );
   });
 
