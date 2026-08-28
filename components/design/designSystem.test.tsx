@@ -8,8 +8,10 @@ import {
   AccessDeniedState,
   AppText,
   AppHeader,
+  BottomSheet,
   Button,
   Card,
+  CardContent,
   CardListSkeleton,
   Chip,
   EmptyState,
@@ -26,6 +28,7 @@ import {
   SegmentedControl,
   Skeleton,
   DetailSkeleton,
+  Dialog,
   StatusPill,
 } from './index';
 
@@ -252,8 +255,10 @@ describe('Campus Cats design primitives', () => {
     const user = userEvent.setup();
     await renderThemed(
       <>
-        <Card>
-          <AppText>Field note</AppText>
+        <Card padded={false}>
+          <CardContent>
+            <AppText>Field note</AppText>
+          </CardContent>
         </Card>
         <Card
           accessibilityLabel="Open Goldie"
@@ -283,11 +288,49 @@ describe('Campus Cats design primitives', () => {
     expect(screen.getByText('Admin')).toBeOnTheScreen();
   });
 
+  it('provides shared dialog and bottom-sheet dismissal surfaces', async () => {
+    const closeDialog = jest.fn();
+    const closeSheet = jest.fn();
+    const user = userEvent.setup();
+    const { rerender } = await renderThemed(
+      <Dialog
+        visible
+        closeLabel="Close moderation dialog"
+        onClose={closeDialog}
+      >
+        <AppText>Moderation actions</AppText>
+      </Dialog>,
+    );
+
+    expect(screen.getByText('Moderation actions')).toBeOnTheScreen();
+    expect(screen.getByTestId('dialog-scroll-view')).toHaveProp(
+      'keyboardShouldPersistTaps',
+      'handled',
+    );
+    await user.press(screen.getByLabelText('Close moderation dialog'));
+    await rerender(
+      <AppThemeProvider colorScheme="light">
+        <BottomSheet
+          visible
+          closeLabel="Close sorting sheet"
+          onClose={closeSheet}
+        >
+          <AppText>Sort options</AppText>
+        </BottomSheet>
+      </AppThemeProvider>,
+    );
+    expect(screen.getByText('Sort options')).toBeOnTheScreen();
+    await user.press(screen.getByLabelText('Close sorting sheet'));
+    expect(closeDialog).toHaveBeenCalledTimes(1);
+    expect(closeSheet).toHaveBeenCalledTimes(1);
+  });
+
   it('renders form helpers, static children, and grouped sections', async () => {
     const editSection = jest.fn();
     const user = userEvent.setup();
     await renderThemed(
       <FormSection
+        testID="basics-section"
         title="Basics"
         action={
           <IconButton
@@ -304,6 +347,10 @@ describe('Campus Cats design primitives', () => {
     );
 
     expect(screen.getByText('Basics')).toBeOnTheScreen();
+    expect(screen.getByTestId('basics-section')).toHaveStyle({
+      overflow: 'visible',
+      borderWidth: 1,
+    });
     await user.press(screen.getByRole('button', { name: 'Edit basics' }));
     expect(editSection).toHaveBeenCalledTimes(1);
     expect(screen.getByText('Nickname')).toBeOnTheScreen();

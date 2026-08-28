@@ -26,12 +26,10 @@ port, presentation, and provider-boundary decisions otherwise remain in force.
 - Stripe is the monetary source of truth. Firestore stores independent access and
   payment-standing fields, a server-only billing account, immutable usage outbox
   events, webhook claims, and invoice-reconciliation records.
-- Presidents and Developers manage their club's customer billing. The global
-  `platformAdmin` identity flag alone grants infrastructure-cost reporting and cloud
-  console links; it grants no additional club-content authority.
+- Presidents and Developers manage their club's customer billing. Infrastructure-cost
+  reporting and cloud console links require the Developer role.
 - Club permissions cascade through the numeric hierarchy, so Developer role `4`
-  inherits every action available to President role `3`. `platformAdmin` is still
-  modeled separately and may be granted without changing a user's club role.
+  inherits every action available to President role `3`.
 - Customer-billing callables translate transport in `index.ts` and dispatch through
   dependency-injected handlers in `customerBillingHandlers.ts`. The workflow service
   owns Stripe coordination and entitlement policy behind that seam.

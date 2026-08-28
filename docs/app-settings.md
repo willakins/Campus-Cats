@@ -1,17 +1,17 @@
 # App settings and contributor privacy
 
-Presidents and Developers can open **More → App Settings** to manage the club logo,
+Presidents and Developers can open **More → App Settings** to manage the app logo,
 the primary and accent colors, and contributor privacy. Developer access follows the
 same cascading role hierarchy used throughout the app.
 
 ## Behavior
 
-- Account-access screens and primary app headers use the uploaded club logo. Until a
+- Account-access screens and primary app headers use the uploaded app logo. Until a
   logo is uploaded, they use the separate bundled fallback in
   `assets/images/default-app-icon.png`.
-- Primary and accent colors must be six-digit hex values. The app derives accessible
-  light and dark variants instead of placing an arbitrary selected color directly
-  behind text.
+- Primary and accent colors can be chosen from the provided hex palettes or entered
+  as custom six-digit hex values. The app derives accessible light and dark variants
+  instead of placing an arbitrary selected color directly behind text.
 - `sightingsAnonymous` defaults to `true` when no settings document exists.
 - While anonymity is enabled, Members can read sighting and catalog content but cannot
   read another contributor's identity. Officers, Vice-Presidents, the President, and
@@ -44,14 +44,6 @@ sightings and catalog entries write the public content document and its private
 contributor document in one Firestore batch. Deletes remove both documents in one
 batch. Firestore rules reject orphaned contributor creation, identity takeover, and
 one-sided deletion.
-
-## Existing-logo migration
-
-The previous native icon artwork remains bundled at `assets/images/icon.png` solely
-as a migration source. When `logoUrl` is empty, President-level roles see **Publish
-Current Club Logo** in App Settings. That action uploads the artwork to `app-branding/`, writes
-its public download URL to `app-settings/public`, and immediately applies it in the
-running app. Once the URL exists, the migration control is hidden.
 
 ## Existing contributor-data migration
 

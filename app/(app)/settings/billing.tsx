@@ -1,11 +1,11 @@
 import { useCallback, useState } from 'react';
 import { Linking, View } from 'react-native';
 
-import { useFocusEffect, useRouter } from 'expo-router';
+import { useRouter } from 'expo-router';
 
+import { RestrictedScreen } from '@/components/access';
+import { useFocusTask } from '@/components/hooks/useFocusTask';
 import {
-  AccessDeniedState,
-  AppHeader,
   AppText,
   Button,
   Card,
@@ -14,11 +14,14 @@ import {
   ErrorState,
   FeedbackBanner,
   FormSection,
-  Screen,
   StatusPill,
 } from '@/components/design';
 import { appModules } from '@/composition/appModules';
-import { parseUser } from '@/core/domain';
+import {
+  canAccessRolePolicy,
+  parseUser,
+  roleAccessPolicies,
+} from '@/core/domain';
 import {
   BillingProviderPresentation,
   BillingSummary,
@@ -32,25 +35,28 @@ const Billing = () => {
   const { user } = useAuth();
   const actor = parseUser(user);
   const theme = useAppTheme();
-  const authorized = actor.platformAdmin;
-  const canOpenCloudConsoles = actor.platformAdmin;
+  const billingAccessPolicy = roleAccessPolicies.viewInfrastructureCosts;
+  const authorized = canAccessRolePolicy(actor.role, billingAccessPolicy);
+  const production = process.env.EXPO_PUBLIC_APP_ENV === 'production';
+  const canOpenCloudConsoles = authorized;
   const presentation = appModules.billing.presentation;
   const [summary, setSummary] = useState<BillingSummary>();
-  const [loading, setLoading] = useState(authorized);
+  const [loading, setLoading] = useState(authorized && production);
   const [error, setError] = useState<string>();
 
-  const load = useCallback(() => {
-    if (!authorized) return;
+  const load = useCallback((isActive: () => boolean = () => true) => {
+    if (!authorized || !production) return;
     setLoading(true);
     setError(undefined);
     void appModules.billing.summary(actor).then((result) => {
+      if (!isActive()) return;
       setLoading(false);
       if (result.ok) setSummary(result.value);
       else setError(result.error.message);
     });
-  }, [actor.id, authorized]);
+  }, [actor.id, authorized, production]);
 
-  useFocusEffect(load);
+  useFocusTask(load);
 
   const open = (url: string) => {
     void Linking.openURL(url).catch(() => {
@@ -59,14 +65,18 @@ const Billing = () => {
   };
 
   return (
-    <Screen scroll>
-      <AppHeader
-        title="Infrastructure costs"
-        eyebrow="Platform administration"
-        onBack={() => router.back()}
-      />
-      {!authorized ? (
-        <AccessDeniedState message="Only platform administrators may view infrastructure costs." />
+    <RestrictedScreen
+      scroll
+      title="Infrastructure costs"
+      eyebrow="Platform administration"
+      onBack={() => router.back()}
+      access={{ policy: billingAccessPolicy, role: actor.role }}
+    >
+      {!production ? (
+        <EmptyState
+          title="Infrastructure costs are only available in production"
+          message="Open the production app to review Firebase and Google Cloud costs."
+        />
       ) : loading ? (
         <CardListSkeleton label="Loading app billing" layout="actions" />
       ) : error ? (
@@ -98,7 +108,7 @@ const Billing = () => {
           )}
         </View>
       ) : null}
-    </Screen>
+    </RestrictedScreen>
   );
 };
 

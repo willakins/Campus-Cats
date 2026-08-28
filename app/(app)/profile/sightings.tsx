@@ -1,7 +1,7 @@
 import React, { useCallback, useState } from 'react';
 import { FlatList } from 'react-native';
 
-import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 
 import {
   AppHeader,
@@ -11,6 +11,7 @@ import {
   Screen,
 } from '@/components/design';
 import { ProfileSightingItem } from '@/components/profile';
+import { useFocusTask } from '@/components/hooks/useFocusTask';
 import { virtualizedListPerformanceProps } from '@/components/collections/virtualizedListPerformance';
 import { appModules } from '@/composition/appModules';
 import { SightingRecord, parseUser } from '@/core/domain';
@@ -29,7 +30,7 @@ const ProfileSightingsScreen = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string>();
 
-  const load = useCallback(async () => {
+  const load = useCallback(async (isActive: () => boolean = () => true) => {
     setLoading(true);
     setSightings([]);
     setError(undefined);
@@ -39,16 +40,13 @@ const ProfileSightingsScreen = () => {
       return;
     }
     const result = await appModules.sightings.listByReporter(actor, id);
+    if (!isActive()) return;
     if (result.ok) setSightings(result.value);
     else setError(result.error.message);
     setLoading(false);
   }, [actor.id, actor.role, id]);
 
-  useFocusEffect(
-    useCallback(() => {
-      void load();
-    }, [load]),
-  );
+  useFocusTask(load);
 
   const memberName = displayName?.trim() || 'Member';
 

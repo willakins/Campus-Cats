@@ -1,5 +1,5 @@
 import { useCallback, useState } from 'react';
-import { Pressable, View } from 'react-native';
+import { View } from 'react-native';
 
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 
@@ -16,7 +16,7 @@ import {
   Screen,
   StatusPill,
 } from '@/components/design';
-import { FormTextInput } from '@/components/forms';
+import { ChoiceField, FormTextInput } from '@/components/forms';
 import { appModules } from '@/composition/appModules';
 import {
   Survey,
@@ -44,39 +44,14 @@ const ChoiceOption = ({
   readonly selected: boolean;
   readonly onPress: () => void;
 }) => {
-  const theme = useAppTheme();
   const multiple = question.type === 'multi_select';
   return (
-    <Pressable
-      accessibilityRole={multiple ? 'checkbox' : 'radio'}
-      accessibilityLabel={label}
-      accessibilityState={{ checked: selected }}
-      onPress={onPress}
-      style={({ pressed }) => ({
-        minHeight: theme.layout.minTouchTarget,
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: theme.spacing.sm,
-        padding: theme.spacing.sm,
-        borderWidth: 1,
-        borderColor: selected ? theme.colors.primary : theme.colors.border,
-        borderRadius: theme.radii.field,
-        backgroundColor: selected ? theme.colors.primarySurface : theme.colors.surface,
-        opacity: pressed ? 0.8 : 1,
-      })}
-    >
-      <View
-        style={{
-          width: 22,
-          height: 22,
-          borderRadius: multiple ? theme.radii.field / 2 : 11,
-          borderWidth: 2,
-          borderColor: theme.colors.primary,
-          backgroundColor: selected ? theme.colors.primary : 'transparent',
-        }}
-      />
-      <AppText style={{ flex: 1 }}>{label}</AppText>
-    </Pressable>
+    <ChoiceField
+      kind={multiple ? 'checkbox' : 'radio'}
+      label={label}
+      checked={selected}
+      onChange={onPress}
+    />
   );
 };
 

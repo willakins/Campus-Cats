@@ -57,6 +57,10 @@ export class InMemoryChatGateway implements ChatGateway {
     if (message.isClubPing) this.emitAllPingStates();
   }
 
+  async getDay(_actor: User, dayKey: string): Promise<ChatDay> {
+    return this.day(dayKey);
+  }
+
   observeDay(
     _actor: User,
     dayKey: string,

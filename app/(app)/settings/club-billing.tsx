@@ -1,11 +1,10 @@
 import { useCallback, useState } from 'react';
 import { Linking, Platform, View } from 'react-native';
-import { useFocusEffect, useRouter } from 'expo-router';
+import { useRouter } from 'expo-router';
 
-import { RestrictedAccess, roleAccessPresentation } from '@/components/access';
+import { RestrictedScreen } from '@/components/access';
+import { useFocusTask } from '@/components/hooks/useFocusTask';
 import {
-  AccessDeniedState,
-  AppHeader,
   AppText,
   Button,
   Card,
@@ -13,7 +12,6 @@ import {
   ErrorState,
   FeedbackBanner,
   FormSection,
-  Screen,
   StatusPill,
 } from '@/components/design';
 import { FormTextInput } from '@/components/forms';
@@ -45,11 +43,12 @@ const ClubBilling = () => {
   const [error, setError] = useState<string>();
   const [billingEmail, setBillingEmail] = useState('');
 
-  const load = useCallback(() => {
+  const load = useCallback((isActive: () => boolean = () => true) => {
     if (!authorized || development || Platform.OS !== 'web') return;
     setLoading(true);
     setError(undefined);
     void appModules.clubBilling.summary(user).then((result) => {
+      if (!isActive()) return;
       setLoading(false);
       if (result.ok) {
         setSummary(result.value);
@@ -59,7 +58,7 @@ const ClubBilling = () => {
     });
   }, [authorized, development, user.id]);
 
-  useFocusEffect(load);
+  useFocusTask(load);
 
   const runRedirect = async (
     key: string,
@@ -130,25 +129,15 @@ const ClubBilling = () => {
   };
 
   return (
-    <Screen scroll>
-      <AppHeader
-        title="Club billing"
-        eyebrow="President tools"
-        onBack={() => router.back()}
-        action={
-          !development && Platform.OS === 'web' ? (
-            <RestrictedAccess policy={roleAccessPolicies.manageClubBilling} />
-          ) : undefined
-        }
-      />
+    <RestrictedScreen
+      scroll
+      title="Club billing"
+      eyebrow="President tools"
+      onBack={() => router.back()}
+      access={{ policy: roleAccessPolicies.manageClubBilling, role: user.role }}
+    >
       {development || Platform.OS !== 'web' ? (
         <NativeBillingStatus access={access} />
-      ) : !authorized ? (
-        <AccessDeniedState
-          message={roleAccessPresentation(
-            roleAccessPolicies.manageClubBilling,
-          ).message}
-        />
       ) : loading ? (
         <CardListSkeleton label="Loading club billing" layout="actions" />
       ) : error && !summary ? (
@@ -369,7 +358,7 @@ const ClubBilling = () => {
           </AppText>
         </View>
       ) : null}
-    </Screen>
+    </RestrictedScreen>
   );
 };
 

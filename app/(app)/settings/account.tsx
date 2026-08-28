@@ -90,26 +90,6 @@ const Account = () => {
             </View>
           </Card>
         </FormSection>
-
-        <FormSection title="Connected accounts">
-          <Card accent={theme.colors.success}>
-            <View style={{ gap: theme.spacing.sm }}>
-              <AppText variant="cardTitle">iNaturalist</AppText>
-              <AppText color="muted">
-                Connect your Campus Cats account to iNaturalist so imported
-                observations can link back to your member profile.
-              </AppText>
-              <Button
-                label="Manage iNaturalist connection"
-                icon="leaf-outline"
-                variant="secondary"
-                onPress={() =>
-                  router.push('/settings/inaturalist-account' as never)
-                }
-              />
-            </View>
-          </Card>
-        </FormSection>
       </View>
     </Screen>
   );

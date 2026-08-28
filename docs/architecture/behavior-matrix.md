@@ -3,8 +3,8 @@
 This matrix is the compatibility contract for the architecture refactor. Existing
 collection names, document fields, Storage paths, and user-visible flows remain stable
 unless a later decision explicitly changes them. ADR 0003 intentionally replaces the
-root persistence layout with tenant paths and separates platform administration from
-club roles.
+root persistence layout with tenant paths; the Developer role owns the explicit
+platform-administration capabilities below.
 
 | Capability                                 | Unauthenticated | Member                       | Officer               | Vice-President        | President             | Developer              |
 | ------------------------------------------ | --------------- | ---------------------------- | --------------------- | --------------------- | --------------------- | ---------------------- |
@@ -40,11 +40,11 @@ club roles.
 | Browse Developer accounts                  | Deny            | Deny                         | Deny                  | Deny                  | Deny                  | Read-only              |
 | Crown a President                          | Deny            | Deny                         | Deny                  | Deny                  | Transfer only         | First appointment only |
 | Manage Presidents or Developers ordinarily | Deny            | Deny                         | Deny                  | Deny                  | Deny                  | Deny                   |
-| Manage club subscription billing           | Deny            | Deny                         | Deny                  | Deny                  | Callable only         | Deny                   |
-| Manage app branding and privacy            | Deny            | Deny                         | Deny                  | Deny                  | Allow                 | Deny                   |
+| Manage club subscription billing           | Deny            | Deny                         | Deny                  | Deny                  | Callable only         | Callable only          |
+| Manage app branding and privacy            | Deny            | Deny                         | Deny                  | Deny                  | Allow                 | Allow                  |
 | View contributors while anonymous          | Deny            | Hidden (self ownership only) | Allow                 | Allow                 | Allow                 | Allow                  |
 | View contributors while non-anonymous      | Deny            | Allow                        | Allow                 | Allow                 | Allow                 | Allow                  |
-| Open Firebase or Google Cloud consoles     | Deny            | Deny                         | Deny                  | Deny                  | Deny                  | Deny                   |
+| Open Firebase or Google Cloud consoles     | Deny            | Deny                         | Deny                  | Deny                  | Deny                  | Allow                  |
 | Update a push token                        | Deny            | Own only                     | Own only              | Own only              | Own only              | Own only               |
 | Update non-privileged profile fields       | Deny            | Own only                     | Own only              | Own only              | Own only              | Own only               |
 | Read visible imported iNaturalist records  | Deny            | Allow                        | Allow                 | Allow                 | Allow                 | Allow                  |
@@ -97,16 +97,15 @@ club roles.
   server billing endpoints.
 - Club authorization follows the numeric role hierarchy: Developer (`4`) inherits
   every President (`3`) action, President inherits Vice-President, and so on.
-  `platformAdmin` remains an independent global flag for infrastructure-cost reports
-  and provider console links; that flag alone does not add club-content permissions.
+  Infrastructure-cost reports and provider console links use an explicit
+  Developer-only capability policy.
 
 ## Platform administration
 
-| Capability                            | Ordinary account | `platformAdmin` account |
-| ------------------------------------- | ---------------- | ----------------------- |
-| View Firebase/Google Cloud app costs  | Deny             | Callable only           |
-| Open provider administration consoles | Deny             | Allow                   |
-| Gain additional club-content rights   | Deny             | Deny                    |
+| Capability                            | Member–President | Developer |
+| ------------------------------------- | ---------------- | --------- |
+| View Firebase/Google Cloud app costs  | Deny             | Callable  |
+| Open provider administration consoles | Deny             | Allow     |
 
 ## Test seams
 

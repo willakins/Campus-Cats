@@ -1,9 +1,11 @@
 import { useCallback, useMemo, useState } from 'react';
-import { View } from 'react-native';
+import { FlatList, ListRenderItemInfo, View } from 'react-native';
 
-import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 
 import { SurveyPrivacyBanner } from '@/components/community';
+import { virtualizedListPerformanceProps } from '@/components/collections/virtualizedListPerformance';
+import { useFocusTask } from '@/components/hooks/useFocusTask';
 import {
   AppText,
   Button,
@@ -57,7 +59,7 @@ const SurveyResponses = () => {
   const [error, setError] = useState<string>();
   const [warning, setWarning] = useState<string>();
 
-  const load = useCallback(async () => {
+  const load = useCallback(async (isActive: () => boolean = () => true) => {
     if (!authorized || !id) {
       if (!id) setError('Missing survey ID');
       setLoading(false);
@@ -70,6 +72,7 @@ const SurveyResponses = () => {
       appModules.surveys.get(actor, id),
       appModules.surveys.responses(actor, id),
     ]);
+    if (!isActive()) return;
     if (surveyResult.ok) setSurvey(surveyResult.value);
     else setError(surveyResult.error.message);
     if (responsesResult.ok) {
@@ -80,15 +83,22 @@ const SurveyResponses = () => {
     setLoading(false);
   }, [actor.id, actor.role, authorized, id]);
 
-  useFocusEffect(
-    useCallback(() => {
-      void load();
-    }, [load]),
-  );
+  useFocusTask(load);
 
   const questionById = useMemo(
     () => new Map(survey?.questions.map((question) => [question.id, question]) ?? []),
     [survey],
+  );
+  const renderResponse = useCallback(
+    ({ item, index }: ListRenderItemInfo<SurveyResponse>) => (
+      <SurveyResponseCard
+        response={item}
+        responseIndex={index}
+        responseCount={responses.length}
+        questionById={questionById}
+      />
+    ),
+    [questionById, responses.length],
   );
 
   const close = async () => {
@@ -103,7 +113,6 @@ const SurveyResponses = () => {
 
   return (
     <RestrictedScreen
-      scroll
       title="Survey responses"
       eyebrow="Officer tools"
       onBack={() => router.back()}
@@ -112,63 +121,90 @@ const SurveyResponses = () => {
       {loading ? (
         <CardListSkeleton label="Loading survey responses" />
       ) : survey ? (
-        <View style={{ gap: theme.spacing.lg, paddingBottom: theme.spacing.xl }}>
-          <View style={{ gap: theme.spacing.xs }}>
-            <StatusPill
-              tone={survey.status === 'open' ? 'success' : 'neutral'}
-              label={survey.status === 'open' ? 'Open survey' : 'Closed survey'}
-            />
-            <AppText variant="pageTitle">{survey.title}</AppText>
-            <AppText color="muted">
-              {responses.length} {responses.length === 1 ? 'response' : 'responses'}
-            </AppText>
-          </View>
-          <SurveyPrivacyBanner anonymous={survey.anonymous} />
-          {warning ? <FeedbackBanner message={warning} tone="warning" /> : null}
-          {error ? <FeedbackBanner message={error} tone="danger" /> : null}
-          {survey.status === 'open' ? (
-            <Button
-              label="Close Survey"
-              icon="lock-closed-outline"
-              variant="secondary"
-              loading={closing}
-              onPress={() => void close()}
-            />
-          ) : null}
-          {responses.length === 0 ? (
-            <EmptyState title="No responses yet" message="Submitted responses will appear here." />
-          ) : (
-            responses.map((response, responseIndex) => (
-              <Card key={response.id} accent={theme.colors.info}>
-                <View style={{ gap: theme.spacing.md }}>
-                  <View style={{ gap: theme.spacing.xxs }}>
-                    <AppText variant="cardTitle">
-                      {response.respondent
-                        ? response.respondent.email
-                        : `Anonymous response ${responses.length - responseIndex}`}
-                    </AppText>
-                    <AppText variant="caption" color="muted">
-                      {response.submittedAt.toLocaleString()}
-                    </AppText>
-                  </View>
-                  {response.answers.map((answer, answerIndex) => {
-                    const question = questionById.get(answer.questionId);
-                    return question ? (
-                      <View key={answer.questionId} style={{ gap: theme.spacing.xxs }}>
-                        <AppText variant="label">{answerIndex + 1}. {question.prompt}</AppText>
-                        <AppText>{answerText(question, answer)}</AppText>
-                      </View>
-                    ) : null;
-                  })}
-                </View>
-              </Card>
-            ))
+        <FlatList
+          {...virtualizedListPerformanceProps}
+          testID="survey-response-list"
+          data={responses}
+          keyExtractor={(response) => response.id}
+          renderItem={renderResponse}
+          contentContainerStyle={{
+            flexGrow: 1,
+            gap: theme.spacing.lg,
+            paddingBottom: theme.spacing.xl,
+          }}
+          ListHeaderComponent={(
+            <View style={{ gap: theme.spacing.lg }}>
+              <View style={{ gap: theme.spacing.xs }}>
+                <StatusPill
+                  tone={survey.status === 'open' ? 'success' : 'neutral'}
+                  label={survey.status === 'open' ? 'Open survey' : 'Closed survey'}
+                />
+                <AppText variant="pageTitle">{survey.title}</AppText>
+                <AppText color="muted">
+                  {responses.length} {responses.length === 1 ? 'response' : 'responses'}
+                </AppText>
+              </View>
+              <SurveyPrivacyBanner anonymous={survey.anonymous} />
+              {warning ? <FeedbackBanner message={warning} tone="warning" /> : null}
+              {error ? <FeedbackBanner message={error} tone="danger" /> : null}
+              {survey.status === 'open' ? (
+                <Button
+                  label="Close Survey"
+                  icon="lock-closed-outline"
+                  variant="secondary"
+                  loading={closing}
+                  onPress={() => void close()}
+                />
+              ) : null}
+            </View>
           )}
-        </View>
+          ListEmptyComponent={(
+            <EmptyState title="No responses yet" message="Submitted responses will appear here." />
+          )}
+        />
       ) : (
         <ErrorState title="Responses unavailable" message={error || 'Survey not found'} />
       )}
     </RestrictedScreen>
+  );
+};
+
+const SurveyResponseCard = ({
+  response,
+  responseIndex,
+  responseCount,
+  questionById,
+}: {
+  readonly response: SurveyResponse;
+  readonly responseIndex: number;
+  readonly responseCount: number;
+  readonly questionById: ReadonlyMap<string, SurveyQuestion>;
+}) => {
+  const theme = useAppTheme();
+  return (
+    <Card accent={theme.colors.info}>
+      <View style={{ gap: theme.spacing.md }}>
+        <View style={{ gap: theme.spacing.xxs }}>
+          <AppText variant="cardTitle">
+            {response.respondent
+              ? response.respondent.email
+              : `Anonymous response ${responseCount - responseIndex}`}
+          </AppText>
+          <AppText variant="caption" color="muted">
+            {response.submittedAt.toLocaleString()}
+          </AppText>
+        </View>
+        {response.answers.map((answer, answerIndex) => {
+          const question = questionById.get(answer.questionId);
+          return question ? (
+            <View key={answer.questionId} style={{ gap: theme.spacing.xxs }}>
+              <AppText variant="label">{answerIndex + 1}. {question.prompt}</AppText>
+              <AppText>{answerText(question, answer)}</AppText>
+            </View>
+          ) : null;
+        })}
+      </View>
+    </Card>
   );
 };
 

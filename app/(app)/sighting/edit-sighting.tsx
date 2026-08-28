@@ -88,10 +88,12 @@ const SightingEditScreen = () => {
       setLoadError('Missing sighting ID');
       return;
     }
+    let active = true;
     void Promise.all([
       appModules.sightings.get(parseUser(user), id),
       appModules.sightings.media(id),
     ]).then(([sightingResult, mediaResult]) => {
+      if (!active) return;
       if (!sightingResult.ok) {
         setLoadError(sightingResult.error.message);
         return;
@@ -120,6 +122,9 @@ const SightingEditScreen = () => {
         setPhotos(stored.filter(({ role }) => role === 'gallery').map(({ url }) => url));
       } else setError(mediaResult.error.message);
     });
+    return () => {
+      active = false;
+    };
   }, [id, user.id, user.role]);
 
   const selectionFor = (uri: string) => {

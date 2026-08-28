@@ -1,24 +1,25 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
-  Image,
   Modal,
   Pressable,
-  TextInput,
   View,
 } from 'react-native';
 import { FlashList, FlashListRef } from '@shopify/flash-list';
 import { Ionicons } from '@expo/vector-icons';
 import { ReactionStrip } from '@softwhere-uz/react-native-emoji-keyboard';
 
+import { RestrictedAccess } from '@/components/access';
 import {
   AppText,
   Button,
+  Dialog,
   FeedbackBanner,
   IconButton,
   StatusPill,
 } from '@/components/design';
-import { FormTextInput } from '@/components/forms';
+import { ChoiceField, FormTextInput } from '@/components/forms';
+import { ProfileAvatar } from '@/components/profile';
 import { appModules } from '@/composition/appModules';
 import {
   CHAT_MESSAGE_CHARACTER_LIMIT,
@@ -30,7 +31,11 @@ import {
   User,
   chatDayKey,
   chatRestrictionActive,
+  canAccessRolePolicy,
   canManageFeature,
+  parseChatDay,
+  parseChatReaction,
+  roleAccessPolicies,
 } from '@/core/domain';
 import { useAppTheme } from '@/theme';
 import { ChatEmojiPickerModal } from './EmojiPickerModal';
@@ -48,6 +53,9 @@ export const ChatSection = ({ actor, timeZone }: ChatSectionProps) => {
   const theme = useAppTheme();
   const listRef = useRef<FlashListRef<ChatMessage>>(null);
   const initiallyScrolled = useRef(false);
+  const mounted = useRef(true);
+  const historyRequest = useRef(0);
+  const scrollFrame = useRef<number | undefined>(undefined);
   const [currentDayKey, setCurrentDayKey] = useState(() =>
     chatDayKey(new Date(), timeZone),
   );
@@ -71,6 +79,17 @@ export const ChatSection = ({ actor, timeZone }: ChatSectionProps) => {
   const [moderationTarget, setModerationTarget] = useState<ChatMessage>();
 
   useEffect(() => {
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+      historyRequest.current += 1;
+      if (scrollFrame.current !== undefined) {
+        cancelAnimationFrame(scrollFrame.current);
+      }
+    };
+  }, []);
+
+  useEffect(() => {
     const updateCurrentDay = () => {
       const nextNow = new Date();
       setNow(nextNow);
@@ -89,25 +108,20 @@ export const ChatSection = ({ actor, timeZone }: ChatSectionProps) => {
 
   useEffect(() => {
     setLoadError(undefined);
-    const stops = dayKeys.map((dayKey) =>
-      appModules.chat.observeDay(actor, dayKey, (result) => {
-        if (!result.ok) {
-          setLoadError(result.error.message);
-          setLoading(false);
-          setLoadingOlder(false);
-          return;
-        }
-        setDays((current) => {
-          const next = new Map(current);
-          next.set(dayKey, result.value);
-          return next;
-        });
+    return appModules.chat.observeDay(actor, currentDayKey, (result) => {
+      if (!result.ok) {
+        setLoadError(result.error.message);
         setLoading(false);
-        setLoadingOlder(false);
-      }),
-    );
-    return () => stops.forEach((stop) => stop());
-  }, [actor.id, dayKeys.join('|'), retryRevision]);
+        return;
+      }
+      setDays((current) => {
+        const next = new Map(current);
+        next.set(currentDayKey, result.value);
+        return next;
+      });
+      setLoading(false);
+    });
+  }, [actor.id, currentDayKey, retryRevision]);
 
   useEffect(
     () =>
@@ -142,14 +156,39 @@ export const ChatSection = ({ actor, timeZone }: ChatSectionProps) => {
     () => dayKeys.flatMap((key) => days.get(key)?.reactions ?? []),
     [dayKeys, days],
   );
+  const reactionsByMessage = useMemo(() => {
+    const grouped = new Map<string, ChatReaction[]>();
+    for (const reaction of reactions) {
+      const messageReactions = grouped.get(reaction.messageId) ?? [];
+      messageReactions.push(reaction);
+      grouped.set(reaction.messageId, messageReactions);
+    }
+    return grouped;
+  }, [reactions]);
+  const messageDateFormatters = useMemo(
+    () => ({
+      date: new Intl.DateTimeFormat(undefined, {
+        dateStyle: 'medium',
+        timeZone,
+      }),
+      current: new Intl.DateTimeFormat(undefined, {
+        dateStyle: 'medium',
+        timeStyle: 'short',
+        timeZone,
+      }),
+    }),
+    [timeZone],
+  );
   const readOnly = chatRestrictionActive(restriction, now);
 
   const loadOlder = async () => {
     if (loading || loadingOlder || !hasOlder) return;
+    const request = ++historyRequest.current;
     setLoadingOlder(true);
     setOlderError(undefined);
     const oldest = [...dayKeys].sort()[0] ?? currentDayKey;
     const result = await appModules.chat.findPreviousActiveDay(actor, oldest);
+    if (!mounted.current || request !== historyRequest.current) return;
     if (!result.ok) {
       setOlderError(result.error.message);
       setLoadingOlder(false);
@@ -160,9 +199,22 @@ export const ChatSection = ({ actor, timeZone }: ChatSectionProps) => {
       setLoadingOlder(false);
       return;
     }
+    const history = await appModules.chat.loadDay(actor, result.value);
+    if (!mounted.current || request !== historyRequest.current) return;
+    if (!history.ok) {
+      setOlderError(history.error.message);
+      setLoadingOlder(false);
+      return;
+    }
+    setDays((current) => {
+      const next = new Map(current);
+      next.set(result.value as string, history.value);
+      return next;
+    });
     setDayKeys((current) =>
       [...new Set([...current, result.value as string])].sort(),
     );
+    setLoadingOlder(false);
   };
 
   const send = async () => {
@@ -175,6 +227,7 @@ export const ChatSection = ({ actor, timeZone }: ChatSectionProps) => {
       draft,
       isClubPing,
     );
+    if (!mounted.current) return;
     setSending(false);
     if (!result.ok) {
       setError(result.error.message);
@@ -183,7 +236,10 @@ export const ChatSection = ({ actor, timeZone }: ChatSectionProps) => {
     setDraft('');
     setIsClubPing(false);
     setFeedback(result.warnings[0]?.message);
-    requestAnimationFrame(() => listRef.current?.scrollToEnd({ animated: true }));
+    scrollFrame.current = requestAnimationFrame(() => {
+      scrollFrame.current = undefined;
+      listRef.current?.scrollToEnd({ animated: true });
+    });
   };
 
   const react = async (message: ChatMessage, emoji: string) => {
@@ -194,7 +250,38 @@ export const ChatSection = ({ actor, timeZone }: ChatSectionProps) => {
       message.dayKey,
       emoji,
     );
-    if (!result.ok) setError(result.error.message);
+    if (!mounted.current) return;
+    if (!result.ok) {
+      setError(result.error.message);
+      return;
+    }
+    setDays((current) => {
+      const day = current.get(message.dayKey);
+      if (!day) return current;
+      const existing = day.reactions.find(
+        (reaction) =>
+          reaction.messageId === message.id && reaction.userId === actor.id,
+      );
+      const otherReactions = day.reactions.filter(
+        (reaction) =>
+          reaction.messageId !== message.id || reaction.userId !== actor.id,
+      );
+      const reactions = existing?.emoji === emoji
+        ? otherReactions
+        : [
+            ...otherReactions,
+            parseChatReaction({
+              messageId: message.id,
+              messageDayKey: message.dayKey,
+              userId: actor.id,
+              emoji,
+              updatedAt: new Date(),
+            }),
+          ];
+      const next = new Map(current);
+      next.set(message.dayKey, parseChatDay({ ...day, reactions }));
+      return next;
+    });
   };
 
   const chooseEmoji = (emoji: string) => {
@@ -294,9 +381,12 @@ export const ChatSection = ({ actor, timeZone }: ChatSectionProps) => {
             <ChatMessageCard
               actor={actor}
               message={item}
-              reactions={reactions.filter(({ messageId }) => messageId === item.id)}
-              currentDayKey={currentDayKey}
-              timeZone={timeZone}
+              reactions={reactionsByMessage.get(item.id) ?? EMPTY_REACTIONS}
+              formattedDate={
+                messageDateFormatters[
+                  item.dayKey === currentDayKey ? 'current' : 'date'
+                ].format(item.createdAt)
+              }
               readOnly={readOnly}
               onPress={() => !readOnly && setReactionTarget(item)}
               onModerate={() => setModerationTarget(item)}
@@ -313,22 +403,21 @@ export const ChatSection = ({ actor, timeZone }: ChatSectionProps) => {
           borderTopColor: theme.colors.border,
         }}
       >
-        {canManageFeature(actor.role) ? (
-          <Pressable
-            accessibilityRole="checkbox"
+        {canAccessRolePolicy(actor.role, roleAccessPolicies.pingClubMembers) ? (
+          <ChoiceField
+            appearance="plain"
+            label="Ping club members"
             accessibilityLabel="Ping the whole club"
-            accessibilityState={{ checked: isClubPing, disabled: readOnly }}
+            checked={isClubPing}
             disabled={readOnly}
-            onPress={() => setIsClubPing((value) => !value)}
-            style={{ flexDirection: 'row', alignItems: 'center', gap: theme.spacing.xs }}
-          >
-            <Ionicons
-              name={isClubPing ? 'checkbox' : 'square-outline'}
-              size={22}
-              color={theme.colors.primary}
-            />
-            <AppText variant="label">Ping club members</AppText>
-          </Pressable>
+            trailing={(
+              <RestrictedAccess
+                policy={roleAccessPolicies.pingClubMembers}
+                context="action"
+              />
+            )}
+            onChange={setIsClubPing}
+          />
         ) : null}
         <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: theme.spacing.xs }}>
           <IconButton
@@ -337,30 +426,20 @@ export const ChatSection = ({ actor, timeZone }: ChatSectionProps) => {
             disabled={readOnly}
             onPress={() => setPickerTarget({ kind: 'composer' })}
           />
-          <TextInput
-            accessibilityLabel="Chat message"
+          <FormTextInput
+            label="Chat message"
+            hideLabel
             placeholder="Message the club"
-            placeholderTextColor={theme.colors.textMuted}
             value={draft}
             onChangeText={setDraft}
             maxLength={CHAT_MESSAGE_CHARACTER_LIMIT}
             multiline
             editable={!readOnly}
-            style={[
-              theme.typography.body,
-              {
-                flex: 1,
-                maxHeight: 120,
-                minHeight: theme.layout.minTouchTarget,
-                paddingHorizontal: theme.spacing.sm,
-                paddingVertical: theme.spacing.xs,
-                color: theme.colors.text,
-                backgroundColor: theme.colors.surface,
-                borderWidth: 1,
-                borderColor: theme.colors.border,
-                borderRadius: theme.radii.field,
-              },
-            ]}
+            containerStyle={{ flex: 1 }}
+            style={{
+              maxHeight: 120,
+              minHeight: theme.layout.minTouchTarget,
+            }}
           />
           <IconButton
             icon="send"
@@ -377,7 +456,9 @@ export const ChatSection = ({ actor, timeZone }: ChatSectionProps) => {
       <ReactionMenu
         actor={actor}
         message={reactionTarget}
-        reactions={reactionTarget ? reactions.filter(({ messageId }) => messageId === reactionTarget.id) : []}
+        reactions={reactionTarget
+          ? reactionsByMessage.get(reactionTarget.id) ?? EMPTY_REACTIONS
+          : EMPTY_REACTIONS}
         onClose={() => setReactionTarget(undefined)}
         onSelect={(emoji) => {
           if (reactionTarget) void react(reactionTarget, emoji);
@@ -410,8 +491,7 @@ const ChatMessageCard = ({
   actor,
   message,
   reactions,
-  currentDayKey,
-  timeZone,
+  formattedDate,
   readOnly,
   onPress,
   onModerate,
@@ -420,8 +500,7 @@ const ChatMessageCard = ({
   readonly actor: User;
   readonly message: ChatMessage;
   readonly reactions: readonly ChatReaction[];
-  readonly currentDayKey: string;
-  readonly timeZone: string;
+  readonly formattedDate: string;
   readonly readOnly: boolean;
   readonly onPress: () => void;
   readonly onModerate: () => void;
@@ -429,7 +508,6 @@ const ChatMessageCard = ({
 }) => {
   const theme = useAppTheme();
   const name = message.author?.displayName ?? 'Campus Cats member';
-  const initial = name.charAt(0).toLocaleUpperCase() || '?';
   const mayModerate =
     canManageFeature(actor.role) &&
     actor.id !== message.createdById &&
@@ -457,27 +535,13 @@ const ChatMessageCard = ({
         })}
       >
         <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: theme.spacing.xs }}>
-          {message.author?.profilePhotoUrl ? (
-            <Image
-              source={{ uri: message.author.profilePhotoUrl }}
-              accessibilityLabel={`${name}'s profile photo`}
-              style={{ width: 40, height: 40, borderRadius: theme.radii.pill }}
-            />
-          ) : (
-            <View
-              accessibilityLabel={`${name}'s profile placeholder`}
-              style={{
-                width: 40,
-                height: 40,
-                borderRadius: theme.radii.pill,
-                alignItems: 'center',
-                justifyContent: 'center',
-                backgroundColor: theme.colors.primarySurface,
-              }}
-            >
-              <AppText variant="label" color="primary">{initial}</AppText>
-            </View>
-          )}
+          <ProfileAvatar
+            displayName={name}
+            photoUrl={message.author?.profilePhotoUrl}
+            size={40}
+            fallback="initial"
+            tone="primary"
+          />
           <View style={{ flex: 1, gap: theme.spacing.xxs }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: theme.spacing.xs }}>
               <AppText variant="label" style={{ flex: 1 }}>{name}</AppText>
@@ -494,7 +558,7 @@ const ChatMessageCard = ({
             </View>
             <AppText selectable>{message.body}</AppText>
             <AppText color="muted" variant="caption">
-              {formatMessageDate(message, currentDayKey, timeZone)}
+              {formattedDate}
             </AppText>
           </View>
         </View>
@@ -575,15 +639,20 @@ const ChatModerationModal = ({ actor, message, onClose, onFeedback }: {
   const name = message?.author?.displayName ?? 'this member';
 
   useEffect(() => {
+    let active = true;
     setMode('menu');
     setWarning('');
     setError(undefined);
     setRestriction(undefined);
     if (!userId) return;
     void appModules.chat.getRestriction(actor, userId).then((result) => {
+      if (!active) return;
       if (result.ok) setRestriction(result.value);
       else setError(result.error.message);
     });
+    return () => {
+      active = false;
+    };
   }, [actor.id, userId]);
 
   const run = async (action: () => Promise<{ ok: boolean; error?: { message: string } }>, success: string) => {
@@ -600,10 +669,12 @@ const ChatModerationModal = ({ actor, message, onClose, onFeedback }: {
 
   if (!message || !userId) return null;
   return (
-    <Modal visible transparent animationType="fade" onRequestClose={onClose}>
-      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: theme.spacing.lg }}>
-        <Pressable accessibilityLabel="Close chat moderation" onPress={onClose} style={{ position: 'absolute', inset: 0, backgroundColor: theme.colors.overlay }} />
-        <View style={{ width: '100%', maxWidth: 440, gap: theme.spacing.sm, padding: theme.spacing.md, borderRadius: theme.radii.sheet, backgroundColor: theme.colors.surface }}>
+    <Dialog
+      visible
+      closeLabel="Close chat moderation"
+      maxWidth={440}
+      onClose={onClose}
+    >
           {error ? <FeedbackBanner message={error} tone="danger" /> : null}
           {mode === 'warning' ? (
             <>
@@ -638,9 +709,7 @@ const ChatModerationModal = ({ actor, message, onClose, onFeedback }: {
               <Button label="Cancel chat actions" variant="tertiary" onPress={onClose} />
             </>
           )}
-        </View>
-      </View>
-    </Modal>
+    </Dialog>
   );
 };
 
@@ -659,16 +728,7 @@ const aggregateReactions = (
   return [...grouped.entries()].map(([emoji, value]) => ({ emoji, ...value }));
 };
 
-const formatMessageDate = (
-  message: ChatMessage,
-  currentDayKey: string,
-  timeZone: string,
-): string =>
-  new Intl.DateTimeFormat(undefined, {
-    dateStyle: 'medium',
-    ...(message.dayKey === currentDayKey ? { timeStyle: 'short' as const } : {}),
-    timeZone,
-  }).format(message.createdAt);
+const EMPTY_REACTIONS: readonly ChatReaction[] = Object.freeze([]);
 
 const formatDateTime = (date: Date, timeZone: string): string =>
   new Intl.DateTimeFormat(undefined, {

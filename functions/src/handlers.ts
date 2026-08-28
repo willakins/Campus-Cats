@@ -45,7 +45,7 @@ export interface PushMessage {
 
 export interface HandlerDependencies {
   getUser(id: string): Promise<ManagedUser | undefined>;
-  getPlatformAdmin(id: string): Promise<ManagedUser | undefined>;
+  getDeveloper(id: string): Promise<ManagedUser | undefined>;
   getBillingSummary(): Promise<BillingSummary>;
   listPushTokens(clubId: string): Promise<readonly string[]>;
   sendPushBatch(messages: readonly PushMessage[]): Promise<void>;
@@ -123,11 +123,11 @@ export async function handleGetBillingSummary(
   if (!request.authUid) {
     throw new HandlerError('unauthenticated', 'Authentication required');
   }
-  const actor = await dependencies.getPlatformAdmin(request.authUid);
+  const actor = await dependencies.getDeveloper(request.authUid);
   if (!actor) {
     throw new HandlerError(
       'permission-denied',
-      'Platform administrator access required',
+      'Developer-only access is required to view infrastructure costs',
     );
   }
   return dependencies.getBillingSummary();

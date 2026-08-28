@@ -1,0 +1,12 @@
+{
+  "name": "campus-cats-chat-functions",
+  "private": true,
+  "engines": {
+    "node": "22"
+  },
+  "main": "lib/chatCallables.js",
+  "dependencies": {
+    "firebase-admin": "^14.2.0",
+    "firebase-functions": "^7.3.2"
+  }
+}
