@@ -8,6 +8,13 @@ export {
   cleanupDeletedStationComments,
 } from './commentCleanup';
 export {runInaturalistSync, syncInaturalistDaily} from './inaturalistFunctions';
+export {
+  markChatPingsRead,
+  muteChatUser,
+  sendChatMessage,
+  setChatReaction,
+  setChatUserBanned,
+} from './chatCallables';
 
 import sgMail from '@sendgrid/mail';
 import { getApps, initializeApp } from 'firebase-admin/app';
@@ -100,15 +107,6 @@ import {
 import { handleSignedStripeWebhook } from './stripeWebhook';
 import { ClubProvisioningService } from './clubProvisioning';
 import { UniversityCatalogService } from './universityCatalog';
-import {
-  ChatDependencies,
-  ChatMessageRecord,
-  handleMarkChatPingsRead,
-  handleMuteChatUser,
-  handleSendChatMessage,
-  handleSetChatReaction,
-  handleSetChatUserBanned,
-} from './chat';
 import {
   FirebaseClubSetupRequestRepository,
   UniversityOnboardingDependencies,
@@ -417,19 +415,15 @@ const dependencies: HandlerDependencies = {
     };
   },
 
-  async getPlatformAdmin(id) {
+  async getDeveloper(id) {
     const snapshot = await firestore.collection('users').doc(id).get();
     const data = snapshot.data();
     if (
       !snapshot.exists ||
       data?.banned === true ||
-      data?.platformAdmin !== true ||
+      data?.role !== 4 ||
       typeof data.email !== 'string' ||
-      (data.role !== 0 &&
-        data.role !== 1 &&
-        data.role !== 2 &&
-        data.role !== 3 &&
-        data.role !== 4)
+      typeof data.clubId !== 'string'
     ) {
       return undefined;
     }
@@ -437,8 +431,8 @@ const dependencies: HandlerDependencies = {
       id: snapshot.id,
       email: data.email,
       role: data.role,
-      clubId: typeof data.clubId === 'string' ? data.clubId : 'campus-cats',
-      platformAdmin: true,
+      clubId: data.clubId,
+      platformAdmin: data.platformAdmin === true,
       banned: false,
     };
   },
@@ -920,151 +914,6 @@ const dependencies: HandlerDependencies = {
     }
   },
 };
-
-const chatDependencies: ChatDependencies = {
-  now: () => new Date(),
-  getUser: (id) => dependencies.getUser(id),
-  async getClub(clubId) {
-    const snapshot = await firestore.collection('clubs').doc(clubId).get();
-    const data = snapshot.data();
-    if (
-      !snapshot.exists ||
-      typeof data?.name !== 'string' ||
-      typeof data.timezone !== 'string'
-    ) {
-      throw new HandlerError('internal', 'Stored club is invalid');
-    }
-    return { name: data.name, timezone: data.timezone };
-  },
-  async getPublicProfileName(userId, clubId) {
-    const snapshot = await tenantCollection(clubId, 'public-profiles')
-      .doc(userId)
-      .get();
-    const displayName = snapshot.data()?.displayName;
-    return typeof displayName === 'string' && displayName.trim()
-      ? displayName.trim()
-      : undefined;
-  },
-  async getMessage(clubId, id) {
-    const snapshot = await tenantCollection(clubId, 'chat-messages').doc(id).get();
-    if (!snapshot.exists) return undefined;
-    return storedChatMessage(snapshot.id, snapshot.data());
-  },
-  async putMessage(clubId, message) {
-    await tenantCollection(clubId, 'chat-messages').doc(message.id).create({
-      body: message.body,
-      createdById: message.createdById,
-      createdAt: Timestamp.fromDate(message.createdAt),
-      dayKey: message.dayKey,
-      isClubPing: message.isClubPing,
-    });
-  },
-  async getReaction(clubId, id) {
-    const snapshot = await tenantCollection(clubId, 'chat-reactions').doc(id).get();
-    const emoji = snapshot.data()?.emoji;
-    return typeof emoji === 'string' ? emoji : undefined;
-  },
-  async putReaction(clubId, id, reaction) {
-    await tenantCollection(clubId, 'chat-reactions').doc(id).set({
-      messageId: reaction.messageId,
-      messageDayKey: reaction.messageDayKey,
-      userId: reaction.userId,
-      emoji: reaction.emoji,
-      updatedAt: Timestamp.fromDate(reaction.updatedAt),
-    });
-  },
-  async removeReaction(clubId, id) {
-    await tenantCollection(clubId, 'chat-reactions').doc(id).delete();
-  },
-  async getRestriction(clubId, userId) {
-    const snapshot = await tenantCollection(clubId, 'chat-restrictions')
-      .doc(userId)
-      .get();
-    if (!snapshot.exists) return undefined;
-    const data = snapshot.data();
-    if (
-      typeof data?.chatBanned !== 'boolean' ||
-      !(data.updatedAt instanceof Timestamp) ||
-      typeof data.updatedById !== 'string' ||
-      (data.mutedUntil !== undefined && !(data.mutedUntil instanceof Timestamp))
-    ) {
-      throw new HandlerError('internal', 'Stored chat restriction is invalid');
-    }
-    return {
-      userId: snapshot.id,
-      ...(data.mutedUntil instanceof Timestamp
-        ? { mutedUntil: data.mutedUntil.toDate() }
-        : {}),
-      chatBanned: data.chatBanned,
-      updatedAt: data.updatedAt.toDate(),
-      updatedById: data.updatedById,
-    };
-  },
-  async putRestriction(clubId, restriction) {
-    await tenantCollection(clubId, 'chat-restrictions')
-      .doc(restriction.userId)
-      .set({
-        chatBanned: restriction.chatBanned,
-        ...(restriction.mutedUntil
-          ? { mutedUntil: Timestamp.fromDate(restriction.mutedUntil) }
-          : {}),
-        updatedAt: Timestamp.fromDate(restriction.updatedAt),
-        updatedById: restriction.updatedById,
-      });
-  },
-  async latestPing(clubId) {
-    const snapshot = await tenantCollection(clubId, 'chat-messages')
-      .where('isClubPing', '==', true)
-      .orderBy('createdAt', 'desc')
-      .limit(1)
-      .get();
-    const document = snapshot.docs[0];
-    return document ? storedChatMessage(document.id, document.data()) : undefined;
-  },
-  async putPingReadState(clubId, state) {
-    await tenantCollection(clubId, 'chat-ping-reads').doc(state.userId).set({
-      lastReadPingId: state.lastReadPingId,
-      lastReadPingAt: Timestamp.fromDate(state.lastReadPingAt),
-    });
-  },
-  async listPushRecipients(clubId) {
-    const snapshot = await firestore
-      .collection('users')
-      .where('clubId', '==', clubId)
-      .get();
-    return snapshot.docs.flatMap((document) => {
-      const data = document.data();
-      return data.banned !== true && typeof data.expoPushToken === 'string'
-        ? [{ userId: document.id, token: data.expoPushToken }]
-        : [];
-    });
-  },
-  sendPushBatch: (messages) => dependencies.sendPushBatch(messages),
-};
-
-function storedChatMessage(
-  id: string,
-  data: Record<string, unknown> | undefined,
-): ChatMessageRecord {
-  if (
-    !data ||
-    typeof data.body !== 'string' ||
-    typeof data.createdById !== 'string' ||
-    !(data.createdAt instanceof Timestamp) ||
-    typeof data.dayKey !== 'string' ||
-    typeof data.isClubPing !== 'boolean'
-  ) {
-    throw new HandlerError('internal', 'Stored chat message is invalid');
-  }
-  return {
-    id,
-    body: data.body,
-    createdById: data.createdById,
-    createdAt: data.createdAt.toDate(),
-    dayKey: data.dayKey,
-    isClubPing: data.isClubPing,
-  };
-}
 
 const surveySubmissionDependencies: SurveySubmissionDependencies = {
   getUser: dependencies.getUser,
@@ -1661,26 +1510,6 @@ export const removeManagedUser = onCall((request) =>
 
 export const sendAnnouncement = onCall((request) =>
   execute(() => handleSendAnnouncement(requestFor(request), dependencies)),
-);
-
-export const sendChatMessage = onCall((request) =>
-  execute(() => handleSendChatMessage(requestFor(request), chatDependencies)),
-);
-
-export const setChatReaction = onCall((request) =>
-  execute(() => handleSetChatReaction(requestFor(request), chatDependencies)),
-);
-
-export const markChatPingsRead = onCall((request) =>
-  execute(() => handleMarkChatPingsRead(requestFor(request), chatDependencies)),
-);
-
-export const muteChatUser = onCall((request) =>
-  execute(() => handleMuteChatUser(requestFor(request), chatDependencies)),
-);
-
-export const setChatUserBanned = onCall((request) =>
-  execute(() => handleSetChatUserBanned(requestFor(request), chatDependencies)),
 );
 
 export const submitWhitelistApplication = onCall((request) =>

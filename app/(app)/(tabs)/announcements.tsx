@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { FlatList, View } from 'react-native';
 
-import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 
 import {
   CommunitySection,
@@ -26,6 +26,7 @@ import {
   SegmentedControl,
 } from '@/components/design';
 import { AnnouncementItem } from '@/components/items/AnnouncementItem';
+import { useFocusTask } from '@/components/hooks/useFocusTask';
 import { appModules } from '@/composition/appModules';
 import {
   CommunityVote,
@@ -109,7 +110,7 @@ const Community = () => {
     [actor.id],
   );
 
-  const load = useCallback(async () => {
+  const load = useCallback(async (isActive: () => boolean = () => true) => {
     setLoading(true);
     setErrors({});
     const [announcementResult, eventResult, surveyResult, voteResult] =
@@ -119,6 +120,7 @@ const Community = () => {
         appModules.surveys.list(actor),
         appModules.communityVoting.list(actor),
       ]);
+    if (!isActive()) return;
     if (announcementResult.ok) setAnnouncements(announcementResult.value);
     else
       setErrors((current) => ({
@@ -151,6 +153,7 @@ const Community = () => {
           )
         : undefined,
     ]);
+    if (!isActive()) return;
     setHasIncompleteSurvey(
       surveyAttentionResult?.ok ? surveyAttentionResult.value : false,
     );
@@ -160,11 +163,7 @@ const Community = () => {
     setLoading(false);
   }, [actor.id, actor.role]);
 
-  useFocusEffect(
-    useCallback(() => {
-      void load();
-    }, [load]),
-  );
+  useFocusTask(load);
 
   const now = useMemo(() => new Date(), [events, votes]);
   const visibleEvents = useMemo(

@@ -8,13 +8,70 @@ import { StatusPill } from './Status';
 interface MediaPickerProps {
   readonly photos: readonly string[];
   readonly coverUri?: string;
+  readonly mode?: 'gallery' | 'single';
+  readonly photoLabel?: string;
   readonly onAdd?: () => void;
   readonly onPromote?: (uri: string) => void;
   readonly onRemove?: (uri: string) => void;
 }
 
-export const MediaPicker = ({ photos, coverUri, onAdd, onPromote, onRemove }: MediaPickerProps) => {
+export const MediaPicker = ({
+  photos,
+  coverUri,
+  mode = 'gallery',
+  photoLabel = 'Photo',
+  onAdd,
+  onPromote,
+  onRemove,
+}: MediaPickerProps) => {
   const theme = useAppTheme();
+
+  if (mode === 'single') {
+    const photo = photos[0];
+    const controlLabel = photoLabel.toLocaleLowerCase();
+    return (
+      <View style={{ alignItems: 'center', gap: theme.spacing.md }}>
+        {photo ? (
+          <Image
+            source={{ uri: photo }}
+            accessibilityLabel={`${photoLabel} preview`}
+            style={{
+              width: 160,
+              height: 160,
+              borderRadius: theme.radii.pill,
+            }}
+          />
+        ) : null}
+        <View
+          style={{
+            flexDirection: 'row',
+            flexWrap: 'wrap',
+            justifyContent: 'center',
+            gap: theme.spacing.xs,
+          }}
+        >
+          {onAdd ? (
+            <Button
+              label={`${photo ? 'Change' : 'Add'} ${controlLabel}`}
+              icon="camera-outline"
+              variant="secondary"
+              size="small"
+              onPress={onAdd}
+            />
+          ) : null}
+          {photo && onRemove ? (
+            <Button
+              label={`Remove ${controlLabel}`}
+              variant="danger"
+              size="small"
+              onPress={() => onRemove(photo)}
+            />
+          ) : null}
+        </View>
+      </View>
+    );
+  }
+
   return (
     <View style={{ gap: theme.spacing.md }}>
       {onAdd ? (

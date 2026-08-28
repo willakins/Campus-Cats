@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Image, Linking, Modal, Pressable, View } from 'react-native';
+import { Linking, Pressable, View } from 'react-native';
 
 import { appModules } from '@/composition/appModules';
 import {
@@ -15,12 +15,15 @@ import {
   AppText,
   Button,
   Card,
+  Dialog,
   FeedbackBanner,
   FormSection,
   IconButton,
   Skeleton,
 } from '../design';
 import { FormTextInput } from '../forms';
+import { ProfileAvatar } from '../profile';
+import { IncrementalHistoryList } from '../collections/IncrementalHistoryList';
 
 interface CommentsSectionProps {
   readonly actor: User;
@@ -184,10 +187,13 @@ export const CommentsSection = ({ actor, target }: CommentsSectionProps) => {
         ) : comments.length === 0 ? (
           <AppText color="muted">No comments yet. Start the conversation.</AppText>
         ) : (
-          <View style={{ gap: theme.spacing.sm }}>
-            {comments.map((comment) => (
+          <IncrementalHistoryList
+            items={comments}
+            itemName="comments"
+            resetKey={`${target.kind}:${target.id}`}
+            keyExtractor={(comment) => comment.id}
+            renderItem={(comment) => (
               <CommentCard
-                key={comment.id}
                 actor={actor}
                 comment={comment}
                 busy={actionBusyId === comment.id}
@@ -195,8 +201,8 @@ export const CommentsSection = ({ actor, target }: CommentsSectionProps) => {
                 onWarn={(message) => warn(comment, message)}
                 onBan={() => ban(comment)}
               />
-            ))}
-          </View>
+            )}
+          />
         )}
       </FormSection>
     </View>
@@ -229,7 +235,6 @@ const CommentCard = ({
     : comment.author?.displayName ?? 'Campus Cats member';
   const profilePhotoUrl = imported ? undefined : comment.author?.profilePhotoUrl;
   const sourceUrl = comment.sourceUrl;
-  const authorInitial = authorName.trim().charAt(0).toLocaleUpperCase() || '?';
   const mayModerate = canManageFeature(actor.role);
   const mayDiscipline =
     mayModerate &&
@@ -247,29 +252,13 @@ const CommentCard = ({
               gap: theme.spacing.xs,
             }}
           >
-            {profilePhotoUrl ? (
-              <Image
-                accessibilityLabel={`${authorName}'s profile photo`}
-                source={{ uri: profilePhotoUrl }}
-                style={{ width: 36, height: 36, borderRadius: theme.radii.pill }}
-              />
-            ) : (
-              <View
-                accessibilityLabel={`${authorName}'s profile placeholder`}
-                style={{
-                  width: 36,
-                  height: 36,
-                  borderRadius: theme.radii.pill,
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  backgroundColor: theme.colors.primarySurface,
-                }}
-              >
-                <AppText variant="label" color="primary">
-                  {authorInitial}
-                </AppText>
-              </View>
-            )}
+            <ProfileAvatar
+              displayName={authorName}
+              photoUrl={profilePhotoUrl}
+              size={36}
+              fallback="initial"
+              tone="primary"
+            />
             <View style={{ flex: 1 }}>
               <AppText variant="label">{authorName}</AppText>
               {imported && sourceUrl ? (
@@ -371,42 +360,11 @@ const CommentActionsMenu = ({
   };
 
   return (
-    <Modal
+    <Dialog
       visible={visible}
-      transparent
-      animationType="fade"
-      presentationStyle="overFullScreen"
-      statusBarTranslucent
-      onRequestClose={close}
+      closeLabel="Close comment actions"
+      onClose={close}
     >
-      <View
-        style={{
-          flex: 1,
-          alignItems: 'center',
-          justifyContent: 'center',
-          padding: theme.layout.screenGutter,
-        }}
-      >
-        <Pressable
-          accessibilityLabel="Close comment actions"
-          onPress={close}
-          style={{
-            position: 'absolute',
-            inset: 0,
-            backgroundColor: theme.colors.overlay,
-          }}
-        />
-        <View
-          accessibilityViewIsModal
-          style={{
-            width: '100%',
-            maxWidth: 420,
-            gap: theme.spacing.sm,
-            padding: theme.spacing.md,
-            borderRadius: theme.radii.sheet,
-            backgroundColor: theme.colors.surface,
-          }}
-        >
           {actionError ? (
             <FeedbackBanner message={actionError} tone="danger" />
           ) : null}
@@ -508,8 +466,6 @@ const CommentActionsMenu = ({
               />
             </>
           )}
-        </View>
-      </View>
-    </Modal>
+    </Dialog>
   );
 };

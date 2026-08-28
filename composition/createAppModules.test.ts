@@ -14,6 +14,7 @@ import {
   Role,
   SequenceIdGenerator,
   createPersistenceCodecs,
+  parseChatDay,
   parseUser,
 } from '../core/domain';
 import { AppInfrastructure, createAppModules } from './createAppModules';
@@ -65,6 +66,8 @@ describe('createAppModules', () => {
         },
       },
       chat: {
+        getDay: async (_actor, dayKey) =>
+          parseChatDay({ dayKey, messages: [], reactions: [] }),
         observeDay: () => () => undefined,
         findPreviousActiveDay: async () => undefined,
         sendMessage: async () => {

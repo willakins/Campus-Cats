@@ -9,6 +9,7 @@ import {
 } from 'react-native';
 
 import { useAppTheme, useReducedMotion } from '../../theme';
+import { cardSurfaceStyle } from './Surfaces';
 
 interface LoadingRegionProps {
   readonly label: string;
@@ -122,14 +123,7 @@ const TextLines = ({ compact = false }: { readonly compact?: boolean }) => {
 
 const SkeletonCard = ({ layout }: { readonly layout: ListSkeletonLayout }) => {
   const theme = useAppTheme();
-  const baseStyle: StyleProp<ViewStyle> = [
-    theme.elevation.card,
-    {
-      overflow: 'hidden',
-      borderRadius: theme.radii.card,
-      backgroundColor: theme.colors.surface,
-    },
-  ];
+  const baseStyle = cardSurfaceStyle(theme, { padded: false });
 
   if (layout === 'cover') {
     return (
@@ -227,13 +221,8 @@ export const DetailSkeleton = ({ label }: { readonly label: string }) => {
           <View
             key={item}
             style={[
-              theme.elevation.card,
-              {
-                gap: theme.spacing.sm,
-                padding: theme.spacing.md,
-                borderRadius: theme.radii.card,
-                backgroundColor: theme.colors.surface,
-              },
+              cardSurfaceStyle(theme),
+              { gap: theme.spacing.sm },
             ]}
           >
             <SkeletonShape width="38%" height={22} borderRadius={theme.radii.pill} />
@@ -301,15 +290,7 @@ export const StartupSkeleton = ({ label }: { readonly label: string }) => {
           <SkeletonShape width="82%" height={16} borderRadius={theme.radii.pill} />
         </View>
         <View
-          style={[
-            theme.elevation.card,
-            {
-              padding: theme.spacing.md,
-              gap: theme.spacing.sm,
-              borderRadius: theme.radii.card,
-              backgroundColor: theme.colors.surface,
-            },
-          ]}
+          style={[cardSurfaceStyle(theme), { gap: theme.spacing.sm }]}
         >
           <SkeletonShape height={48} borderRadius={theme.radii.pill} />
           <SkeletonShape width="44%" height={14} borderRadius={theme.radii.pill} />

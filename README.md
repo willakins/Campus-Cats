@@ -5,7 +5,7 @@
 <h1 align="center">Campus Cats</h1>
 
 <p align="center">
-  A cross-platform operations hub for university communities caring for campus cats.
+  A mobile operations hub for university communities caring for campus cats.
 </p>
 
 <p align="center">
@@ -34,11 +34,11 @@ Campus Cats brings those workflows into one mobile experience. Members can recor
 | **Feeding stations**           | Track station locations and restocking information, with stocked/unstocked filtering for faster coordination.                                   |
 | **Announcements**              | Give officers a central place to publish updates and send push notifications to members.                                                        |
 | **Community engagement**       | Group announcements, events, surveys, voting, and a club-wide chat with reactions, officer pings, and moderation in one Community tab.          |
-| **Community access**           | Discover a university club, retain Georgia Tech SSO, and provide tenant-aware email access workflows.                                          |
-| **Club onboarding**            | Search a verified U.S. university directory and securely invite a school-domain President to launch a branded club.                            |
-| **Role-aware administration**  | Separate club roles from global platform administration, with an atomic presidential succession workflow.                                    |
+| **Community access**           | Discover a university club, retain Georgia Tech SSO, and provide tenant-aware email access workflows.                                           |
+| **Club onboarding**            | Search a verified U.S. university directory and securely invite a school-domain President to launch a branded club.                             |
+| **Role-aware administration**  | Separate club roles from global platform administration, with an atomic presidential succession workflow.                                       |
 | **iNaturalist integration**    | Bring public Georgia Tech project sightings and guide profiles into the existing map and catalog through a daily, attributed, read-only import. |
-| **Subscription billing**       | Give each club isolated data, usage-based Stripe billing, hosted invoices, and President-managed payment controls.                             |
+| **Subscription billing**       | Give each club isolated data, usage-based Stripe billing, hosted invoices, and President-managed payment controls.                              |
 | **President-managed settings** | Change login branding and accessible app colors, and control whether Campus Cats contributor identities are visible to Members.                 |
 | **Member moderation**          | Power-role users can record disciplinary notices and ban or restore Member accounts with Firebase-enforced login blocking.                      |
 
@@ -47,7 +47,7 @@ Campus Cats brings those workflows into one mobile experience. Members can recor
 - **Built for a real community partner:** the team translated Campus Cats' caregiving and coordination needs into a working product.
 - **End-to-end mobile engineering:** one codebase connects maps, geolocation, image uploads, authentication, cloud data, notifications, and email workflows.
 - **Thoughtful permission design:** navigation and editing controls adapt to user roles, while report owners retain control over their own submissions.
-- **Cross-platform delivery:** Expo and React Native provide a shared foundation for iOS, Android, and web targets.
+- **Native mobile delivery:** Expo and React Native provide a shared foundation for the supported iOS and Android apps.
 - **Collaborative execution:** five developers worked through iterative sprints on a layered, service-oriented application.
 
 ## Architecture
@@ -94,11 +94,14 @@ npm ci
 npx expo start
 ```
 
-The interface can be explored locally, but authentication, maps, notifications, email, and data-backed features depend on their corresponding service configuration and access. See the [installation guide](Installation-Guide.md) for platform options, configuration notes, and troubleshooting.
+Use the Expo prompt to open the iOS or Android app. `npm run web` is also available as a local development and smoke-testing convenience, but Campus Cats does not ship or support a production web application.
+
+Authentication, maps, notifications, email, and data-backed features depend on their corresponding service configuration and access. See the [installation guide](Installation-Guide.md) for platform options, configuration notes, and troubleshooting.
 
 ## Project documentation
 
 - [Installation guide](Installation-Guide.md)
+- [System design](system-design.md)
 - [Release notes](CHANGELOG.md)
 - [Detailed design document](Detailed%20Design%20Document.pdf) — the team's original capstone design artifact; it includes planned ideas beyond the final v1 scope
 - [Firebase operations](FIREBASE.md)

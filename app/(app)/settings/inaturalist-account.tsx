@@ -2,7 +2,7 @@ import { useCallback, useState } from 'react';
 import { Alert, Linking, View } from 'react-native';
 
 import * as WebBrowser from 'expo-web-browser';
-import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 
 import {
   AppHeader,
@@ -15,6 +15,7 @@ import {
   Screen,
   StatusPill,
 } from '@/components/design';
+import { useFocusTask } from '@/components/hooks/useFocusTask';
 import { appModules } from '@/composition/appModules';
 import { InaturalistAccountLinkStatus, parseUser } from '@/core/domain';
 import { useAuth } from '@/providers';
@@ -35,13 +36,17 @@ const InaturalistAccount = () => {
   const [feedback, setFeedback] = useState<string>();
 
   const load = useCallback(
-    async (attemptId?: string) => {
+    async (
+      attemptId?: string,
+      isActive: () => boolean = () => true,
+    ) => {
       setLoading(true);
       setError(undefined);
       const result = await appModules.inaturalistAccounts.status(
         actor,
         attemptId ?? params.attempt,
       );
+      if (!isActive()) return;
       setLoading(false);
       if (!result.ok) {
         setError(result.error.message);
@@ -56,12 +61,11 @@ const InaturalistAccount = () => {
     },
     [actor.id, params.attempt],
   );
-
-  useFocusEffect(
-    useCallback(() => {
-      void load();
-    }, [load]),
+  const loadOnFocus = useCallback(
+    (isActive: () => boolean) => load(undefined, isActive),
+    [load],
   );
+  useFocusTask(loadOnFocus);
 
   const connect = async () => {
     if (busy) return;

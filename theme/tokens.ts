@@ -53,13 +53,7 @@ export interface AppTheme {
     readonly xxxl: 40;
     readonly huge: 48;
   };
-  readonly radii: {
-    readonly field: 12;
-    readonly chip: 16;
-    readonly card: 20;
-    readonly sheet: 28;
-    readonly pill: 999;
-  };
+  readonly radii: typeof radii;
   readonly typography: {
     readonly display: TextStyle;
     readonly pageTitle: TextStyle;
@@ -85,6 +79,21 @@ export interface AppTheme {
   };
   readonly paper: MD3Theme;
 }
+
+export const APP_HEX_COLOR_PALETTE = [
+  '#18314F',
+  '#0057B8',
+  '#28647D',
+  '#287D78',
+  '#26734D',
+  '#B58A16',
+  '#C65F00',
+  '#B94C3C',
+  '#B23A3A',
+  '#8064A2',
+  '#6C4F3D',
+  '#22241F',
+] as const;
 
 const spacing = {
   xxs: 4,

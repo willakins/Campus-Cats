@@ -31,10 +31,32 @@ interface ChatDependencies {
   };
 }
 
+const MAX_PROFILE_CACHE_SIZE = 200;
+
 export class ChatModule {
   readonly #profiles = new Map<string, PublicProfile | undefined>();
+  readonly #profileLoads = new Map<
+    string,
+    Promise<PublicProfile | undefined>
+  >();
 
   constructor(private readonly dependencies: ChatDependencies) {}
+
+  async loadDay(
+    actor: User | undefined,
+    dayKey: string,
+  ): Promise<Outcome<ChatDay>> {
+    if (!actor) return failure('unauthenticated', 'Sign in to view chat');
+    try {
+      return success(
+        await this.withAuthors(
+          await this.dependencies.gateway.getDay(actor, dayKey),
+        ),
+      );
+    } catch {
+      return failure('dependency_failure', 'Could not load chat');
+    }
+  }
 
   observeDay(
     actor: User | undefined,
@@ -260,19 +282,45 @@ export class ChatModule {
     return parseChatMessage({ ...message, ...(author ? { author } : {}) });
   }
 
-  private async profile(id: string): Promise<PublicProfile | undefined> {
-    if (this.#profiles.has(id)) return this.#profiles.get(id);
+  private profile(id: string): Promise<PublicProfile | undefined> {
+    if (this.#profiles.has(id)) {
+      const cached = this.#profiles.get(id);
+      this.#profiles.delete(id);
+      this.#profiles.set(id, cached);
+      return Promise.resolve(cached);
+    }
+    const pending = this.#profileLoads.get(id);
+    if (pending) return pending;
+
+    const load = this.loadProfile(id)
+      .then((profile) => {
+        this.rememberProfile(id, profile);
+        return profile;
+      })
+      .finally(() => this.#profileLoads.delete(id));
+    this.#profileLoads.set(id, load);
+    return load;
+  }
+
+  private async loadProfile(id: string): Promise<PublicProfile | undefined> {
     try {
       const document = await this.dependencies.documents.get('public-profiles', id);
-      const profile = document
+      return document
         ? this.dependencies.codecs.publicProfile.decode(document.id, document.data)
         : undefined;
-      this.#profiles.set(id, profile);
-      return profile;
     } catch {
-      this.#profiles.set(id, undefined);
       return undefined;
     }
+  }
+
+  private rememberProfile(
+    id: string,
+    profile: PublicProfile | undefined,
+  ): void {
+    this.#profiles.set(id, profile);
+    if (this.#profiles.size <= MAX_PROFILE_CACHE_SIZE) return;
+    const oldest = this.#profiles.keys().next().value;
+    if (oldest !== undefined) this.#profiles.delete(oldest);
   }
 }
 

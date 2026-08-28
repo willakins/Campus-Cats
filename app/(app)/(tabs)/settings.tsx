@@ -75,6 +75,10 @@ const Settings = () => {
     actor.role,
     roleAccessPolicies.manageAppSettings,
   );
+  const canViewInfrastructureCosts = canAccessRolePolicy(
+    actor.role,
+    roleAccessPolicies.viewInfrastructureCosts,
+  );
   const hasPresidentTools = canManageBilling || canManageSettings;
   const router = useRouter();
   const theme = useAppTheme();
@@ -85,17 +89,24 @@ const Settings = () => {
   const [savingContacts, setSavingContacts] = useState(false);
   const [error, setError] = useState<string>();
 
-  const loadContacts = useCallback(async () => {
+  const loadContacts = useCallback(async (
+    isActive: () => boolean = () => true,
+  ) => {
     setLoadingContacts(true);
     setError(undefined);
     const result = await appModules.contacts.list(actor);
+    if (!isActive()) return;
     setLoadingContacts(false);
     if (result.ok) setContacts(result.value);
     else setError(result.error.message);
   }, [actor.id]);
 
   useEffect(() => {
-    void loadContacts();
+    let active = true;
+    void loadContacts(() => active);
+    return () => {
+      active = false;
+    };
   }, [loadContacts]);
 
   const changeContact = (
@@ -188,9 +199,14 @@ const Settings = () => {
         eyebrow="Campus Cats field guide"
         action={
           <IconButton
-            accessibilityLabel="Open account"
+            accessibilityLabel="Open profile"
             icon="person-circle-outline"
-            onPress={() => router.push('/settings/account' as never)}
+            onPress={() =>
+              router.push({
+                pathname: '/profile/view-profile',
+                params: { id: actor.id },
+              })
+            }
           />
         }
       />
@@ -223,7 +239,7 @@ const Settings = () => {
           }
         >
           {loadingContacts ? (
-            <CardListSkeleton label="Loading club contacts" count={2} />
+            <CardListSkeleton label="Loading club contacts" count={1} />
           ) : contacts.length === 0 ? (
             <EmptyState
               title="No contacts yet"
@@ -295,59 +311,59 @@ const Settings = () => {
                   </View>
                 </Card>
               ) : (
-                <Card key={contact.id} accent={theme.colors.gold}>
-                  <View style={{ gap: theme.spacing.sm }}>
-                    <AppText variant="cardTitle">{contact.name}</AppText>
-                    <AppText color="muted" selectable>
-                      {contact.email}
-                    </AppText>
-                    {contact.instagramUrl ||
-                    contact.facebookUrl ||
-                    contact.websiteUrl ? (
-                      <View
-                        style={{
-                          flexDirection: 'row',
-                          flexWrap: 'wrap',
-                          gap: theme.spacing.xs,
-                        }}
-                      >
-                        {contact.instagramUrl ? (
-                          <Button
-                            label="Instagram"
-                            icon="logo-instagram"
-                            variant="tertiary"
-                            size="small"
-                            onPress={() =>
-                              void Linking.openURL(contact.instagramUrl)
-                            }
-                          />
-                        ) : null}
-                        {contact.facebookUrl ? (
-                          <Button
-                            label="Facebook"
-                            icon="logo-facebook"
-                            variant="tertiary"
-                            size="small"
-                            onPress={() =>
-                              void Linking.openURL(contact.facebookUrl)
-                            }
-                          />
-                        ) : null}
-                        {contact.websiteUrl ? (
-                          <Button
-                            label="Website"
-                            icon="globe-outline"
-                            variant="tertiary"
-                            size="small"
-                            onPress={() =>
-                              void Linking.openURL(contact.websiteUrl)
-                            }
-                          />
-                        ) : null}
-                      </View>
+                <View key={contact.id} style={{ gap: theme.spacing.xxs }}>
+                  <AppText variant="label">{contact.name}</AppText>
+                  <View
+                    style={{
+                      flexDirection: 'row',
+                      flexWrap: 'wrap',
+                      gap: theme.spacing.xxs,
+                    }}
+                  >
+                    <Button
+                      label={contact.email}
+                      icon="mail-outline"
+                      variant="tertiary"
+                      size="small"
+                      onPress={() =>
+                        void Linking.openURL(`mailto:${contact.email}`)
+                      }
+                    />
+                    {contact.instagramUrl ? (
+                      <Button
+                        label="Instagram"
+                        icon="logo-instagram"
+                        variant="tertiary"
+                        size="small"
+                        onPress={() =>
+                          void Linking.openURL(contact.instagramUrl)
+                        }
+                      />
+                    ) : null}
+                    {contact.facebookUrl ? (
+                      <Button
+                        label="Facebook"
+                        icon="logo-facebook"
+                        variant="tertiary"
+                        size="small"
+                        onPress={() =>
+                          void Linking.openURL(contact.facebookUrl)
+                        }
+                      />
+                    ) : null}
+                    {contact.websiteUrl ? (
+                      <Button
+                        label="Website"
+                        icon="globe-outline"
+                        variant="tertiary"
+                        size="small"
+                        onPress={() =>
+                          void Linking.openURL(contact.websiteUrl)
+                        }
+                      />
                     ) : null}
                   </View>
-                </Card>
+                </View>
               ),
             )
           )}
@@ -422,7 +438,7 @@ const Settings = () => {
           </FormSection>
         ) : null}
 
-        {actor.platformAdmin ? (
+        {canViewInfrastructureCosts ? (
           <FormSection title="Platform administration">
             <ListRow
               title="Infrastructure Costs"

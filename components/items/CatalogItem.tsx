@@ -8,7 +8,14 @@ import { appModules } from '@/composition/appModules';
 import { CatalogRecord, CatalogTag } from '@/core/domain';
 import { DisplayMediaAsset } from '@/core/ports';
 import { useAppTheme } from '@/theme';
-import { AppText, Card, IconButton, Skeleton, StatusPill } from '../design';
+import {
+  AppText,
+  Card,
+  CardContent,
+  IconButton,
+  Skeleton,
+  StatusPill,
+} from '../design';
 import { ProgressiveImage } from '../ui/ProgressiveImage';
 
 interface CatalogItemMetrics {
@@ -57,7 +64,7 @@ export const CatalogItem = React.memo(function CatalogItem({
   }, [entry.id]);
 
   return (
-    <Card style={{ flex: 1, padding: 0 }}>
+    <Card padded={false} style={{ flex: 1 }}>
       <Pressable
         accessibilityRole="button"
         accessibilityLabel={accessibilityLabel ?? `View cat: ${entry.cat.name}`}
@@ -96,7 +103,7 @@ export const CatalogItem = React.memo(function CatalogItem({
             <AppText variant="caption" color="muted">No profile photo</AppText>
           </View>
         )}
-        <View style={{ padding: theme.spacing.md, gap: theme.spacing.xs }}>
+        <CardContent>
           <AppText variant="cardTitle">{entry.cat.name}</AppText>
           <AppText color="muted" numberOfLines={2}>{entry.cat.descShort}</AppText>
           {tags.length > 0 ? (
@@ -129,7 +136,7 @@ export const CatalogItem = React.memo(function CatalogItem({
               />
             ) : null}
           </View>
-        </View>
+        </CardContent>
       </Pressable>
       {onToggleFavorite ? (
         <IconButton

@@ -55,7 +55,7 @@ const ViewCommunityVote = () => {
   const [error, setError] = useState<string>();
   const [feedback, setFeedback] = useState<string>();
 
-  const load = useCallback(async () => {
+  const load = useCallback(async (isActive: () => boolean = () => true) => {
     if (!id) {
       setError('Missing vote ID');
       setLoading(false);
@@ -64,6 +64,7 @@ const ViewCommunityVote = () => {
     setLoading(true);
     setError(undefined);
     const voteResult = await appModules.communityVoting.get(actor, id);
+    if (!isActive()) return;
     if (!voteResult.ok) {
       setError(voteResult.error.message);
       setLoading(false);
@@ -84,6 +85,7 @@ const ViewCommunityVote = () => {
       if (eligible) {
         const submitted =
           await appModules.communityVoting.hasSubmittedNomination(actor, id);
+        if (!isActive()) return;
         if (submitted.ok) setSubmittedNomination(submitted.value);
         else setError(submitted.error.message);
       }
@@ -93,6 +95,7 @@ const ViewCommunityVote = () => {
           appModules.communityVoting.hasSubmittedBallot(actor, id),
           appModules.communityVoting.choices(actor, loadedVote),
         ]);
+        if (!isActive()) return;
         if (submitted.ok) setSubmittedBallot(submitted.value);
         else setError(submitted.error.message);
         if (choiceResult.ok) setChoices(choiceResult.value);
@@ -100,6 +103,7 @@ const ViewCommunityVote = () => {
       }
     } else {
       const result = await appModules.communityVoting.results(actor, id);
+      if (!isActive()) return;
       if (result.ok) setResults(result.value);
       else setError(result.error.message);
     }
@@ -108,9 +112,19 @@ const ViewCommunityVote = () => {
 
   useFocusEffect(
     useCallback(() => {
-      void load();
-      const refresh = setInterval(() => void load(), 60_000);
-      return () => clearInterval(refresh);
+      let active = true;
+      let revision = 0;
+      const refreshVote = () => {
+        const request = ++revision;
+        void load(() => active && request === revision);
+      };
+      refreshVote();
+      const refresh = setInterval(refreshVote, 60_000);
+      return () => {
+        active = false;
+        revision += 1;
+        clearInterval(refresh);
+      };
     }, [load]),
   );
 

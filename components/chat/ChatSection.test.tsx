@@ -14,6 +14,7 @@ import { AppThemeProvider } from '../../theme';
 import { ChatSection } from './ChatSection';
 
 const mockObserveDay = jest.fn();
+const mockLoadDay = jest.fn();
 const mockFindPreviousActiveDay = jest.fn();
 const mockSendMessage = jest.fn();
 const mockSetReaction = jest.fn();
@@ -31,6 +32,7 @@ jest.mock('../../composition/appModules', () => ({
   appModules: {
     chat: {
       observeDay: (...args: unknown[]) => mockObserveDay(...args),
+      loadDay: (...args: unknown[]) => mockLoadDay(...args),
       findPreviousActiveDay: (...args: unknown[]) => mockFindPreviousActiveDay(...args),
       sendMessage: (...args: unknown[]) => mockSendMessage(...args),
       setReaction: (...args: unknown[]) => mockSetReaction(...args),
@@ -111,12 +113,17 @@ const actor = parseUser({
   email: 'member@example.com',
   role: Role.Member,
 });
+const officer = parseUser({
+  id: 'officer-1',
+  email: 'officer@example.com',
+  role: Role.Officer,
+});
 const timeZone = 'America/New_York';
 
-const renderChat = async () =>
+const renderChat = async (activeActor = actor) =>
   await render(
     <AppThemeProvider colorScheme="light">
-      <ChatSection actor={actor} timeZone={timeZone} />
+      <ChatSection actor={activeActor} timeZone={timeZone} />
     </AppThemeProvider>,
   );
 
@@ -162,6 +169,14 @@ describe('ChatSection', () => {
       },
     );
     mockFindPreviousActiveDay.mockResolvedValue({ ok: true, value: undefined, warnings: [] });
+    mockLoadDay.mockImplementation(
+      (_actor: unknown, requestedDay: string) =>
+        Promise.resolve({
+          ok: true,
+          value: parseChatDay({ dayKey: requestedDay, messages: [], reactions: [] }),
+          warnings: [],
+        }),
+    );
     mockSendMessage.mockResolvedValue({ ok: true, value: message, warnings: [] });
     mockSetReaction.mockResolvedValue({ ok: true, value: undefined, warnings: [] });
   });
@@ -187,6 +202,9 @@ describe('ChatSection', () => {
       expect.any(String),
       '👍',
     );
+    expect(
+      await screen.findByRole('button', { name: '👍 reaction, 1' }),
+    ).toBeOnTheScreen();
   });
 
   it('keeps chat readable but disables composing while banned', async () => {
@@ -246,5 +264,58 @@ describe('ChatSection', () => {
       screen.getByRole('button', { name: 'Retry earlier messages' }),
     ).toBeOnTheScreen();
     expect(mockFindPreviousActiveDay).toHaveBeenCalledWith(actor, dayKey);
+  });
+
+  it('loads historical days once instead of retaining another live subscription', async () => {
+    const currentDay = chatDayKey(new Date(), timeZone);
+    const previousDay = '2025-01-01';
+    mockObserveDay.mockImplementation(
+      (_actor: unknown, requestedDay: string, observer: (result: unknown) => void) => {
+        observer({
+          ok: true,
+          value: parseChatDay({ dayKey: requestedDay, messages: [], reactions: [] }),
+          warnings: [],
+        });
+        return jest.fn();
+      },
+    );
+    mockFindPreviousActiveDay.mockResolvedValue({
+      ok: true,
+      value: previousDay,
+      warnings: [],
+    });
+
+    await renderChat();
+    await userEvent.press(
+      screen.getByRole('button', { name: 'Load earlier messages' }),
+    );
+
+    await waitFor(() =>
+      expect(mockLoadDay).toHaveBeenCalledWith(actor, previousDay),
+    );
+    expect(mockObserveDay).toHaveBeenCalledTimes(1);
+    expect(mockObserveDay).toHaveBeenCalledWith(
+      actor,
+      currentDay,
+      expect.any(Function),
+    );
+  });
+
+  it('marks the club-wide ping control as officer-only', async () => {
+    const user = userEvent.setup();
+    await renderChat(officer);
+
+    expect(
+      screen.getByRole('checkbox', { name: 'Ping the whole club' }),
+    ).toBeOnTheScreen();
+    await user.press(
+      screen.getByRole('button', { name: 'Explain officer-only access' }),
+    );
+    expect(screen.getByText('Officer-only action')).toBeOnTheScreen();
+    expect(
+      screen.getByText(
+        'Officer-level access is required to ping all club members.',
+      ),
+    ).toBeOnTheScreen();
   });
 });

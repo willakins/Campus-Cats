@@ -1,6 +1,5 @@
 import {
   Role,
-  canAccessCloudConsoles,
   canChangeUserRole,
   canDisciplineUser,
   canManageFeature,
@@ -119,12 +118,6 @@ describe('authorization policy', () => {
     },
   );
 
-  it('uses the independent platform-admin flag for Cloud Console links', () => {
-    expect(canAccessCloudConsoles({ platformAdmin: true })).toBe(true);
-    expect(canAccessCloudConsoles({ platformAdmin: false })).toBe(false);
-    expect(canAccessCloudConsoles({})).toBe(false);
-  });
-
   it.each([
     [Role.Member, false],
     [Role.Officer, false],
@@ -146,6 +139,12 @@ describe('authorization policy', () => {
       canAccessRolePolicy(Role.Officer, roleAccessPolicies.manageAnnouncements),
     ).toBe(true);
     expect(
+      canAccessRolePolicy(Role.Member, roleAccessPolicies.pingClubMembers),
+    ).toBe(false);
+    expect(
+      canAccessRolePolicy(Role.Officer, roleAccessPolicies.pingClubMembers),
+    ).toBe(true);
+    expect(
       canAccessRolePolicy(Role.President, roleAccessPolicies.manageDonations),
     ).toBe(true);
     expect(
@@ -154,6 +153,18 @@ describe('authorization policy', () => {
     expect(
       canAccessRolePolicy(Role.VicePresident, roleAccessPolicies.manageDonations),
     ).toBe(false);
+    expect(
+      canAccessRolePolicy(
+        Role.President,
+        roleAccessPolicies.viewInfrastructureCosts,
+      ),
+    ).toBe(false);
+    expect(
+      canAccessRolePolicy(
+        Role.Developer,
+        roleAccessPolicies.viewInfrastructureCosts,
+      ),
+    ).toBe(true);
   });
 
   it('shows anonymous contributors only to officers', () => {

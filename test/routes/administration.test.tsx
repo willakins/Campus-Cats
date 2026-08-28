@@ -247,28 +247,38 @@ describe('settings and administration routes', () => {
     jest.spyOn(Linking, 'openURL').mockResolvedValue(undefined);
   });
 
-  it('opens the private account page from the More header', async () => {
+  it('opens the signed-in member profile from the More header', async () => {
     const user = userEvent.setup();
     await renderThemed(<Settings />);
 
     expect(screen.queryByText('Account')).not.toBeOnTheScreen();
-    await user.press(screen.getByRole('button', { name: 'Open account' }));
-    expect(mockPush).toHaveBeenCalledWith('/settings/account');
+    await user.press(screen.getByRole('button', { name: 'Open profile' }));
+    expect(mockPush).toHaveBeenCalledWith({
+      pathname: '/profile/view-profile',
+      params: { id: 'actor-1' },
+    });
     expect(screen.getByText('Club contacts')).toBeOnTheScreen();
     expect(await screen.findByText('Campus Cats Officers')).toBeOnTheScreen();
+    await user.press(
+      screen.getByRole('button', { name: 'cats@gatech.edu' }),
+    );
     await user.press(screen.getByRole('button', { name: 'Instagram' }));
     await user.press(screen.getByRole('button', { name: 'Facebook' }));
     await user.press(screen.getByRole('button', { name: 'Website' }));
     expect(Linking.openURL).toHaveBeenNthCalledWith(
       1,
-      'https://www.instagram.com/gtcampuscats',
+      'mailto:cats@gatech.edu',
     );
     expect(Linking.openURL).toHaveBeenNthCalledWith(
       2,
-      'https://www.facebook.com/gtcampuscats',
+      'https://www.instagram.com/gtcampuscats',
     );
     expect(Linking.openURL).toHaveBeenNthCalledWith(
       3,
+      'https://www.facebook.com/gtcampuscats',
+    );
+    expect(Linking.openURL).toHaveBeenNthCalledWith(
+      4,
       'https://campuscats.gatech.edu',
     );
     expect(screen.getByText('Officer-only tools')).toBeOnTheScreen();
@@ -284,12 +294,12 @@ describe('settings and administration routes', () => {
     ).not.toBeOnTheScreen();
   });
 
-  it('keeps the account entry point visible while contacts load independently', async () => {
+  it('keeps the profile entry point visible while contacts load independently', async () => {
     mockListContacts.mockImplementation(() => new Promise(() => undefined));
     await renderThemed(<Settings />);
 
     expect(
-      screen.getByRole('button', { name: 'Open account' }),
+      screen.getByRole('button', { name: 'Open profile' }),
     ).toBeOnTheScreen();
     expect(screen.getByText('Club contacts')).toBeOnTheScreen();
     expect(
@@ -297,14 +307,14 @@ describe('settings and administration routes', () => {
     ).toBeOnTheScreen();
   });
 
-  it('keeps profile, sign-out, and iNaturalist connection actions on the account page', async () => {
+  it('keeps profile and sign-out actions on the account page', async () => {
     const user = userEvent.setup();
     await renderThemed(<Account />);
 
     expect(screen.getByText('actor@gatech.edu')).toBeOnTheScreen();
     expect(screen.getByText('Campus Cats account')).toBeOnTheScreen();
-    expect(screen.getByText('Connected accounts')).toBeOnTheScreen();
-    expect(screen.getByText('iNaturalist')).toBeOnTheScreen();
+    expect(screen.queryByText('Connected accounts')).not.toBeOnTheScreen();
+    expect(screen.queryByText('iNaturalist')).not.toBeOnTheScreen();
     expect(screen.queryByText('Sign Out')).not.toBeOnTheScreen();
 
     await user.press(screen.getByRole('button', { name: 'View my profile' }));
@@ -312,11 +322,6 @@ describe('settings and administration routes', () => {
       pathname: '/profile/view-profile',
       params: { id: 'actor-1' },
     });
-
-    await user.press(
-      screen.getByRole('button', { name: 'Manage iNaturalist connection' }),
-    );
-    expect(mockPush).toHaveBeenCalledWith('/settings/inaturalist-account');
 
     await user.press(screen.getByRole('button', { name: 'Sign out' }));
     await waitFor(() => expect(mockReplace).toHaveBeenCalledWith('/login'));
@@ -342,9 +347,8 @@ describe('settings and administration routes', () => {
     expect(mockPush).toHaveBeenCalledTimes(4);
   });
 
-  it('keeps infrastructure costs separate for platform administrators', async () => {
-    mockRole = Role.Officer;
-    mockPlatformAdmin = true;
+  it('shows infrastructure costs to Developers', async () => {
+    mockRole = Role.Developer;
     const user = userEvent.setup();
     await renderThemed(<Settings />);
 
@@ -352,7 +356,6 @@ describe('settings and administration routes', () => {
       screen.getByRole('button', { name: 'Infrastructure Costs' }),
     );
     expect(mockPush).toHaveBeenCalledWith('/settings/billing');
-    expect(screen.queryByRole('button', { name: 'Club Billing' })).not.toBeOnTheScreen();
   });
 
   it('shows app settings only to the President', async () => {

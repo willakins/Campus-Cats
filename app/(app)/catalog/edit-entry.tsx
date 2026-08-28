@@ -173,12 +173,14 @@ const EditEntry = () => {
       setLoadError('Missing catalog entry ID');
       return;
     }
+    let active = true;
     void Promise.all([
       appModules.catalog.get(parseUser(user), id),
       appModules.catalog.media(id),
       appModules.catalogTags.list(parseUser(user)),
       appModules.catalogTags.assignments(parseUser(user)),
     ]).then(([entryResult, mediaResult, tagsResult, assignmentsResult]) => {
+      if (!active) return;
       if (!entryResult.ok) {
         setLoadError(entryResult.error.message);
         return;
@@ -230,6 +232,9 @@ const EditEntry = () => {
         );
       } else setError(mediaResult.error.message);
     });
+    return () => {
+      active = false;
+    };
   }, [id, user.id, user.role]);
 
   const cat = (): Cat => ({

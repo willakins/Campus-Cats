@@ -39,10 +39,14 @@ export class FirebaseSession implements SessionPort {
     onChange: (user: User | undefined) => void,
     onError: (error: unknown) => void = () => undefined,
   ): () => void {
+    let active = true;
+    let revision = 0;
     let unsubscribeProfile: () => void = () => undefined;
     const unsubscribeAuth = onAuthStateChanged(
       this.auth,
       (authenticated) => {
+        if (!active) return;
+        const currentRevision = ++revision;
         unsubscribeProfile();
         if (!authenticated) {
           this.tenantScope?.clearAuthenticatedClub();
@@ -53,8 +57,15 @@ export class FirebaseSession implements SessionPort {
         unsubscribeProfile = onSnapshot(
           reference,
           (snapshot) => {
+            if (!active || currentRevision !== revision) return;
             if (!snapshot.exists()) {
-              void this.ensureActiveProfile(authenticated).then(onChange).catch(onError);
+              void this.ensureActiveProfile(authenticated)
+                .then((profile) => {
+                  if (active && currentRevision === revision) onChange(profile);
+                })
+                .catch((error) => {
+                  if (active && currentRevision === revision) onError(error);
+                });
               return;
             }
             try {
@@ -66,7 +77,9 @@ export class FirebaseSession implements SessionPort {
               if (profile.banned) {
                 this.tenantScope?.clearAuthenticatedClub();
                 onChange(undefined);
-                void signOut(this.auth).catch(onError);
+                void signOut(this.auth).catch((error) => {
+                  if (active && currentRevision === revision) onError(error);
+                });
                 return;
               }
               this.tenantScope?.setAuthenticatedClub(profile.clubId);
@@ -75,12 +88,18 @@ export class FirebaseSession implements SessionPort {
               onError(error);
             }
           },
-          onError,
+          (error) => {
+            if (active && currentRevision === revision) onError(error);
+          },
         );
       },
-      onError,
+      (error) => {
+        if (active) onError(error);
+      },
     );
     return () => {
+      active = false;
+      revision += 1;
       unsubscribeProfile();
       unsubscribeAuth();
     };
