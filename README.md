@@ -1,11 +1,11 @@
 <p align="center">
-  <img src="assets/images/campus_cats_logo.png" alt="Campus Cats logo" width="180" />
+  <img src="assets/images/default-app-icon.png" alt="Campus Cats app icon" width="180" />
 </p>
 
 <h1 align="center">Campus Cats</h1>
 
 <p align="center">
-  A mobile operations hub for university communities caring for campus cats.
+  A mobile operations and community hub for university groups caring for campus cats.
 </p>
 
 <p align="center">
@@ -23,7 +23,59 @@
 
 Georgia Tech's Campus Cats volunteers care for a population of stray and feral cats across campus. Without a shared system, sightings, cat histories, feeding-station status, and time-sensitive updates can become fragmented across people and channels.
 
-Campus Cats brings those workflows into one mobile experience. Members can record photo-backed sightings on a live map, learn about known cats, and receive club announcements. Officers can maintain the shared data, coordinate station restocking, and manage community access.
+Campus Cats brings those workflows into one mobile experience. Members can record photo-backed sightings on a live map, follow known cats, and coordinate through announcements, events, surveys, votes, donations, and club chat. Officers can maintain shared data, organize feeding-station restocking, and manage community access.
+
+## See Campus Cats in action
+
+The app combines field reporting, a shared cat directory, feeding operations, and
+community coordination in one accessible mobile interface. Select any preview to
+open the full-size App Store image.
+
+<table>
+  <tr>
+    <td align="center" width="50%">
+      <a href="assets/images/app_previews/01-live-sighting-map.png">
+        <img src="assets/images/app_previews/01-live-sighting-map.png" alt="Campus Cats live sighting map preview" width="320" />
+      </a>
+      <br />
+      <strong>Live sighting map</strong>
+      <br />
+      Pin a cat sighting with its photo and condition so nearby volunteers can respond.
+    </td>
+    <td align="center" width="50%">
+      <a href="assets/images/app_previews/02-cat-catalog.png">
+        <img src="assets/images/app_previews/02-cat-catalog.png" alt="Campus Cats cat catalog preview" width="320" />
+      </a>
+      <br />
+      <strong>Cat-alog</strong>
+      <br />
+      Learn each cat's name, markings, history, favorites, and recent sightings.
+    </td>
+  </tr>
+  <tr>
+    <td align="center" width="50%">
+      <a href="assets/images/app_previews/03-feeding-stations.png">
+        <img src="assets/images/app_previews/03-feeding-stations.png" alt="Campus Cats feeding station operations preview" width="320" />
+      </a>
+      <br />
+      <strong>Feeding stations</strong>
+      <br />
+      Track what is stocked, what needs food, and which cats use each location.
+    </td>
+    <td align="center" width="50%">
+      <a href="assets/images/app_previews/04-community-hub.png">
+        <img src="assets/images/app_previews/04-community-hub.png" alt="Campus Cats community hub preview" width="320" />
+      </a>
+      <br />
+      <strong>Community hub</strong>
+      <br />
+      Bring announcements, chat, events, surveys, votes, and donations together.
+    </td>
+  </tr>
+</table>
+
+The editable preview source and generation notes live in the
+[App Store preview guide](marketing/app-store/README.md).
 
 ## What we built
 
