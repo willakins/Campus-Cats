@@ -254,6 +254,9 @@ describe('authentication routes', () => {
 
     await fireEvent.changeText(screen.getByLabelText('Email'), 'alumni@example.com');
     await fireEvent.changeText(screen.getByLabelText('Password'), 'catscats');
+    expect(
+      screen.getByRole('button', { name: 'Create account' }),
+    ).toBeEnabled();
     await user.press(screen.getByRole('button', { name: 'Create account' }));
 
     await waitFor(() => {

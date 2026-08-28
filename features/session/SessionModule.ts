@@ -18,6 +18,7 @@ const credentialsSchema = z.object({
 });
 
 const emailSchema = z.string().trim().email();
+const termsVersionSchema = z.string().trim().min(1).max(40);
 
 export class SessionModule {
   constructor(private readonly dependencies: SessionDependencies) {}
@@ -108,6 +109,22 @@ export class SessionModule {
       return success(undefined);
     } catch {
       return failure('dependency_failure', 'Could not register the push token');
+    }
+  }
+
+  async acceptTerms(version: string): Promise<Outcome<void>> {
+    const parsed = termsVersionSchema.safeParse(version);
+    if (!parsed.success) {
+      return failure('validation', 'Terms version is required');
+    }
+    try {
+      await this.dependencies.session.acceptTerms(parsed.data);
+      return success(undefined);
+    } catch {
+      return failure(
+        'dependency_failure',
+        'Could not record your agreement. Please try again.',
+      );
     }
   }
 }

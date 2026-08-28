@@ -46,6 +46,10 @@ service firebase.storage {
           !('banned' in userDocument().data)
           || userDocument().data.banned != true
         )
+        && 'agreedToTerms' in userDocument().data
+        && 'termsVersion' in userDocument().data
+        && userDocument().data.agreedToTerms == true
+        && userDocument().data.termsVersion == '2026-08-28'
         && clubHasAccess(clubId);
     }
 

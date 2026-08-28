@@ -61,6 +61,10 @@ export class DevelopmentApplicationEffects implements ApplicationEffects {
     return this.developmentEffects.removeUser(userId);
   }
 
+  async deleteOwnAccount(confirmation: string): Promise<void> {
+    return this.developmentEffects.deleteOwnAccount(confirmation);
+  }
+
   async syncPublicProfile(userId?: string): Promise<void> {
     return this.developmentEffects.syncPublicProfile(userId);
   }

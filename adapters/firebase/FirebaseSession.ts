@@ -9,7 +9,16 @@ import {
   onAuthStateChanged,
   signOut,
 } from 'firebase/auth';
-import { Firestore, doc, getDoc, onSnapshot, setDoc } from 'firebase/firestore';
+import {
+  DocumentData,
+  DocumentReference,
+  Firestore,
+  doc,
+  getDoc,
+  onSnapshot,
+  serverTimestamp,
+  setDoc,
+} from 'firebase/firestore';
 
 import { ManagedUser, User, parseManagedUser } from '../../core/domain';
 import {
@@ -56,7 +65,7 @@ export class FirebaseSession implements SessionPort {
         const reference = doc(this.firestore, 'users', authenticated.uid);
         unsubscribeProfile = onSnapshot(
           reference,
-          (snapshot) => {
+          async (snapshot) => {
             if (!active || currentRevision !== revision) return;
             if (!snapshot.exists()) {
               void this.ensureActiveProfile(authenticated)
@@ -69,10 +78,14 @@ export class FirebaseSession implements SessionPort {
               return;
             }
             try {
+              const data = await this.ensureTermsAgreementFlag(
+                reference,
+                snapshot.data(),
+              );
               const profile = parseAuthenticatedProfile(
                 authenticated,
                 snapshot.id,
-                snapshot.data(),
+                data,
               );
               if (profile.banned) {
                 this.tenantScope?.clearAuthenticatedClub();
@@ -175,6 +188,20 @@ export class FirebaseSession implements SessionPort {
     });
   }
 
+  async acceptTerms(version: string): Promise<void> {
+    const user = this.auth.currentUser;
+    if (!user) throw new Error('Not authenticated');
+    await setDoc(
+      doc(this.firestore, 'users', user.uid),
+      {
+        agreedToTerms: true,
+        termsVersion: version,
+        termsAgreedAt: serverTimestamp(),
+      },
+      { merge: true },
+    );
+  }
+
   private async ensureProfile(user: FirebaseUser): Promise<ManagedUser> {
     if (!user.email) throw new Error('Authenticated account has no email');
     const reference = doc(this.firestore, 'users', user.uid);
@@ -183,10 +210,14 @@ export class FirebaseSession implements SessionPort {
       await signOut(this.auth);
       throw new UnprovisionedAccountError();
     }
+    const data = await this.ensureTermsAgreementFlag(
+      reference,
+      snapshot.data(),
+    );
     const profile = parseAuthenticatedProfile(
       user,
       snapshot.id,
-      snapshot.data(),
+      data,
     );
     this.tenantScope?.setAuthenticatedClub(profile.clubId);
     return profile;
@@ -199,6 +230,24 @@ export class FirebaseSession implements SessionPort {
       throw new BannedAccountError();
     }
     return profile;
+  }
+
+  private async ensureTermsAgreementFlag(
+    reference: DocumentReference<DocumentData>,
+    data: DocumentData,
+  ): Promise<DocumentData> {
+    if (
+      typeof data.agreedToTerms === 'boolean' &&
+      typeof data.termsVersion === 'string'
+    ) {
+      return data;
+    }
+    await setDoc(
+      reference,
+      { agreedToTerms: false, termsVersion: '' },
+      { merge: true },
+    );
+    return { ...data, agreedToTerms: false, termsVersion: '' };
   }
 }
 

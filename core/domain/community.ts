@@ -8,7 +8,7 @@ import {
   surveyResponseIdSchema,
   userIdSchema,
 } from './ids';
-import { userSchema } from './models';
+import { userSnapshotSchema } from './models';
 import { participationAudienceSchema } from './participation';
 
 const requiredText = z.string().trim().min(1);
@@ -25,7 +25,7 @@ export const clubEventSchema = z.object({
   expiresAt: validDate,
   imageUrl: z.string().url().max(2048),
   createdAt: validDate,
-  createdBy: userSchema,
+  createdBy: userSnapshotSchema,
 });
 
 export const surveyQuestionTypeSchema = z.enum([
@@ -83,7 +83,7 @@ export const surveySchema = z
     status: z.enum(['open', 'closed']),
     questions: z.array(surveyQuestionSchema).min(1).max(40),
     createdAt: validDate,
-    createdBy: userSchema,
+    createdBy: userSnapshotSchema,
     closedAt: validDate.optional(),
   })
   .superRefine((survey, context) => {
@@ -123,7 +123,7 @@ export const surveyResponseSchema = z.object({
   surveyId: surveyIdSchema,
   answers: z.array(surveyAnswerSchema).min(1).max(40),
   submittedAt: validDate,
-  respondent: userSchema.optional(),
+  respondent: userSnapshotSchema.optional(),
 });
 
 export const surveySubmissionReceiptSchema = z.object({

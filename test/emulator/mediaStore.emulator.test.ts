@@ -41,6 +41,8 @@ describe('Firebase media adapter', () => {
         clubId: 'campus-cats',
         platformAdmin: false,
         banned: false,
+        agreedToTerms: true,
+        termsVersion: '2026-08-28',
       });
       await setDoc(doc(context.firestore(), 'clubs', 'campus-cats'), {
         name: 'Campus Cats',

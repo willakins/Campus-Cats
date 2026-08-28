@@ -196,6 +196,8 @@ export async function seedDevelopmentProject(
         platformAdmin: false,
         banned: false,
         disciplinaryNotices: [],
+        agreedToTerms: false,
+        termsVersion: '',
         updatedAt: now,
       },
     },

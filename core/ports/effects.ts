@@ -24,6 +24,7 @@ export interface ApplicationEffects {
   setUserBanned(userId: string, banned: boolean): Promise<void>;
   transferPresidency(userId: string): Promise<void>;
   removeUser(userId: string): Promise<void>;
+  deleteOwnAccount(confirmation: string): Promise<void>;
   syncPublicProfile(userId?: string): Promise<void>;
   updatePublicProfile(profile: {
     readonly displayName: string;

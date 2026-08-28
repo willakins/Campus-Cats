@@ -19,7 +19,12 @@ export {
 import sgMail from '@sendgrid/mail';
 import { getApps, initializeApp } from 'firebase-admin/app';
 import { getAuth } from 'firebase-admin/auth';
-import { FieldValue, Timestamp, getFirestore } from 'firebase-admin/firestore';
+import {
+  DocumentReference,
+  FieldValue,
+  Timestamp,
+  getFirestore,
+} from 'firebase-admin/firestore';
 import { getStorage } from 'firebase-admin/storage';
 import Stripe from 'stripe';
 import { logger } from 'firebase-functions/logger';
@@ -45,6 +50,7 @@ import {
   WhitelistApplication,
   handleAddDisciplinaryNotice,
   handleCreateWhitelistUser,
+  handleDeleteOwnAccount,
   handleGetBillingSummary,
   handleMigrateContributorPrivacy,
   handleSelectProfileTitle,
@@ -368,7 +374,346 @@ function publicProfileFromData(
   };
 }
 
+const deletedAccountSnapshot = (clubId: string) => ({
+  id: 'deleted-account',
+  email: 'deleted-account@campus-cats.invalid',
+  role: 0,
+  clubId,
+  platformAdmin: false,
+});
+
+async function deleteAccountData(user: ManagedUser): Promise<void> {
+  const { id: userId, clubId, email } = user;
+  const deletions = new Map<string, DocumentReference>();
+  const updates = new Map<
+    string,
+    { readonly reference: DocumentReference; readonly data: Record<string, unknown> }
+  >();
+  const mediaPrefixesToDelete = new Set<string>([
+    `clubs/${clubId}/public-profiles/${userId}/`,
+  ]);
+  const mediaPrefixesToAnonymize = new Set<string>([
+    `clubs/${clubId}/app-branding/`,
+    `clubs/${clubId}/donations/`,
+  ]);
+
+  const remove = (reference: DocumentReference) => {
+    deletions.set(reference.path, reference);
+    updates.delete(reference.path);
+  };
+  const update = (
+    reference: DocumentReference,
+    data: Record<string, unknown>,
+  ) => {
+    if (!deletions.has(reference.path)) {
+      updates.set(reference.path, { reference, data });
+    }
+  };
+  const query = async (
+    collectionName: string,
+    field: string,
+    value: unknown,
+  ) => tenantCollection(clubId, collectionName).where(field, '==', value).get();
+
+  const contributors = await query('content-contributors', 'user.id', userId);
+  for (const contributor of contributors.docs) {
+    const data = contributor.data();
+    if (data.kind === 'sighting' && typeof data.contentId === 'string') {
+      remove(tenantCollection(clubId, 'cat-sightings').doc(data.contentId));
+      mediaPrefixesToDelete.add(
+        `clubs/${clubId}/cat-sightings/${data.contentId}/`,
+      );
+      const comments = await query(
+        'sighting-comments',
+        'target.id',
+        data.contentId,
+      );
+      comments.docs.forEach((comment) => remove(comment.ref));
+    }
+    if (data.kind === 'catalog' && typeof data.contentId === 'string') {
+      mediaPrefixesToAnonymize.add(
+        `clubs/${clubId}/catalog/${data.contentId}/`,
+      );
+    }
+    remove(contributor.ref);
+  }
+
+  const legacySightings = await query('cat-sightings', 'createdBy.id', userId);
+  for (const sighting of legacySightings.docs) {
+    remove(sighting.ref);
+    mediaPrefixesToDelete.add(
+      `clubs/${clubId}/cat-sightings/${sighting.id}/`,
+    );
+    const comments = await query('sighting-comments', 'target.id', sighting.id);
+    comments.docs.forEach((comment) => remove(comment.ref));
+  }
+
+  const personalCollections: readonly [string, string][] = [
+    ['sighting-comments', 'createdById'],
+    ['catalog-comments', 'createdById'],
+    ['station-comments', 'createdById'],
+    ['chat-messages', 'createdById'],
+    ['chat-reactions', 'userId'],
+    ['announcement-read-receipts', 'userId'],
+    ['event-read-receipts', 'userId'],
+  ];
+  for (const [collectionName, field] of personalCollections) {
+    const snapshots = await query(collectionName, field, userId);
+    snapshots.docs.forEach((document) => remove(document.ref));
+    if (collectionName === 'chat-messages') {
+      for (const message of snapshots.docs) {
+        const reactions = await query('chat-reactions', 'messageId', message.id);
+        reactions.docs.forEach((reaction) => remove(reaction.ref));
+      }
+    }
+  }
+
+  const surveyReceipts = await query(
+    'survey-submission-receipts',
+    'userId',
+    userId,
+  );
+  for (const receipt of surveyReceipts.docs) {
+    const responseId = receipt.data().responseId;
+    if (typeof responseId === 'string') {
+      remove(tenantCollection(clubId, 'survey-responses').doc(responseId));
+    }
+    remove(receipt.ref);
+  }
+  const namedResponses = await query('survey-responses', 'respondent.id', userId);
+  namedResponses.docs.forEach((response) => remove(response.ref));
+
+  const nominationReceipts = await query(
+    'community-vote-nomination-receipts',
+    'userId',
+    userId,
+  );
+  nominationReceipts.docs.forEach((receipt) => remove(receipt.ref));
+  const nominations = await query('community-vote-nominees', 'userId', userId);
+  nominations.docs.forEach((nomination) => remove(nomination.ref));
+
+  const ballotReceipts = await query(
+    'community-vote-ballot-receipts',
+    'userId',
+    userId,
+  );
+  for (const receipt of ballotReceipts.docs) {
+    const ballotId = receipt.data().ballotId;
+    if (typeof ballotId === 'string') {
+      remove(tenantCollection(clubId, 'community-vote-ballots').doc(ballotId));
+    }
+    remove(receipt.ref);
+  }
+  const attributableBallots = await query(
+    'community-vote-ballots',
+    'billingActorId',
+    userId,
+  );
+  attributableBallots.docs.forEach((ballot) => remove(ballot.ref));
+
+  const sharedCollections = [
+    'stations',
+    'announcements',
+    'community-events',
+    'community-surveys',
+    'community-votes',
+  ] as const;
+  for (const collectionName of sharedCollections) {
+    const snapshots = await query(collectionName, 'createdBy.id', userId);
+    snapshots.docs.forEach((document) => {
+      update(document.ref, { createdBy: deletedAccountSnapshot(clubId) });
+      const mediaCollection = {
+        stations: 'stations',
+        announcements: 'announcements',
+        'community-events': 'community-events',
+        'community-surveys': undefined,
+        'community-votes': 'community-votes',
+      }[collectionName];
+      if (mediaCollection) {
+        mediaPrefixesToAnonymize.add(
+          `clubs/${clubId}/${mediaCollection}/${document.id}/`,
+        );
+      }
+    });
+  }
+  const legacyCatalog = await query('catalog', 'createdBy.id', userId);
+  legacyCatalog.docs.forEach((entry) => {
+    update(entry.ref, { createdBy: FieldValue.delete() });
+    mediaPrefixesToAnonymize.add(`clubs/${clubId}/catalog/${entry.id}/`);
+  });
+
+  const restrictionsUpdatedByUser = await query(
+    'chat-restrictions',
+    'updatedById',
+    userId,
+  );
+  restrictionsUpdatedByUser.docs.forEach((restriction) =>
+    update(restriction.ref, { updatedById: 'deleted-account' }),
+  );
+
+  const clubUsers = await firestore
+    .collection('users')
+    .where('clubId', '==', clubId)
+    .get();
+  for (const account of clubUsers.docs) {
+    if (account.id === userId) continue;
+    const data = account.data();
+    const notices = Array.isArray(data.disciplinaryNotices)
+      ? data.disciplinaryNotices.filter(
+          (notice) =>
+            typeof notice !== 'object' ||
+            notice === null ||
+            (notice as { issuedById?: unknown }).issuedById !== userId,
+        )
+      : [];
+    const moderationUpdate: Record<string, unknown> = {};
+    if (
+      Array.isArray(data.disciplinaryNotices) &&
+      notices.length !== data.disciplinaryNotices.length
+    ) {
+      moderationUpdate.disciplinaryNotices = notices;
+    }
+    if (data.bannedById === userId) {
+      moderationUpdate.bannedById = 'deleted-account';
+      moderationUpdate.bannedByEmail = 'deleted-account@campus-cats.invalid';
+    }
+    if (Object.keys(moderationUpdate).length) {
+      update(account.ref, moderationUpdate);
+    }
+  }
+
+  const whitelistApplications = await query('whitelist', 'email', email);
+  whitelistApplications.docs.forEach((application) => remove(application.ref));
+
+  const onboardingRequests = await firestore
+    .collection('club-onboarding-requests')
+    .where('presidentEmail', '==', email)
+    .get();
+  onboardingRequests.docs.forEach((request) => remove(request.ref));
+  const linkAttempts = await firestore
+    .collection('inaturalist-link-attempts')
+    .where('firebaseUid', '==', userId)
+    .get();
+  linkAttempts.docs.forEach((attempt) => remove(attempt.ref));
+  const usageEvents = await firestore
+    .collection('billing-usage-events')
+    .where('actorId', '==', userId)
+    .get();
+  usageEvents.docs.forEach((event) =>
+    update(event.ref, { actorId: 'deleted-account' }),
+  );
+
+  remove(firestore.collection('users').doc(userId));
+  remove(firestore.collection('platform-admins').doc(userId));
+  for (const collectionName of [
+    'public-profiles',
+    'catalog-favorites',
+    'chat-restrictions',
+    'chat-ping-reads',
+  ]) {
+    remove(tenantCollection(clubId, collectionName).doc(userId));
+  }
+
+  await inaturalistAccountRepository.unlink(userId);
+
+  const bucket = storage.bucket();
+  for (const prefix of mediaPrefixesToDelete) {
+    await bucket.deleteFiles({ prefix, force: true });
+  }
+  for (const prefix of mediaPrefixesToAnonymize) {
+    const [files] = await bucket.getFiles({ prefix });
+    for (const file of files) {
+      const [metadata] = await file.getMetadata();
+      if (metadata.metadata?.ownerId !== userId) continue;
+      await file.setMetadata({
+        metadata: { ...metadata.metadata, ownerId: 'deleted-account' },
+      });
+    }
+  }
+
+  const writer = firestore.bulkWriter();
+  deletions.forEach((reference) => writer.delete(reference));
+  updates.forEach(({ reference, data }) => writer.update(reference, data));
+  await writer.close();
+}
+
 const dependencies: HandlerDependencies = {
+  async getAccountUser(id): Promise<ManagedUser | undefined> {
+    const snapshot = await firestore.collection('users').doc(id).get();
+    const data = snapshot.data();
+    if (
+      !snapshot.exists ||
+      typeof data?.email !== 'string' ||
+      (data.role !== 0 &&
+        data.role !== 1 &&
+        data.role !== 2 &&
+        data.role !== 3 &&
+        data.role !== 4)
+    ) {
+      return undefined;
+    }
+    return {
+      id: snapshot.id,
+      email: data.email,
+      role: data.role,
+      clubId: typeof data.clubId === 'string' ? data.clubId : 'campus-cats',
+      platformAdmin: data.platformAdmin === true,
+      banned: data.banned === true,
+    };
+  },
+  async getPendingAccountDeletion(id): Promise<ManagedUser | undefined> {
+    const snapshot = await firestore.collection('account-deletion-jobs').doc(id).get();
+    const data = snapshot.data();
+    if (
+      !snapshot.exists ||
+      data?.status !== 'pending' ||
+      typeof data.email !== 'string' ||
+      typeof data.clubId !== 'string' ||
+      (data.role !== 0 &&
+        data.role !== 1 &&
+        data.role !== 2 &&
+        data.role !== 3 &&
+        data.role !== 4)
+    ) {
+      return undefined;
+    }
+    return {
+      id: snapshot.id,
+      email: data.email,
+      role: data.role,
+      clubId: data.clubId,
+      platformAdmin: data.platformAdmin === true,
+      banned: data.banned === true,
+    };
+  },
+  async prepareAccountDeletion(user): Promise<void> {
+    await firestore.collection('account-deletion-jobs').doc(user.id).set(
+      {
+        email: user.email,
+        role: user.role,
+        clubId: user.clubId,
+        platformAdmin: user.platformAdmin === true,
+        banned: user.banned === true,
+        status: 'pending',
+        updatedAt: FieldValue.serverTimestamp(),
+      },
+      { merge: true },
+    );
+  },
+  async completeAccountDeletion(id): Promise<void> {
+    await firestore.collection('account-deletion-jobs').doc(id).set(
+      {
+        email: FieldValue.delete(),
+        role: FieldValue.delete(),
+        platformAdmin: FieldValue.delete(),
+        banned: FieldValue.delete(),
+        status: 'completed',
+        completedAt: FieldValue.serverTimestamp(),
+        updatedAt: FieldValue.serverTimestamp(),
+      },
+      { merge: true },
+    );
+  },
   async getUser(id): Promise<ManagedUser | undefined> {
     const snapshot = await firestore.collection('users').doc(id).get();
     if (!snapshot.exists) return undefined;
@@ -528,6 +873,8 @@ const dependencies: HandlerDependencies = {
       platformAdmin: user.platformAdmin === true,
       banned: false,
       disciplinaryNotices: [],
+      agreedToTerms: false,
+      termsVersion: '',
     });
     batch.set(
       tenantCollection(user.clubId, 'public-profiles').doc(user.id),
@@ -537,16 +884,9 @@ const dependencies: HandlerDependencies = {
   },
 
   async deleteUser(id) {
-    const user = await firestore.collection('users').doc(id).get();
-    const clubId = typeof user.data()?.clubId === 'string'
-      ? user.data()!.clubId
-      : 'campus-cats';
-    await inaturalistAccountRepository.unlink(id);
-    const batch = firestore.batch();
-    batch.delete(firestore.collection('users').doc(id));
-    batch.delete(tenantCollection(clubId, 'public-profiles').doc(id));
-    batch.delete(tenantCollection(clubId, 'catalog-favorites').doc(id));
-    await batch.commit();
+    const user = await dependencies.getAccountUser(id);
+    if (!user) return;
+    await deleteAccountData(user);
   },
 
   async updateUserRole(id, role) {
@@ -1506,6 +1846,10 @@ export const transferPresidency = onCall((request) =>
 
 export const removeManagedUser = onCall((request) =>
   execute(() => handleRemoveManagedUser(requestFor(request), dependencies)),
+);
+
+export const deleteOwnAccount = onCall((request) =>
+  execute(() => handleDeleteOwnAccount(requestFor(request), dependencies)),
 );
 
 export const sendAnnouncement = onCall((request) =>

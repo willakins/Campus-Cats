@@ -5,10 +5,12 @@ import { clubHasAppAccess } from '@/core/domain';
 import { useAuth, useClub } from '@/providers';
 import { LoadingIndicator } from '@/components/ui/LoadingIndicator';
 import { SubscriptionBanner } from '@/components/billing';
+import { TermsAgreementGate } from '@/components/legal';
+import { hasAgreedToCurrentTerms } from '@/legal/policies';
 import { useAppTheme } from '@/theme';
 
 const AppLayout = () => {
-  const { currentUser, loading } = useAuth();
+  const { acceptTerms, currentUser, loading } = useAuth();
   const club = useClub();
   const theme = useAppTheme();
 
@@ -33,6 +35,10 @@ const AppLayout = () => {
           headerShown: false,
           contentStyle: { backgroundColor: theme.colors.background },
         }}
+      />
+      <TermsAgreementGate
+        visible={!hasAgreedToCurrentTerms(currentUser)}
+        onAgree={acceptTerms}
       />
     </View>
   );
