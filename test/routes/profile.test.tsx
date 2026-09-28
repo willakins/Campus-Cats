@@ -230,14 +230,15 @@ describe('member profile routes', () => {
     expect(mockProfileSync).toHaveBeenCalledWith(actor);
   });
 
-  it('manages the signed-in member’s iNaturalist account from their profile', async () => {
+  it('labels iNaturalist account linking as coming soon', async () => {
     const user = userEvent.setup();
     await renderThemed(<ViewProfile />);
 
     expect(await screen.findByText('Connected accounts')).toBeOnTheScreen();
     expect(screen.getByText('iNaturalist')).toBeOnTheScreen();
+    expect(screen.getByText('Coming soon')).toBeOnTheScreen();
     await user.press(
-      screen.getByRole('button', { name: 'Manage iNaturalist connection' }),
+      screen.getByRole('button', { name: 'Learn about iNaturalist connection' }),
     );
     expect(mockPush).toHaveBeenCalledWith('/settings/inaturalist-account');
   });
