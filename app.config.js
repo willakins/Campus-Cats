@@ -27,6 +27,16 @@ module.exports = ({ config, environment = process.env }) => {
         ? 'com.gatech.CampusCats.dev'
         : config.android.package,
     },
+    plugins: [
+      ...(config.plugins ?? []),
+      [
+        'react-native-maps',
+        {
+          iosGoogleMapsApiKey: environment.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY,
+          androidGoogleMapsApiKey: environment.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY,
+        },
+      ],
+    ],
     extra: {
       ...config.extra,
       appEnvironment: development ? 'development' : 'production',
