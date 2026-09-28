@@ -86,14 +86,6 @@ import {
   handleUpdateInaturalistCatalog,
 } from './inaturalistHandlers';
 import {
-  InaturalistAccountLinkingDependencies,
-  handleBeginInaturalistAccountLink,
-  handleGetInaturalistAccountLinkStatus,
-  handleInaturalistAccountCallback,
-  handleUnlinkInaturalistAccount,
-} from './inaturalistAccountLinking';
-import { InaturalistAccountHttpGateway } from './inaturalistAccountHttp';
-import {
   SurveySubmissionDependencies,
   handleSubmitSurveyResponse,
   validateSurveyAnswers,
@@ -156,18 +148,6 @@ const CLUB_ONBOARDING_WEB_ORIGIN = defineString('CLUB_ONBOARDING_WEB_ORIGIN', {
 const INVITATION_FROM_EMAIL = defineString('INVITATION_FROM_EMAIL', {
   default: 'gtcampuscats@gmail.com',
 });
-const INATURALIST_OAUTH_CLIENT_SECRET = defineSecret(
-  'INATURALIST_OAUTH_CLIENT_SECRET',
-);
-const INATURALIST_OAUTH_CLIENT_ID = defineString(
-  'INATURALIST_OAUTH_CLIENT_ID',
-);
-const INATURALIST_OAUTH_REDIRECT_URI = defineString(
-  'INATURALIST_OAUTH_REDIRECT_URI',
-);
-const INATURALIST_APP_RETURN_URI = defineString('INATURALIST_APP_RETURN_URI', {
-  default: 'campuscats://settings/inaturalist-account',
-});
 const firestore = getFirestore();
 const auth = getAuth();
 const storage = getStorage();
@@ -176,27 +156,6 @@ const inaturalistAccountRepository =
   new FirebaseInaturalistAccountLinkRepository(firestore);
 const tenantCollection = (clubId: string, collectionName: string) =>
   firestore.collection('clubs').doc(clubId).collection(collectionName);
-const inaturalistAccountConfig = {
-  get clientId() {
-    return INATURALIST_OAUTH_CLIENT_ID.value();
-  },
-  get clientSecret() {
-    return INATURALIST_OAUTH_CLIENT_SECRET.value();
-  },
-  get redirectUri() {
-    return INATURALIST_OAUTH_REDIRECT_URI.value();
-  },
-  get appReturnUri() {
-    return INATURALIST_APP_RETURN_URI.value();
-  },
-};
-const inaturalistAccountDependencies: InaturalistAccountLinkingDependencies = {
-  config: inaturalistAccountConfig,
-  repository: inaturalistAccountRepository,
-  oauth: new InaturalistAccountHttpGateway(inaturalistAccountConfig),
-  now: () => new Date(),
-  getUser: (id) => dependencies.getUser(id),
-};
 
 const universityCatalog = new UniversityCatalogService(
   firestore,
@@ -1911,58 +1870,6 @@ export const linkInaturalistCatalog = onCall((request) =>
       inaturalistDependencies,
     ),
   ),
-);
-
-export const beginInaturalistAccountLink = onCall((request) =>
-  execute(() =>
-    handleBeginInaturalistAccountLink(
-      requestFor(request),
-      inaturalistAccountDependencies,
-    ),
-  ),
-);
-
-export const getInaturalistAccountLinkStatus = onCall((request) =>
-  execute(() =>
-    handleGetInaturalistAccountLinkStatus(
-      requestFor(request),
-      inaturalistAccountDependencies,
-    ),
-  ),
-);
-
-export const unlinkInaturalistAccount = onCall((request) =>
-  execute(() =>
-    handleUnlinkInaturalistAccount(
-      requestFor(request),
-      inaturalistAccountDependencies,
-    ),
-  ),
-);
-
-export const inaturalistAccountCallback = onRequest(
-  { secrets: [INATURALIST_OAUTH_CLIENT_SECRET] },
-  async (request, response) => {
-    response.set('Cache-Control', 'no-store');
-    response.set('Referrer-Policy', 'no-referrer');
-    try {
-      const result = await handleInaturalistAccountCallback(
-        {
-          state: request.query.state,
-          code: request.query.code,
-          error: request.query.error,
-        },
-        inaturalistAccountDependencies,
-      );
-      response.redirect(302, result.redirectUrl);
-    } catch {
-      logger.error('iNaturalist account callback failed');
-      response.redirect(
-        302,
-        `${INATURALIST_APP_RETURN_URI.value()}?result=error`,
-      );
-    }
-  },
 );
 
 export const syncUniversityCatalogDaily = onSchedule(

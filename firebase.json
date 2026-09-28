@@ -50,13 +50,6 @@
     "cleanUrls": true,
     "rewrites": [
       {
-        "source": "/oauth/inaturalist/callback",
-        "function": {
-          "functionId": "inaturalistAccountCallback",
-          "region": "us-central1"
-        }
-      },
-      {
         "source": "**",
         "destination": "/index.html"
       }
