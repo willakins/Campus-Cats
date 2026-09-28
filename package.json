@@ -25,7 +25,7 @@
     "platform:check": "node scripts/check-platform-compat.js",
     "hosting:check": "node scripts/check-hosting.js",
     "hosting:env": "node scripts/check-hosting-environment.js",
-    "hosting:build": "npm run hosting:env && expo export --platform web --clear && npm run hosting:check",
+    "hosting:build": "if [ -f .env.production.local ]; then set -a && . ./.env.production.local && set +a; fi; npm run hosting:env && expo export --platform web --clear && npm run hosting:check",
     "hosting:serve": "npm run hosting:build && firebase emulators:start --only hosting --project demo-campus-cats-test",
     "postinstall": "patch-package",
     "quality": "npm run typecheck && npm run lint && npm run format:check && npm run ui:check && npm run platform:check && npm run hosting:check"
