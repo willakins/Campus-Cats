@@ -18,12 +18,13 @@ import {
 import { useFocusTask } from '@/components/hooks/useFocusTask';
 import { appModules } from '@/composition/appModules';
 import { InaturalistAccountLinkStatus, parseUser } from '@/core/domain';
+import { featureFlags } from '@/core/featureFlags';
 import { useAuth } from '@/providers';
 import { useAppTheme } from '@/theme';
 
 const APP_RETURN_URL = 'campuscats://settings/inaturalist-account';
 
-const InaturalistAccount = () => {
+export const InaturalistAccountLinking = () => {
   const router = useRouter();
   const params = useLocalSearchParams<{ readonly attempt?: string }>();
   const { user } = useAuth();
@@ -212,5 +213,41 @@ const InaturalistAccount = () => {
     </Screen>
   );
 };
+
+const InaturalistAccountComingSoon = () => {
+  const router = useRouter();
+  const theme = useAppTheme();
+
+  return (
+    <Screen scroll>
+      <AppHeader
+        title="iNaturalist account"
+        eyebrow="Profile connections"
+        onBack={() => router.back()}
+      />
+      <FormSection title="Account linking">
+        <Card accent={theme.colors.info}>
+          <View style={{ gap: theme.spacing.sm }}>
+            <StatusPill label="Coming soon" tone="info" />
+            <AppText variant="section">Account linking is coming later</AppText>
+            <AppText color="muted">
+              Campus Cats can still sync public observations from the Georgia Tech
+              Cat Sightings project. Connecting those observations to an individual
+              member profile will become available after production authorization is
+              configured with iNaturalist.
+            </AppText>
+          </View>
+        </Card>
+      </FormSection>
+    </Screen>
+  );
+};
+
+const InaturalistAccount = () =>
+  featureFlags.inaturalistAccountLinking ? (
+    <InaturalistAccountLinking />
+  ) : (
+    <InaturalistAccountComingSoon />
+  );
 
 export default InaturalistAccount;

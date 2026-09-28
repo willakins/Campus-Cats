@@ -4,7 +4,9 @@ import { Alert, Linking } from 'react-native';
 import { render, screen, userEvent, waitFor } from '@testing-library/react-native';
 import * as WebBrowser from 'expo-web-browser';
 
-import InaturalistAccount from '../../app/(app)/settings/inaturalist-account';
+import InaturalistAccount, {
+  InaturalistAccountLinking,
+} from '../../app/(app)/settings/inaturalist-account';
 import { AppThemeProvider } from '../../theme';
 
 const mockBack = jest.fn();
@@ -44,10 +46,10 @@ jest.mock('../../composition/appModules', () => ({
 
 jest.mock('@expo/vector-icons', () => ({ Ionicons: () => null }));
 
-const renderRoute = async () =>
+const renderRoute = async (enabled = false) =>
   await render(
     <AppThemeProvider colorScheme="light">
-      <InaturalistAccount />
+      {enabled ? <InaturalistAccountLinking /> : <InaturalistAccount />}
     </AppThemeProvider>,
   );
 
@@ -75,9 +77,25 @@ describe('iNaturalist account link route', () => {
     });
   });
 
-  it('explains consent and completes the system-browser link flow', async () => {
-    const user = userEvent.setup();
+  it('explains that account linking is temporarily unavailable without calling the backend', async () => {
     await renderRoute();
+
+    expect(screen.getByText('iNaturalist account')).toBeOnTheScreen();
+    expect(screen.getByText('Account linking is coming later')).toBeOnTheScreen();
+    expect(
+      screen.getByText(/Campus Cats can still sync public observations/),
+    ).toBeOnTheScreen();
+    expect(
+      screen.queryByRole('button', { name: 'Connect iNaturalist' }),
+    ).not.toBeOnTheScreen();
+    expect(mockBegin).not.toHaveBeenCalled();
+    expect(mockStatus).not.toHaveBeenCalled();
+    expect(mockUnlink).not.toHaveBeenCalled();
+  });
+
+  it('retains the consent and system-browser link flow for later enablement', async () => {
+    const user = userEvent.setup();
+    await renderRoute(true);
 
     expect(
       await screen.findByText('Connect your iNaturalist account'),
@@ -107,7 +125,7 @@ describe('iNaturalist account link route', () => {
     expect(await screen.findByText('@cat_watcher')).toBeOnTheScreen();
   });
 
-  it('shows a verified account and unlinks it after confirmation', async () => {
+  it('retains the verified-account unlink flow for later enablement', async () => {
     mockStatus.mockResolvedValue({
       ok: true,
       value: {
@@ -121,7 +139,7 @@ describe('iNaturalist account link route', () => {
     });
     const openUrl = jest.spyOn(Linking, 'openURL').mockResolvedValue(true);
     const user = userEvent.setup();
-    await renderRoute();
+    await renderRoute(true);
 
     expect(await screen.findByText('@cat_watcher')).toBeOnTheScreen();
     await user.press(screen.getByRole('button', { name: 'View on iNaturalist' }));

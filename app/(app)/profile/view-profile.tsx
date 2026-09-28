@@ -31,6 +31,7 @@ import {
   achievementById,
   parseUser,
 } from '@/core/domain';
+import { featureFlags } from '@/core/featureFlags';
 import { DisplayMediaAsset } from '@/core/ports';
 import { useAuth } from '@/providers';
 import { useAppTheme } from '@/theme';
@@ -391,15 +392,22 @@ const ViewProfileScreen = () => {
 
           {isOwnProfile ? (
             <FormSection title="Connected accounts">
-              <Card accent={theme.colors.success}>
+              <Card accent={theme.colors.info}>
                 <View style={{ gap: theme.spacing.sm }}>
                   <AppText variant="cardTitle">iNaturalist</AppText>
+                  {!featureFlags.inaturalistAccountLinking ? (
+                    <StatusPill label="Coming soon" tone="info" />
+                  ) : null}
                   <AppText color="muted">
                     Connect your Campus Cats account to iNaturalist so imported
                     observations can link back to your member profile.
                   </AppText>
                   <Button
-                    label="Manage iNaturalist connection"
+                    label={
+                      featureFlags.inaturalistAccountLinking
+                        ? 'Manage iNaturalist connection'
+                        : 'Learn about iNaturalist connection'
+                    }
                     icon="leaf-outline"
                     variant="secondary"
                     onPress={() =>
