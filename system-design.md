@@ -2,14 +2,14 @@
 
 | Field                     | Value                                                                                                                                             |
 | ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Status                    | Proposed target architecture; greenfield choice and migration path are separate                                                                   |
+| Status                    | Hosting review: retain Firebase; Supabase architecture is conditional on a demonstrated relational need                                           |
 | Owner                     | Campus Cats maintainers (specific owner TBD)                                                                                                      |
-| Last updated              | 2026-08-27                                                                                                                                        |
-| Primary recommendation    | Supabase Pro as a relational backend-as-a-service: PostgreSQL/PostGIS, Auth, RLS, Realtime, Storage, Edge Functions, Cron, and Queues             |
+| Last updated              | 2026-09-28                                                                                                                                        |
+| Primary recommendation    | Retain Firebase Blaze for the existing app; prefer Supabase Pro if a PostgreSQL migration becomes justified                                       |
 | Budget constraint         | USD 150/month hard ceiling before payment fees and labor; prefer USD 50/month or less at the projected year-one workload                          |
 | Consequential assumptions | U.S. deployment; 10 clubs, 2,000 registered users, and 600 MAU in year one; English-only mobile app; one to three part-time volunteer maintainers |
 
-This design starts from the product workload, volunteer ownership, and total cost. The current Firebase implementation is migration context, not the default answer. The previous AWS/RDS proposal is rejected because its private-networking and always-on database costs consume too much of the budget before serving a user.
+At the projected workload, there is no demonstrated hosting-cost reason to migrate the existing app. Retain Firebase, measure its bill, and optimize the expensive operations first. Supabase Pro remains the preferred managed relational target if joins, constraints, or geospatial requirements justify the implementation effort. Sections 3.2–4.6 describe that conditional target, not an approved migration. The previous AWS/RDS proposal remains unattractive for this budget.
 
 ## Contents
 
@@ -30,7 +30,7 @@ Campus Cats is operated and used by university volunteers:
 - Presidents manage access, settings, succession, onboarding, and club billing.
 - A very small maintainer group handles releases, incidents, backups, provider configuration, and support.
 
-Production support is limited to iOS and Android. Expo web is a local development and smoke-testing convenience, not a deployed product.
+The primary product is iOS and Android. The repository also configures Firebase Hosting for the Expo web export, a native SAML redirect bridge, public flows, and an iNaturalist OAuth callback. Preserve these dependencies even if a general-purpose web client is outside product scope; see [web hosting](docs/web-hosting.md) and [Firebase configuration](firebase.json).
 
 The audience changes the architecture:
 
@@ -44,7 +44,7 @@ The audience changes the architecture:
 
 Without the app, sightings, cat histories, feeding-station status, and time-sensitive updates are fragmented across people and communication channels. That causes duplicate entry, stale information, uncertain responsibility, and weak access control.
 
-The repository currently implements Expo clients that access Firebase Auth, Firestore, and Cloud Storage, with Cloud Functions for privileged operations and integrations. It proves the product workflows and provides strong mobile realtime/offline behavior. Its main architectural pressures are relational:
+The repository currently implements Expo clients that access Firebase Auth, Firestore, and Cloud Storage, with Cloud Functions for privileged operations and integrations. It implements realtime workflows, but durable Firestore offline persistence is not established: the app uses the Firebase JavaScript SDK, whose React Native support excludes Firestore persistence. Auth persistence in AsyncStorage is separate. Offline drafts need explicit work whichever backend is selected. ([Supported environments](https://firebase.google.com/docs/web/environments-js-sdk)) Its main architectural pressures are relational:
 
 - cats, tags, favorites, sightings, contributors, comments, users, roles, surveys, ballots, and billing state are related across collections;
 - foreign-key, uniqueness, and multi-entity invariants are repeated in application code, Functions, and Security Rules;
@@ -121,7 +121,15 @@ The solution must preserve relational integrity without requiring volunteers to 
 
 #### Current state
 
-Firebase remains a credible realtime/offline document platform, but the domain has enough relationships and transactional invariants to prefer relational storage in a greenfield design.
+**Retain Firebase Blaze for the existing app.** The 600 MAU figure is a year-one assumption, not measured current usage. The original comparison itself estimated Firebase below Supabase, and no bill or measured bottleneck establishes savings from switching.
+
+The projected 30,000 logical reads and 600 mutations per day are below Firestore's 50,000 reads and 20,000 writes daily free quotas if they map one-to-one to billed operations. Listeners, reconnects, rule-dependent reads, indexes, scheduled jobs, and multiple writes per mutation can increase that count. Database storage beyond 1 GiB and backups are separately billed. ([Firestore billing](https://firebase.google.com/docs/firestore/pricing))
+
+SAML does not favor either platform on price at this scale: both include 50 SAML MAU and charge $0.015 thereafter, or $8.25 for 600 SAML MAU. Password users do not all become billable SAML users. ([Google Identity Platform](https://cloud.google.com/identity-platform/pricing), [Supabase SAML](https://supabase.com/docs/guides/auth/enterprise-sso/auth-sso-saml))
+
+Media delivery is the largest unmeasured cost variable. New uploads of 1.25 GiB/month imply approximately 15 GiB accumulated after one year from an empty bucket; they say nothing about download volume. The 100 GB media/100 GB egress figures below are separate stress assumptions. Firebase's legacy and newer buckets have different free transfer allowances and pricing; use the actual bucket type, region, and download destinations. ([Firebase Storage pricing](https://firebase.google.com/pricing))
+
+First collect 30 days of service-level costs and usage, including backups, email, scheduled work, and hosted auth flows. The repo already has a [billing export reader](functions/src/billing.ts). Inspect unbounded collection reads in [FirebaseDocumentStore](adapters/firebase/FirebaseDocumentStore.ts) before attributing read costs to the provider. If media dominates, evaluate a bounded media change independently of a database rewrite.
 
 #### Preferred greenfield target
 
@@ -141,25 +149,22 @@ This preserves PostgreSQL joins, constraints, transactions, text search, and geo
 
 #### Migration-aware recommendation
 
-Migrate by domain, not by provider all at once. Supabase has first-class support for trusting Firebase Auth JWTs across its Data API, Storage, Realtime, and Functions ([third-party authentication documentation](https://supabase.com/docs/guides/auth/third-party/overview)). Move relational data first; migrate Auth and media only after the model is stable. Every domain has one authoritative writer.
+Start a migration only after a catalog/query prototype demonstrates a material correctness or maintenance benefit, or measured recurring savings justify the migration and operating cost. If that gate passes, migrate by domain. Supabase supports Firebase Auth JWTs ([third-party authentication documentation](https://supabase.com/docs/guides/auth/third-party/overview)), so identity can stay on Firebase during a relational pilot. Budget both providers during overlap. Every domain has one authoritative writer.
 
 #### Market comparison
 
-Planning ranges use the year-one workload and official pricing checked 2026-08-27. They include the application services needed, not just a database headline price.
+Reviewed 2026-09-28. The earlier $5–25 Firebase and $35–50 Supabase totals were planning estimates, not measured bills or equivalent recovery configurations. They do not establish a cheapest provider. See the [alternative hosting review](docs/hosting-alternatives-review.md) for current sources and illustrative calculations.
 
-| Candidate                    | Year-one total | Query fit                                                        | Included capabilities                                               | Main drawback                                                                         | Verdict                           |
-| ---------------------------- | -------------: | ---------------------------------------------------------------- | ------------------------------------------------------------------- | ------------------------------------------------------------------------------------- | --------------------------------- |
-| Supabase Pro                 |         $35–50 | PostgreSQL/PostGIS, joins, constraints, RLS                      | Auth/SAML, API, Realtime, Storage, Functions, Cron, Queues, backups | No automatic offline data cache; objects need separate backup                         | **Selected**                      |
-| Firebase Blaze               |          $5–25 | Document queries/transactions; application-managed relationships | Auth/SAML, realtime/offline, Storage, Functions                     | Relational queries/invariants require denormalization and coordinated rules/functions | Strong non-relational alternative |
-| Neon Launch + Cloudflare     |         $25–50 | Serverless PostgreSQL                                            | Database/Auth plus separately assembled Workers/R2/etc.             | More providers and custom integration                                                 | Strong modular alternative        |
-| Cloudflare Workers + D1 + R2 |         $15–30 | Relational SQLite, low usage cost                                | Compute, SQL, objects, queues                                       | External SAML/Auth, no PostGIS, custom realtime/API                                   | Cheapest SQL, not best total fit  |
-| Appwrite Pro                 |         $25–40 | Tables/document model; dedicated PostgreSQL extra                | Auth, Storage, Functions, Realtime, backups                         | Application SAML unavailable; weaker relational fit                                   | Rejected                          |
-| Railway app + PostgreSQL     |         $25–60 | Full PostgreSQL                                                  | Flexible compute/storage                                            | Auth, objects, realtime, backups, and app operations remain ours                      | Rejected                          |
-| Turso plus API/storage/auth  |         $15–35 | SQLite/libSQL                                                    | Database only                                                       | Weaker concurrency/geospatial fit; assembled stack                                    | Rejected                          |
-| AWS RDS stack                |        $81–180 | Full PostgreSQL/PostGIS                                          | Mature managed components                                           | Database/network/telemetry fixed costs dominate                                       | Rejected                          |
-| Small VPS                    |         $10–30 | Full control                                                     | Anything self-hosted                                                | Patching, backups, failover, and incidents fall on volunteers                         | Rejected                          |
+| Candidate                               | Cost basis                                                                                                   | Fit and decision                                                                                                                           |
+| --------------------------------------- | ------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| Firebase Blaze                          | Usage-based; no mandatory platform subscription; include SAML, storage, transfer, jobs, and recovery         | **Retain for the existing app.** Lowest implementation cost; measure before changing providers.                                            |
+| Supabase Pro                            | $25 for Pro with one Micro covered by compute credit; $8.25 for 600 SAML MAU, plus recovery and any overages | **Preferred conditional relational target.** Integrated PostgreSQL/PostGIS, Auth, RLS, API, Storage, Realtime, and jobs.                   |
+| Neon + Cloudflare + identity            | Database compute depends on active hours; API, objects, identity, and recovery must be added                 | Credible modular PostgreSQL option, but more integration and operational ownership for volunteers.                                         |
+| Cloudflare Workers + D1 + R2 + identity | Low platform cost, plus auth and custom API/realtime work                                                    | D1's 10 GB per-database limit already meets the year-one storage allowance and requires partitioning for the three-year model; no PostGIS. |
 
-Official sources: [Supabase](https://supabase.com/pricing), [Firebase](https://firebase.google.com/pricing), [Neon](https://neon.com/pricing), [Cloudflare Workers](https://developers.cloudflare.com/workers/platform/pricing/), [D1](https://developers.cloudflare.com/d1/platform/pricing/), [R2](https://developers.cloudflare.com/r2/pricing/), [Appwrite](https://appwrite.io/pricing), [Railway](https://docs.railway.com/pricing), and [Turso](https://turso.tech/pricing).
+Appwrite, Railway, Turso, a VPS, and the previously proposed AWS stack have no demonstrated total-cost advantage that justifies replacing this working implementation. Revisit them only with a concrete unmet requirement and an equivalent service/recovery estimate; their former broad price ranges were insufficient evidence to rank them.
+
+Official sources: [Supabase](https://supabase.com/pricing), [Firebase](https://firebase.google.com/pricing), [Neon](https://neon.com/pricing), [Workers](https://developers.cloudflare.com/workers/platform/pricing/), [D1 limits](https://developers.cloudflare.com/d1/platform/limits/), and [R2](https://developers.cloudflare.com/r2/pricing/).
 
 ### 3.2 Architecture Diagram
 
@@ -201,7 +206,7 @@ flowchart LR
     STORE -->|object copy| R2
 ```
 
-No production web client, custom API server, NAT gateway, Redis, OpenSearch, Kubernetes, read replica, or multi-region deployment is selected.
+The diagram describes the conditional Supabase backend. Hosted SAML/OAuth and public-page dependencies still require an explicit hosting decision. No custom API server, NAT gateway, Redis, OpenSearch, Kubernetes, read replica, or multi-region deployment is selected.
 
 ### 3.3 End-to-End Request and Data Flows
 
@@ -234,19 +239,19 @@ Roles, bans, succession, surveys, and voting run in transactions with locks and 
 
 ### 3.4 Component Decisions
 
-| Component      | Current                        | Target                                                       | Why                                                        | Alternative/trigger                                         |
-| -------------- | ------------------------------ | ------------------------------------------------------------ | ---------------------------------------------------------- | ----------------------------------------------------------- |
-| Mobile         | Expo + Firebase adapters       | Expo + Supabase adapters + SQLite drafts/cache               | Preserves UI and intermittent field work                   | Platform-specific apps only after material divergence       |
-| Data boundary  | Firestore + callable Functions | Data API for CRUD; RPC/Edge Functions for privilege          | No always-on API bill; server-enforced contracts           | Dedicated API for external clients/complex orchestration    |
-| Store          | Firestore                      | Supabase PostgreSQL/PostGIS, FKs, constraints, RLS           | Relational/geospatial fit inside bundled low-cost platform | Neon if Supabase limits/regions fail                        |
-| Identity       | Firebase Auth                  | Supabase Auth greenfield; trust Firebase during migration    | Integrated SAML; avoids immediate identity migration       | Keep Firebase Auth if moving it has no benefit              |
-| Media          | Firebase Storage               | Supabase Storage, private immutable keys, signed/TUS uploads | 100 GB storage and 250 GB egress included                  | Move primary media to R2 when overage >$10/month            |
-| Realtime       | Firestore listeners            | Realtime only for chat/high-value status                     | Included quota; SQL remains durable truth                  | Poll when freshness is not worth complexity                 |
-| Offline        | Firestore persistence          | SQLite drafts, pending work, bounded cache                   | Covers interruption without general conflict engine        | Expand only from observed failures                          |
-| Jobs           | Functions/work records         | Queues + Cron-triggered Edge Functions                       | Included, durable, replayable                              | External queue after platform limits                        |
-| Search         | Firestore/local filters        | PostgreSQL GIN/trigram and tag joins                         | No search service bill/sync                                | Dedicated search above 100k rows/tenant or failed relevance |
-| Recovery       | Provider durability            | Seven daily backups + incremental encrypted R2 copies        | Avoids $100/month PITR while limiting provider loss        | PITR only with funded sub-day RPO                           |
-| Communications | SendGrid + Expo                | SES + Expo Push                                              | Near-zero use cost, no NAT                                 | Keep SendGrid for proven reputation/tooling                 |
+| Component      | Current                                    | Target                                                       | Why                                                        | Alternative/trigger                                         |
+| -------------- | ------------------------------------------ | ------------------------------------------------------------ | ---------------------------------------------------------- | ----------------------------------------------------------- |
+| Mobile         | Expo + Firebase adapters                   | Expo + Supabase adapters + SQLite drafts/cache               | Preserves UI and intermittent field work                   | Platform-specific apps only after material divergence       |
+| Data boundary  | Firestore + callable Functions             | Data API for CRUD; RPC/Edge Functions for privilege          | No always-on API bill; server-enforced contracts           | Dedicated API for external clients/complex orchestration    |
+| Store          | Firestore                                  | Supabase PostgreSQL/PostGIS, FKs, constraints, RLS           | Relational/geospatial fit inside bundled low-cost platform | Neon if Supabase limits/regions fail                        |
+| Identity       | Firebase Auth                              | Supabase Auth greenfield; trust Firebase during migration    | Integrated SAML; avoids immediate identity migration       | Keep Firebase Auth if moving it has no benefit              |
+| Media          | Firebase Storage                           | Supabase Storage, private immutable keys, signed/TUS uploads | 100 GB storage and 250 GB egress included                  | Move primary media to R2 when overage >$10/month            |
+| Realtime       | Firestore listeners                        | Realtime only for chat/high-value status                     | Included quota; SQL remains durable truth                  | Poll when freshness is not worth complexity                 |
+| Offline        | JS SDK; durable data cache not established | SQLite drafts, pending work, bounded cache                   | Covers interruption without general conflict engine        | Expand only from observed failures                          |
+| Jobs           | Functions/work records                     | Queues + Cron-triggered Edge Functions                       | Included, durable, replayable                              | External queue after platform limits                        |
+| Search         | Firestore/local filters                    | PostgreSQL GIN/trigram and tag joins                         | No search service bill/sync                                | Dedicated search above 100k rows/tenant or failed relevance |
+| Recovery       | Provider durability                        | Seven daily backups + incremental encrypted R2 copies        | Avoids $100/month PITR while limiting provider loss        | PITR only with funded sub-day RPO                           |
+| Communications | SendGrid + Expo                            | SES + Expo Push                                              | Near-zero use cost, no NAT                                 | Keep SendGrid for proven reputation/tooling                 |
 
 ### 3.5 Data Placement and Lifecycle
 
@@ -306,6 +311,8 @@ Do not add a paid warehouse or analytics platform at launch.
 
 ### 3.9 Decision Summary and Evolution Path
 
+For the existing app, retain Firebase and measure/optimize its cost first. This table applies only if the relational migration gate in section 3.1 passes.
+
 | Decision | Initial                                         | Revisit                                                   |
 | -------- | ----------------------------------------------- | --------------------------------------------------------- |
 | Platform | Supabase Pro                                    | Limitation, support/region failure, or base forecast >$75 |
@@ -322,8 +329,8 @@ Do not add a paid warehouse or analytics platform at launch.
 
 ### 4.1 Delivery Sequence
 
-1. Measure Firebase reads, listeners, storage, transfer, SAML MAU, and cost.
-2. Create Supabase staging, SQL migrations, RLS/grant tests, local stack, alerts, and R2 recovery.
+1. Measure Firebase reads, listeners, storage, transfer, SAML MAU, recovery, jobs, and cost; optimize expensive paths and demonstrate a reason to migrate.
+2. Only after that decision, create Supabase staging, SQL migrations, RLS/grant tests, local stack, alerts, and R2 recovery.
 3. Configure Firebase JWT trust and prove cross-tenant denial.
 4. Pilot catalog/tags/favorites/linked sightings for one test club and compare query plans/results.
 5. Backfill, shadow-read, freeze briefly, checksum, and switch one domain with one writer.
@@ -335,21 +342,21 @@ Do not add a paid warehouse or analytics platform at launch.
 
 ### 4.2 Component Implementation
 
-Prices are USD/month, checked 2026-08-27.
+Prices are USD/month. Core Supabase pricing was rechecked 2026-09-28; ancillary-service allowances remain estimates. These components apply to the conditional Supabase target.
 
-| Component             | Product                                  | Build/test                                                          |                                                                                  Base |
-| --------------------- | ---------------------------------------- | ------------------------------------------------------------------- | ------------------------------------------------------------------------------------: |
-| Mobile                | Expo/React Native + SQLite               | Supabase adapters, drafts/cache, interruption/accessibility tests   |                                                                     $0 plus store/EAS |
-| Platform              | Supabase Pro U.S.                        | Production project, quotas, migrations                              |                                      $25–30 ([pricing](https://supabase.com/pricing)) |
-| SSO                   | Supabase Auth                            | 50 included, then $0.015; 600 ≈ $8.25                               | $8.25 ([pricing](https://supabase.com/docs/guides/auth/enterprise-sso/auth-sso-saml)) |
-| Database/API          | PostgreSQL/PostGIS + Data API/RPC        | Schema, grants, RLS, indexes, plans, races                          |                                                                 About $0.25 over 8 GB |
-| Compute/realtime/jobs | Edge Functions, Realtime, Queues, Cron   | Signatures, timeouts, duplicates, replay                            |                                                                      Included at base |
-| Primary media         | Supabase Storage                         | Private TUS uploads, signatures, orphans                            |                                                 Included through 100 GB/250 GB egress |
-| Recovery              | Cloudflare R2                            | Nightly encrypted SQL exports, incremental object copy, and restore |    About $1.35/100 GB copy ([pricing](https://developers.cloudflare.com/r2/pricing/)) |
-| Email/push            | SES + Expo Push                          | Sender, templates, receipts, invalid tokens                         |                                                                                   <$1 |
-| Maps                  | Native Google/Apple SDK                  | Restricted keys and device tests                                    |                                                                                    $0 |
-| Monitoring            | Supabase plus synthetic/client free tier | Alerts, privacy, budget                                             |                                                                                  $0–5 |
-| Billing               | Stripe                                   | Hosted UI, signed webhook, reconciliation                           |                                                                         Variable fees |
+| Component             | Product                                  | Build/test                                                          |                                                                                                                              Base |
+| --------------------- | ---------------------------------------- | ------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------: |
+| Mobile                | Expo/React Native + SQLite               | Supabase adapters, drafts/cache, interruption/accessibility tests   |                                                                                                                 $0 plus store/EAS |
+| Platform              | Supabase Pro U.S.                        | Production project, quotas, migrations                              |                                                                                  $25–30 ([pricing](https://supabase.com/pricing)) |
+| SSO                   | Supabase Auth                            | 50 included, then $0.015; 600 ≈ $8.25                               |                                             $8.25 ([pricing](https://supabase.com/docs/guides/auth/enterprise-sso/auth-sso-saml)) |
+| Database/API          | PostgreSQL/PostGIS + Data API/RPC        | Schema, grants, RLS, indexes, plans, races                          |                                                                                                             About $0.25 over 8 GB |
+| Compute/realtime/jobs | Edge Functions, Realtime, Queues, Cron   | Signatures, timeouts, duplicates, replay                            |                                                                                                                  Included at base |
+| Primary media         | Supabase Storage                         | Private TUS uploads, signatures, orphans                            |                                                                                             Included through 100 GB/250 GB egress |
+| Recovery              | Cloudflare R2                            | Nightly encrypted SQL exports, incremental object copy, and restore | $1.35 for 100 GB objects alone; add retained exports and source egress ([pricing](https://developers.cloudflare.com/r2/pricing/)) |
+| Email/push            | SES + Expo Push                          | Sender, templates, receipts, invalid tokens                         |                                                                                                                               <$1 |
+| Maps                  | Native Google/Apple SDK                  | Restricted keys and device tests                                    |                                                                                                                                $0 |
+| Monitoring            | Supabase plus synthetic/client free tier | Alerts, privacy, budget                                             |                                                                                                                              $0–5 |
+| Billing               | Stripe                                   | Hosted UI, signed webhook, reconciliation                           |                                                                                                                     Variable fees |
 
 ### 4.3 API, Schema, and Job Boundaries
 
@@ -376,7 +383,7 @@ Every job has a stable idempotency key and is archived/deleted only after its ex
 
 - Local uses Supabase CLI containers, provider adapters, Expo devices/emulators, and SQLite.
 - CI runs code checks, migrations, RLS/grant tests, RPC races, provider contracts, and Firebase emulator tests during migration.
-- Development may use a pausable Free project; production uses non-pausing Pro.
+- Development may use a pausable Free project in a separate Free organization, but it cannot validate SAML. A second Micro project in the Pro organization adds approximately $10/month. Use local development plus temporary paid SAML validation, or fund persistent staging. ([Billing](https://supabase.com/docs/guides/platform/billing-on-supabase), [SAML](https://supabase.com/docs/guides/auth/enterprise-sso/auth-sso-saml))
 - Infrastructure is versioned SQL, Supabase configuration, Edge Functions, secrets manifests, R2 policy, provider manifests, and alerts.
 - Deploy expand-compatible schema before functions/client; contract only after rollback expiry.
 - Restore drills use a temporary project and synthetic validation accounts.
@@ -385,28 +392,24 @@ Every job has a stable idempotency key and is archived/deleted only after its ex
 
 The repository contains no approved dollar budget. This design treats the prior USD 150 assumption as a hard ceiling and adds a preferred USD 50 target because the operator is volunteer-run.
 
-| Cost                   |   One club | Year-one base |                      Three-year planning |
-| ---------------------- | ---------: | ------------: | ---------------------------------------: |
-| Supabase Pro/compute   |     $25–30 |        $25–30 |                                  $50–100 |
-| SAML SSO               |    $0–2.25 |         $8.25 |                                   $44.25 |
-| Database overage       |         $0 |         $0.25 |                      $11.50 plus compute |
-| Primary storage/egress |         $0 |            $0 |  $20–80; move to R2 before large overage |
-| R2 copy/later primary  |       $0–1 |         $1.35 |                                About $15 |
-| Functions/Realtime     |         $0 |            $0 |                                    $5–30 |
-| Email/push/maps        |       $0–1 |          $0–2 |                                    $2–10 |
-| Monitoring             |       $0–3 |          $0–5 |                                    $5–20 |
-| **Production total**   | **$25–37** |    **$35–50** | **$153–311 before optimization/funding** |
-| Non-production         |         $0 |          $0–5 |                                    $5–25 |
+| Cost                                        | Year-one calculation or condition                                                                       |
+| ------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
+| Supabase Pro with one Micro                 | $25; use $30 with Small compute                                                                         |
+| SAML SSO                                    | max(0, SAML MAU − 50) × $0.015; $8.25 if all 600 MAU use SAML                                           |
+| Provisioned database disk                   | (10 GB − 8 GB) × $0.125 = $0.25; include operating headroom when sizing                                 |
+| **Core subtotal**                           | **$33.50 with Micro and 600 SAML MAU**                                                                  |
+| Primary media                               | Included while stored objects and service egress remain within allowances                               |
+| Independent recovery                        | Retained object copies **plus 30 database exports**, R2 operations, export runner, and source transfer  |
+| Functions/Realtime                          | Included only while measured invocations/messages/connections fit quotas                                |
+| Email, hosted public/auth flows, monitoring | Price actual providers and usage; not established by this review                                        |
+| **Production allowance**                    | **$35–50 remains plausible with small recovery/transfer costs; it is not a validated total or ceiling** |
+| Persistent staging                          | Approximately $10 more for another Micro, plus usage; local/separate Free development has limitations   |
 
-Base arithmetic:
+For the original 100 GB object-copy scenario, R2 storage alone is (100 − 10) × $0.015 = $1.35. Thirty retained 10 GB export files add 300 GB and raise that storage subtotal to $5.85. Actual logical dumps may be much smaller than provisioned disk. Separately, 400 GB/month of uncached source transfer would cost (400 − 250) × $0.09 = $13.50. Compressed archive size does not determine transfer from PostgreSQL because compression on the export runner happens after retrieval. Measure archive bytes and network bytes independently. ([R2 pricing](https://developers.cloudflare.com/r2/pricing/), [Supabase egress](https://supabase.com/docs/guides/platform/manage-your-usage/egress))
 
-- Pro: $25–30.
-- SSO: (600 − 50) × $0.015 = $8.25.
-- Database: (10 GB − 8 GB) × $0.125 = $0.25.
-- 100 GB media and 100 GB egress fit the listed 100 GB/250 GB allowances.
-- R2 copy: (100 GB − 10 GB free) × $0.015 = $1.35 before small operation charges.
+The previous $153–311 three-year total is withdrawn: user count alone does not establish the assumed compute, media-transfer, realtime, and monitoring increases. At 3,000 SAML MAU and 100 GB disk, the base plan/SAML/disk subtotal would be $80.75 before compute upgrades, recovery, and other services. Rebuild that forecast from measured usage; a $150 ceiling is not guaranteed.
 
-The base is about $35–50/month, roughly 55–75% below the rejected AWS base, without relying on a production free tier. Stripe, stores/EAS, taxes, labor, and optional PITR are excluded.
+Stripe, stores/EAS, taxes, labor, and optional PITR are excluded. Compare Firebase and Supabase using equivalent backup retention, hosted flows, and environments before claiming savings.
 
 Guardrails:
 
@@ -416,9 +419,11 @@ Guardrails:
 - move primary media to R2 before overage exceeds $10/month;
 - require funding review before $50 and architecture review before $100.
 
+Budget alerts do not enforce a universal $150 stop. Supabase's Spend Cap excludes compute and several add-ons. Firebase's service spend caps cover selected services, not the entire Firestore/Storage bill. Bound application usage and document which features can be suspended. ([Supabase cost control](https://supabase.com/docs/guides/platform/cost-control), [Firebase budgets](https://firebase.google.com/docs/projects/billing/avoid-surprise-bills))
+
 #### One-time migration cost
 
-Assume 8–16 engineer-weeks for schema/RLS, adapters, backfill, cutovers, recovery, and hardening. Proceed only if relational correctness and maintainability justify that volunteer engineering cost; this does not change the greenfield winner.
+The previous 8–16 engineer-week figure is an unvalidated planning allowance for schema/RLS, adapters, backfill, cutovers, recovery, and hardening. Estimate it from a pilot. For a cost-driven migration, payback months = migration cost / (current monthly total − replacement monthly total), including provider overlap and ongoing maintenance. If the denominator is zero or negative, hosting savings cannot repay the migration. A relational migration can still be justified by demonstrated product or maintenance benefits.
 
 ### 4.6 Verification and Acceptance
 
@@ -468,7 +473,7 @@ Assume 8–16 engineer-weeks for schema/RLS, adapters, backfill, cutovers, recov
 | 10 clubs, 2,000 users, 600 MAU                  | Usage/SSO cost                      | Monthly metrics              |
 | $150 is a ceiling, not a target                 | Rejects AWS fixed cost              | Budget approval              |
 | Year one should be ≤$50                         | Selects bundled BaaS/daily recovery | Funding or stricter RPO      |
-| Relational needs will grow                      | Supabase beats Firebase             | Catalog prototype            |
+| Relational needs may grow                       | Could justify Supabase later        | Catalog prototype            |
 | 99.0% and 24-hour RPO suffice                   | Avoids paid HA/PITR                 | Outage or requirement change |
 | One to three volunteers prefer managed services | Rejects VPS/assembled stack         | Funded ownership             |
 | Compressed image ≤2.5 MiB                       | Storage/egress estimate             | First 500 uploads            |
