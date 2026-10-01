@@ -6,15 +6,18 @@ export {
   cleanupDeletedImportedSightingComments,
   cleanupDeletedSightingComments,
   cleanupDeletedStationComments,
-} from './commentCleanup';
-export {runInaturalistSync, syncInaturalistDaily} from './inaturalistFunctions';
+} from './community/commentCleanup';
+export {
+  runInaturalistSync,
+  syncInaturalistDaily,
+} from './integrations/inaturalist/inaturalistFunctions';
 export {
   markChatPingsRead,
   muteChatUser,
   sendChatMessage,
   setChatReaction,
   setChatUserBanned,
-} from './chatCallables';
+} from './community/chatCallables';
 
 import sgMail from '@sendgrid/mail';
 import { getApps, initializeApp } from 'firebase-admin/app';
@@ -55,16 +58,16 @@ import {
   handleMigrateContributorPrivacy,
   handleSelectProfileTitle,
   handleRemoveManagedUser,
-  handleSendAnnouncement,
+  handleSendAlert,
   handleSendWhitelistEmail,
   handleSubmitWhitelistApplication,
   handleSetUserBanned,
   handleTransferPresidency,
   handleUpdateUserRole,
   handleUpdatePublicProfile,
-} from './handlers';
-import { createGoogleCloudBillingReader } from './billing';
-import { CustomerBillingService } from './customerBilling';
+} from './shared/handlers';
+import { createGoogleCloudBillingReader } from './billing/billing';
+import { CustomerBillingService } from './billing/customerBilling';
 import {
   handleCreateClubBillingPortalSession,
   handleCreateClubBillingSetupSession,
@@ -74,22 +77,23 @@ import {
   handleScheduleClubCancellation,
   handleSetClubCollectionMethod,
   handleUpdateClubBillingEmail,
-} from './customerBillingHandlers';
-import { deleteAuthUserIfPresent } from './firebaseAuth';
-import { FirebaseInaturalistRepository } from './firebaseInaturalist';
-import { FirebaseInaturalistAccountLinkRepository } from './firebaseInaturalistAccountLinks';
-import {synchronizeInaturalist} from './inaturalistFunctions';
+} from './billing/customerBillingHandlers';
+import { deleteAuthUserIfPresent } from './platform/firebaseAuth';
+import { FirebaseInaturalistRepository } from './integrations/inaturalist/firebaseInaturalist';
+import { FirebaseInaturalistAccountLinkRepository } from './integrations/inaturalist/firebaseInaturalistAccountLinks';
+import { synchronizeInaturalist } from './integrations/inaturalist/inaturalistFunctions';
+import { PLATFORM_INFO } from './platformInfo';
 import {
   InaturalistHandlerDependencies,
   handleLinkInaturalistCatalog,
   handleModerateInaturalistRecord,
   handleUpdateInaturalistCatalog,
-} from './inaturalistHandlers';
+} from './integrations/inaturalist/inaturalistHandlers';
 import {
   SurveySubmissionDependencies,
   handleSubmitSurveyResponse,
   validateSurveyAnswers,
-} from './surveySubmission';
+} from './community/surveySubmission';
 import {
   CommunityVoteStartNotificationDependencies,
   CommunityVotingDependencies,
@@ -97,14 +101,14 @@ import {
   handleGetCommunityVoteResults,
   handleSubmitCommunityNomination,
   notifyStartedPresidentialVotes,
-} from './communityVoting';
+} from './community/communityVoting';
 import {
   assertCanParticipate,
   parseParticipationAudience,
-} from './participation';
-import { handleSignedStripeWebhook } from './stripeWebhook';
-import { ClubProvisioningService } from './clubProvisioning';
-import { UniversityCatalogService } from './universityCatalog';
+} from './community/participation';
+import { handleSignedStripeWebhook } from './billing/stripeWebhook';
+import { ClubProvisioningService } from './onboarding/clubProvisioning';
+import { UniversityCatalogService } from './onboarding/universityCatalog';
 import {
   FirebaseClubSetupRequestRepository,
   UniversityOnboardingDependencies,
@@ -112,7 +116,7 @@ import {
   handleRequestClubSetup,
   handleSearchUniversities,
   handleVerifyClubSetup,
-} from './universityOnboarding';
+} from './onboarding/universityOnboarding';
 
 if (getApps().length === 0) initializeApp();
 
@@ -157,9 +161,8 @@ const inaturalistAccountRepository =
 const tenantCollection = (clubId: string, collectionName: string) =>
   firestore.collection('clubs').doc(clubId).collection(collectionName);
 
-const universityCatalog = new UniversityCatalogService(
-  firestore,
-  () => COLLEGE_SCORECARD_API_KEY.value(),
+const universityCatalog = new UniversityCatalogService(firestore, () =>
+  COLLEGE_SCORECARD_API_KEY.value(),
 );
 const clubSetupRequests = new FirebaseClubSetupRequestRepository(firestore);
 const onboardingEmail = async (
@@ -172,48 +175,49 @@ const onboardingEmail = async (
     to,
     from: INVITATION_FROM_EMAIL.value(),
     subject,
-    text: `${paragraphs.join('\n\n')}\n\nQuestions? Contact willakins23@gmail.com.`,
+    text: `${paragraphs.join('\n\n')}\n\nQuestions? Contact ${PLATFORM_INFO.supportEmail}.`,
   });
 };
-const universityOnboardingDependencies = (): UniversityOnboardingDependencies => {
-  const provisioner = new ClubProvisioningService({
-    firestore,
-    auth,
-    webOrigin: () => CLUB_ONBOARDING_WEB_ORIGIN.value(),
-    sendPasswordSetup: (email, clubName, link) => onboardingEmail(
-      email,
-      `Finish setting up ${clubName}`,
-      [
-        `Your verified ${clubName} club is ready on Campus Cats.`,
-        'Set your password using the secure link below, then sign in to complete club billing.',
-        link,
-      ],
-    ),
-  });
-  return {
-    catalog: universityCatalog,
-    requests: clubSetupRequests,
-    provision: (request) => provisioner.provision(request),
-    sendVerification: (email, clubName, requestId, token) => {
-      const verification = new URL('/club-setup/verify', CLUB_ONBOARDING_WEB_ORIGIN.value());
-      verification.searchParams.set('requestId', requestId);
-      verification.searchParams.set('token', token);
-      return onboardingEmail(
-        email,
-        `Verify your role as President of ${clubName}`,
-        [
-          `Someone selected you as the President of ${clubName} on Campus Cats.`,
-          'Verify your school email within 24 hours to create the club. If you did not expect this, ignore this message.',
-          verification.toString(),
-        ],
-      );
-    },
-    newId: randomUUID,
-    newToken: () => randomBytes(32).toString('base64url'),
-    hash: (value) => createHash('sha256').update(value).digest('hex'),
-    now: () => new Date(),
+const universityOnboardingDependencies =
+  (): UniversityOnboardingDependencies => {
+    const provisioner = new ClubProvisioningService({
+      firestore,
+      auth,
+      webOrigin: () => CLUB_ONBOARDING_WEB_ORIGIN.value(),
+      sendPasswordSetup: (email, clubName, link) =>
+        onboardingEmail(email, `Finish setting up ${clubName}`, [
+          `Your verified ${clubName} club is ready on Campus Cats.`,
+          'Set your password using the secure link below, then sign in to complete club billing.',
+          link,
+        ]),
+    });
+    return {
+      catalog: universityCatalog,
+      requests: clubSetupRequests,
+      provision: (request) => provisioner.provision(request),
+      sendVerification: (email, clubName, requestId, token) => {
+        const verification = new URL(
+          '/club-setup/verify',
+          CLUB_ONBOARDING_WEB_ORIGIN.value(),
+        );
+        verification.searchParams.set('requestId', requestId);
+        verification.searchParams.set('token', token);
+        return onboardingEmail(
+          email,
+          `Verify your role as President of ${clubName}`,
+          [
+            `Someone selected you as the President of ${clubName} on Campus Cats.`,
+            'Verify your school email within 24 hours to create the club. If you did not expect this, ignore this message.',
+            verification.toString(),
+          ],
+        );
+      },
+      newId: randomUUID,
+      newToken: () => randomBytes(32).toString('base64url'),
+      hash: (value) => createHash('sha256').update(value).digest('hex'),
+      now: () => new Date(),
+    };
   };
-};
 
 const customerBillingService = () =>
   new CustomerBillingService({
@@ -249,12 +253,16 @@ const customerBillingService = () =>
         to: recipients,
         from: 'gtcampuscats@gmail.com',
         subject,
-        text: `${message}\n\nQuestions? Contact willakins23@gmail.com.`,
+        text: `${message}\n\nQuestions? Contact ${PLATFORM_INFO.supportEmail}.`,
       });
     },
   });
 
-const publicProfileDefaults = (email: string, role: number, clubId: string) => ({
+const publicProfileDefaults = (
+  email: string,
+  role: number,
+  clubId: string,
+) => ({
   displayName: (email.split('@')[0]?.trim() || 'Campus Cats member').slice(
     0,
     60,
@@ -267,13 +275,14 @@ const publicProfileDefaults = (email: string, role: number, clubId: string) => (
   clubId,
 });
 
-const validProfileAchievementIds: readonly PublicProfile['achievementIds'][number][] = [
-  'profile-photo',
-  'president',
-  'first-sighting',
-  'ten-sightings',
-  'hundred-sightings',
-];
+const validProfileAchievementIds: readonly PublicProfile['achievementIds'][number][] =
+  [
+    'profile-photo',
+    'president',
+    'first-sighting',
+    'ten-sightings',
+    'hundred-sightings',
+  ];
 
 const mergeProfileAchievements = (
   ...groups: readonly (readonly PublicProfile['achievementIds'][number][])[]
@@ -316,8 +325,7 @@ function publicProfileFromData(
     )
       ? (data.selectedTitleId as (typeof achievementIds)[number])
       : '';
-  const clubId =
-    typeof data.clubId === 'string' ? data.clubId : expectedClubId;
+  const clubId = typeof data.clubId === 'string' ? data.clubId : expectedClubId;
   if (!clubId || (expectedClubId && clubId !== expectedClubId)) {
     throw new HandlerError('not-found', 'Member profile not found');
   }
@@ -346,7 +354,10 @@ async function deleteAccountData(user: ManagedUser): Promise<void> {
   const deletions = new Map<string, DocumentReference>();
   const updates = new Map<
     string,
-    { readonly reference: DocumentReference; readonly data: Record<string, unknown> }
+    {
+      readonly reference: DocumentReference;
+      readonly data: Record<string, unknown>;
+    }
   >();
   const mediaPrefixesToDelete = new Set<string>([
     `clubs/${clubId}/public-profiles/${userId}/`,
@@ -368,11 +379,8 @@ async function deleteAccountData(user: ManagedUser): Promise<void> {
       updates.set(reference.path, { reference, data });
     }
   };
-  const query = async (
-    collectionName: string,
-    field: string,
-    value: unknown,
-  ) => tenantCollection(clubId, collectionName).where(field, '==', value).get();
+  const query = async (collectionName: string, field: string, value: unknown) =>
+    tenantCollection(clubId, collectionName).where(field, '==', value).get();
 
   const contributors = await query('content-contributors', 'user.id', userId);
   for (const contributor of contributors.docs) {
@@ -400,9 +408,7 @@ async function deleteAccountData(user: ManagedUser): Promise<void> {
   const legacySightings = await query('cat-sightings', 'createdBy.id', userId);
   for (const sighting of legacySightings.docs) {
     remove(sighting.ref);
-    mediaPrefixesToDelete.add(
-      `clubs/${clubId}/cat-sightings/${sighting.id}/`,
-    );
+    mediaPrefixesToDelete.add(`clubs/${clubId}/cat-sightings/${sighting.id}/`);
     const comments = await query('sighting-comments', 'target.id', sighting.id);
     comments.docs.forEach((comment) => remove(comment.ref));
   }
@@ -413,7 +419,7 @@ async function deleteAccountData(user: ManagedUser): Promise<void> {
     ['station-comments', 'createdById'],
     ['chat-messages', 'createdById'],
     ['chat-reactions', 'userId'],
-    ['announcement-read-receipts', 'userId'],
+    ['alert-read-receipts', 'userId'],
     ['event-read-receipts', 'userId'],
   ];
   for (const [collectionName, field] of personalCollections) {
@@ -421,7 +427,11 @@ async function deleteAccountData(user: ManagedUser): Promise<void> {
     snapshots.docs.forEach((document) => remove(document.ref));
     if (collectionName === 'chat-messages') {
       for (const message of snapshots.docs) {
-        const reactions = await query('chat-reactions', 'messageId', message.id);
+        const reactions = await query(
+          'chat-reactions',
+          'messageId',
+          message.id,
+        );
         reactions.docs.forEach((reaction) => remove(reaction.ref));
       }
     }
@@ -439,7 +449,11 @@ async function deleteAccountData(user: ManagedUser): Promise<void> {
     }
     remove(receipt.ref);
   }
-  const namedResponses = await query('survey-responses', 'respondent.id', userId);
+  const namedResponses = await query(
+    'survey-responses',
+    'respondent.id',
+    userId,
+  );
   namedResponses.docs.forEach((response) => remove(response.ref));
 
   const nominationReceipts = await query(
@@ -472,7 +486,7 @@ async function deleteAccountData(user: ManagedUser): Promise<void> {
 
   const sharedCollections = [
     'stations',
-    'announcements',
+    'alerts',
     'community-events',
     'community-surveys',
     'community-votes',
@@ -483,7 +497,7 @@ async function deleteAccountData(user: ManagedUser): Promise<void> {
       update(document.ref, { createdBy: deletedAccountSnapshot(clubId) });
       const mediaCollection = {
         stations: 'stations',
-        announcements: 'announcements',
+        alerts: 'alerts',
         'community-events': 'community-events',
         'community-surveys': undefined,
         'community-votes': 'community-votes',
@@ -621,7 +635,10 @@ const dependencies: HandlerDependencies = {
     };
   },
   async getPendingAccountDeletion(id): Promise<ManagedUser | undefined> {
-    const snapshot = await firestore.collection('account-deletion-jobs').doc(id).get();
+    const snapshot = await firestore
+      .collection('account-deletion-jobs')
+      .doc(id)
+      .get();
     const data = snapshot.data();
     if (
       !snapshot.exists ||
@@ -646,18 +663,21 @@ const dependencies: HandlerDependencies = {
     };
   },
   async prepareAccountDeletion(user): Promise<void> {
-    await firestore.collection('account-deletion-jobs').doc(user.id).set(
-      {
-        email: user.email,
-        role: user.role,
-        clubId: user.clubId,
-        platformAdmin: user.platformAdmin === true,
-        banned: user.banned === true,
-        status: 'pending',
-        updatedAt: FieldValue.serverTimestamp(),
-      },
-      { merge: true },
-    );
+    await firestore
+      .collection('account-deletion-jobs')
+      .doc(user.id)
+      .set(
+        {
+          email: user.email,
+          role: user.role,
+          clubId: user.clubId,
+          platformAdmin: user.platformAdmin === true,
+          banned: user.banned === true,
+          status: 'pending',
+          updatedAt: FieldValue.serverTimestamp(),
+        },
+        { merge: true },
+      );
   },
   async completeAccountDeletion(id): Promise<void> {
     await firestore.collection('account-deletion-jobs').doc(id).set(
@@ -692,22 +712,20 @@ const dependencies: HandlerDependencies = {
     const club = await firestore.collection('clubs').doc(clubId).get();
     const clubData = club.data();
     const now = new Date();
-    const graceEndsAt = clubData?.graceEndsAt instanceof Timestamp
-      ? clubData.graceEndsAt.toDate()
-      : undefined;
-    const scheduledEndAt = clubData?.scheduledEndAt instanceof Timestamp
-      ? clubData.scheduledEndAt.toDate()
-      : undefined;
+    const graceEndsAt =
+      clubData?.graceEndsAt instanceof Timestamp
+        ? clubData.graceEndsAt.toDate()
+        : undefined;
+    const scheduledEndAt =
+      clubData?.scheduledEndAt instanceof Timestamp
+        ? clubData.scheduledEndAt.toDate()
+        : undefined;
     const hasAccess =
       clubData?.maintenanceMode !== true &&
-      (
-        clubData?.billingEnforcementEnabled !== true ||
-        (
-          clubData?.accessState === 'enabled' &&
+      (clubData?.billingEnforcementEnabled !== true ||
+        (clubData?.accessState === 'enabled' &&
           (!graceEndsAt || now < graceEndsAt) &&
-          (!scheduledEndAt || now < scheduledEndAt)
-        )
-      );
+          (!scheduledEndAt || now < scheduledEndAt)));
     if (!hasAccess) return undefined;
     return {
       id: snapshot.id,
@@ -769,9 +787,14 @@ const dependencies: HandlerDependencies = {
 
       for (let offset = 0; offset < legacy.length; offset += 200) {
         const batch = firestore.batch();
-        for (const { document, contributor } of legacy.slice(offset, offset + 200)) {
+        for (const { document, contributor } of legacy.slice(
+          offset,
+          offset + 200,
+        )) {
           batch.set(
-            tenantCollection(clubId, 'content-contributors').doc(`${kind}__${document.id}`),
+            tenantCollection(clubId, 'content-contributors').doc(
+              `${kind}__${document.id}`,
+            ),
             { kind, contentId: document.id, user: contributor },
           );
           batch.update(document.ref, { createdBy: FieldValue.delete() });
@@ -862,7 +885,9 @@ const dependencies: HandlerDependencies = {
         );
       }
       const clubId = String(snapshot.data()?.clubId ?? 'campus-cats');
-      const publicReference = tenantCollection(clubId, 'public-profiles').doc(id);
+      const publicReference = tenantCollection(clubId, 'public-profiles').doc(
+        id,
+      );
       const publicSnapshot = await transaction.get(publicReference);
       transaction.update(reference, { role });
       if (publicSnapshot.exists) {
@@ -956,17 +981,21 @@ const dependencies: HandlerDependencies = {
     const successorReference = firestore.collection('users').doc(successorId);
     await firestore.runTransaction(async (transaction) => {
       const actorForClub = await transaction.get(actorReference);
-      const clubId = typeof actorForClub.data()?.clubId === 'string'
-        ? actorForClub.data()!.clubId
-        : 'campus-cats';
-      const actorPublicReference = tenantCollection(clubId, 'public-profiles').doc(
-        actorId,
-      );
+      const clubId =
+        typeof actorForClub.data()?.clubId === 'string'
+          ? actorForClub.data()!.clubId
+          : 'campus-cats';
+      const actorPublicReference = tenantCollection(
+        clubId,
+        'public-profiles',
+      ).doc(actorId);
       const successorPublicReference = tenantCollection(
         clubId,
         'public-profiles',
       ).doc(successorId);
-      const presidencyReference = tenantCollection(clubId, 'system').doc('presidency');
+      const presidencyReference = tenantCollection(clubId, 'system').doc(
+        'presidency',
+      );
       const presidents = firestore
         .collection('users')
         .where('clubId', '==', clubId)
@@ -978,22 +1007,27 @@ const dependencies: HandlerDependencies = {
         presidentSnapshots,
         actorPublicSnapshot,
         successorPublicSnapshot,
-      ] =
-        await Promise.all([
-          transaction.get(actorReference),
-          transaction.get(successorReference),
-          transaction.get(presidencyReference),
-          transaction.get(presidents),
-          transaction.get(actorPublicReference),
-          transaction.get(successorPublicReference),
-        ]);
+      ] = await Promise.all([
+        transaction.get(actorReference),
+        transaction.get(successorReference),
+        transaction.get(presidencyReference),
+        transaction.get(presidents),
+        transaction.get(actorPublicReference),
+        transaction.get(successorPublicReference),
+      ]);
       const actor = actorSnapshot.data();
       const successor = successorSnapshot.data();
       if (!actorSnapshot.exists || !successorSnapshot.exists) {
-        throw new HandlerError('not-found', 'Presidential participant not found');
+        throw new HandlerError(
+          'not-found',
+          'Presidential participant not found',
+        );
       }
       if (successor?.clubId !== clubId) {
-        throw new HandlerError('not-found', 'Presidential participant not found');
+        throw new HandlerError(
+          'not-found',
+          'Presidential participant not found',
+        );
       }
       if (successor?.role !== 2) {
         throw new HandlerError(
@@ -1094,11 +1128,15 @@ const dependencies: HandlerDependencies = {
   async findWhitelistByEmail(email, clubId) {
     const [club, mapping, snapshot] = await Promise.all([
       firestore.collection('clubs').doc(clubId).get(),
-      firestore.collection('university-clubs').where('clubId', '==', clubId).limit(1).get(),
+      firestore
+        .collection('university-clubs')
+        .where('clubId', '==', clubId)
+        .limit(1)
+        .get(),
       tenantCollection(clubId, 'whitelist')
-      .where('email', '==', email)
-      .limit(1)
-      .get(),
+        .where('email', '==', email)
+        .limit(1)
+        .get(),
     ]);
     if (!club.exists || mapping.empty) {
       throw new HandlerError('not-found', 'University club not found');
@@ -1126,13 +1164,17 @@ const dependencies: HandlerDependencies = {
   },
 
   async getPublicProfile(id, clubId): Promise<PublicProfile | undefined> {
-    const snapshot = await tenantCollection(clubId, 'public-profiles').doc(id).get();
+    const snapshot = await tenantCollection(clubId, 'public-profiles')
+      .doc(id)
+      .get();
     if (!snapshot.exists) return undefined;
     return publicProfileFromData(id, snapshot.data(), clubId);
   },
 
   async putPublicProfile(profile, mode, clubId) {
-    const reference = tenantCollection(clubId, 'public-profiles').doc(profile.id);
+    const reference = tenantCollection(clubId, 'public-profiles').doc(
+      profile.id,
+    );
     return firestore.runTransaction(async (transaction) => {
       const snapshot = await transaction.get(reference);
       const current = snapshot.exists
@@ -1145,14 +1187,14 @@ const dependencies: HandlerDependencies = {
       const requestedTitleId =
         mode === 'title'
           ? profile.selectedTitleId
-          : current?.selectedTitleId ?? profile.selectedTitleId;
+          : (current?.selectedTitleId ?? profile.selectedTitleId);
       if (requestedTitleId && !achievementIds.includes(requestedTitleId)) {
         throw new HandlerError(
           'permission-denied',
           'That title has not been unlocked',
         );
       }
-      const identity = mode === 'edit' ? profile : current ?? profile;
+      const identity = mode === 'edit' ? profile : (current ?? profile);
       const next: PublicProfile = {
         ...identity,
         id: profile.id,
@@ -1217,17 +1259,18 @@ const dependencies: HandlerDependencies = {
 const surveySubmissionDependencies: SurveySubmissionDependencies = {
   getUser: dependencies.getUser,
   async submit({ actor, surveyId, answers, responseId }) {
-    const surveyReference = tenantCollection(actor.clubId, 'community-surveys').doc(
-      surveyId,
-    );
-    const responseReference = tenantCollection(actor.clubId, 'survey-responses').doc(
-      responseId,
-    );
+    const surveyReference = tenantCollection(
+      actor.clubId,
+      'community-surveys',
+    ).doc(surveyId);
+    const responseReference = tenantCollection(
+      actor.clubId,
+      'survey-responses',
+    ).doc(responseId);
     const receiptReference = tenantCollection(
       actor.clubId,
       'survey-submission-receipts',
-    )
-      .doc(`${actor.id}__${surveyId}`);
+    ).doc(`${actor.id}__${surveyId}`);
 
     return firestore.runTransaction(async (transaction) => {
       const [surveySnapshot, receiptSnapshot] = await transaction.getAll(
@@ -1346,7 +1389,9 @@ const communityVotingDependencies: CommunityVotingDependencies = {
   now: () => new Date(),
   getUser: dependencies.getUser,
   async getVote(id, clubId) {
-    const snapshot = await tenantCollection(clubId, 'community-votes').doc(id).get();
+    const snapshot = await tenantCollection(clubId, 'community-votes')
+      .doc(id)
+      .get();
     return snapshot.exists
       ? storedCommunityVote(snapshot.id, clubId, snapshot.data())
       : undefined;
@@ -1358,13 +1403,11 @@ const communityVotingDependencies: CommunityVotingDependencies = {
     const receiptReference = tenantCollection(
       vote.clubId,
       'community-vote-nomination-receipts',
-    )
-      .doc(`${actor.id}__${vote.id}`);
+    ).doc(`${actor.id}__${vote.id}`);
     const nomineeReference = tenantCollection(
       vote.clubId,
       'community-vote-nominees',
-    )
-      .doc(`${vote.id}__${actor.id}`);
+    ).doc(`${vote.id}__${actor.id}`);
     const profileReference = tenantCollection(
       vote.clubId,
       'public-profiles',
@@ -1390,11 +1433,7 @@ const communityVotingDependencies: CommunityVotingDependencies = {
         vote.clubId,
         voteSnapshot.data(),
       );
-      assertCanParticipate(
-        canonical.participationAudience,
-        actor.role,
-        'vote',
-      );
+      assertCanParticipate(canonical.participationAudience, actor.role, 'vote');
       if (canonical.kind !== 'presidential_election') {
         throw new HandlerError(
           'failed-precondition',
@@ -1441,10 +1480,11 @@ const communityVotingDependencies: CommunityVotingDependencies = {
     const receiptReference = tenantCollection(
       vote.clubId,
       'community-vote-ballot-receipts',
-    )
-      .doc(`${actor.id}__${vote.id}`);
-    const ballotReference = tenantCollection(vote.clubId, 'community-vote-ballots')
-      .doc(ballotId);
+    ).doc(`${actor.id}__${vote.id}`);
+    const ballotReference = tenantCollection(
+      vote.clubId,
+      'community-vote-ballots',
+    ).doc(ballotId);
     return firestore.runTransaction(async (transaction) => {
       const [voteSnapshot, receiptSnapshot] = await transaction.getAll(
         voteReference,
@@ -1461,11 +1501,7 @@ const communityVotingDependencies: CommunityVotingDependencies = {
         vote.clubId,
         voteSnapshot.data(),
       );
-      assertCanParticipate(
-        canonical.participationAudience,
-        actor.role,
-        'vote',
-      );
+      assertCanParticipate(canonical.participationAudience, actor.role, 'vote');
       const now = Timestamp.fromDate(submittedAt);
       if (now.toMillis() < canonical.votingStartsAtMillis) {
         throw new HandlerError('failed-precondition', 'Voting has not started');
@@ -1482,8 +1518,9 @@ const communityVotingDependencies: CommunityVotingDependencies = {
         }
       } else {
         const nominee = await transaction.get(
-          tenantCollection(vote.clubId, 'community-vote-nominees')
-            .doc(`${vote.id}__${optionId}`),
+          tenantCollection(vote.clubId, 'community-vote-nominees').doc(
+            `${vote.id}__${optionId}`,
+          ),
         );
         if (!nominee.exists || nominee.data()?.voteId !== vote.id) {
           throw new HandlerError(
@@ -1509,7 +1546,10 @@ const communityVotingDependencies: CommunityVotingDependencies = {
     });
   },
   async getResults(vote) {
-    const ballots = await tenantCollection(vote.clubId, 'community-vote-ballots')
+    const ballots = await tenantCollection(
+      vote.clubId,
+      'community-vote-ballots',
+    )
       .where('voteId', '==', vote.id)
       .get();
     const options =
@@ -1565,37 +1605,42 @@ const broadcastNotification = async (
   }
 };
 
-const communityVoteNotificationDependencies: CommunityVoteStartNotificationDependencies = {
-  now: () => new Date(),
-  async listElectionVotes() {
-    const clubs = await firestore.collection('clubs').get();
-    const votes = await Promise.all(
-      clubs.docs.map(async (club) => {
-        const snapshot = await tenantCollection(club.id, 'community-votes')
-          .where('kind', '==', 'presidential_election')
-          .get();
-        return snapshot.docs.flatMap((document) => {
-          try {
-            return [storedCommunityVote(document.id, club.id, document.data())];
-          } catch {
-            logger.warn('Skipping invalid presidential election', {
-              clubId: club.id,
-              voteId: document.id,
-            });
-            return [];
-          }
+const communityVoteNotificationDependencies: CommunityVoteStartNotificationDependencies =
+  {
+    now: () => new Date(),
+    async listElectionVotes() {
+      const clubs = await firestore.collection('clubs').get();
+      const votes = await Promise.all(
+        clubs.docs.map(async (club) => {
+          const snapshot = await tenantCollection(club.id, 'community-votes')
+            .where('kind', '==', 'presidential_election')
+            .get();
+          return snapshot.docs.flatMap((document) => {
+            try {
+              return [
+                storedCommunityVote(document.id, club.id, document.data()),
+              ];
+            } catch {
+              logger.warn('Skipping invalid presidential election', {
+                clubId: club.id,
+                voteId: document.id,
+              });
+              return [];
+            }
+          });
+        }),
+      );
+      return votes.flat();
+    },
+    sendNotification: broadcastNotification,
+    async markNotificationSent(vote, sentAt) {
+      await tenantCollection(vote.clubId, 'community-votes')
+        .doc(vote.id)
+        .update({
+          votingNotificationSentAt: Timestamp.fromDate(sentAt),
         });
-      }),
-    );
-    return votes.flat();
-  },
-  sendNotification: broadcastNotification,
-  async markNotificationSent(vote, sentAt) {
-    await tenantCollection(vote.clubId, 'community-votes').doc(vote.id).update({
-      votingNotificationSentAt: Timestamp.fromDate(sentAt),
-    });
-  },
-};
+    },
+  };
 
 const inaturalistDependencies: InaturalistHandlerDependencies = {
   getUser: dependencies.getUser,
@@ -1629,7 +1674,10 @@ async function execute<T>(operation: () => Promise<T>): Promise<T> {
       throw new HttpsError(error.code, error.message);
     }
     logger.error('Callable workflow failed', error);
-    throw new HttpsError('internal', 'The requested operation could not be completed');
+    throw new HttpsError(
+      'internal',
+      'The requested operation could not be completed',
+    );
   }
 }
 
@@ -1641,39 +1689,47 @@ const requestFor = <T>(request: CallableRequest<T>) => ({
 export const sendWhitelistEmail = onCall(
   { secrets: [SENDGRID_API_KEY] },
   (request) =>
-    execute(() =>
-      handleSendWhitelistEmail(requestFor(request), dependencies),
-    ),
+    execute(() => handleSendWhitelistEmail(requestFor(request), dependencies)),
 );
 
 export const searchUniversities = onCall((request) =>
-  execute(() => handleSearchUniversities(
-    { data: request.data, clientIp: request.rawRequest.ip },
-    universityOnboardingDependencies(),
-  )),
+  execute(() =>
+    handleSearchUniversities(
+      { data: request.data, clientIp: request.rawRequest.ip },
+      universityOnboardingDependencies(),
+    ),
+  ),
 );
 
 export const getUniversity = onCall((request) =>
-  execute(() => handleGetUniversity(
-    { data: request.data, clientIp: request.rawRequest.ip },
-    universityOnboardingDependencies(),
-  )),
+  execute(() =>
+    handleGetUniversity(
+      { data: request.data, clientIp: request.rawRequest.ip },
+      universityOnboardingDependencies(),
+    ),
+  ),
 );
 
 export const requestClubSetup = onCall(
   { secrets: [SENDGRID_API_KEY] },
-  (request) => execute(() => handleRequestClubSetup(
-    { data: request.data, clientIp: request.rawRequest.ip },
-    universityOnboardingDependencies(),
-  )),
+  (request) =>
+    execute(() =>
+      handleRequestClubSetup(
+        { data: request.data, clientIp: request.rawRequest.ip },
+        universityOnboardingDependencies(),
+      ),
+    ),
 );
 
 export const verifyClubSetup = onCall(
   { secrets: [SENDGRID_API_KEY] },
-  (request) => execute(() => handleVerifyClubSetup(
-    { data: request.data, clientIp: request.rawRequest.ip },
-    universityOnboardingDependencies(),
-  )),
+  (request) =>
+    execute(() =>
+      handleVerifyClubSetup(
+        { data: request.data, clientIp: request.rawRequest.ip },
+        universityOnboardingDependencies(),
+      ),
+    ),
 );
 
 export const getBillingSummary = onCall((request) =>
@@ -1684,7 +1740,10 @@ export const getClubBillingSummary = onCall(
   { secrets: [STRIPE_SECRET_KEY, SENDGRID_API_KEY] },
   (request) =>
     execute(() =>
-      handleGetClubBillingSummary(requestFor(request), customerBillingService()),
+      handleGetClubBillingSummary(
+        requestFor(request),
+        customerBillingService(),
+      ),
     ),
 );
 
@@ -1811,8 +1870,8 @@ export const deleteOwnAccount = onCall((request) =>
   execute(() => handleDeleteOwnAccount(requestFor(request), dependencies)),
 );
 
-export const sendAnnouncement = onCall((request) =>
-  execute(() => handleSendAnnouncement(requestFor(request), dependencies)),
+export const sendAlert = onCall((request) =>
+  execute(() => handleSendAlert(requestFor(request), dependencies)),
 );
 
 export const submitWhitelistApplication = onCall((request) =>
@@ -1823,7 +1882,10 @@ export const submitWhitelistApplication = onCall((request) =>
 
 export const submitSurveyResponse = onCall((request) =>
   execute(() =>
-    handleSubmitSurveyResponse(requestFor(request), surveySubmissionDependencies),
+    handleSubmitSurveyResponse(
+      requestFor(request),
+      surveySubmissionDependencies,
+    ),
   ),
 );
 
@@ -1865,10 +1927,7 @@ export const updateInaturalistCatalog = onCall((request) =>
 
 export const linkInaturalistCatalog = onCall((request) =>
   execute(() =>
-    handleLinkInaturalistCatalog(
-      requestFor(request),
-      inaturalistDependencies,
-    ),
+    handleLinkInaturalistCatalog(requestFor(request), inaturalistDependencies),
   ),
 );
 
@@ -1919,12 +1978,15 @@ export const meterClubActivity = onDocumentWrittenWithAuthContext(
   async (event) => {
     const before = event.data?.before.exists === true;
     const after = event.data?.after.exists === true;
-    const operation = !before && after ? 'create' : before && !after ? 'delete' : 'update';
+    const operation =
+      !before && after ? 'create' : before && !after ? 'delete' : 'update';
     const data = after ? event.data?.after.data() : event.data?.before.data();
     const internalActorId =
-      ['survey-responses', 'community-vote-nominees', 'community-vote-ballots'].includes(
-        event.params.collectionId,
-      ) &&
+      [
+        'survey-responses',
+        'community-vote-nominees',
+        'community-vote-ballots',
+      ].includes(event.params.collectionId) &&
       data?.writeSource === 'user' &&
       typeof data.billingActorId === 'string'
         ? data.billingActorId

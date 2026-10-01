@@ -12,6 +12,7 @@ import {
 import { getStorage } from 'firebase-admin/storage';
 
 import { compareFirestoreDocumentIds } from './firestoreDocumentOrder';
+import { CAMPUS_CATS_DEFAULTS } from './campusCatsDefaults';
 
 const CLUB_ID = 'campus-cats';
 const DEFAULT_TIMEZONE = 'America/New_York';
@@ -24,7 +25,7 @@ const TENANT_COLLECTIONS = [
   'catalog-tag-settings',
   'catalog-tag-assignments',
   'stations',
-  'announcements',
+  'alerts',
   'contact-info',
   'whitelist',
   'inaturalist-observations',
@@ -50,7 +51,7 @@ const MEDIA_PREFIXES = [
   'cat-sightings/',
   'catalog/',
   'stations/',
-  'announcements/',
+  'alerts/',
   'community-events/',
   'community-votes/',
   'public-profiles/',
@@ -132,7 +133,7 @@ async function main(): Promise<void> {
         name: 'Campus Cats',
         slug: CLUB_ID,
         timezone: options.timezone,
-        billingEmail: 'willakins23@gmail.com',
+        billingEmail: CAMPUS_CATS_DEFAULTS.billingEmail,
         billingEnforcementEnabled: false,
         billingMigrationMode: true,
         maintenanceMode: true,

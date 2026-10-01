@@ -7,7 +7,7 @@ import {
   waitFor,
 } from '@testing-library/react-native';
 
-import EditDonationPage from '../../app/(app)/donations/edit-donation';
+import EditDonationPage from '../../app/(app)/community/donations/manage';
 import { DEFAULT_APP_SETTINGS, Role } from '../../core/domain';
 import { AppThemeProvider } from '../../theme';
 
@@ -23,8 +23,8 @@ jest.mock('expo-router', () => ({
   useRouter: () => ({ back: mockBack }),
 }));
 jest.mock('@expo/vector-icons', () => ({ Ionicons: () => null }));
-jest.mock('../../components/design', () => {
-  const actual = jest.requireActual('../../components/design');
+jest.mock('../../presentation/ui', () => {
+  const actual = jest.requireActual('../../presentation/ui');
   const ReactRuntime = require('react');
   const { View: NativeView } = require('react-native');
   return {
@@ -63,7 +63,7 @@ jest.mock('../../composition/appModules', () => ({
     },
   },
 }));
-jest.mock('../../providers', () => ({
+jest.mock('../../presentation/providers', () => ({
   useAuth: () => ({
     user: { id: 'president-1', email: 'president@gatech.edu', role: mockRole },
   }),

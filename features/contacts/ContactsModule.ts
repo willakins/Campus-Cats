@@ -18,8 +18,8 @@ export interface ContactDraft {
   readonly name: string;
   readonly email: string;
   readonly instagramUrl?: string;
-  readonly facebookUrl?: string;
-  readonly websiteUrl?: string;
+  readonly xUrl?: string;
+  readonly websiteUrls?: readonly string[];
 }
 
 interface ContactsDependencies {
@@ -90,8 +90,8 @@ export class ContactsModule {
       name: draft.name,
       email: draft.email,
       instagramUrl: draft.instagramUrl ?? existing.value.instagramUrl,
-      facebookUrl: draft.facebookUrl ?? existing.value.facebookUrl,
-      websiteUrl: draft.websiteUrl ?? existing.value.websiteUrl,
+      xUrl: draft.xUrl ?? existing.value.xUrl,
+      websiteUrls: draft.websiteUrls ?? existing.value.websiteUrls,
     });
     if (!contact.ok) return contact;
     try {

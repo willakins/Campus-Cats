@@ -2,7 +2,7 @@ import React from 'react';
 
 import { render, screen, waitFor } from '@testing-library/react-native';
 
-import ViewEvent from '../../app/(app)/events/view-event';
+import ViewEvent from '../../app/(app)/community/events/[id]';
 import { Role, parseClubEvent, parseUser } from '../../core/domain';
 import { AppThemeProvider } from '../../theme';
 
@@ -29,14 +29,14 @@ jest.mock('../../composition/appModules', () => ({
   },
 }));
 
-jest.mock('../../providers', () => ({
+jest.mock('../../presentation/providers', () => ({
   useAuth: () => ({
     user: { id: 'member-1', email: 'member@gatech.edu', role: 0 },
   }),
 }));
 
 jest.mock('@expo/vector-icons', () => ({ Ionicons: () => null }));
-jest.mock('../../components/ui/ProgressiveImage', () => ({
+jest.mock('../../presentation/ui/ProgressiveImage', () => ({
   ProgressiveImage: () => null,
 }));
 

@@ -1,5 +1,5 @@
 import {
-  AnnouncementNotification,
+  AlertNotification,
   ApplicationEffects,
   WhitelistCredentials,
 } from '../../core/ports';
@@ -9,7 +9,7 @@ import {
 } from '../../core/domain';
 
 type Operation =
-  | 'notifyAnnouncement'
+  | 'notifyAlert'
   | 'provisionWhitelistUser'
   | 'emailWhitelistCredentials'
   | 'removeProvisionedUser'
@@ -29,7 +29,7 @@ type Operation =
 
 export class InMemoryCallableEffects implements ApplicationEffects {
   readonly operations: string[] = [];
-  readonly notifications: AnnouncementNotification[] = [];
+  readonly notifications: AlertNotification[] = [];
   readonly #userIds: string[];
   readonly #failures = new Map<Operation, Error>();
   inaturalistLinkStatus: InaturalistAccountLinkStatus = {
@@ -44,10 +44,10 @@ export class InMemoryCallableEffects implements ApplicationEffects {
     this.#failures.set(operation, error);
   }
 
-  async notifyAnnouncement(
-    notification: AnnouncementNotification,
+  async notifyAlert(
+    notification: AlertNotification,
   ): Promise<void> {
-    this.maybeFail('notifyAnnouncement');
+    this.maybeFail('notifyAlert');
     this.notifications.push(notification);
     this.operations.push(`notify:${notification.title}`);
   }

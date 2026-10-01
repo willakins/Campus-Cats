@@ -2,7 +2,7 @@
 
 The Campus Field Guide interface is warm, colorful, and operationally clear. Cream
 paper-like canvases and subtle Georgia Tech navy/gold cues establish continuity, while
-small feature accents distinguish sightings, announcements, catalog cats, feeding
+small feature accents distinguish sightings, alerts, catalog cats, feeding
 stations, and administration.
 
 ## Principles
@@ -32,13 +32,13 @@ not add an official Georgia Tech seal or wording that implies institutional endo
 | Surface             | White            | Slate           |
 | Primary text/action | Navy             | Gold            |
 | Sightings           | Coral            | Coral           |
-| Announcements       | Gold             | Gold            |
+| Alerts              | Gold             | Gold            |
 | Cat catalog         | Teal             | Teal            |
 | Feeding stations    | Green            | Green           |
 | Administration      | Violet           | Violet          |
 
 Use the named values exposed by `useAppTheme`; feature code must not copy palette
-literals. `npm run ui:check` scans all files under `app/`, `components/`, and `forms/`
+literals. `npm run ui:check` scans all files under `app/` and `presentation/`
 and rejects raw colors. The typed palette and Google-compatible map style are the only
 definitions allowed to contain color literals.
 
@@ -54,7 +54,7 @@ definitions allowed to contain color literals.
 - `Button`, `IconButton`, `Chip`, `SegmentedControl`, and `StatusPill` provide named,
   accessible actions and states.
 - `FormField`, `FormSection`, `FormTextInput`, `ChoiceField`, `ChoiceGroup`, and the
-  other controls in `components/forms` keep labels and selection semantics
+  other controls in `presentation/forms` keep labels and selection semantics
   consistent while making photo promotion/removal explicit.
 - `Dialog` and `BottomSheet` own modal overlays, dismissal behavior, responsive
   widths, and surface geometry.

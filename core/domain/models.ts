@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
 import {
-  announcementIdSchema,
+  alertIdSchema,
   catalogEntryIdSchema,
   catalogTagIdSchema,
   contactIdSchema,
@@ -15,20 +15,22 @@ import { roleSchema } from './roles';
 import { achievementIdSchema } from './achievements';
 
 const requiredText = z.string().trim().min(1);
-const optionalHttpUrl = z
-  .union([
-    z.literal(''),
-    z
-      .string()
-      .trim()
-      .url()
-      .max(2048)
-      .refine(
-        (value) => value.startsWith('https://') || value.startsWith('http://'),
-        { message: 'Expected an http or https URL' },
-      ),
-  ])
-  .default('');
+const httpUrl = z
+  .string()
+  .trim()
+  .url()
+  .max(2048)
+  .refine(
+    (value) => value.startsWith('https://') || value.startsWith('http://'),
+    { message: 'Expected an http or https URL' },
+  );
+const optionalHttpUrl = z.union([z.literal(''), httpUrl]).default('');
+const optionalSocialUrl = (hosts: readonly string[]) =>
+  optionalHttpUrl.refine(
+    (value) =>
+      !value || hosts.includes(new URL(value).hostname.replace(/^www\./, '')),
+    { message: `Expected a ${hosts.join(' or ')} URL` },
+  );
 const validDate = z.date().refine((date) => !Number.isNaN(date.getTime()), {
   message: 'Expected a valid date',
 });
@@ -37,7 +39,8 @@ export const sightingDateError = (
   date: Date,
   currentDate: Date,
 ): string | undefined => {
-  if (Number.isNaN(date.getTime())) return 'Please select a valid sighting date.';
+  if (Number.isNaN(date.getTime()))
+    return 'Please select a valid sighting date.';
   const selectedDay = new Date(
     date.getFullYear(),
     date.getMonth(),
@@ -291,8 +294,8 @@ export const stationSchema = z.object({
   createdBy: userSnapshotSchema,
 });
 
-export const announcementSchema = z.object({
-  id: announcementIdSchema,
+export const alertSchema = z.object({
+  id: alertIdSchema,
   title: requiredText,
   info: requiredText,
   createdAt: validDate,
@@ -303,19 +306,33 @@ export const announcementSchema = z.object({
 export const whitelistApplicationSchema = z.object({
   id: whitelistApplicationIdSchema,
   name: requiredText,
-  graduationYear: requiredText,
+  graduationYear: z.string().trim(),
   email: z.string().trim().email(),
   codeWord: z.string(),
 });
 
-export const contactSchema = z.object({
-  id: contactIdSchema,
-  name: requiredText,
-  email: z.string().trim().email(),
-  instagramUrl: optionalHttpUrl,
-  facebookUrl: optionalHttpUrl,
-  websiteUrl: optionalHttpUrl,
-});
+export const contactSchema = z.preprocess(
+  (value) => {
+    if (!value || typeof value !== 'object' || Array.isArray(value)) return value;
+    const record = value as Record<string, unknown>;
+    if (record.websiteUrls !== undefined) return value;
+    return {
+      ...record,
+      websiteUrls:
+        typeof record.websiteUrl === 'string' && record.websiteUrl
+          ? [record.websiteUrl]
+          : [],
+    };
+  },
+  z.object({
+    id: contactIdSchema,
+    name: requiredText,
+    email: z.string().trim().email(),
+    instagramUrl: optionalSocialUrl(['instagram.com']),
+    xUrl: optionalSocialUrl(['x.com']),
+    websiteUrls: z.array(httpUrl).max(3).default([]),
+  }),
+);
 
 export type Coordinates = Readonly<z.infer<typeof coordinatesSchema>>;
 export type User = Readonly<z.infer<typeof userSchema>>;
@@ -342,7 +359,7 @@ export type CatalogTagAssignment = Readonly<
   z.infer<typeof catalogTagAssignmentSchema>
 >;
 export type Station = Readonly<z.infer<typeof stationSchema>>;
-export type Announcement = Readonly<z.infer<typeof announcementSchema>>;
+export type Alert = Readonly<z.infer<typeof alertSchema>>;
 export type WhitelistApplication = Readonly<
   z.infer<typeof whitelistApplicationSchema>
 >;
@@ -391,8 +408,8 @@ export const parseCatalogTagAssignment = (
 ): CatalogTagAssignment => parseImmutable(catalogTagAssignmentSchema, value);
 export const parseStation = (value: unknown): Station =>
   parseImmutable(stationSchema, value);
-export const parseAnnouncement = (value: unknown): Announcement =>
-  parseImmutable(announcementSchema, value);
+export const parseAlert = (value: unknown): Alert =>
+  parseImmutable(alertSchema, value);
 export const parseWhitelistApplication = (
   value: unknown,
 ): WhitelistApplication => parseImmutable(whitelistApplicationSchema, value);

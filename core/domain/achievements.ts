@@ -22,7 +22,7 @@ export const ACHIEVEMENTS: readonly AchievementDefinition[] = Object.freeze([
     id: 'profile-photo',
     name: 'Picture Purr-fect',
     description: 'Add a profile picture.',
-    title: 'hot af',
+    title: 'purr-trait pro',
   },
   {
     id: 'president',

@@ -13,10 +13,15 @@ const member = parseUser({
   email: 'member@gatech.edu',
   role: Role.Member,
 });
+const officer = parseUser({
+  id: 'officer-1',
+  email: 'officer@gatech.edu',
+  role: Role.Officer,
+});
 const admin = parseUser({
   id: 'admin-1',
   email: 'admin@gatech.edu',
-  role: Role.Officer,
+  role: Role.President,
 });
 
 function buildModule() {
@@ -32,14 +37,14 @@ function buildModule() {
 }
 
 describe('ContactsModule', () => {
-  it('lets members read contacts and admins manage them', async () => {
+  it('lets members read contacts and Presidents manage them', async () => {
     const { module } = buildModule();
     const created = await module.create(admin, {
       name: 'Campus Cats President',
       email: 'cats@gatech.edu',
       instagramUrl: 'https://www.instagram.com/gtcampuscats',
-      facebookUrl: 'https://www.facebook.com/gtcampuscats',
-      websiteUrl: 'https://campuscats.gatech.edu',
+      xUrl: 'https://x.com/gtcampuscats',
+      websiteUrls: ['https://campuscats.gatech.edu'],
     });
     expect(created).toMatchObject({ ok: true, value: { id: 'contact-1' } });
     await expect(module.list(member)).resolves.toMatchObject({
@@ -50,15 +55,15 @@ describe('ContactsModule', () => {
       module.update(admin, 'contact-1', {
         name: 'Campus Cats Officers',
         email: 'officers@gatech.edu',
-        websiteUrl: 'https://cats.gatech.edu',
+        websiteUrls: ['https://cats.gatech.edu'],
       }),
     ).resolves.toMatchObject({
       ok: true,
       value: {
         name: 'Campus Cats Officers',
         instagramUrl: 'https://www.instagram.com/gtcampuscats',
-        facebookUrl: 'https://www.facebook.com/gtcampuscats',
-        websiteUrl: 'https://cats.gatech.edu',
+        xUrl: 'https://x.com/gtcampuscats',
+        websiteUrls: ['https://cats.gatech.edu'],
       },
     });
     await expect(module.remove(admin, 'contact-1')).resolves.toMatchObject({
@@ -74,6 +79,9 @@ describe('ContactsModule', () => {
     });
     await expect(
       module.create(member, { name: 'Officer', email: 'officer@gatech.edu' }),
+    ).resolves.toMatchObject({ ok: false, error: { code: 'forbidden' } });
+    await expect(
+      module.create(officer, { name: 'Officer', email: 'officer@gatech.edu' }),
     ).resolves.toMatchObject({ ok: false, error: { code: 'forbidden' } });
     await expect(
       module.create(undefined, {
@@ -129,8 +137,8 @@ describe('ContactsModule', () => {
           name: 'Campus Cats President',
           email: 'cats@gatech.edu',
           instagramUrl: '',
-          facebookUrl: '',
-          websiteUrl: '',
+          xUrl: '',
+          websiteUrls: [],
         },
       ],
     });

@@ -61,9 +61,21 @@ describe('WhitelistModule', () => {
       ok: false,
       error: { code: 'conflict' },
     });
-    await expect(module.submit({ ...draft, name: ' ' })).resolves.toMatchObject({
-      ok: false,
-      error: { code: 'validation' },
+    await expect(module.submit({ ...draft, name: ' ' })).resolves.toMatchObject(
+      {
+        ok: false,
+        error: { code: 'validation' },
+      },
+    );
+    await expect(
+      module.submit({
+        ...draft,
+        email: 'another@example.com',
+        graduationYear: '',
+      }),
+    ).resolves.toMatchObject({
+      ok: true,
+      value: { graduationYear: '' },
     });
   });
 
@@ -112,7 +124,8 @@ describe('WhitelistModule', () => {
       ok: false,
       error: {
         code: 'dependency_failure',
-        message: 'Could not email credentials; the provisioned user was removed',
+        message:
+          'Could not email credentials; the provisioned user was removed',
       },
     });
     expect(effects.operations).toEqual([
@@ -137,15 +150,21 @@ describe('WhitelistModule', () => {
   });
 
   it('covers deny authorization, missing records, and adapter failures', async () => {
-    await expect(buildModule().module.deny(undefined, 'missing')).resolves.toMatchObject({
+    await expect(
+      buildModule().module.deny(undefined, 'missing'),
+    ).resolves.toMatchObject({
       ok: false,
       error: { code: 'unauthenticated' },
     });
-    await expect(buildModule().module.deny(member, 'missing')).resolves.toMatchObject({
+    await expect(
+      buildModule().module.deny(member, 'missing'),
+    ).resolves.toMatchObject({
       ok: false,
       error: { code: 'forbidden' },
     });
-    await expect(buildModule().module.deny(admin, 'missing')).resolves.toMatchObject({
+    await expect(
+      buildModule().module.deny(admin, 'missing'),
+    ).resolves.toMatchObject({
       ok: false,
       error: { code: 'not_found' },
     });
@@ -153,32 +172,46 @@ describe('WhitelistModule', () => {
     const failed = buildModule();
     await failed.module.submit(draft);
     failed.documents.failNext('remove', new Error('offline'));
-    await expect(failed.module.deny(admin, 'application-1')).resolves.toMatchObject({
+    await expect(
+      failed.module.deny(admin, 'application-1'),
+    ).resolves.toMatchObject({
       ok: false,
       error: { code: 'dependency_failure' },
     });
   });
 
   it('covers accept authorization, missing records, and provision failures', async () => {
-    await expect(buildModule().module.accept(undefined, 'missing')).resolves.toMatchObject({
+    await expect(
+      buildModule().module.accept(undefined, 'missing'),
+    ).resolves.toMatchObject({
       ok: false,
       error: { code: 'unauthenticated' },
     });
-    await expect(buildModule().module.accept(member, 'missing')).resolves.toMatchObject({
+    await expect(
+      buildModule().module.accept(member, 'missing'),
+    ).resolves.toMatchObject({
       ok: false,
       error: { code: 'forbidden' },
     });
-    await expect(buildModule().module.accept(admin, 'missing')).resolves.toMatchObject({
+    await expect(
+      buildModule().module.accept(admin, 'missing'),
+    ).resolves.toMatchObject({
       ok: false,
       error: { code: 'not_found' },
     });
 
     const provisionFailure = buildModule();
     await provisionFailure.module.submit(draft);
-    provisionFailure.effects.failNext('provisionWhitelistUser', new Error('offline'));
+    provisionFailure.effects.failNext(
+      'provisionWhitelistUser',
+      new Error('offline'),
+    );
     await expect(
       provisionFailure.module.accept(admin, 'application-1'),
-    ).resolves.toMatchObject({ ok: false, error: { code: 'dependency_failure' } });
+    ).resolves.toMatchObject({
+      ok: false,
+      error: { code: 'dependency_failure' },
+    });
 
     const finalRemoveFailure = buildModule();
     await finalRemoveFailure.module.submit(draft);
@@ -205,7 +238,9 @@ describe('WhitelistModule', () => {
 
     const getFailure = buildModule();
     getFailure.documents.failNext('get', new Error('offline'));
-    await expect(getFailure.module.accept(admin, 'application-1')).resolves.toMatchObject({
+    await expect(
+      getFailure.module.accept(admin, 'application-1'),
+    ).resolves.toMatchObject({
       ok: false,
       error: { code: 'dependency_failure' },
     });

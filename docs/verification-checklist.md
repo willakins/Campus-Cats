@@ -42,7 +42,7 @@ ready.
       upload, replacement, and deletion flows.
 - [ ] On one physical device, verify map location selection and rendering.
 - [ ] On one physical device, verify notification permission, push-token registration,
-      and announcement delivery.
+      and alert delivery.
 - [ ] On one physical device, create an event picture from camera and library, verify
       its Member view, then verify that it moves to the Officer Expired view.
 - [ ] With two test accounts, submit anonymous and named surveys once; confirm the

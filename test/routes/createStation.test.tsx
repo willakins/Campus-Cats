@@ -2,7 +2,7 @@ import React from 'react';
 
 import { fireEvent, render, screen, userEvent, waitFor } from '@testing-library/react-native';
 
-import CreateStation from '../../app/(app)/stations/create-station';
+import CreateStation from '../../app/(app)/stations/new';
 import { AppThemeProvider } from '../../theme';
 
 const mockCreate = jest.fn();
@@ -12,8 +12,8 @@ jest.mock('expo-router', () => ({
   useRouter: () => ({ back: jest.fn(), replace: jest.fn() }),
 }));
 jest.mock('@expo/vector-icons', () => ({ Ionicons: () => null }));
-jest.mock('../../components/design', () => {
-  const actual = jest.requireActual('../../components/design');
+jest.mock('../../presentation/ui', () => {
+  const actual = jest.requireActual('../../presentation/ui');
   const ReactRuntime = require('react');
   const { View: NativeView } = require('react-native');
   return {
@@ -49,7 +49,7 @@ jest.mock('../../composition/appModules', () => ({
     },
   },
 }));
-jest.mock('../../providers', () => ({
+jest.mock('../../presentation/providers', () => ({
   useAuth: () => ({
     user: { id: 'officer-1', email: 'officer@gatech.edu', role: 1 },
   }),
@@ -92,9 +92,10 @@ describe('create station route', () => {
       borderColor: '#B23A3A',
       borderWidth: 2,
     });
-    expect(screen.getByLabelText('Photos field')).toHaveStyle({
+    expect(screen.getByRole('button', { name: 'Add photos' })).toHaveStyle({
       borderColor: '#B23A3A',
       borderWidth: 2,
+      borderRadius: 999,
     });
     expect(
       screen.getByRole('alert', {

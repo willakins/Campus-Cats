@@ -81,7 +81,7 @@ Guide and observation scans fail independently. A complete source scan marks rec
 not seen in that source inactive; partial or failed scans never deactivate unseen
 records. Reappearing records reactivate unless an officer has hidden them. Upserts
 preserve moderation, catalog overrides, persisted links, and the original import time.
-Imported observations never trigger announcement notifications.
+Imported observations never trigger alert notifications.
 
 Officers can inspect status, run a manual retry, review ambiguity, and
 hide/restore records from **More → iNaturalist Sync**. Hiding requires an audit reason.

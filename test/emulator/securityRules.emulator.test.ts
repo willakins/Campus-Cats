@@ -202,7 +202,7 @@ describe('Firebase authorization matrix', () => {
           selectedTitleId: 'first-sighting',
           clubId: CLUB_ID,
         }),
-        setDoc(doc(firestore, 'announcements', 'announcement-1'), {
+        setDoc(doc(firestore, 'alerts', 'alert-1'), {
           title: 'Update',
         }),
         setDoc(doc(firestore, 'inaturalist-observations', '1001'), {
@@ -242,7 +242,7 @@ describe('Firebase authorization matrix', () => {
     await assertSucceeds(
       setDoc(doc(firestore, 'whitelist', 'application-1'), {
         name: 'Alex Applicant',
-        graduationYear: '2025',
+        graduationYear: '',
         email: 'alex@example.com',
         codeWord: '',
       }),
@@ -256,7 +256,7 @@ describe('Firebase authorization matrix', () => {
       }),
     );
     await assertFails(
-      getDoc(doc(firestore, 'announcements', 'announcement-1')),
+      getDoc(doc(firestore, 'alerts', 'alert-1')),
     );
     await assertFails(
       setDoc(doc(firestore, 'contact-info', 'contact-1'), {
@@ -312,7 +312,7 @@ describe('Firebase authorization matrix', () => {
             firestore,
             'clubs',
             'other-club',
-            'announcements',
+            'alerts',
             'private-update',
           ),
           { title: 'Other club only' },
@@ -330,7 +330,7 @@ describe('Firebase authorization matrix', () => {
           member,
           'clubs',
           'other-club',
-          'announcements',
+          'alerts',
           'private-update',
         ),
       ),
@@ -356,7 +356,7 @@ describe('Firebase authorization matrix', () => {
     await assertSucceeds(
       getDoc(firebaseDoc(member, 'clubs', CLUB_ID, 'access', 'public')),
     );
-    await assertFails(getDoc(doc(member, 'announcements', 'announcement-1')));
+    await assertFails(getDoc(doc(member, 'alerts', 'alert-1')));
     await assertFails(getDoc(doc(member, 'public-profiles', 'member-1')));
     await assertFails(getDoc(firebaseDoc(member, 'billing-accounts', CLUB_ID)));
   });
@@ -375,17 +375,17 @@ describe('Firebase authorization matrix', () => {
     const sighting = doc(member, 'cat-sightings', 'sighting-1');
 
     await assertSucceeds(
-      getDoc(doc(member, 'announcements', 'announcement-1')),
+      getDoc(doc(member, 'alerts', 'alert-1')),
     );
     const ownReadReceipt = doc(
       member,
-      'announcement-read-receipts',
-      'member-1__announcement-1',
+      'alert-read-receipts',
+      'member-1__alert-1',
     );
     await assertSucceeds(
       setDoc(ownReadReceipt, {
         userId: 'member-1',
-        announcementId: 'announcement-1',
+        alertId: 'alert-1',
         readAt: Timestamp.fromDate(new Date('2026-08-21T12:00:00.000Z')),
       }),
     );
@@ -393,34 +393,34 @@ describe('Firebase authorization matrix', () => {
     await assertSucceeds(
       getDocs(
         query(
-          collection(member, 'announcement-read-receipts'),
+          collection(member, 'alert-read-receipts'),
           where('userId', '==', 'member-1'),
         ),
       ),
     );
     const otherReadReceipt = doc(
       other,
-      'announcement-read-receipts',
-      'member-2__announcement-1',
+      'alert-read-receipts',
+      'member-2__alert-1',
     );
     await assertSucceeds(
       setDoc(otherReadReceipt, {
         userId: 'member-2',
-        announcementId: 'announcement-1',
+        alertId: 'alert-1',
         readAt: Timestamp.fromDate(new Date('2026-08-21T12:00:00.000Z')),
       }),
     );
     await assertFails(
       getDoc(
-        doc(member, 'announcement-read-receipts', 'member-2__announcement-1'),
+        doc(member, 'alert-read-receipts', 'member-2__alert-1'),
       ),
     );
     await assertFails(
       setDoc(
-        doc(member, 'announcement-read-receipts', 'member-2__announcement-1'),
+        doc(member, 'alert-read-receipts', 'member-2__alert-1'),
         {
           userId: 'member-2',
-          announcementId: 'announcement-1',
+          alertId: 'alert-1',
           readAt: Timestamp.fromDate(new Date('2026-08-21T12:00:00.000Z')),
         },
       ),
@@ -830,7 +830,7 @@ describe('Firebase authorization matrix', () => {
     );
     expect(profile.data()?.banned).toBe(true);
     await assertFails(
-      getDoc(doc(bannedFirestore, 'announcements', 'announcement-1')),
+      getDoc(doc(bannedFirestore, 'alerts', 'alert-1')),
     );
     await assertFails(
       setDoc(doc(bannedFirestore, 'cat-sightings', 'banned-sighting'), {
@@ -1291,6 +1291,11 @@ describe('Firebase authorization matrix', () => {
         email: 'admin@gatech.edu',
       })
       .firestore();
+    const president = environment
+      .authenticatedContext('president-1', {
+        email: 'president@gatech.edu',
+      })
+      .firestore();
 
     await assertSucceeds(
       updateDoc(doc(member, 'users', 'member-1'), {
@@ -1325,10 +1330,16 @@ describe('Firebase authorization matrix', () => {
       }),
     );
     await assertFails(updateDoc(doc(admin, 'users', 'member-1'), { role: 1 }));
-    await assertSucceeds(
+    await assertFails(
       setDoc(doc(admin, 'contact-info', 'contact-1'), {
         name: 'Officer',
         email: 'officer@gatech.edu',
+      }),
+    );
+    await assertSucceeds(
+      setDoc(doc(president, 'contact-info', 'contact-1'), {
+        name: 'Campus Cats',
+        email: 'cats@gatech.edu',
       }),
     );
   });

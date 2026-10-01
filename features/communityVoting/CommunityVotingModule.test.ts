@@ -499,7 +499,7 @@ describe('CommunityVotingModule', () => {
 
     const notificationFailure = buildModule();
     notificationFailure.effects.failNext(
-      'notifyAnnouncement',
+      'notifyAlert',
       new Error('provider unavailable'),
     );
     await expect(

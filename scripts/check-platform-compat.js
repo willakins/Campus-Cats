@@ -2,7 +2,7 @@ const fs = require('fs');
 const path = require('path');
 
 const projectRoot = path.resolve(__dirname, '..');
-const sourceRoots = ['app', 'components', 'config', 'forms', 'theme'];
+const sourceRoots = ['app', 'config', 'presentation', 'theme'];
 const sourceExtensions = new Set(['.js', '.jsx', '.ts', '.tsx']);
 const checks = [
   {

@@ -99,7 +99,7 @@ disabled so development cannot send onboarding emails.
 
 Development builds replace the Stripe billing port with a read-only access
 observer. Every setup, payment, invoice, billing-email, cancellation, and portal
-operation fails locally before it can call Firebase. Outbound announcement,
+operation fails locally before it can call Firebase. Outbound alert,
 whitelist-provisioning, credential-email, and Firebase password-reset email paths
 are disabled as well. Existing cloned accounts can still sign in with their current
 credentials.
@@ -201,6 +201,13 @@ to enable chat.
 One required `EXPO_PUBLIC_APP_ENV` value controls both the app identity and
 Firebase validation. The application refuses to build or start when the project
 ID, auth domain, storage bucket, sender ID, or app IDs do not belong to the
-selected environment. Native startup also verifies the installed bundle ID, so a
-development client refuses a production Firebase bundle (and the production app
-refuses a development bundle).
+selected environment. Native startup also verifies the installed bundle ID.
+Expo Go is accepted only for the development environment; development and
+production standalone apps still reject Firebase configuration for the other
+environment.
+
+Each EAS build profile declares only this environment selector in `eas.json` so
+EAS can evaluate the app identity during its initial config pass, before it fetches
+the remaining Firebase client values from the selected EAS environment. The
+Firebase values themselves remain in EAS and are still validated on the full
+config pass and at application startup.

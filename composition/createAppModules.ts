@@ -19,7 +19,7 @@ import {
   UniversityOnboardingPort,
   UniversitySelectionStore,
 } from '../core/ports';
-import { AnnouncementsModule } from '../features/announcements';
+import { AlertsModule } from '../features/alerts';
 import {
   AppSettingsModule,
   ContentContributors,
@@ -78,7 +78,7 @@ export interface AppRuntime {
 export interface AppInfrastructure extends AppBackend, AppRuntime {}
 
 export interface AppModules {
-  readonly announcements: AnnouncementsModule;
+  readonly alerts: AlertsModule;
   readonly appSettings: AppSettingsModule;
   readonly billing: BillingModule;
   readonly clubBilling: ClubBillingModule;
@@ -139,7 +139,7 @@ export function createAppModules(
   });
 
   return Object.freeze({
-    announcements: new AnnouncementsModule({
+    alerts: new AlertsModule({
       documents,
       media,
       mediaCoordinator: mediaCoordinator(),

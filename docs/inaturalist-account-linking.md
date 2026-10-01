@@ -18,7 +18,7 @@ remain unauthenticated.
 The importer already requests each observation's user `id`, `login`, and name, stores
 them in `ObservationImport.observer`, and exposes them on
 `InaturalistSightingRecord`. See
-[`functions/src/inaturalist.ts`](../functions/src/inaturalist.ts) and
+[`functions/src/integrations/inaturalist/inaturalist.ts`](../functions/src/integrations/inaturalist/inaturalist.ts) and
 [`core/domain/inaturalist.ts`](../core/domain/inaturalist.ts). The numeric observer ID
 is the stable join key; a login is display metadata and may change.
 

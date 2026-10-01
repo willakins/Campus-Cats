@@ -2,9 +2,9 @@ import React from 'react';
 
 import { useRouter } from 'expo-router';
 
-import { AuthScaffold } from '@/components/auth';
-import { LoginForm } from '@/forms';
-import { useAuth } from '@/providers';
+import { AuthScaffold } from '@/presentation/auth';
+import { LoginForm } from '@/presentation/auth/LoginForm';
+import { useAuth } from '@/presentation/providers';
 
 const CreateAccount = () => {
   const { createAccount } = useAuth();

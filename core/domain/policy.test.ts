@@ -20,12 +20,12 @@ import {
 describe('typed outcomes', () => {
   it('represents successful values with non-fatal warnings', () => {
     expect(
-      success({ id: 'announcement-1' }, [
+      success({ id: 'alert-1' }, [
         { code: 'notification_failed', message: 'Saved without push delivery' },
       ]),
     ).toEqual({
       ok: true,
-      value: { id: 'announcement-1' },
+      value: { id: 'alert-1' },
       warnings: [
         { code: 'notification_failed', message: 'Saved without push delivery' },
       ],
@@ -136,7 +136,7 @@ describe('authorization policy', () => {
 
   it('uses capability policies as the cascading authorization source of truth', () => {
     expect(
-      canAccessRolePolicy(Role.Officer, roleAccessPolicies.manageAnnouncements),
+      canAccessRolePolicy(Role.Officer, roleAccessPolicies.manageAlerts),
     ).toBe(true);
     expect(
       canAccessRolePolicy(Role.Member, roleAccessPolicies.pingClubMembers),

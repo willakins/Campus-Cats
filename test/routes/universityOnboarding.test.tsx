@@ -15,13 +15,22 @@ import ClubSetupVerificationScreen from '../../app/club-setup/verify';
 import { AppThemeProvider } from '../../theme';
 
 const mockReplace = jest.fn();
+const mockPush = jest.fn();
 const mockSearch = jest.fn();
 const mockRequestSetup = jest.fn();
 const mockSelectUniversity = jest.fn();
 const mockClearUniversity = jest.fn();
 const mockRefreshUniversity = jest.fn();
 const mockVerifySetup = jest.fn();
+const mockRememberUniversitySearch = jest.fn(
+  (query: string, results: readonly (typeof mockEmory)[]) => {
+    mockUniversitySearchQuery = query;
+    mockUniversitySearchResults = results;
+  },
+);
 let mockSearchParameters: Record<string, string | undefined> = {};
+let mockUniversitySearchQuery = '';
+let mockUniversitySearchResults: readonly (typeof mockEmory)[] = [];
 
 const mockEmory = {
   id: '139658',
@@ -35,13 +44,23 @@ const mockEmory = {
 
 jest.mock('expo-router', () => ({
   Redirect: () => null,
-  useRouter: () => ({ replace: mockReplace, navigate: jest.fn(), back: jest.fn() }),
+  useRouter: () => ({
+    replace: mockReplace,
+    push: mockPush,
+    navigate: jest.fn(),
+    back: jest.fn(),
+  }),
   useLocalSearchParams: () => mockSearchParameters,
 }));
 
-jest.mock('../../providers', () => ({
+jest.mock('../../presentation/providers', () => ({
   useUniversitySelection: () => ({
     university: mockEmory,
+    universitySearch: {
+      query: mockUniversitySearchQuery,
+      results: mockUniversitySearchResults,
+    },
+    rememberUniversitySearch: mockRememberUniversitySearch,
     selectUniversity: (...args: unknown[]) => mockSelectUniversity(...args),
     clearUniversity: (...args: unknown[]) => mockClearUniversity(...args),
     refreshUniversity: (...args: unknown[]) => mockRefreshUniversity(...args),
@@ -70,7 +89,13 @@ describe('university onboarding routes', () => {
     jest.clearAllMocks();
     jest.useRealTimers();
     mockSearchParameters = {};
-    mockSearch.mockResolvedValue({ ok: true, value: [mockEmory], warnings: [] });
+    mockUniversitySearchQuery = '';
+    mockUniversitySearchResults = [];
+    mockSearch.mockResolvedValue({
+      ok: true,
+      value: [mockEmory],
+      warnings: [],
+    });
     mockSelectUniversity.mockResolvedValue({
       ok: true,
       value: { universityId: mockEmory.id, universityName: mockEmory.name },
@@ -84,7 +109,11 @@ describe('university onboarding routes', () => {
         university: {
           ...mockEmory,
           status: 'mapped',
-          club: { id: 'club-139658', name: 'Emory Campus Cats', emailEnabled: true },
+          club: {
+            id: 'club-139658',
+            name: 'Emory Campus Cats',
+            emailEnabled: true,
+          },
         },
         passwordSetupSent: true,
       },
@@ -105,6 +134,8 @@ describe('university onboarding routes', () => {
   it('searches after the debounce and requires selecting a returned university', async () => {
     await renderScreen(<UniversitySearchScreen />);
 
+    expect(screen.getByText('Select your university')).toBeOnTheScreen();
+    expect(screen.queryByLabelText('Campus Cats logo')).not.toBeOnTheScreen();
     await fireEvent.changeText(screen.getByLabelText('University'), 'Emory');
     expect(mockSearch).not.toHaveBeenCalled();
     await waitFor(() => expect(mockSearch).toHaveBeenCalledWith('Emory'), {
@@ -112,9 +143,13 @@ describe('university onboarding routes', () => {
     });
     expect(await screen.findByText('Emory University')).toBeOnTheScreen();
 
-    await fireEvent.press(screen.getByRole('button', { name: 'Select Emory University' }));
-    await waitFor(() => expect(mockSelectUniversity).toHaveBeenCalledWith(mockEmory));
-    expect(mockReplace).toHaveBeenCalledWith('/club-setup');
+    await fireEvent.press(
+      screen.getByRole('button', { name: 'Select Emory University' }),
+    );
+    await waitFor(() =>
+      expect(mockSelectUniversity).toHaveBeenCalledWith(mockEmory),
+    );
+    expect(mockPush).toHaveBeenCalledWith('/club-setup');
   });
 
   it('ignores an older search response after the query changes', async () => {
@@ -125,10 +160,13 @@ describe('university onboarding routes', () => {
     };
     let resolveOld: ((value: unknown) => void) | undefined;
     let resolveCurrent: ((value: unknown) => void) | undefined;
-    mockSearch.mockImplementation((query: string) => new Promise((resolve) => {
-      if (query === 'Em') resolveOld = resolve;
-      else resolveCurrent = resolve;
-    }));
+    mockSearch.mockImplementation(
+      (query: string) =>
+        new Promise((resolve) => {
+          if (query === 'Em') resolveOld = resolve;
+          else resolveCurrent = resolve;
+        }),
+    );
     await renderScreen(<UniversitySearchScreen />);
 
     await fireEvent.changeText(screen.getByLabelText('University'), 'Em');
@@ -136,19 +174,41 @@ describe('university onboarding routes', () => {
     await fireEvent.changeText(screen.getByLabelText('University'), 'Emory');
     await waitFor(() => expect(mockSearch).toHaveBeenCalledWith('Emory'));
 
-    await act(async () => resolveCurrent?.({
-      ok: true,
-      value: [mockEmory],
-      warnings: [],
-    }));
+    await act(async () =>
+      resolveCurrent?.({
+        ok: true,
+        value: [mockEmory],
+        warnings: [],
+      }),
+    );
     expect(await screen.findByText('Emory University')).toBeOnTheScreen();
 
-    await act(async () => resolveOld?.({
-      ok: true,
-      value: [oldResult],
-      warnings: [],
-    }));
+    await act(async () =>
+      resolveOld?.({
+        ok: true,
+        value: [oldResult],
+        warnings: [],
+      }),
+    );
     expect(screen.queryByText('Old University Result')).not.toBeOnTheScreen();
+    expect(screen.getByText('Emory University')).toBeOnTheScreen();
+  });
+
+  it('restores the query and results when returning to a remounted search screen', async () => {
+    const firstRender = await renderScreen(<UniversitySearchScreen />);
+
+    await fireEvent.changeText(screen.getByLabelText('University'), 'Emory');
+    expect(await screen.findByText('Emory University')).toBeOnTheScreen();
+    await waitFor(() =>
+      expect(mockRememberUniversitySearch).toHaveBeenLastCalledWith('Emory', [
+        mockEmory,
+      ]),
+    );
+    await act(async () => firstRender.unmount());
+
+    await renderScreen(<UniversitySearchScreen />);
+
+    expect(screen.getByLabelText('University')).toHaveProp('value', 'Emory');
     expect(screen.getByText('Emory University')).toBeOnTheScreen();
   });
 
@@ -160,8 +220,14 @@ describe('university onboarding routes', () => {
     ).toBeDisabled();
     expect(screen.getByLabelText('Light theme preview')).toBeOnTheScreen();
     expect(screen.getByLabelText('Dark theme preview')).toBeOnTheScreen();
-    await fireEvent.changeText(screen.getByLabelText('Primary color'), '#012169');
-    await fireEvent.changeText(screen.getByLabelText('Accent color'), '#F2A900');
+    await fireEvent.changeText(
+      screen.getByLabelText('Primary color'),
+      '#012169',
+    );
+    await fireEvent.changeText(
+      screen.getByLabelText('Accent color'),
+      '#F2A900',
+    );
     await fireEvent.changeText(
       screen.getByLabelText('Your school email'),
       'president@emory.edu',
@@ -170,18 +236,22 @@ describe('university onboarding routes', () => {
       screen.getByRole('button', { name: 'Email President for verification' }),
     );
 
-    await waitFor(() => expect(mockRequestSetup).toHaveBeenCalledWith(
+    await waitFor(() =>
+      expect(mockRequestSetup).toHaveBeenCalledWith(
+        expect.objectContaining({
+          universityId: '139658',
+          presidentChoice: 'self',
+          presidentEmail: 'president@emory.edu',
+          primaryColor: '#012169',
+          accentColor: '#F2A900',
+        }),
+      ),
+    );
+    expect(mockReplace).toHaveBeenCalledWith(
       expect.objectContaining({
-        universityId: '139658',
-        presidentChoice: 'self',
-        presidentEmail: 'president@emory.edu',
-        primaryColor: '#012169',
-        accentColor: '#F2A900',
+        pathname: '/club-setup/pending',
       }),
-    ));
-    expect(mockReplace).toHaveBeenCalledWith(expect.objectContaining({
-      pathname: '/club-setup/pending',
-    }));
+    );
   });
 
   it('can nominate someone else as President using an approved school email', async () => {
@@ -196,12 +266,14 @@ describe('university onboarding routes', () => {
       screen.getByRole('button', { name: 'Email President for verification' }),
     );
 
-    await waitFor(() => expect(mockRequestSetup).toHaveBeenCalledWith(
-      expect.objectContaining({
-        presidentChoice: 'other',
-        presidentEmail: 'nominee@dept.emory.edu',
-      }),
-    ));
+    await waitFor(() =>
+      expect(mockRequestSetup).toHaveBeenCalledWith(
+        expect.objectContaining({
+          presidentChoice: 'other',
+          presidentEmail: 'nominee@dept.emory.edu',
+        }),
+      ),
+    );
   });
 
   it('discovers a completed mapping when the pending screen is refreshed', async () => {
@@ -209,7 +281,11 @@ describe('university onboarding routes', () => {
     mockRefreshUniversity.mockResolvedValue({
       ...mockEmory,
       status: 'mapped',
-      club: { id: 'club-139658', name: 'Emory Campus Cats', emailEnabled: true },
+      club: {
+        id: 'club-139658',
+        name: 'Emory Campus Cats',
+        emailEnabled: true,
+      },
     });
     await renderScreen(<ClubSetupPendingScreen />);
 
@@ -231,10 +307,14 @@ describe('university onboarding routes', () => {
     });
     await renderScreen(<ClubSetupVerificationScreen />);
 
-    expect(await screen.findByRole('alert', {
-      name: 'This verification link has expired',
-    })).toBeOnTheScreen();
-    expect(screen.getByRole('button', { name: 'Choose a university' })).toBeEnabled();
+    expect(
+      await screen.findByRole('alert', {
+        name: 'This verification link has expired',
+      }),
+    ).toBeOnTheScreen();
+    expect(
+      screen.getByRole('button', { name: 'Choose a university' }),
+    ).toBeEnabled();
     expect(mockReplace).not.toHaveBeenCalledWith('/login');
   });
 });

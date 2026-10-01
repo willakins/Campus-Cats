@@ -8,7 +8,7 @@ import {
   waitFor,
 } from '@testing-library/react-native';
 
-import EditCatalogEntry from '../../app/(app)/catalog/edit-entry';
+import EditCatalogEntry from '../../app/(app)/catalog/[id]/edit';
 import { AppThemeProvider } from '../../theme';
 
 const mockUpdate = jest.fn();
@@ -19,7 +19,7 @@ jest.mock('expo-router', () => ({
   useRouter: () => ({ back: jest.fn(), replace: jest.fn() }),
 }));
 
-jest.mock('../../providers', () => ({
+jest.mock('../../presentation/providers', () => ({
   useAuth: () => ({
     user: { id: 'officer-1', email: 'officer@gatech.edu', role: 1 },
   }),
@@ -77,8 +77,8 @@ jest.mock('../../composition/appModules', () => ({
   },
 }));
 
-jest.mock('../../forms/CatalogForm', () => {
-  const actual = jest.requireActual('../../forms/CatalogForm');
+jest.mock('../../presentation/screens/catalog/forms/CatalogForm', () => {
+  const actual = jest.requireActual('../../presentation/screens/catalog/forms/CatalogForm');
   const mockReact = require('react');
   const { Text: MockText } = require('react-native');
   return {

@@ -1,6 +1,6 @@
 # Hosting alternatives review
 
-Reviewed 2026-09-28. These are planning calculations for the workload in `system-design.md`, not observed production bills. Taxes, payment fees, mobile distribution, and engineering time are excluded.
+Reviewed 2026-09-28. These are planning calculations for the workload in `architecture/system-design.md`, not observed production bills. Taxes, payment fees, mobile distribution, and engineering time are excluded.
 
 ## Recommendation
 
@@ -41,7 +41,7 @@ These examples assume that 0.25 CU is sufficient while active. The database norm
 
 Add $5 for Workers Paid and, if retaining the existing Firebase SAML identity provider, $8.25 at 600 SAML MAU. That gives approximately **$23–36/month before R2, retained database history, independent backups, realtime delivery, email, and observability**. Neon and Cloudflare are financially competitive, but this is a component subtotal. Implementing and operating the additional services is a material cost for volunteers. Do not treat platform-dashboard SSO as evidence of bundled university login for application users. [Workers pricing](https://developers.cloudflare.com/workers/platform/pricing/), [Identity Platform pricing](https://cloud.google.com/identity-platform/pricing)
 
-Neon's main pricing/docs pages did not render through the research tool; the figures above use its official pricing announcements and accessible documentation. Reconfirm the checkout rates before purchase.
+Neon's main pricing/docs pages did not render through the research tool; the figures above use its official pricing alerts and accessible documentation. Reconfirm the checkout rates before purchase.
 
 ## Workers, D1, and R2: cheaper service charges, greater implementation scope
 

@@ -2,7 +2,7 @@ import React from 'react';
 
 import { fireEvent, render, screen, userEvent, waitFor } from '@testing-library/react-native';
 
-import CreateCatalogEntry from '../../app/(app)/catalog/create-entry';
+import CreateCatalogEntry from '../../app/(app)/catalog/new';
 import { AppThemeProvider } from '../../theme';
 
 const mockCreate = jest.fn();
@@ -19,14 +19,14 @@ jest.mock('../../composition/appModules', () => ({
   },
 }));
 
-jest.mock('../../providers/AuthProvider', () => ({
+jest.mock('../../presentation/providers/AuthProvider', () => ({
   useAuth: () => ({
     user: { id: 'officer-1', email: 'officer@gatech.edu', role: 1 },
   }),
 }));
 
-jest.mock('../../forms/CatalogForm', () => {
-  const actual = jest.requireActual('../../forms/CatalogForm');
+jest.mock('../../presentation/screens/catalog/forms/CatalogForm', () => {
+  const actual = jest.requireActual('../../presentation/screens/catalog/forms/CatalogForm');
   const mockReact = require('react');
   const { Pressable: MockPressable, Text: MockText } = require('react-native');
   return {

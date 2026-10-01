@@ -37,6 +37,12 @@ export interface AppColors {
   readonly infoSurface: string;
   readonly shadow: string;
   readonly overlay: string;
+  readonly glassBorder: string;
+  readonly glassHighlight: string;
+  readonly glassSelectionBorder: string;
+  readonly imageCropBackground: string;
+  readonly imageCropGuide: string;
+  readonly imageCropMask: string;
 }
 
 export interface AppTheme {
@@ -157,6 +163,12 @@ const lightColors: AppColors = {
   infoSurface: '#DFEBF1',
   shadow: '#18314F',
   overlay: '#111A22B8',
+  glassBorder: '#FFFFFFA8',
+  glassHighlight: '#FFFFFFB8',
+  glassSelectionBorder: '#FFFFFF78',
+  imageCropBackground: '#111111',
+  imageCropGuide: '#FFFFFF',
+  imageCropMask: 'rgba(0, 0, 0, 0.58)',
 };
 
 const darkColors: AppColors = {
@@ -188,6 +200,12 @@ const darkColors: AppColors = {
   infoSurface: '#18333F',
   shadow: '#000000',
   overlay: '#000000C7',
+  glassBorder: '#FFFFFF38',
+  glassHighlight: '#FFFFFF24',
+  glassSelectionBorder: '#FFFFFF24',
+  imageCropBackground: '#111111',
+  imageCropGuide: '#FFFFFF',
+  imageCropMask: 'rgba(0, 0, 0, 0.58)',
 };
 
 const paperTheme = (dark: boolean, colors: AppColors): MD3Theme => ({
