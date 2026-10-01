@@ -1,5 +1,5 @@
-import { LegalDocumentScreen } from '@/components/legal';
-import { termsOfService } from '@/legal/policies';
+import { LegalDocumentScreen } from '@/presentation/legal';
+import { termsOfService } from '@/presentation/legal';
 
 const TermsScreen = () => <LegalDocumentScreen document={termsOfService} />;
 

@@ -4,7 +4,7 @@ import type {
   InaturalistAccountLinkStatus,
 } from '../../core/domain';
 import type {
-  AnnouncementNotification,
+  AlertNotification,
   ApplicationEffects,
   WhitelistCredentials,
 } from '../../core/ports';
@@ -16,8 +16,8 @@ const messagingDisabled = (): never => {
 export class DevelopmentApplicationEffects implements ApplicationEffects {
   constructor(private readonly developmentEffects: ApplicationEffects) {}
 
-  async notifyAnnouncement(
-    _notification: AnnouncementNotification,
+  async notifyAlert(
+    _notification: AlertNotification,
   ): Promise<void> {
     return messagingDisabled();
   }

@@ -1,7 +1,7 @@
 import { getApps, initializeApp } from 'firebase-admin/app';
 import { getFirestore } from 'firebase-admin/firestore';
 
-import { UniversityCatalogService } from '../universityCatalog';
+import { UniversityCatalogService } from '../onboarding/universityCatalog';
 
 async function main(): Promise<void> {
   const apiKey = process.env.COLLEGE_SCORECARD_API_KEY;

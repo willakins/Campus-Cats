@@ -122,7 +122,7 @@ service firebase.storage {
       allow delete: if isAdmin(clubId);
     }
 
-    match /clubs/{clubId}/announcements/{announcementId}/{fileName} {
+    match /clubs/{clubId}/alerts/{alertId}/{fileName} {
       allow read: if isActiveUser(clubId);
       allow create, update: if isAdmin(clubId) && validImage();
       allow delete: if isAdmin(clubId);

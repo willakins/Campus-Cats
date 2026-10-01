@@ -8,7 +8,7 @@ import {
   localSightingRecord,
   parseSighting,
 } from '../../core/domain';
-import ViewSighting from '../../app/(app)/sighting/view-sighting';
+import ViewSighting from '../../app/(app)/map/sightings/[id]';
 import { AppThemeProvider } from '../../theme';
 
 const mockPush = jest.fn();
@@ -46,7 +46,7 @@ jest.mock('../../composition/appModules', () => ({
   },
 }));
 
-jest.mock('../../providers', () => ({
+jest.mock('../../presentation/providers', () => ({
   useAuth: () => ({
     user: { id: mockUserId, email: 'member@gatech.edu', role: mockRole },
   }),
@@ -59,11 +59,11 @@ jest.mock('@expo/vector-icons', () => ({
   Ionicons: () => null,
 }));
 
-jest.mock('../../components/entries/SightingEntry', () => {
+jest.mock('../../presentation/screens/map/sightings/components/SightingDetailsContent', () => {
   const mockReact = require('react');
   const { Pressable: MockPressable, Text: MockText } = require('react-native');
   return {
-    SightingEntry: ({
+    SightingDetailsContent: ({
       sighting,
       onReporterPress,
       showContributor,
@@ -174,7 +174,7 @@ describe('view sighting route', () => {
       'sighting-1',
     );
     expect(mockPush).toHaveBeenCalledWith({
-      pathname: '/sighting/edit-sighting',
+      pathname: '/map/sightings/[id]/edit',
       params: { id: 'sighting-1' },
     });
     expect(mockCommentsList).toHaveBeenCalledWith(
@@ -202,7 +202,7 @@ describe('view sighting route', () => {
       await screen.findByRole('button', { name: 'View reporter profile' }),
     );
     expect(mockPush).toHaveBeenCalledWith({
-      pathname: '/profile/view-profile',
+      pathname: '/profiles/[id]',
       params: { id: 'member-1' },
     });
   });
@@ -272,7 +272,7 @@ describe('view sighting route', () => {
       42,
     );
     expect(mockPush).toHaveBeenCalledWith({
-      pathname: '/profile/view-profile',
+      pathname: '/profiles/[id]',
       params: { id: 'member-2' },
     });
   });

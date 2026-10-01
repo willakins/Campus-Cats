@@ -76,7 +76,7 @@ module.exports = defineConfig([
     },
   },
   {
-    files: ['app/**/*.tsx', 'forms/**/*.tsx', 'components/**/*.tsx'],
+    files: ['app/**/*.tsx', 'presentation/**/*.tsx'],
     rules: {
       'no-restricted-imports': [
         'error',
@@ -95,8 +95,8 @@ module.exports = defineConfig([
   },
   {
     files: [
-      'components/design/Forms.tsx',
-      'components/forms/FormControls.tsx',
+      'presentation/ui/Forms.tsx',
+      'presentation/forms/fields/FormTextInput.tsx',
     ],
     rules: {
       'no-restricted-imports': 'off',

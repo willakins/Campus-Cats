@@ -19,10 +19,10 @@ const policy = (
  * minimum role therefore updates enforcement, cascading access, and UI copy.
  */
 export const roleAccessPolicies = Object.freeze({
-  manageAnnouncements: policy(
+  manageAlerts: policy(
     Role.Officer,
-    'create, edit, or delete announcements',
-    'Everyone can read club announcements.',
+    'create, edit, or delete alerts',
+    'Everyone can read club alerts.',
   ),
   manageCatalog: policy(
     Role.Officer,
@@ -36,7 +36,7 @@ export const roleAccessPolicies = Object.freeze({
   manageEvents: policy(Role.Officer, 'create, edit, or delete events'),
   manageSurveys: policy(Role.Officer, 'create or manage surveys'),
   manageCatalogTags: policy(Role.Officer, 'manage catalog tags'),
-  manageContacts: policy(Role.Officer, 'manage club contacts'),
+  manageContacts: policy(Role.President, 'manage club contacts'),
   pingClubMembers: policy(Role.Officer, 'ping all club members'),
   manageMembershipApplications: policy(
     Role.Officer,
@@ -50,7 +50,7 @@ export const roleAccessPolicies = Object.freeze({
     Role.President,
     'start presidential elections',
   ),
-  manageAppSettings: policy(Role.President, 'manage app settings'),
+  manageAppSettings: policy(Role.President, 'manage club settings'),
   manageDonations: policy(Role.President, 'set up or edit donations'),
   manageClubBilling: policy(Role.President, 'manage club billing'),
   viewInfrastructureCosts: policy(

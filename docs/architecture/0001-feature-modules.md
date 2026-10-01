@@ -12,14 +12,16 @@ alerts, Firebase access, validation, and selected-record globals. This makes ord
 behavior difficult to test and makes a change in one feature risky for unrelated
 features.
 
-The refactor must preserve the production Firestore collections, document fields,
-Storage paths, routes, and visible behavior. It must not require a production-data
-migration.
+The behavior-module refactor must preserve the production Firestore collections,
+document fields, Storage paths, routes, and visible behavior. It does not itself
+require a production-data migration. The later announcements-to-alerts terminology
+change is a separate migration documented in
+[`docs/alerts-migration.md`](../alerts-migration.md).
 
 ## Decision
 
 The application will expose an immutable `AppModules` composition root. It contains
-explicit modules for sightings, catalog, stations, announcements, contacts, users,
+explicit modules for sightings, catalog, stations, alerts, contacts, users,
 whitelist, session, image selection, and read-only iNaturalist integration workflows.
 
 Each module presents typed query and mutation methods and returns `Outcome<T>` values.
@@ -67,21 +69,23 @@ flowchart TD
     T[In-memory test adapters] --> R
 ```
 
-- `app/`, `forms/`, and `providers/` may depend on the composition and public feature
-  interfaces. They own loading, alerts, confirmations, and route transitions.
+- `app/` and `presentation/` may depend on the composition
+  and public feature interfaces. They own loading, alerts, confirmations, and route
+  transitions.
 - `features/` depends only on `core/domain`, `core/media`, and `core/ports`; feature
   methods accept domain inputs and return `Outcome<T>`.
 - `core/` contains framework-independent models, policies, ports, and media
   compensation. It does not import React, Expo Router, or Firebase.
 - `adapters/` implements ports for production or deterministic tests. Firebase types
   stop at this boundary.
-- `functions/src/handlers.ts` contains injected callable behavior. Firebase callable
+- `functions/src/shared/handlers.ts` contains injected callable behavior. Firebase callable
   wrappers translate authentication and infrastructure at the edge.
 
 Records cross routes only as IDs. Screens reload records through their feature module,
-which prevents stale module-global selections. Persistence codecs preserve the existing
-Firestore collections and field names, and media adapters preserve the Storage folder
-layout; this refactor therefore requires no production-data migration.
+which prevents stale module-global selections. Except for separately documented
+data-contract migrations such as the alerts rename, persistence codecs preserve
+existing Firestore collection and field names, and media adapters preserve the Storage
+folder layout.
 
 ## Presentation boundary
 
@@ -96,3 +100,10 @@ The responsive shell follows safe-area and system appearance settings. Collectio
 virtualized lists, record routes still pass IDs, and all feature actions continue to
 call the same module interfaces. The visual modernization therefore changes neither
 the dependency direction nor persisted data contracts described above.
+
+`app/` is a thin Expo Router manifest. Screen implementations live under
+`presentation/screens/` and follow the five product areas: Map, Community, Stations,
+Catalog, and Settings. Community owns Alerts, Events, Surveys, Votes, and Donations;
+Map owns Sightings. Cross-area member profiles remain shared. This presentation
+ownership is intentionally different from the flat behavior-module organization in
+`features/`.

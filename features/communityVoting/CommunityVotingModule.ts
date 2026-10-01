@@ -527,7 +527,7 @@ export class CommunityVotingModule {
             )}. Voting follows through ${formatDate(vote.votingEndsAt)}.`,
           };
     try {
-      await this.dependencies.effects.notifyAnnouncement(notification);
+      await this.dependencies.effects.notifyAlert(notification);
       return success(vote);
     } catch {
       return success(vote, [

@@ -1,6 +1,12 @@
 import React from 'react';
 
-import { render, screen, userEvent, waitFor } from '@testing-library/react-native';
+import {
+  render,
+  screen,
+  userEvent,
+  waitFor,
+} from '@testing-library/react-native';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import HomeScreen from '../../app/(app)/(tabs)/index';
 import {
@@ -25,14 +31,24 @@ jest.mock('expo-router', () => {
 });
 
 jest.mock('../../composition/appModules', () => ({
-  appModules: { sightings: { list: (...args: unknown[]) => mockList(...args) } },
+  appModules: {
+    sightings: { list: (...args: unknown[]) => mockList(...args) },
+  },
 }));
 
-jest.mock('../../components/SightingMapView', () => {
+jest.mock('../../presentation/screens/map/components/SightingMapView', () => {
   const mockReact = require('react');
-  const { Pressable: MockPressable, Text: MockText, View: MockView } = require('react-native');
+  const {
+    Pressable: MockPressable,
+    Text: MockText,
+    View: MockView,
+  } = require('react-native');
   return {
-    SightingMapView: ({ list, onPerMarkerPress, ...props }: {
+    SightingMapView: ({
+      list,
+      onPerMarkerPress,
+      ...props
+    }: {
       list: readonly { id: string; name: string }[];
       onPerMarkerPress: (item: { id: string; name: string }) => void;
       [key: string]: unknown;
@@ -41,24 +57,38 @@ jest.mock('../../components/SightingMapView', () => {
       return mockReact.createElement(
         MockView,
         { testID: 'sighting-map' },
-        list.map((item) => mockReact.createElement(
-          MockPressable,
-          {
-            key: item.id,
-            accessibilityRole: 'button',
-            accessibilityLabel: `View sighting: ${item.name}`,
-            onPress: () => onPerMarkerPress(item),
-          },
-          mockReact.createElement(MockText, null, item.name),
-        )),
+        list.map((item) =>
+          mockReact.createElement(
+            MockPressable,
+            {
+              key: item.id,
+              accessibilityRole: 'button',
+              accessibilityLabel: `View sighting: ${item.name}`,
+              onPress: () => onPerMarkerPress(item),
+            },
+            mockReact.createElement(MockText, null, item.name),
+          ),
+        ),
       );
     },
   };
 });
 
 jest.mock('@expo/vector-icons', () => ({ Ionicons: () => null }));
+jest.mock('expo-glass-effect', () => ({
+  GlassView: require('react-native').View,
+  isGlassEffectAPIAvailable: () => false,
+  isLiquidGlassAvailable: () => false,
+}));
+jest.mock('expo-blur', () => ({
+  BlurView: require('react-native').View,
+}));
 
-const member = parseUser({ id: 'member-1', email: 'member@gatech.edu', role: Role.Member });
+const member = parseUser({
+  id: 'member-1',
+  email: 'member@gatech.edu',
+  role: Role.Member,
+});
 const recent = parseSighting({
   id: 'sighting-1',
   name: 'Goldie',
@@ -104,9 +134,16 @@ const importedWithoutCoordinates: InaturalistSightingRecord = {
 
 const renderMap = async () =>
   await render(
-    <AppThemeProvider colorScheme="dark">
-      <HomeScreen />
-    </AppThemeProvider>,
+    <SafeAreaProvider
+      initialMetrics={{
+        frame: { x: 0, y: 0, width: 390, height: 844 },
+        insets: { top: 47, right: 0, bottom: 34, left: 0 },
+      }}
+    >
+      <AppThemeProvider colorScheme="dark">
+        <HomeScreen />
+      </AppThemeProvider>
+    </SafeAreaProvider>,
   );
 
 describe('sightings map route', () => {
@@ -115,17 +152,29 @@ describe('sightings map route', () => {
   });
 
   it('shows a result count, filters markers, and navigates by ID', async () => {
-    mockList.mockResolvedValue({ ok: true, value: [recent, old], warnings: [] });
+    mockList.mockResolvedValue({
+      ok: true,
+      value: [recent, old],
+      warnings: [],
+    });
     const user = userEvent.setup();
     await renderMap();
 
     expect(await screen.findByText('2 sightings')).toBeOnTheScreen();
+    expect(screen.getByTestId('sighting-age-glass-bar')).toHaveStyle({
+      alignSelf: 'center',
+    });
+    expect(screen.getByLabelText('Sighting age')).toHaveStyle({
+      justifyContent: 'center',
+    });
     await user.press(screen.getByRole('button', { name: '7D' }));
     expect(screen.getByText('1 sighting')).toBeOnTheScreen();
     expect(screen.queryByText('Einstein')).not.toBeOnTheScreen();
-    await user.press(screen.getByRole('button', { name: 'View sighting: Goldie' }));
+    await user.press(
+      screen.getByRole('button', { name: 'View sighting: Goldie' }),
+    );
     expect(mockPush).toHaveBeenCalledWith({
-      pathname: '/sighting/view-sighting',
+      pathname: '/map/sightings/[id]',
       params: { id: 'sighting-1' },
     });
   });
@@ -133,16 +182,29 @@ describe('sightings map route', () => {
   it('keeps reporting available and anchors module errors over the map', async () => {
     mockList.mockResolvedValue({
       ok: false,
-      error: { code: 'dependency_failure', message: 'Could not load sightings' },
+      error: {
+        code: 'dependency_failure',
+        message: 'Could not load sightings',
+      },
     });
     const user = userEvent.setup();
     await renderMap();
 
-    expect(await screen.findByRole('alert', { name: 'Could not load sightings' })).toBeOnTheScreen();
-    const reportButton = screen.getByRole('button', { name: 'Report a sighting' });
-    expect(reportButton).toHaveStyle({ alignSelf: 'flex-start' });
+    expect(
+      await screen.findByRole('alert', { name: 'Could not load sightings' }),
+    ).toBeOnTheScreen();
+    const reportButton = screen.getByRole('button', {
+      name: 'Report a sighting',
+    });
+    expect(screen.queryByText('Report a sighting')).not.toBeOnTheScreen();
+    expect(reportButton).toHaveStyle({
+      width: 56,
+      height: 56,
+      backgroundColor: '#FF8F85',
+      borderColor: '#FF8F85',
+    });
     await user.press(reportButton);
-    expect(mockPush).toHaveBeenCalledWith('/sighting/create-sighting');
+    expect(mockPush).toHaveBeenCalledWith('/map/sightings/new');
   });
 
   it('shows imported markers by stable ID and omits non-public coordinates', async () => {
@@ -156,9 +218,11 @@ describe('sightings map route', () => {
 
     expect(await screen.findByText('2 sightings')).toBeOnTheScreen();
     expect(screen.queryByText('Private location')).not.toBeOnTheScreen();
-    await user.press(screen.getByRole('button', { name: 'View sighting: Mimi' }));
+    await user.press(
+      screen.getByRole('button', { name: 'View sighting: Mimi' }),
+    );
     expect(mockPush).toHaveBeenCalledWith({
-      pathname: '/sighting/view-sighting',
+      pathname: '/map/sightings/[id]',
       params: { id: 'inat-observation-1001' },
     });
   });
@@ -176,11 +240,13 @@ describe('sightings map route', () => {
     mockList.mockResolvedValue({ ok: true, value: [], warnings: [] });
     await renderMap();
 
-    expect(mockSightingMapProps).toHaveBeenCalledWith(expect.objectContaining({
-      initialViewport: {
-        center: { latitude: 33.776077, longitude: -84.396199 },
-        zoom: 16,
-      },
-    }));
+    expect(mockSightingMapProps).toHaveBeenCalledWith(
+      expect.objectContaining({
+        initialViewport: {
+          center: { latitude: 33.776077, longitude: -84.396199 },
+          zoom: 14,
+        },
+      }),
+    );
   });
 });

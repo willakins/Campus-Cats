@@ -8,6 +8,10 @@ export interface BillingRedirect {
   readonly url: string;
 }
 
+export class ClubBillingUnavailableError extends Error {
+  readonly name = 'ClubBillingUnavailableError';
+}
+
 export interface ClubBillingPort {
   observeAccess(
     clubId: string,

@@ -14,7 +14,7 @@ platform-administration capabilities below.
 | Update or delete a sighting                | Deny            | Own only                     | Own only              | Own only              | Own only              | Own only               |
 | Manage catalog cats                        | Deny            | Deny                         | Allow                 | Allow                 | Allow                 | Allow                  |
 | Manage feeding stations and restocks       | Deny            | Deny                         | Allow                 | Allow                 | Allow                 | Allow                  |
-| Manage announcements                       | Deny            | Deny                         | Allow                 | Allow                 | Allow                 | Allow                  |
+| Manage alerts                              | Deny            | Deny                         | Allow                 | Allow                 | Allow                 | Allow                  |
 | Read active community events               | Deny            | Allow                        | Allow                 | Allow                 | Allow                 | Allow                  |
 | Manage events and view expired events      | Deny            | Deny                         | Allow                 | Allow                 | Allow                 | Allow                  |
 | Read open and past surveys                 | Deny            | Allow                        | Allow                 | Allow                 | Allow                 | Allow                  |
@@ -53,8 +53,8 @@ platform-administration capabilities below.
 
 ## Critical workflow ordering
 
-- Announcement data is persisted before notification delivery is attempted. A
-  notification failure is reported as a warning and does not erase the announcement.
+- Alert data is persisted before notification delivery is attempted. A
+  notification failure is reported as a warning and does not erase the alert.
 - A chat ping is persisted before notification delivery is attempted. Every eligible
   batch is attempted; any delivery failure is reported as a warning and does not erase
   the message or its unread marker. Ordinary chat activity does not notify users.

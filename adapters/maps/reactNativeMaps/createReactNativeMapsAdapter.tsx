@@ -7,7 +7,7 @@ import {
   AppMapPathProps,
   AppMapViewProps,
   MapAdapter,
-} from '../../../components/maps/MapAdapter';
+} from '../../../presentation/maps/MapAdapter';
 
 interface ReactNativeMapsConfiguration {
   readonly webGoogleMapsApiKey?: string;
@@ -18,6 +18,9 @@ type CrossPlatformMapViewProps = React.ComponentProps<typeof RNMapView> & {
 };
 
 const CrossPlatformMapView = RNMapView as React.ComponentType<CrossPlatformMapViewProps>;
+
+const cameraAltitudeForZoom = (zoom: number): number =>
+  1000 * 2 ** (16 - zoom);
 
 const darkMapStyle: MapStyleElement[] = [
   { elementType: 'geometry', stylers: [{ color: '#1C2730' }] },
@@ -60,7 +63,7 @@ export function createReactNativeMapsAdapter(
         center: initialViewport.center,
         heading: 0,
         pitch: 0,
-        altitude: 1000,
+        altitude: cameraAltitudeForZoom(initialViewport.zoom),
         zoom: initialViewport.zoom,
       }}
       onRegionChangeComplete={

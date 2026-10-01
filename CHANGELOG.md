@@ -8,8 +8,8 @@ This document preserves the shipped features and known limitations of the team's
 
 - **Cat sighting reports:** members can submit a cat's name, condition, location, and photos.
 - **Sighting map:** sightings appear as map pins and can be filtered by age.
-- **Announcements:** administrators can create updates that are visible to all users.
-- **Announcement notifications:** published announcements can trigger push notifications.
+- **Alerts:** administrators can create updates that are visible to all users.
+- **Alert notifications:** published alerts can trigger push notifications.
 - **Station directory:** members can view stored feeding-station information.
 - **Station management:** administrators can add and update Firestore-backed stations.
 - **Restocking workflow:** station details include restocking data plus stocked/unstocked filtering.
