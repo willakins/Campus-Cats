@@ -60,15 +60,15 @@ jest.mock('../../composition/appModules', () => ({
   },
 }));
 
-jest.mock('../../providers', () => ({
+jest.mock('../../presentation/providers', () => ({
   useAuth: () => ({ currentUser: mockCurrentAuthUser, user: mockAuthUser }),
 }));
 
-jest.mock('../../components/items/CatalogItem', () => {
+jest.mock('../../presentation/patterns/catalog/CatalogListItem', () => {
   const mockReact = require('react');
   const { Pressable: MockPressable, Text: MockText, View: MockView } = require('react-native');
   return {
-    CatalogItem: ({
+    CatalogListItem: ({
       cat,
       heartCount,
       onToggleFavorite,
@@ -94,11 +94,11 @@ jest.mock('../../components/items/CatalogItem', () => {
   };
 });
 
-jest.mock('../../components/items/StationItem', () => {
+jest.mock('../../presentation/screens/stations/components/StationListItem', () => {
   const mockReact = require('react');
   const { Text: MockText } = require('react-native');
   return {
-    StationItem: ({ station }: { station: { name: string } }) =>
+    StationListItem: ({ station }: { station: { name: string } }) =>
       mockReact.createElement(MockText, null, station.name),
   };
 });
@@ -206,13 +206,13 @@ describe('catalog collection route', () => {
     const user = userEvent.setup();
     await renderRoute(<Catalog />);
 
-    expect(screen.getByText('Cat catalog')).toBeOnTheScreen();
+    expect(screen.getByText('Cat-alog')).toBeOnTheScreen();
     expect(screen.queryByText('Catalog access')).not.toBeOnTheScreen();
     expect(screen.getByRole('progressbar', { name: 'Loading cat cards' })).toBeOnTheScreen();
     finish?.({ ok: true, value: [], warnings: [] });
     expect(await screen.findByText('No cats yet')).toBeOnTheScreen();
     await user.press(screen.getByRole('button', { name: 'Create catalog entry' }));
-    expect(mockPush).toHaveBeenCalledWith('/catalog/create-entry');
+    expect(mockPush).toHaveBeenCalledWith('/catalog/new');
   });
 
   it('renders catalog results and module errors', async () => {
@@ -283,7 +283,33 @@ describe('catalog collection route', () => {
       expect.objectContaining({ id: 'actor-1' }),
       'catalog-1',
     );
-    expect(await screen.findByText('Goldie is now your favorite cat.')).toBeOnTheScreen();
+    expect(
+      await screen.findByRole('alert', {
+        name: 'Goldie is now your favorite cat.',
+      }),
+    ).toHaveProp('accessibilityLiveRegion', 'polite');
+  });
+
+  it('shows favorite failures in an assertive toast', async () => {
+    mockCatalogList.mockResolvedValue({
+      ok: true,
+      value: [catalogEntry],
+      warnings: [],
+    });
+    mockCatalogSetFavorite.mockResolvedValue({
+      ok: false,
+      error: { code: 'dependency_failure', message: 'Could not save favorite' },
+    });
+    const user = userEvent.setup();
+    await renderRoute(<Catalog />);
+
+    await user.press(
+      await screen.findByRole('button', { name: 'Favorite Goldie' }),
+    );
+
+    expect(
+      await screen.findByRole('alert', { name: 'Could not save favorite' }),
+    ).toHaveProp('accessibilityLiveRegion', 'assertive');
   });
 
   it('loads once when auth emits equivalent user objects', async () => {

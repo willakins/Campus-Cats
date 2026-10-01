@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { View } from 'react-native';
 import { Redirect, useRouter } from 'expo-router';
 
-import { AuthScaffold, AuthTextField } from '@/components/auth';
+import { AuthScaffold, AuthTextField } from '@/presentation/auth';
 import {
   AppText,
   Button,
@@ -11,7 +11,7 @@ import {
   FormSection,
   SegmentedControl,
   StatusPill,
-} from '@/components/design';
+} from '@/presentation/ui';
 import { appModules } from '@/composition/appModules';
 import {
   ClubSetupDraft,
@@ -19,7 +19,7 @@ import {
   defaultClubName,
   isHexColor,
 } from '@/core/domain';
-import { useUniversitySelection } from '@/providers';
+import { useUniversitySelection } from '@/presentation/providers';
 import { createBrandedTheme, useAppTheme } from '@/theme';
 
 const ClubSetupScreen = () => {
@@ -114,7 +114,7 @@ const ClubSetupScreen = () => {
           onChangeText={(value) => update('clubName', value)}
         />
       </FormSection>
-      <FormSection title="App colors">
+      <FormSection title="Club colors">
         <AuthTextField
           label="Primary color"
           required

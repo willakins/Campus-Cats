@@ -11,14 +11,15 @@ import {
 
 import Settings from '../../app/(app)/(tabs)/settings';
 import Account from '../../app/(app)/settings/account';
-import InaturalistAdministration from '../../app/(app)/settings/inaturalist';
-import ManageUsers from '../../app/(app)/settings/manage_users';
-import ManageWhitelist from '../../app/(app)/settings/manage_whitelist';
+import InaturalistAdministration from '../../app/(app)/settings/integrations/inaturalist';
+import ManageUsers from '../../app/(app)/settings/members';
+import ManageWhitelist from '../../app/(app)/settings/whitelist';
 import {
   ImportedCatalogProfile,
   Role,
   parseContact,
   parseManagedUser,
+  parsePublicProfile,
   parseWhitelistApplication,
 } from '../../core/domain';
 import { AppThemeProvider } from '../../theme';
@@ -33,6 +34,7 @@ const mockListContacts = jest.fn();
 const mockCreateContact = jest.fn();
 const mockUpdateContact = jest.fn();
 const mockRemoveContact = jest.fn();
+const mockGetProfile = jest.fn();
 const mockListUsers = jest.fn();
 const mockDeleteOwnAccount = jest.fn();
 const mockListWhitelist = jest.fn();
@@ -52,7 +54,7 @@ jest.mock('expo-router', () => {
   };
 });
 
-jest.mock('../../providers', () => ({
+jest.mock('../../presentation/providers', () => ({
   useAuth: () => ({
     user: {
       id: 'actor-1',
@@ -72,6 +74,9 @@ jest.mock('../../composition/appModules', () => ({
       create: (...args: unknown[]) => mockCreateContact(...args),
       update: (...args: unknown[]) => mockUpdateContact(...args),
       remove: (...args: unknown[]) => mockRemoveContact(...args),
+    },
+    profiles: {
+      get: (...args: unknown[]) => mockGetProfile(...args),
     },
     users: {
       list: (...args: unknown[]) => mockListUsers(...args),
@@ -112,8 +117,17 @@ const contact = parseContact({
   name: 'Campus Cats Officers',
   email: 'cats@gatech.edu',
   instagramUrl: 'https://www.instagram.com/gtcampuscats',
-  facebookUrl: 'https://www.facebook.com/gtcampuscats',
-  websiteUrl: 'https://campuscats.gatech.edu',
+  xUrl: 'https://x.com/gtcampuscats',
+  websiteUrls: ['https://campuscats.gatech.edu'],
+});
+const publicProfile = parsePublicProfile({
+  id: 'actor-1',
+  displayName: 'Alex Catfan',
+  bio: 'Cat watcher and campus volunteer.',
+  profilePhotoUrl: '',
+  role: Role.Member,
+  achievementIds: [],
+  selectedTitleId: '',
 });
 const member = parseManagedUser({
   id: 'member-1',
@@ -209,6 +223,11 @@ describe('settings and administration routes', () => {
       value: undefined,
       warnings: [],
     });
+    mockGetProfile.mockResolvedValue({
+      ok: true,
+      value: publicProfile,
+      warnings: [],
+    });
     mockListUsers.mockResolvedValue({
       ok: true,
       value: [member, bannedMember, vicePresident, developer],
@@ -254,24 +273,45 @@ describe('settings and administration routes', () => {
     jest.spyOn(Linking, 'openURL').mockResolvedValue(undefined);
   });
 
-  it('opens the signed-in member profile from the More header', async () => {
+  it('prioritizes the member profile and club contacts on More', async () => {
     const user = userEvent.setup();
     await renderThemed(<Settings />);
 
     expect(screen.queryByText('Account')).not.toBeOnTheScreen();
-    await user.press(screen.getByRole('button', { name: 'Open profile' }));
+    expect(await screen.findAllByText('Alex Catfan')).toHaveLength(1);
+    expect(
+      screen.getByTestId('profile-avatar-placeholder-head', {
+        includeHiddenElements: true,
+      }),
+    ).toBeOnTheScreen();
+    expect(
+      screen.getByTestId('profile-avatar-placeholder-body', {
+        includeHiddenElements: true,
+      }),
+    ).toBeOnTheScreen();
+    expect(screen.queryByLabelText('Club logo')).not.toBeOnTheScreen();
+    expect(
+      screen.getByText('Cat watcher and campus volunteer.'),
+    ).toBeOnTheScreen();
+    expect(screen.getByText('actor@gatech.edu')).toBeOnTheScreen();
+    await user.press(screen.getByRole('button', { name: 'View profile' }));
     expect(mockPush).toHaveBeenCalledWith({
-      pathname: '/profile/view-profile',
+      pathname: '/profiles/[id]',
       params: { id: 'actor-1' },
     });
+    expect(
+      screen.queryByRole('button', { name: 'More actions' }),
+    ).not.toBeOnTheScreen();
     expect(screen.getByText('Club contacts')).toBeOnTheScreen();
-    expect(await screen.findByText('Campus Cats Officers')).toBeOnTheScreen();
-    await user.press(
-      screen.getByRole('button', { name: 'cats@gatech.edu' }),
-    );
+    expect(
+      await screen.findByRole('button', { name: 'cats@gatech.edu' }),
+    ).toBeOnTheScreen();
+    await user.press(screen.getByRole('button', { name: 'cats@gatech.edu' }));
     await user.press(screen.getByRole('button', { name: 'Instagram' }));
-    await user.press(screen.getByRole('button', { name: 'Facebook' }));
-    await user.press(screen.getByRole('button', { name: 'Website' }));
+    await user.press(screen.getByRole('button', { name: 'X' }));
+    await user.press(
+      screen.getByRole('button', { name: 'campuscats.gatech.edu' }),
+    );
     expect(Linking.openURL).toHaveBeenNthCalledWith(
       1,
       'mailto:cats@gatech.edu',
@@ -282,19 +322,14 @@ describe('settings and administration routes', () => {
     );
     expect(Linking.openURL).toHaveBeenNthCalledWith(
       3,
-      'https://www.facebook.com/gtcampuscats',
+      'https://x.com/gtcampuscats',
     );
     expect(Linking.openURL).toHaveBeenNthCalledWith(
       4,
       'https://campuscats.gatech.edu',
     );
-    expect(screen.getByText('Officer-only tools')).toBeOnTheScreen();
-    expect(
-      screen.getByText(
-        'Feeding stations and administrative tools are available only to officers, so they do not appear in your navigation.',
-      ),
-    ).toBeOnTheScreen();
     expect(screen.queryByText('Officer tools')).not.toBeOnTheScreen();
+    expect(screen.queryByText('Officer-only tools')).not.toBeOnTheScreen();
 
     expect(
       screen.queryByRole('button', { name: 'Sign out' }),
@@ -306,12 +341,37 @@ describe('settings and administration routes', () => {
     await renderThemed(<Settings />);
 
     expect(
-      screen.getByRole('button', { name: 'Open profile' }),
+      screen.getByRole('button', { name: 'View profile' }),
     ).toBeOnTheScreen();
     expect(screen.getByText('Club contacts')).toBeOnTheScreen();
     expect(
       screen.getByRole('progressbar', { name: 'Loading club contacts' }),
     ).toBeOnTheScreen();
+  });
+
+  it('opens legal documents from compact links at the bottom of More', async () => {
+    const user = userEvent.setup();
+    await renderThemed(<Settings />);
+
+    expect(screen.queryByText('Legal and privacy')).not.toBeOnTheScreen();
+    expect(
+      screen.queryByText('Rules for using Campus Cats'),
+    ).not.toBeOnTheScreen();
+    expect(
+      screen.queryByText('How Campus Cats handles your information'),
+    ).not.toBeOnTheScreen();
+
+    await user.press(screen.getByRole('button', { name: 'Terms of Service' }));
+    await user.press(screen.getByRole('button', { name: 'Privacy Policy' }));
+
+    expect(mockPush).toHaveBeenNthCalledWith(1, {
+      pathname: '/legal/terms',
+      params: { returnTo: '/settings' },
+    });
+    expect(mockPush).toHaveBeenNthCalledWith(2, {
+      pathname: '/legal/privacy',
+      params: { returnTo: '/settings' },
+    });
   });
 
   it('keeps profile and sign-out actions on the account page', async () => {
@@ -326,7 +386,7 @@ describe('settings and administration routes', () => {
 
     await user.press(screen.getByRole('button', { name: 'View my profile' }));
     expect(mockPush).toHaveBeenCalledWith({
-      pathname: '/profile/view-profile',
+      pathname: '/profiles/[id]',
       params: { id: 'actor-1' },
     });
 
@@ -335,9 +395,11 @@ describe('settings and administration routes', () => {
   });
 
   it('requires typed confirmation before permanently deleting an account', async () => {
-    const alert = jest.spyOn(Alert, 'alert').mockImplementation((_title, _message, buttons) => {
-      buttons?.find(({ style }) => style === 'destructive')?.onPress?.();
-    });
+    const alert = jest
+      .spyOn(Alert, 'alert')
+      .mockImplementation((_title, _message, buttons) => {
+        buttons?.find(({ style }) => style === 'destructive')?.onPress?.();
+      });
     const user = userEvent.setup();
     await renderThemed(<Account />);
 
@@ -368,9 +430,13 @@ describe('settings and administration routes', () => {
     await renderThemed(<Account />);
 
     expect(
-      screen.getByText('Transfer the club presidency before deleting this account.'),
+      screen.getByText(
+        'Transfer the club presidency before deleting this account.',
+      ),
     ).toBeOnTheScreen();
-    expect(screen.queryByRole('button', { name: 'Delete my account' })).not.toBeOnTheScreen();
+    expect(
+      screen.queryByRole('button', { name: 'Delete my account' }),
+    ).not.toBeOnTheScreen();
   });
 
   it('shows officer tools to administrators without changing their routes', async () => {
@@ -378,18 +444,31 @@ describe('settings and administration routes', () => {
     const user = userEvent.setup();
     await renderThemed(<Settings />);
 
-    expect(screen.getByText('Officer tools')).toBeOnTheScreen();
-    await user.press(screen.getByRole('button', { name: 'Manage Catalog Tags' }));
+    expect(screen.queryByText('OFFICER TOOLS')).not.toBeOnTheScreen();
+    await user.press(screen.getByRole('button', { name: 'More actions' }));
+    expect(screen.getByText('OFFICER TOOLS')).toBeOnTheScreen();
+    expect(
+      screen.queryByRole('button', { name: 'Account settings' }),
+    ).not.toBeOnTheScreen();
+    await user.press(
+      screen.getByRole('button', { name: 'Manage Catalog Tags' }),
+    );
+    await user.press(screen.getByRole('button', { name: 'More actions' }));
     await user.press(screen.getByRole('button', { name: 'Manage Users' }));
+    await user.press(screen.getByRole('button', { name: 'More actions' }));
     await user.press(screen.getByRole('button', { name: 'Manage Whitelist' }));
+    await user.press(screen.getByRole('button', { name: 'More actions' }));
     await user.press(screen.getByRole('button', { name: 'iNaturalist Sync' }));
+    expect(
+      screen.queryByRole('button', { name: 'Edit Contacts' }),
+    ).not.toBeOnTheScreen();
     expect(
       screen.queryByRole('button', { name: 'Infrastructure Costs' }),
     ).not.toBeOnTheScreen();
     expect(mockPush).toHaveBeenNthCalledWith(1, '/settings/catalog-tags');
-    expect(mockPush).toHaveBeenNthCalledWith(2, '/settings/manage_users');
-    expect(mockPush).toHaveBeenNthCalledWith(3, '/settings/manage_whitelist');
-    expect(mockPush).toHaveBeenNthCalledWith(4, '/settings/inaturalist');
+    expect(mockPush).toHaveBeenNthCalledWith(2, '/settings/members');
+    expect(mockPush).toHaveBeenNthCalledWith(3, '/settings/whitelist');
+    expect(mockPush).toHaveBeenNthCalledWith(4, '/settings/integrations/inaturalist');
     expect(mockPush).toHaveBeenCalledTimes(4);
   });
 
@@ -398,43 +477,51 @@ describe('settings and administration routes', () => {
     const user = userEvent.setup();
     await renderThemed(<Settings />);
 
+    await user.press(screen.getByRole('button', { name: 'More actions' }));
     await user.press(
       screen.getByRole('button', { name: 'Infrastructure Costs' }),
     );
     expect(mockPush).toHaveBeenCalledWith('/settings/billing');
   });
 
-  it('shows app settings only to the President', async () => {
+  it('shows club settings only to the President', async () => {
     mockRole = Role.President;
     const user = userEvent.setup();
     await renderThemed(<Settings />);
 
-    expect(screen.getByText('President tools')).toBeOnTheScreen();
+    await user.press(screen.getByRole('button', { name: 'More actions' }));
+    expect(screen.getByText('PRESIDENT TOOLS')).toBeOnTheScreen();
     await user.press(screen.getByRole('button', { name: 'Club Billing' }));
-    await user.press(screen.getByRole('button', { name: 'App Settings' }));
+    await user.press(screen.getByRole('button', { name: 'More actions' }));
+    await user.press(screen.getByRole('button', { name: 'Club Settings' }));
     expect(mockPush).toHaveBeenCalledWith('/settings/club-billing');
     expect(mockPush).toHaveBeenCalledWith('/settings/app-settings');
+  });
 
+  it('shows club settings to Developers from more actions', async () => {
     mockRole = Role.Developer;
+    const user = userEvent.setup();
     await renderThemed(<Settings />);
-    expect(screen.getByText('President tools')).toBeOnTheScreen();
-    expect(screen.getByText('App Settings')).toBeOnTheScreen();
+
+    await user.press(screen.getByRole('button', { name: 'More actions' }));
+    expect(screen.getByText('PRESIDENT TOOLS')).toBeOnTheScreen();
+    expect(screen.getByText('Club Settings')).toBeOnTheScreen();
   });
 
   it('edits and saves contact information through the contacts module', async () => {
-    mockRole = Role.Officer;
+    mockRole = Role.President;
     const user = userEvent.setup();
     await renderThemed(<Settings />);
-    await screen.findByText('Campus Cats Officers');
+    await screen.findByRole('button', { name: 'cats@gatech.edu' });
 
     await user.press(screen.getByRole('button', { name: 'Edit Contacts' }));
     await fireEvent.changeText(
-      screen.getByLabelText('Contact name'),
-      'Campus Cats Leadership',
-    );
-    await fireEvent.changeText(
       screen.getByLabelText('Instagram link'),
       'https://www.instagram.com/campuscatsgt',
+    );
+    await fireEvent.changeText(
+      screen.getByLabelText('Website 2'),
+      'https://linktr.ee/gtcampuscats',
     );
     await user.press(screen.getByRole('button', { name: 'Save Contacts' }));
 
@@ -443,29 +530,26 @@ describe('settings and administration routes', () => {
         expect.objectContaining({ id: 'actor-1' }),
         'contact-1',
         {
-          name: 'Campus Cats Leadership',
+          name: 'Campus Cats Officers',
           email: 'cats@gatech.edu',
           instagramUrl: 'https://www.instagram.com/campuscatsgt',
-          facebookUrl: 'https://www.facebook.com/gtcampuscats',
-          websiteUrl: 'https://campuscats.gatech.edu',
+          xUrl: 'https://x.com/gtcampuscats',
+          websiteUrls: [
+            'https://campuscats.gatech.edu',
+            'https://linktr.ee/gtcampuscats',
+          ],
         },
       ),
     );
   });
 
-  it('does not recreate contacts that succeeded during a partial save', async () => {
-    mockRole = Role.Officer;
+  it('creates a single club contact when none exists', async () => {
+    mockRole = Role.President;
+    mockListContacts.mockResolvedValue({ ok: true, value: [], warnings: [] });
     const createdContact = parseContact({
       id: 'contact-2',
-      name: 'Volunteer Coordinator',
+      name: 'Campus Cats',
       email: 'volunteers@gatech.edu',
-    });
-    mockUpdateContact.mockResolvedValueOnce({
-      ok: false,
-      error: {
-        code: 'dependency_failure',
-        message: 'Could not update the contact',
-      },
     });
     mockCreateContact.mockResolvedValueOnce({
       ok: true,
@@ -474,39 +558,29 @@ describe('settings and administration routes', () => {
     });
     const user = userEvent.setup();
     await renderThemed(<Settings />);
-    await screen.findByText('Campus Cats Officers');
+    await screen.findByText('No contacts yet');
 
     await user.press(screen.getByRole('button', { name: 'Edit Contacts' }));
-    await user.press(screen.getByRole('button', { name: 'Add Contact' }));
     await fireEvent.changeText(
-      screen.getAllByLabelText('Contact name')[1],
-      createdContact.name,
-    );
-    await fireEvent.changeText(
-      screen.getAllByLabelText('Contact email')[1],
+      screen.getByLabelText('Contact email'),
       createdContact.email,
     );
     await user.press(screen.getByRole('button', { name: 'Save Contacts' }));
-    expect(
-      await screen.findByText('Could not update the contact'),
-    ).toBeOnTheScreen();
-
-    await user.press(screen.getByRole('button', { name: 'Save Contacts' }));
 
     await waitFor(() =>
-      expect(mockUpdateContact).toHaveBeenCalledWith(
+      expect(mockCreateContact).toHaveBeenCalledWith(
         expect.objectContaining({ id: 'actor-1' }),
-        'contact-2',
         {
           name: createdContact.name,
           email: createdContact.email,
           instagramUrl: '',
-          facebookUrl: '',
-          websiteUrl: '',
+          xUrl: '',
+          websiteUrls: [],
         },
       ),
     );
     expect(mockCreateContact).toHaveBeenCalledTimes(1);
+    expect(mockUpdateContact).not.toHaveBeenCalled();
   });
 
   it('renders an access-denied state instead of loading users for members', async () => {

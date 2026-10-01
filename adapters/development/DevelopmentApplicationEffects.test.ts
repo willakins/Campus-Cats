@@ -5,7 +5,7 @@ import {
 } from './DevelopmentApplicationEffects';
 
 const delegate = (): jest.Mocked<ApplicationEffects> => ({
-  notifyAnnouncement: jest.fn(),
+  notifyAlert: jest.fn(),
   provisionWhitelistUser: jest.fn(),
   emailWhitelistCredentials: jest.fn(),
   removeProvisionedUser: jest.fn(),
@@ -30,7 +30,7 @@ describe('Development application effects', () => {
     const effects = new DevelopmentApplicationEffects(firebase);
 
     await expect(
-      effects.notifyAnnouncement({ title: 'News', body: 'Update' }),
+      effects.notifyAlert({ title: 'News', body: 'Update' }),
     ).rejects.toThrow('Outbound messaging is disabled in development');
     await expect(
       effects.provisionWhitelistUser({
@@ -44,7 +44,7 @@ describe('Development application effects', () => {
         password: 'temporary-password',
       }),
     ).rejects.toThrow('Outbound messaging is disabled in development');
-    expect(firebase.notifyAnnouncement).not.toHaveBeenCalled();
+    expect(firebase.notifyAlert).not.toHaveBeenCalled();
     expect(firebase.provisionWhitelistUser).not.toHaveBeenCalled();
     expect(firebase.emailWhitelistCredentials).not.toHaveBeenCalled();
   });

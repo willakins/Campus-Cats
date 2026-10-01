@@ -115,12 +115,12 @@ describe('MediaCoordinator', () => {
   it('reconciles an optional gallery without requiring profile media', async () => {
     const media = new InMemoryMediaStore([
       {
-        id: 'announcements/announcement-1/keep.jpg',
+        id: 'alerts/alert-1/keep.jpg',
         url: 'memory://keep',
         role: 'gallery',
       },
       {
-        id: 'announcements/announcement-1/delete.jpg',
+        id: 'alerts/alert-1/delete.jpg',
         url: 'memory://delete',
         role: 'gallery',
       },
@@ -132,9 +132,9 @@ describe('MediaCoordinator', () => {
     let persisted: readonly string[] = [];
 
     const result = await coordinator.reconcileGallery({
-      folder: 'announcements/announcement-1',
+      folder: 'alerts/alert-1',
       gallery: [
-        storedMedia('announcements/announcement-1/keep.jpg'),
+        storedMedia('alerts/alert-1/keep.jpg'),
         localMedia('file://new.jpg'),
       ],
       persist: async (assets) => {
@@ -144,8 +144,8 @@ describe('MediaCoordinator', () => {
 
     expect(result).toMatchObject({ ok: true, warnings: [] });
     expect(persisted).toEqual([
-      'announcements/announcement-1/keep.jpg',
-      'announcements/announcement-1/new-photo.jpg',
+      'alerts/alert-1/keep.jpg',
+      'alerts/alert-1/new-photo.jpg',
     ]);
     expect(media.ids()).toEqual(persisted);
   });
@@ -158,7 +158,7 @@ describe('MediaCoordinator', () => {
     );
 
     const result = await coordinator.reconcileGallery({
-      folder: 'announcements/announcement-1',
+      folder: 'alerts/alert-1',
       gallery: [localMedia('file://temporary.jpg')],
       persist: async () => {
         throw new Error('Firestore unavailable');
@@ -185,7 +185,7 @@ describe('MediaCoordinator', () => {
 
     await expect(
       coordinator.reconcileGallery({
-        folder: 'announcements/announcement-1',
+        folder: 'alerts/alert-1',
         gallery: [],
         persist: async () => undefined,
       }),
@@ -212,8 +212,8 @@ describe('MediaCoordinator', () => {
     ).resolves.toMatchObject({ ok: false, error: { code: 'dependency_failure' } });
     await expect(
       coordinator.reconcileGallery({
-        folder: 'announcements/announcement-1',
-        gallery: [storedMedia('announcements/announcement-1/missing.jpg')],
+        folder: 'alerts/alert-1',
+        gallery: [storedMedia('alerts/alert-1/missing.jpg')],
         persist: async () => undefined,
       }),
     ).resolves.toMatchObject({ ok: false, error: { code: 'dependency_failure' } });
@@ -242,7 +242,7 @@ describe('MediaCoordinator', () => {
     const coordinator = new MediaCoordinator(media, new SequenceIdGenerator(['temporary']));
 
     const result = await coordinator.reconcileGallery({
-      folder: 'announcements/announcement-1',
+      folder: 'alerts/alert-1',
       gallery: [localMedia('file://temporary.jpg')],
       persist: async () => {
         media.failNext('remove', new Error('cleanup offline'));
@@ -256,7 +256,7 @@ describe('MediaCoordinator', () => {
   it('reports obsolete gallery cleanup as a warning', async () => {
     const media = new InMemoryMediaStore([
       {
-        id: 'announcements/announcement-1/obsolete.jpg',
+        id: 'alerts/alert-1/obsolete.jpg',
         url: 'memory://obsolete',
         role: 'gallery',
       },
@@ -266,7 +266,7 @@ describe('MediaCoordinator', () => {
 
     await expect(
       coordinator.reconcileGallery({
-        folder: 'announcements/announcement-1',
+        folder: 'alerts/alert-1',
         gallery: [],
         persist: async () => undefined,
       }),

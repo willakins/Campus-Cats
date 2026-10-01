@@ -1,5 +1,5 @@
 import {
-  Announcement,
+  Alert,
   CatalogEntry,
   CatalogFavorite,
   CatalogTagSettings,
@@ -11,7 +11,7 @@ import {
   Sighting,
   Station,
   WhitelistApplication,
-  parseAnnouncement,
+  parseAlert,
   parseCatalogEntry,
   parseCatalogFavorite,
   parseCatalogTagSettings,
@@ -76,8 +76,8 @@ export const COLLECTIONS = {
   catalogTagSettings: 'catalog-tag-settings',
   catalogTagAssignments: 'catalog-tag-assignments',
   stations: 'stations',
-  announcements: 'announcements',
-  announcementReadReceipts: 'announcement-read-receipts',
+  alerts: 'alerts',
+  alertReadReceipts: 'alert-read-receipts',
   contacts: 'contact-info',
   users: 'users',
   publicProfiles: 'public-profiles',
@@ -365,10 +365,10 @@ export function createPersistenceCodecs<EncodedDate>(
     }),
   };
 
-  const announcement: PersistenceCodec<Announcement> = {
+  const alert: PersistenceCodec<Alert> = {
     decode: (id, value) => {
       const data = record(value);
-      return parseAnnouncement({
+      return parseAlert({
         id,
         ...data,
         createdAt: dates.decode(data.createdAt),
@@ -710,7 +710,7 @@ export function createPersistenceCodecs<EncodedDate>(
     catalogTagSettings,
     catalogTagAssignment,
     station,
-    announcement,
+    alert,
     whitelist,
     contact,
     appSettings,

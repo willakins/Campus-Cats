@@ -41,16 +41,17 @@ export class WhitelistModule {
   async submit(draft: WhitelistDraft): Promise<Outcome<WhitelistApplication>> {
     let validatedDraft: WhitelistApplication;
     try {
-      validatedDraft = parseWhitelistApplication({ id: 'validation', ...draft });
+      validatedDraft = parseWhitelistApplication({
+        id: 'validation',
+        ...draft,
+      });
     } catch {
-      return failure(
-        'validation',
-        'Name, graduation year, and a valid email are required',
-      );
+      return failure('validation', 'Name and a valid email are required');
     }
     try {
       const { id: _validationId, ...validatedFields } = validatedDraft;
-      const submitted = await this.dependencies.submissions.submit(validatedFields);
+      const submitted =
+        await this.dependencies.submissions.submit(validatedFields);
       if (submitted.status === 'conflict') {
         return failure(
           'conflict',
@@ -71,14 +72,19 @@ export class WhitelistModule {
     const denied = adminDenied(actor);
     if (denied) return denied;
     try {
-      const documents = await this.dependencies.documents.list(COLLECTIONS.whitelist);
+      const documents = await this.dependencies.documents.list(
+        COLLECTIONS.whitelist,
+      );
       return success(
         documents.map(({ id, data }) =>
           this.dependencies.codecs.whitelist.decode(id, data),
         ),
       );
     } catch {
-      return failure('dependency_failure', 'Could not load whitelist applications');
+      return failure(
+        'dependency_failure',
+        'Could not load whitelist applications',
+      );
     }
   }
 
@@ -110,7 +116,10 @@ export class WhitelistModule {
         password,
       });
     } catch {
-      return failure('dependency_failure', 'Could not provision the whitelist user');
+      return failure(
+        'dependency_failure',
+        'Could not provision the whitelist user',
+      );
     }
 
     try {
@@ -146,10 +155,16 @@ export class WhitelistModule {
 
   private async get(id: string): Promise<Outcome<WhitelistApplication>> {
     try {
-      const document = await this.dependencies.documents.get(COLLECTIONS.whitelist, id);
+      const document = await this.dependencies.documents.get(
+        COLLECTIONS.whitelist,
+        id,
+      );
       return document
         ? success(
-            this.dependencies.codecs.whitelist.decode(document.id, document.data),
+            this.dependencies.codecs.whitelist.decode(
+              document.id,
+              document.data,
+            ),
           )
         : failure('not_found', 'Whitelist application not found');
     } catch {
@@ -159,7 +174,8 @@ export class WhitelistModule {
 }
 
 function adminDenied(actor: User | undefined): Outcome<never> | undefined {
-  if (!actor) return failure('unauthenticated', 'Sign in to manage applications');
+  if (!actor)
+    return failure('unauthenticated', 'Sign in to manage applications');
   if (
     !canAccessRolePolicy(
       actor.role,

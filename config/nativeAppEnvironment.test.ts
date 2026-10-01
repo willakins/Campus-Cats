@@ -10,6 +10,20 @@ describe('Native app environment', () => {
     ).not.toThrow();
   });
 
+  it('accepts Expo Go for the development environment', () => {
+    expect(() =>
+      validateNativeAppEnvironment('development', 'host.exp.Exponent'),
+    ).not.toThrow();
+  });
+
+  it('rejects Expo Go for the production environment', () => {
+    expect(() =>
+      validateNativeAppEnvironment('production', 'host.exp.Exponent'),
+    ).toThrow(
+      'host.exp.Exponent cannot run the production Firebase environment',
+    );
+  });
+
   it('rejects a production Firebase bundle served to the development app', () => {
     expect(() =>
       validateNativeAppEnvironment(

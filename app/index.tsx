@@ -3,9 +3,9 @@ import React, { useEffect } from 'react';
 import { Redirect } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 
-import { LoadingIndicator } from '@/components/ui/LoadingIndicator';
+import { LoadingIndicator } from '@/presentation/ui/LoadingIndicator';
 import { clubHasAppAccess } from '@/core/domain';
-import { useAuth, useClub, useUniversitySelection } from '@/providers';
+import { useAuth, useClub, useUniversitySelection } from '@/presentation/providers';
 
 // Instruct SplashScreen not to hide yet, we want to do this manually
 SplashScreen.preventAutoHideAsync().catch(() => {

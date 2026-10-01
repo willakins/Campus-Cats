@@ -10,7 +10,7 @@ import {
 
 import ManageCatalogTags, {
   updateCatalogTagsSequentially,
-} from '../../app/(app)/settings/catalog-tags';
+} from '../../presentation/screens/settings/administration/CatalogTagsScreen';
 import { Role, parseCatalogTag } from '../../core/domain';
 import { AppThemeProvider } from '../../theme';
 
@@ -25,7 +25,7 @@ jest.mock('expo-router', () => ({
   useRouter: () => ({ back: mockBack }),
 }));
 
-jest.mock('../../providers', () => ({
+jest.mock('../../presentation/providers', () => ({
   useAuth: () => ({
     user: { id: 'actor-1', email: 'actor@gatech.edu', role: mockRole },
   }),

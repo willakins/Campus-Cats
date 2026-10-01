@@ -20,7 +20,7 @@ const requiredVariables = [
   'EXPO_PUBLIC_WEB_APP_ID',
 ];
 
-const validateFirebaseEnvironment = (environment) => {
+const validateAppEnvironment = (environment) => {
   const appEnvironment = environment.EXPO_PUBLIC_APP_ENV;
 
   if (!appEnvironment) {
@@ -31,6 +31,17 @@ const validateFirebaseEnvironment = (environment) => {
   if (!expected) {
     throw new Error(`Unsupported app environment: ${appEnvironment}`);
   }
+
+  return { appEnvironment, expected };
+};
+
+const hasFirebaseEnvironmentVariables = (environment) =>
+  requiredVariables.some(
+    (key) => typeof environment[key] === 'string' && environment[key].length > 0,
+  );
+
+const validateFirebaseEnvironment = (environment) => {
+  const { appEnvironment, expected } = validateAppEnvironment(environment);
 
   const label =
     appEnvironment === 'development' ? 'Development' : 'Production';
@@ -67,4 +78,9 @@ const validateFirebaseEnvironment = (environment) => {
   }
 };
 
-module.exports = { firebaseProjects, validateFirebaseEnvironment };
+module.exports = {
+  firebaseProjects,
+  hasFirebaseEnvironmentVariables,
+  validateAppEnvironment,
+  validateFirebaseEnvironment,
+};

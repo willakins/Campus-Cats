@@ -3,10 +3,16 @@ import type {
   ClubBillingSummary,
   CollectionMethod,
 } from '../../core/domain';
-import type { BillingRedirect, ClubBillingPort } from '../../core/ports';
+import {
+  ClubBillingUnavailableError,
+  type BillingRedirect,
+  type ClubBillingPort,
+} from '../../core/ports';
 
 const billingDisabled = (): never => {
-  throw new Error('Billing is disabled in development');
+  throw new ClubBillingUnavailableError(
+    'Stripe checkout is not configured for this development build.',
+  );
 };
 
 export class DevelopmentClubBilling implements ClubBillingPort {

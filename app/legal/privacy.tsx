@@ -1,5 +1,5 @@
-import { LegalDocumentScreen } from '@/components/legal';
-import { privacyPolicy } from '@/legal/policies';
+import { LegalDocumentScreen } from '@/presentation/legal';
+import { privacyPolicy } from '@/presentation/legal';
 
 const PrivacyScreen = () => <LegalDocumentScreen document={privacyPolicy} />;
 

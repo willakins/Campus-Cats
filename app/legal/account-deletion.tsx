@@ -2,8 +2,8 @@ import { Linking, View } from 'react-native';
 
 import { useRouter } from 'expo-router';
 
-import { AppHeader, AppText, Button, Card, Screen } from '@/components/design';
-import { LEGAL_CONTACT_EMAIL } from '@/legal/policies';
+import { AppHeader, AppText, Button, Card, Screen } from '@/presentation/ui';
+import { LEGAL_CONTACT_EMAIL } from '@/presentation/legal';
 import { useAppTheme } from '@/theme';
 
 const AccountDeletionScreen = () => {

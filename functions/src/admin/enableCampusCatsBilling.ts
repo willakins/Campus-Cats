@@ -1,10 +1,12 @@
 import { getApps, initializeApp } from 'firebase-admin/app';
 import { Firestore, Timestamp, getFirestore } from 'firebase-admin/firestore';
 
+import { CAMPUS_CATS_DEFAULTS } from './campusCatsDefaults';
+
 const CLUB_ID = 'campus-cats';
 const CLUB_NAME = 'Campus Cats';
 const CLUB_TIMEZONE = 'America/New_York';
-const CLUB_BILLING_EMAIL = 'willakins23@gmail.com';
+const CLUB_BILLING_EMAIL = CAMPUS_CATS_DEFAULTS.billingEmail;
 
 export async function enableCampusCatsBilling(
   firestore: Firestore,

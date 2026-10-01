@@ -1,14 +1,22 @@
 import React from 'react';
 import { Alert } from 'react-native';
 
-import { fireEvent, render, screen, userEvent, waitFor } from '@testing-library/react-native';
+import {
+  fireEvent,
+  render,
+  screen,
+  userEvent,
+  waitFor,
+  within,
+} from '@testing-library/react-native';
 
-import CreateSighting from '../../app/(app)/sighting/create-sighting';
+import CreateSighting from '../../app/(app)/map/sightings/new';
 import { CatalogRecord } from '../../core/domain';
 import { AppThemeProvider } from '../../theme';
 
 const mockCatalogList = jest.fn();
 const mockCreateSighting = jest.fn();
+const mockBack = jest.fn();
 const mockSyncProfile = jest.fn();
 const mockReplace = jest.fn();
 const mockTakePhoto = jest.fn();
@@ -16,11 +24,15 @@ const mockPickFromLibrary = jest.fn();
 const mockScrollTo = jest.fn();
 
 jest.mock('expo-router', () => ({
-  useRouter: () => ({ push: jest.fn(), replace: mockReplace }),
+  useRouter: () => ({
+    back: mockBack,
+    push: jest.fn(),
+    replace: mockReplace,
+  }),
 }));
 jest.mock('@expo/vector-icons', () => ({ Ionicons: () => null }));
-jest.mock('../../components/design', () => {
-  const actual = jest.requireActual('../../components/design');
+jest.mock('../../presentation/ui', () => {
+  const actual = jest.requireActual('../../presentation/ui');
   const ReactRuntime = require('react');
   const { View: NativeView } = require('react-native');
   return {
@@ -60,7 +72,7 @@ jest.mock('@react-native-community/datetimepicker', () => {
     default: (props: object) => ReactRuntime.createElement(NativeView, props),
   };
 });
-jest.mock('../../providers', () => ({
+jest.mock('../../presentation/providers', () => ({
   useAuth: () => ({
     user: { id: 'member-1', email: 'member@gatech.edu', role: 0 },
   }),
@@ -125,25 +137,48 @@ const completeRequiredSightingFields = async (
     .at(-1)?.[2]
     ?.find(({ text }) => text === 'Choose from library');
   chooseFromLibrary?.onPress?.();
-  await waitFor(() => expect(screen.getByLabelText('Photo 1')).toBeOnTheScreen());
+  await waitFor(() =>
+    expect(screen.getByLabelText('Photo 1')).toBeOnTheScreen(),
+  );
   alert.mockRestore();
 };
 
 describe('create sighting route', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    mockCatalogList.mockResolvedValue({ ok: true, value: [goldie], warnings: [] });
+    mockCatalogList.mockResolvedValue({
+      ok: true,
+      value: [goldie],
+      warnings: [],
+    });
     mockCreateSighting.mockResolvedValue({
       ok: true,
       value: { id: 'sighting-1' },
       warnings: [],
     });
-    mockSyncProfile.mockResolvedValue({ ok: true, value: undefined, warnings: [] });
+    mockSyncProfile.mockResolvedValue({
+      ok: true,
+      value: undefined,
+      warnings: [],
+    });
     mockPickFromLibrary.mockResolvedValue({
       ok: true,
       value: { localUri: 'file://sighting.jpg' },
       warnings: [],
     });
+  });
+
+  it('returns to the map through stack history', async () => {
+    const user = userEvent.setup();
+    await render(
+      <AppThemeProvider colorScheme="light">
+        <CreateSighting />
+      </AppThemeProvider>,
+    );
+
+    await user.press(screen.getByRole('button', { name: 'Go back' }));
+
+    expect(mockBack).toHaveBeenCalledTimes(1);
   });
 
   it('loads catalog choices and reports the selected profile name', async () => {
@@ -162,12 +197,14 @@ describe('create sighting route', () => {
     await completeRequiredSightingFields(user, { fillName: false });
     await user.press(screen.getByRole('button', { name: 'Create Report' }));
 
-    await waitFor(() => expect(mockCreateSighting).toHaveBeenCalledWith(
-      expect.objectContaining({ id: 'member-1' }),
-      expect.objectContaining({ name: 'Goldie' }),
-    ));
+    await waitFor(() =>
+      expect(mockCreateSighting).toHaveBeenCalledWith(
+        expect.objectContaining({ id: 'member-1' }),
+        expect.objectContaining({ name: 'Goldie' }),
+      ),
+    );
     expect(mockReplace).toHaveBeenCalledWith({
-      pathname: '/sighting/view-sighting',
+      pathname: '/map/sightings/[id]',
       params: { id: 'sighting-1' },
     });
   });
@@ -179,8 +216,14 @@ describe('create sighting route', () => {
       </AppThemeProvider>,
     );
 
-    expect(screen.getAllByText('Photos *')).toHaveLength(1);
-    expect(screen.queryByText('Photos')).not.toBeOnTheScreen();
+    expect(screen.getByTestId('form-action-bar')).toBeOnTheScreen();
+    expect(screen.getByText('Photos')).toBeOnTheScreen();
+    expect(
+      within(screen.getByTestId('sighting-section-photos')).getByText(
+        'Required',
+      ),
+    ).toBeOnTheScreen();
+    expect(screen.queryByText('Photos *')).not.toBeOnTheScreen();
     expect(screen.queryByText('Additional notes')).not.toBeOnTheScreen();
     expect(screen.getByLabelText('Additional notes')).toBeOnTheScreen();
   });
@@ -241,7 +284,9 @@ describe('create sighting route', () => {
     await user.press(screen.getByRole('button', { name: 'Create Report' }));
 
     expect(
-      await screen.findByText('Sightings cannot be reported for a future date.'),
+      await screen.findByText(
+        'Sightings cannot be reported for a future date.',
+      ),
     ).toBeOnTheScreen();
     expect(mockCreateSighting).not.toHaveBeenCalled();
   });
@@ -258,21 +303,28 @@ describe('create sighting route', () => {
 
     expect(await screen.findByText('Cat name is required.')).toBeOnTheScreen();
     expect(screen.getByText('Time of sighting is required.')).toBeOnTheScreen();
-    expect(screen.getByText('Sighting location is required.')).toBeOnTheScreen();
-    expect(screen.getByText('At least one photo is required.')).toBeOnTheScreen();
+    expect(
+      screen.getByText('Sighting location is required.'),
+    ).toBeOnTheScreen();
+    expect(
+      screen.getByText('At least one photo is required.'),
+    ).toBeOnTheScreen();
     expect(screen.getByLabelText('Cat name')).toHaveStyle({
       borderColor: '#B23A3A',
     });
-    expect(screen.getByRole('button', { name: 'Time of sighting' })).toHaveStyle({
+    expect(
+      screen.getByRole('button', { name: 'Time of sighting' }),
+    ).toHaveStyle({
       borderColor: '#B23A3A',
     });
     expect(screen.getByLabelText('Sighting location field')).toHaveStyle({
       borderColor: '#B23A3A',
       borderWidth: 2,
     });
-    expect(screen.getByLabelText('Photos field')).toHaveStyle({
+    expect(screen.getByRole('button', { name: 'Add photos' })).toHaveStyle({
       borderColor: '#B23A3A',
       borderWidth: 2,
+      borderRadius: 999,
     });
     expect(
       screen.getByRole('alert', {
@@ -294,8 +346,16 @@ describe('create sighting route', () => {
     const layout = (y: number) => ({
       nativeEvent: { layout: { x: 0, y, width: 320, height: 48 } },
     });
-    await fireEvent(screen.getByTestId('form-screen-content'), 'layout', layout(100));
-    await fireEvent(screen.getByTestId('sighting-section-basics'), 'layout', layout(200));
+    await fireEvent(
+      screen.getByTestId('form-screen-content'),
+      'layout',
+      layout(100),
+    );
+    await fireEvent(
+      screen.getByTestId('sighting-section-basics'),
+      'layout',
+      layout(200),
+    );
     await fireEvent(
       screen.getByTestId('sighting-field-timeOfDay'),
       'layout',
@@ -304,7 +364,9 @@ describe('create sighting route', () => {
     await fireEvent.changeText(screen.getByLabelText('Cat name'), 'Mimi');
 
     await user.press(screen.getByRole('button', { name: 'Create Report' }));
-    expect(await screen.findByText('Time of sighting is required.')).toBeOnTheScreen();
+    expect(
+      await screen.findByText('Time of sighting is required.'),
+    ).toBeOnTheScreen();
 
     await waitFor(() =>
       expect(mockScrollTo).toHaveBeenLastCalledWith({ y: 438, animated: true }),
@@ -318,14 +380,18 @@ describe('create sighting route', () => {
       expect(screen.queryByText('Cat name is required.')).not.toBeOnTheScreen(),
     );
 
-    const alert = jest.spyOn(Alert, 'alert').mockImplementation(() => undefined);
+    const alert = jest
+      .spyOn(Alert, 'alert')
+      .mockImplementation(() => undefined);
     await user.press(screen.getByRole('button', { name: 'Add photos' }));
     alert.mock.calls
       .at(-1)?.[2]
       ?.find(({ text }) => text === 'Choose from library')
       ?.onPress?.();
     await waitFor(() =>
-      expect(screen.queryByText('At least one photo is required.')).not.toBeOnTheScreen(),
+      expect(
+        screen.queryByText('At least one photo is required.'),
+      ).not.toBeOnTheScreen(),
     );
     alert.mockRestore();
 

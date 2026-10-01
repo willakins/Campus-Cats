@@ -1,9 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 
-import { AuthScaffold } from '@/components/auth';
-import { Button, FeedbackBanner, StatusPill } from '@/components/design';
-import { useUniversitySelection } from '@/providers';
+import { AuthScaffold } from '@/presentation/auth';
+import { Button, FeedbackBanner, StatusPill } from '@/presentation/ui';
+import { useUniversitySelection } from '@/presentation/providers';
 
 const ClubSetupVerificationScreen = () => {
   const router = useRouter();

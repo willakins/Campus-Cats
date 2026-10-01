@@ -4,11 +4,12 @@ import { render, screen, userEvent } from '@testing-library/react-native';
 
 import AppLayout from '../../app/(app)/_layout';
 import { Role, parseUser } from '../../core/domain';
-import { LEGAL_TERMS_VERSION } from '../../legal/policies';
+import { LEGAL_TERMS_VERSION } from '../../presentation/legal';
 import { AppThemeProvider } from '../../theme';
 
 const mockAcceptTerms = jest.fn();
 const mockPush = jest.fn();
+const mockStack = jest.fn();
 let mockCurrentUser = parseUser({
   id: 'member-1',
   email: 'member@example.com',
@@ -21,12 +22,15 @@ jest.mock('expo-router', () => {
     Redirect: ({ href }: { readonly href: string }) => (
       <MockText>Redirect: {href}</MockText>
     ),
-    Stack: () => <MockText>Authenticated home</MockText>,
+    Stack: (props: unknown) => {
+      mockStack(props);
+      return <MockText>Authenticated home</MockText>;
+    },
     useRouter: () => ({ push: mockPush }),
   };
 });
 
-jest.mock('../../providers', () => ({
+jest.mock('../../presentation/providers', () => ({
   useAuth: () => ({
     acceptTerms: (...args: unknown[]) => mockAcceptTerms(...args),
     currentUser: mockCurrentUser,
@@ -41,7 +45,7 @@ jest.mock('../../providers', () => ({
   }),
 }));
 
-jest.mock('../../components/billing', () => ({
+jest.mock('../../presentation/billing', () => ({
   SubscriptionBanner: () => null,
 }));
 
@@ -75,6 +79,20 @@ describe('authenticated terms agreement gate', () => {
     await user.press(screen.getByRole('button', { name: 'I agree' }));
 
     expect(mockAcceptTerms).toHaveBeenCalledTimes(1);
+  });
+
+  it('presents authenticated pages from below and dismisses them downward', async () => {
+    await renderLayout();
+
+    expect(mockStack).toHaveBeenCalledWith(
+      expect.objectContaining({
+        screenOptions: expect.objectContaining({
+          animation: 'slide_from_bottom',
+          gestureEnabled: true,
+          gestureDirection: 'vertical',
+        }),
+      }),
+    );
   });
 
   it('does not show the gate for the current recorded agreement', async () => {

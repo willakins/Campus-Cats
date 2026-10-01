@@ -1,8 +1,8 @@
 const fs = require('node:fs');
 const path = require('node:path');
 
-const targets = ['app', 'components', 'forms'];
-const exemptions = new Set(['components/mapStyles.ts']);
+const targets = ['app', 'presentation'];
+const exemptions = new Set();
 const colorPattern = /#[0-9a-f]{3,8}\b|(['"])(?:red|green|blue|black|white|gray|grey|yellow|orange|pink|purple|tomato)\1/gi;
 const sourcePattern = /\.(?:js|jsx|ts|tsx)$/;
 

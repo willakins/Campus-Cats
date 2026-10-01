@@ -64,6 +64,19 @@ describe('Expo app variants', () => {
     ).toThrow('EXPO_PUBLIC_APP_ENV is required');
   });
 
+  it('resolves the development identity during the EAS bootstrap config pass', () => {
+    const resolveAppConfig = require('../app.config');
+
+    const config = resolveAppConfig({
+      config: baseConfig,
+      environment: { EXPO_PUBLIC_APP_ENV: 'development' },
+    });
+
+    expect(config.name).toBe('Campus Cats Dev');
+    expect(config.ios.bundleIdentifier).toBe('com.gatech.CampusCats.dev');
+    expect(config.android.package).toBe('com.gatech.CampusCats.dev');
+  });
+
   it('preserves the existing production app identity', () => {
     const resolveAppConfig = require('../app.config');
 
@@ -83,7 +96,9 @@ describe('Expo app variants', () => {
 
     for (const profile of ['development', 'preview']) {
       expect(eas.build[profile].environment).toBe('development');
-      expect(eas.build[profile].env).toBeUndefined();
+      expect(eas.build[profile].env).toEqual({
+        EXPO_PUBLIC_APP_ENV: 'development',
+      });
     }
   });
 
@@ -91,7 +106,9 @@ describe('Expo app variants', () => {
     const eas = require('../eas.json');
 
     expect(eas.build.production.environment).toBe('production');
-    expect(eas.build.production.env).toBeUndefined();
+    expect(eas.build.production.env).toEqual({
+      EXPO_PUBLIC_APP_ENV: 'production',
+    });
   });
 
   it('uses the EAS file variable for the development Firebase plist', () => {

@@ -2,9 +2,9 @@ import React from 'react';
 
 import { render, screen } from '@testing-library/react-native';
 
-import EditCatalogEntry from '../../app/(app)/catalog/edit-entry';
-import EditSighting from '../../app/(app)/sighting/edit-sighting';
-import EditStation from '../../app/(app)/stations/edit-station';
+import EditCatalogEntry from '../../app/(app)/catalog/[id]/edit';
+import EditSighting from '../../app/(app)/map/sightings/[id]/edit';
+import EditStation from '../../app/(app)/stations/[id]/edit';
 import { AppThemeProvider } from '../../theme';
 
 const mockPending = (..._args: unknown[]) => new Promise(() => undefined);
@@ -14,7 +14,7 @@ jest.mock('expo-router', () => ({
   useRouter: () => ({ back: jest.fn(), push: jest.fn(), replace: jest.fn() }),
 }));
 
-jest.mock('../../providers', () => ({
+jest.mock('../../presentation/providers', () => ({
   useAuth: () => ({
     user: { id: 'admin-1', email: 'admin@gatech.edu', role: 2 },
   }),
@@ -22,7 +22,7 @@ jest.mock('../../providers', () => ({
 
 jest.mock('../../composition/appModules', () => ({
   appModules: {
-    announcements: {
+    alerts: {
       get: (...args: unknown[]) => mockPending(...args),
       media: (...args: unknown[]) => mockPending(...args),
     },

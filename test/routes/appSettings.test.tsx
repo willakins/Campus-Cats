@@ -20,13 +20,13 @@ jest.mock('expo-router', () => {
   };
 });
 
-jest.mock('../../providers/AuthProvider', () => ({
+jest.mock('../../presentation/providers/AuthProvider', () => ({
   useAuth: () => ({
     user: { id: 'actor-1', email: 'actor@gatech.edu', role: mockRole },
   }),
 }));
 
-jest.mock('../../providers/AppSettingsProvider', () => ({
+jest.mock('../../presentation/providers/AppSettingsProvider', () => ({
   useAppSettings: () => ({ applySettings: mockApplySettings }),
 }));
 
@@ -51,7 +51,7 @@ const renderScreen = async () =>
     </AppThemeProvider>,
   );
 
-describe('president app settings route', () => {
+describe('president club settings route', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     mockRole = Role.Member;
@@ -67,7 +67,7 @@ describe('president app settings route', () => {
     expect(screen.getByText('Access restricted')).toBeOnTheScreen();
     expect(
       screen.getByText(
-        'President-level access is required to manage app settings.',
+        'President-level access is required to manage club settings.',
       ),
     ).toBeOnTheScreen();
     expect(mockGet).not.toHaveBeenCalled();
@@ -91,7 +91,7 @@ describe('president app settings route', () => {
 
     expect(await screen.findByText('Could not load app settings')).toBeOnTheScreen();
     expect(screen.queryByLabelText('Primary color')).not.toBeOnTheScreen();
-    expect(screen.queryByRole('button', { name: 'Save App Settings' }))
+    expect(screen.queryByRole('button', { name: 'Save Club Settings' }))
       .not.toBeOnTheScreen();
   });
 
@@ -105,18 +105,23 @@ describe('president app settings route', () => {
     mockSave.mockResolvedValue({ ok: true, value: saved, warnings: [] });
     await renderScreen();
 
-    await screen.findByDisplayValue('#18314F');
-    await fireEvent.changeText(screen.getByLabelText('Primary color'), '#0057B8');
+    await screen.findByRole('button', { name: 'Primary color' });
+    await fireEvent.press(screen.getByRole('button', { name: 'Primary color' }));
+    await fireEvent.changeText(
+      screen.getByLabelText('Custom primary color'),
+      '#0057B8',
+    );
+    await fireEvent.press(screen.getByRole('button', { name: 'Done' }));
     await fireEvent(
       screen.getByLabelText('Keep sightings anonymous'),
       'valueChange',
       false,
     );
-    expect(screen.getByDisplayValue('#0057B8')).toBeOnTheScreen();
+    expect(screen.getByText('#0057B8')).toBeOnTheScreen();
     expect(screen.getByRole('switch', { name: 'Keep sightings anonymous' }))
       .not.toBeChecked();
     await fireEvent.press(
-      screen.getByRole('button', { name: 'Save App Settings' }),
+      screen.getByRole('button', { name: 'Save Club Settings' }),
     );
 
     await waitFor(() =>
@@ -131,39 +136,90 @@ describe('president app settings route', () => {
     );
     await waitFor(() => {
       expect(mockApplySettings).toHaveBeenCalledWith(saved);
-      expect(screen.getByText('App settings saved.')).toBeOnTheScreen();
+      expect(screen.getByText('Club settings saved.')).toBeOnTheScreen();
     });
   });
 
-  it('updates primary and accent hex values from their color palettes', async () => {
+  it('updates primary and accent colors from their two-axis spectra', async () => {
     mockRole = Role.President;
     await renderScreen();
 
-    await screen.findByDisplayValue('#18314F');
-    await fireEvent.press(
-      screen.getByRole('button', {
-        name: 'Set Primary color to #0057B8',
-      }),
-    );
-    await fireEvent.press(
-      screen.getByRole('button', {
-        name: 'Set Accent color to #8064A2',
-      }),
-    );
+    await screen.findByRole('button', { name: 'Primary color' });
+    await fireEvent.press(screen.getByRole('button', { name: 'Primary color' }));
+    const primarySpectrum = screen.getByLabelText('Primary color color spectrum');
+    await fireEvent(primarySpectrum, 'layout', {
+      nativeEvent: { layout: { width: 300, height: 180, x: 0, y: 0 } },
+    });
+    await fireEvent(primarySpectrum, 'responderGrant', {
+      nativeEvent: { locationX: 150, locationY: 90 },
+    });
+    expect(screen.getByTestId('primary-color-selection-marker')).toHaveStyle({
+      left: '50.04%',
+      top: '50%',
+    });
+    await fireEvent.press(screen.getByRole('button', { name: 'Done' }));
 
-    expect(screen.getByLabelText('Primary color')).toHaveDisplayValue(
-      '#0057B8',
-    );
-    expect(screen.getByLabelText('Accent color')).toHaveDisplayValue('#8064A2');
+    await fireEvent.press(screen.getByRole('button', { name: 'Accent color' }));
+    const accentSpectrum = screen.getByLabelText('Accent color color spectrum');
+    await fireEvent(accentSpectrum, 'layout', {
+      nativeEvent: { layout: { width: 300, height: 180, x: 0, y: 0 } },
+    });
+    await fireEvent(accentSpectrum, 'responderGrant', {
+      nativeEvent: { locationX: 225, locationY: 90 },
+    });
+    expect(screen.getByTestId('accent-color-selection-marker')).toHaveStyle({
+      left: '74.98%',
+      top: '50%',
+    });
+    await fireEvent.press(screen.getByRole('button', { name: 'Done' }));
+
+    expect(screen.getByText('#00FF80')).toBeOnTheScreen();
+    expect(screen.getByText('#0040FF')).toBeOnTheScreen();
     expect(screen.getByLabelText('Primary color preview')).toHaveStyle({
-      backgroundColor: '#0057B8',
+      backgroundColor: '#00FF80',
     });
     expect(screen.getByLabelText('Accent color preview')).toHaveStyle({
-      backgroundColor: '#8064A2',
+      backgroundColor: '#0040FF',
     });
   });
 
-  it('shows the current app logo and uploads a chosen replacement when saved', async () => {
+  it('keeps exact hex entry available in the color picker', async () => {
+    mockRole = Role.President;
+    await renderScreen();
+
+    await screen.findByRole('button', { name: 'Primary color' });
+    await fireEvent.press(screen.getByRole('button', { name: 'Primary color' }));
+    await fireEvent.changeText(
+      screen.getByLabelText('Custom primary color'),
+      '#0057B8',
+    );
+    expect(screen.getByDisplayValue('#0057B8')).toBeOnTheScreen();
+    await fireEvent.press(screen.getByRole('button', { name: 'Done' }));
+    expect(screen.getByText('#0057B8')).toBeOnTheScreen();
+    expect(screen.getByLabelText('Primary color preview')).toHaveStyle({
+      backgroundColor: '#0057B8',
+    });
+  });
+
+  it('discards draft color changes when the picker is canceled', async () => {
+    mockRole = Role.President;
+    await renderScreen();
+
+    await screen.findByRole('button', { name: 'Primary color' });
+    await fireEvent.press(screen.getByRole('button', { name: 'Primary color' }));
+    await fireEvent.changeText(
+      screen.getByLabelText('Custom primary color'),
+      '#0057B8',
+    );
+    await fireEvent.press(screen.getByRole('button', { name: 'Cancel' }));
+
+    expect(screen.getByText('#18314F')).toBeOnTheScreen();
+    expect(screen.getByLabelText('Primary color preview')).toHaveStyle({
+      backgroundColor: '#18314F',
+    });
+  });
+
+  it('shows the current club logo and uploads a chosen replacement when saved', async () => {
     mockRole = Role.President;
     mockPickFromLibrary.mockResolvedValue({
       ok: true,
@@ -172,18 +228,18 @@ describe('president app settings route', () => {
     });
     await renderScreen();
 
-    expect(await screen.findByText('App logo')).toBeOnTheScreen();
-    expect(screen.getByLabelText('Current app logo')).toBeOnTheScreen();
+    expect(await screen.findByText('Club logo')).toBeOnTheScreen();
+    expect(screen.getByLabelText('Current club logo')).toBeOnTheScreen();
     expect(
       screen.queryByRole('button', { name: 'Publish Current Club Logo' }),
     ).not.toBeOnTheScreen();
     await fireEvent.press(
-      screen.getByRole('button', { name: 'Change App Logo' }),
+      screen.getByRole('button', { name: 'Change Club Logo' }),
     );
     expect(mockPickFromLibrary).toHaveBeenCalledTimes(1);
 
     await fireEvent.press(
-      screen.getByRole('button', { name: 'Save App Settings' }),
+      screen.getByRole('button', { name: 'Save Club Settings' }),
     );
     await waitFor(() =>
       expect(mockSave).toHaveBeenCalledWith(

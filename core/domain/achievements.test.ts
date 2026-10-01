@@ -30,7 +30,7 @@ describe('profile achievements', () => {
   });
 
   it('defines the requested titles and a safe legacy display-name fallback', () => {
-    expect(achievementById('profile-photo')?.title).toBe('hot af');
+    expect(achievementById('profile-photo')?.title).toBe('purr-trait pro');
     expect(achievementById('president')?.title).toBe('prez');
     expect(achievementById('first-sighting')?.title).toBe('cat lover');
     expect(achievementById('ten-sightings')?.title).toBe('cat collector');

@@ -1,13 +1,19 @@
-const { copyFileSync, existsSync, mkdirSync, rmSync, symlinkSync } = require('node:fs');
+const {
+  copyFileSync,
+  existsSync,
+  mkdirSync,
+  rmSync,
+  symlinkSync,
+} = require('node:fs');
 const { dirname, join, resolve } = require('node:path');
 
 const source = resolve(__dirname, '..', 'functions', 'lib');
 const destination = resolve(__dirname, 'lib');
 const compiledModules = [
-  'coreCallables.js',
-  'handlers.js',
-  'communityVoting.js',
-  'participation.js',
+  'community/coreCallables.js',
+  'shared/handlers.js',
+  'community/communityVoting.js',
+  'community/participation.js',
 ];
 
 rmSync(destination, { recursive: true, force: true });
@@ -25,5 +31,9 @@ for (const moduleName of compiledModules) {
 
 const localDependencies = resolve(__dirname, 'node_modules');
 if (!existsSync(localDependencies)) {
-  symlinkSync(resolve(__dirname, '..', 'functions', 'node_modules'), localDependencies, 'dir');
+  symlinkSync(
+    resolve(__dirname, '..', 'functions', 'node_modules'),
+    localDependencies,
+    'dir',
+  );
 }

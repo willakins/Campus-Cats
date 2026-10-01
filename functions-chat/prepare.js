@@ -9,7 +9,11 @@ const { dirname, join, resolve } = require('node:path');
 
 const source = resolve(__dirname, '..', 'functions', 'lib');
 const destination = resolve(__dirname, 'lib');
-const compiledModules = ['chatCallables.js', 'chat.js', 'handlers.js'];
+const compiledModules = [
+  'community/chatCallables.js',
+  'community/chat.js',
+  'shared/handlers.js',
+];
 
 rmSync(destination, { recursive: true, force: true });
 mkdirSync(destination, { recursive: true });

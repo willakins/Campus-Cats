@@ -21,7 +21,7 @@ jest.mock('expo-router', () => {
   };
 });
 
-jest.mock('../../providers', () => ({
+jest.mock('../../presentation/providers', () => ({
   useAuth: () => ({
     user: {
       id: 'actor-1',

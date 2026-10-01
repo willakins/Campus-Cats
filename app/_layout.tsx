@@ -1,26 +1,35 @@
 import { View } from 'react-native';
 
-import { Slot } from 'expo-router';
+import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { ThemeProvider as PaperThemeProvider } from 'react-native-paper';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import {
   AppSettingsProvider,
+  AppToastProvider,
   AuthProvider,
   ClubProvider,
   UniversitySelectionProvider,
   useAppSettings,
-} from '@/providers';
-import { AppThemeProvider, useAppTheme } from '@/theme';
+} from '@/presentation/providers';
+import { verticalStackTransition } from '@/presentation/navigation/stackTransitions';
+import { AppThemeProvider, useAppTheme, useReducedMotion } from '@/theme';
 
 const ThemedApplication = () => {
   const theme = useAppTheme();
+  const reducedMotion = useReducedMotion();
   return (
     <PaperThemeProvider theme={theme.paper}>
       <StatusBar style={theme.dark ? 'light' : 'dark'} />
       <View style={{ flex: 1, backgroundColor: theme.colors.background }}>
-        <Slot />
+        <Stack
+          screenOptions={{
+            headerShown: false,
+            ...verticalStackTransition(reducedMotion),
+            contentStyle: { backgroundColor: theme.colors.background },
+          }}
+        />
       </View>
     </PaperThemeProvider>
   );
@@ -35,7 +44,9 @@ const BrandedApplication = () => {
         accentColor: settings.accentColor,
       }}
     >
-      <ThemedApplication />
+      <AppToastProvider>
+        <ThemedApplication />
+      </AppToastProvider>
     </AppThemeProvider>
   );
 };

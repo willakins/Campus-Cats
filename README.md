@@ -69,7 +69,7 @@ Select any preview to open the full-size App Store image.
       <br />
       <strong>Community hub</strong>
       <br />
-      Bring announcements, chat, events, surveys, votes, and donations together.
+      Bring alerts, chat, events, surveys, votes, and donations together.
     </td>
   </tr>
 </table>
@@ -81,7 +81,7 @@ Select any preview to open the full-size App Store image.
 | **Sightings**        | Photo-backed reports with location, condition, date, discussion, and map filters from the last seven days through all time.         |
 | **Cat-alog**         | A visual directory of known cats with identifying details, favorites, tags, photos, and recent sighting history.                    |
 | **Feeding stations** | Shared station locations, known cats, restocking details, and stocked or unstocked views for faster volunteer coordination.         |
-| **Community**        | Announcements, push notifications, events, surveys, contests, elections, donations, and a live club chat in one place.              |
+| **Community**        | Alerts, push notifications, events, surveys, contests, elections, donations, and a live club chat in one place.              |
 | **Membership**       | University discovery, club-specific sign-in, email access workflows, role-aware navigation, and deliberate presidential succession. |
 | **Moderation**       | Officer pings, chat restrictions, disciplinary notices, account bans, and protected read-only access for restricted members.        |
 
@@ -155,16 +155,17 @@ npx expo start
 
 Authentication, maps, notifications, email, billing, and data-backed features require
 their corresponding service configuration. Start with the
-[installation guide](Installation-Guide.md) and [testing guide](docs/testing.md).
+[installation guide](docs/installation.md) and [testing guide](docs/testing.md).
 
 ### Documentation
 
-- [System design](system-design.md)
+- [System design](docs/architecture/system-design.md)
 - [Multi-club subscription architecture](docs/architecture/0003-multi-club-subscription-tenancy.md)
 - [University onboarding](docs/university-onboarding.md)
 - [Club subscriptions and tenant migration](docs/billing-operations.md)
 - [App branding and contributor privacy](docs/app-settings.md)
 - [Community engagement](docs/community-engagement.md)
+- [Alerts data migration](docs/alerts-migration.md)
 - [iNaturalist integration](docs/inaturalist-import.md)
 - [Authorization matrix](docs/architecture/behavior-matrix.md)
 - [Campus Field Guide design system](docs/design-system.md)

@@ -1,7 +1,14 @@
-const { validateFirebaseEnvironment } = require('./config/firebaseEnvironments');
+const {
+  hasFirebaseEnvironmentVariables,
+  validateAppEnvironment,
+  validateFirebaseEnvironment,
+} = require('./config/firebaseEnvironments');
 
 module.exports = ({ config, environment = process.env }) => {
-  validateFirebaseEnvironment(environment);
+  validateAppEnvironment(environment);
+  if (hasFirebaseEnvironmentVariables(environment)) {
+    validateFirebaseEnvironment(environment);
+  }
 
   const development = environment.EXPO_PUBLIC_APP_ENV === 'development';
 

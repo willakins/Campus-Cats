@@ -2,14 +2,14 @@ import React from 'react';
 
 import { fireEvent, render, screen, userEvent, waitFor } from '@testing-library/react-native';
 
-import EditAnnouncement from '../../app/(app)/announcements/edit-ann';
-import EditCatalogEntry from '../../app/(app)/catalog/edit-entry';
-import EditSighting from '../../app/(app)/sighting/edit-sighting';
-import EditStation from '../../app/(app)/stations/edit-station';
+import EditAlert from '../../app/(app)/community/alerts/[id]/edit';
+import EditCatalogEntry from '../../app/(app)/catalog/[id]/edit';
+import EditSighting from '../../app/(app)/map/sightings/[id]/edit';
+import EditStation from '../../app/(app)/stations/[id]/edit';
 import { AppThemeProvider } from '../../theme';
 
 const mockCatalogUpdate = jest.fn();
-const mockAnnouncementUpdate = jest.fn();
+const mockAlertUpdate = jest.fn();
 const mockSightingUpdate = jest.fn();
 const mockStationUpdate = jest.fn();
 const mockScrollTo = jest.fn();
@@ -19,8 +19,8 @@ jest.mock('expo-router', () => ({
   useRouter: () => ({ back: jest.fn(), replace: jest.fn() }),
 }));
 jest.mock('@expo/vector-icons', () => ({ Ionicons: () => null }));
-jest.mock('../../components/design', () => {
-  const actual = jest.requireActual('../../components/design');
+jest.mock('../../presentation/ui', () => {
+  const actual = jest.requireActual('../../presentation/ui');
   const ReactRuntime = require('react');
   const { View: NativeView } = require('react-native');
   return {
@@ -49,7 +49,7 @@ jest.mock('../../components/design', () => {
 });
 jest.mock('../../composition/appModules', () => ({
   appModules: {
-    announcements: {
+    alerts: {
       get: jest.fn().mockResolvedValue({
         ok: true,
         value: {
@@ -62,7 +62,7 @@ jest.mock('../../composition/appModules', () => ({
         warnings: [],
       }),
       media: jest.fn().mockResolvedValue({ ok: true, value: [], warnings: [] }),
-      update: (...args: unknown[]) => mockAnnouncementUpdate(...args),
+      update: (...args: unknown[]) => mockAlertUpdate(...args),
       remove: jest.fn(),
     },
     catalog: {
@@ -143,12 +143,12 @@ jest.mock('../../composition/appModules', () => ({
     },
   },
 }));
-jest.mock('../../providers', () => ({
+jest.mock('../../presentation/providers', () => ({
   useAuth: () => ({
     user: { id: 'officer-1', email: 'officer@gatech.edu', role: 1 },
   }),
 }));
-jest.mock('../../providers/AuthProvider', () => ({
+jest.mock('../../presentation/providers/AuthProvider', () => ({
   useAuth: () => ({
     user: { id: 'officer-1', email: 'officer@gatech.edu', role: 1 },
   }),
@@ -172,6 +172,9 @@ describe('edit form validation', () => {
     const user = userEvent.setup();
     await renderThemed(<EditCatalogEntry />);
     expect(await screen.findByRole('button', { name: 'Save Entry' })).toBeEnabled();
+    expect(screen.getByTestId('form-action-bar-tint')).toHaveStyle({
+      backgroundColor: '#E2E8EFD8',
+    });
 
     await fireEvent(screen.getByTestId('form-screen-content'), 'layout', layout(100));
     await fireEvent(screen.getByTestId('catalog-section-basics'), 'layout', layout(200));
@@ -187,9 +190,10 @@ describe('edit form validation', () => {
     expect(screen.getByText('Fur pattern is required.')).toBeOnTheScreen();
     expect(screen.getByText('At least one profile photo is required.')).toBeOnTheScreen();
     expect(screen.getByLabelText('Cat name')).toHaveStyle({ borderColor: '#B23A3A' });
-    expect(screen.getByLabelText('Photos field')).toHaveStyle({
+    expect(screen.getByRole('button', { name: 'Add photos' })).toHaveStyle({
       borderColor: '#B23A3A',
       borderWidth: 2,
+      borderRadius: 999,
     });
     expect(screen.getByRole('alert', {
       name: 'Please fill in the missing information.',
@@ -203,23 +207,23 @@ describe('edit form validation', () => {
     );
   });
 
-  it('uses the shared inline validation behavior for announcements', async () => {
+  it('uses the shared inline validation behavior for alerts', async () => {
     const user = userEvent.setup();
-    await renderThemed(<EditAnnouncement />);
+    await renderThemed(<EditAlert />);
     expect(
-      await screen.findByRole('button', { name: 'Save Announcement' }),
+      await screen.findByRole('button', { name: 'Save Alert' }),
     ).toBeEnabled();
 
     await fireEvent(screen.getByTestId('form-screen-content'), 'layout', layout(100));
-    await fireEvent(screen.getByTestId('announcement-section-basics'), 'layout', layout(200));
-    await fireEvent(screen.getByTestId('announcement-field-title'), 'layout', layout(30));
-    await user.press(screen.getByRole('button', { name: 'Save Announcement' }));
+    await fireEvent(screen.getByTestId('alert-section-basics'), 'layout', layout(200));
+    await fireEvent(screen.getByTestId('alert-field-title'), 'layout', layout(30));
+    await user.press(screen.getByRole('button', { name: 'Save Alert' }));
 
     expect(
-      await screen.findByText('Announcement title is required.'),
+      await screen.findByText('Alert title is required.'),
     ).toBeOnTheScreen();
     expect(
-      screen.getByText('Announcement description is required.'),
+      screen.getByText('Alert description is required.'),
     ).toBeOnTheScreen();
     expect(screen.getByLabelText('Title')).toHaveStyle({
       borderColor: '#B23A3A',
@@ -230,12 +234,12 @@ describe('edit form validation', () => {
       }),
     ).toBeOnTheScreen();
     expect(mockScrollTo).toHaveBeenLastCalledWith({ y: 318, animated: true });
-    expect(mockAnnouncementUpdate).not.toHaveBeenCalled();
+    expect(mockAlertUpdate).not.toHaveBeenCalled();
 
     await fireEvent.changeText(screen.getByLabelText('Title'), 'Cat care day');
     await waitFor(() =>
       expect(
-        screen.queryByText('Announcement title is required.'),
+        screen.queryByText('Alert title is required.'),
       ).not.toBeOnTheScreen(),
     );
   });
@@ -287,9 +291,10 @@ describe('edit form validation', () => {
       borderColor: '#B23A3A',
       borderWidth: 2,
     });
-    expect(screen.getByLabelText('Photos field')).toHaveStyle({
+    expect(screen.getByRole('button', { name: 'Add photos' })).toHaveStyle({
       borderColor: '#B23A3A',
       borderWidth: 2,
+      borderRadius: 999,
     });
     expect(screen.getByRole('alert', {
       name: 'Please fill in the missing information.',
