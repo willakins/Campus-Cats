@@ -4,8 +4,8 @@ import {
 } from '../../functions/node_modules/firebase-admin/lib/app/index';
 import { getFirestore } from '../../functions/node_modules/firebase-admin/lib/firestore/index';
 
-import { FirebaseInaturalistAccountLinkRepository } from '../../functions/src/firebaseInaturalistAccountLinks';
-import { HandlerError } from '../../functions/src/handlers';
+import { FirebaseInaturalistAccountLinkRepository } from '../../functions/src/integrations/inaturalist/firebaseInaturalistAccountLinks';
+import { HandlerError } from '../../functions/src/shared/handlers';
 import { FIREBASE_TEST_PROJECT_ID, assertDemoProjectId } from '../support/firebaseProject';
 
 describe('Firebase iNaturalist account-link transactions', () => {

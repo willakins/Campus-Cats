@@ -2,7 +2,7 @@ import {
   COLLECTIONS,
   Role,
   createPersistenceCodecs,
-  parseAnnouncement,
+  parseAlert,
   parseClubEvent,
   parseCatalogFavorite,
   parseCatalogEntry,
@@ -84,8 +84,8 @@ describe('canonical domain models', () => {
         knownCats: 'Goldie',
         createdBy: member,
       }),
-      parseAnnouncement({
-        id: 'announcement-1',
+      parseAlert({
+        id: 'alert-1',
         title: 'Volunteer shift',
         info: 'Meet near the station.',
         createdAt,
@@ -138,8 +138,11 @@ describe('canonical domain models', () => {
         name: 'Campus Cats',
         email: 'cats@gatech.edu',
         instagramUrl: 'https://www.instagram.com/gtcampuscats',
-        facebookUrl: 'https://www.facebook.com/gtcampuscats',
-        websiteUrl: 'https://campuscats.gatech.edu',
+        xUrl: 'https://x.com/gtcampuscats',
+        websiteUrls: [
+          'https://campuscats.gatech.edu',
+          'https://cats.example.edu',
+        ],
       }),
       parseCatalogFavorite({
         userId: 'member-1',
@@ -195,9 +198,41 @@ describe('canonical domain models', () => {
       }),
     ).toMatchObject({
       instagramUrl: '',
-      facebookUrl: '',
-      websiteUrl: '',
+      xUrl: '',
+      websiteUrls: [],
     });
+  });
+
+  it('migrates a legacy single website and enforces social domains and link limits', () => {
+    expect(
+      parseContact({
+        id: 'contact-1',
+        name: 'Campus Cats',
+        email: 'cats@gatech.edu',
+        websiteUrl: 'https://campuscats.gatech.edu',
+      }),
+    ).toMatchObject({ websiteUrls: ['https://campuscats.gatech.edu'] });
+    expect(() =>
+      parseContact({
+        id: 'contact-1',
+        name: 'Campus Cats',
+        email: 'cats@gatech.edu',
+        xUrl: 'https://twitter.com/gtcampuscats',
+      }),
+    ).toThrow();
+    expect(() =>
+      parseContact({
+        id: 'contact-1',
+        name: 'Campus Cats',
+        email: 'cats@gatech.edu',
+        websiteUrls: [
+          'https://one.example',
+          'https://two.example',
+          'https://three.example',
+          'https://four.example',
+        ],
+      }),
+    ).toThrow();
   });
 
   it('parses the developer role as a persisted user role', () => {
@@ -412,7 +447,7 @@ describe('persistence codecs', () => {
 
   it('accepts native dates and rejects invalid document and timestamp shapes', () => {
     expect(
-      codecs.announcement.decode('announcement-1', {
+      codecs.alert.decode('alert-1', {
         title: 'Update',
         info: 'Details',
         createdAt: new Date('2025-04-10T12:00:00.000Z'),
@@ -427,7 +462,7 @@ describe('persistence codecs', () => {
       'Expected persisted document data',
     );
     expect(() =>
-      codecs.announcement.decode('announcement-1', {
+      codecs.alert.decode('alert-1', {
         title: 'Update',
         info: 'Details',
         createdAt: 'not-a-timestamp',

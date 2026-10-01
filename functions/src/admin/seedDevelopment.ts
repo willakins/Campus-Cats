@@ -2,7 +2,7 @@ import { getApps, initializeApp } from 'firebase-admin/app';
 import { getAuth } from 'firebase-admin/auth';
 import { getFirestore } from 'firebase-admin/firestore';
 
-import { universitySearchPrefixes } from '../universityCatalog';
+import { universitySearchPrefixes } from '../onboarding/universityCatalog';
 
 const DEVELOPMENT_CLUB_FIXTURE = require('../../../config/developmentClubFixture.json') as {
   readonly university: {

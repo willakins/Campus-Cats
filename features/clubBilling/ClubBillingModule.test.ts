@@ -1,5 +1,8 @@
 import { ClubAccess, Role, parseClubAccess, parseUser } from '../../core/domain';
-import { ClubBillingPort } from '../../core/ports';
+import {
+  ClubBillingPort,
+  ClubBillingUnavailableError,
+} from '../../core/ports';
 import { ClubBillingModule } from './ClubBillingModule';
 
 const president = parseUser({
@@ -99,5 +102,30 @@ describe('ClubBillingModule', () => {
       module.updateBillingEmail(developer, 'billing@example.com'),
     ).resolves.toMatchObject({ ok: true });
     expect(update).toHaveBeenCalledTimes(2);
+  });
+
+  it('preserves the actionable message when billing is unavailable', async () => {
+    const port = buildPort();
+    port.setCollectionMethod = async () => {
+      throw new ClubBillingUnavailableError(
+        'Stripe checkout is not configured for this development build.',
+      );
+    };
+    const module = new ClubBillingModule(port);
+
+    await expect(
+      module.setCollectionMethod(
+        president,
+        'automatic',
+        'https://app.example.com/subscription-required',
+      ),
+    ).resolves.toMatchObject({
+      ok: false,
+      error: {
+        code: 'dependency_failure',
+        message:
+          'Stripe checkout is not configured for this development build.',
+      },
+    });
   });
 });

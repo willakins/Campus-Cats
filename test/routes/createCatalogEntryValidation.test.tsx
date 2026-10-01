@@ -2,7 +2,7 @@ import React from 'react';
 
 import { fireEvent, render, screen, userEvent, waitFor } from '@testing-library/react-native';
 
-import CreateCatalogEntry from '../../app/(app)/catalog/create-entry';
+import CreateCatalogEntry from '../../app/(app)/catalog/new';
 import { AppThemeProvider } from '../../theme';
 
 const mockCreate = jest.fn();
@@ -13,8 +13,8 @@ jest.mock('expo-router', () => ({
   useRouter: () => ({ back: jest.fn(), replace: jest.fn() }),
 }));
 jest.mock('@expo/vector-icons', () => ({ Ionicons: () => null }));
-jest.mock('../../components/design', () => {
-  const actual = jest.requireActual('../../components/design');
+jest.mock('../../presentation/ui', () => {
+  const actual = jest.requireActual('../../presentation/ui');
   const ReactRuntime = require('react');
   const { View: NativeView } = require('react-native');
   return {
@@ -51,7 +51,7 @@ jest.mock('../../composition/appModules', () => ({
     },
   },
 }));
-jest.mock('../../providers/AuthProvider', () => ({
+jest.mock('../../presentation/providers/AuthProvider', () => ({
   useAuth: () => ({
     user: { id: 'officer-1', email: 'officer@gatech.edu', role: 1 },
   }),
@@ -91,9 +91,10 @@ describe('create catalog entry validation', () => {
     expect(screen.getByLabelText('Cat name')).toHaveStyle({
       borderColor: '#B23A3A',
     });
-    expect(screen.getByLabelText('Photos field')).toHaveStyle({
+    expect(screen.getByRole('button', { name: 'Add photos' })).toHaveStyle({
       borderColor: '#B23A3A',
       borderWidth: 2,
+      borderRadius: 999,
     });
     expect(
       screen.getByRole('alert', {

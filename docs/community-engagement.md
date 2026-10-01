@@ -1,7 +1,7 @@
 # Community engagement
 
-The **Community** bottom tab groups Announcements, Events, Surveys, Votes, and Chat without
-increasing the five-item bottom navigation. Announcements remains the default section
+The **Community** bottom tab groups Alerts, Events, Surveys, Votes, and Chat without
+increasing the five-item bottom navigation. Alerts remains the default section
 so the existing update workflow stays one tap away. The labeled section controls
 scroll horizontally when text does not fit.
 

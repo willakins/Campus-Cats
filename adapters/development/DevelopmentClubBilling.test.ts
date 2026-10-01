@@ -33,28 +33,32 @@ describe('Development club billing', () => {
       undefined,
     );
     await expect(billing.getSummary()).rejects.toThrow(
-      'Billing is disabled in development',
+      'Stripe checkout is not configured for this development build.',
     );
     await expect(billing.createSetupSession('return-url')).rejects.toThrow(
-      'Billing is disabled in development',
+      'Stripe checkout is not configured for this development build.',
     );
     await expect(billing.createPortalSession('return-url')).rejects.toThrow(
-      'Billing is disabled in development',
+      'Stripe checkout is not configured for this development build.',
     );
     await expect(billing.payOutstandingInvoice()).rejects.toThrow(
-      'Billing is disabled in development',
+      'Stripe checkout is not configured for this development build.',
     );
     await expect(
       billing.setCollectionMethod('automatic', 'return-url'),
-    ).rejects.toThrow('Billing is disabled in development');
+    ).rejects.toThrow(
+      'Stripe checkout is not configured for this development build.',
+    );
     await expect(
       billing.updateBillingEmail('developer@example.com'),
-    ).rejects.toThrow('Billing is disabled in development');
+    ).rejects.toThrow(
+      'Stripe checkout is not configured for this development build.',
+    );
     await expect(billing.scheduleCancellation()).rejects.toThrow(
-      'Billing is disabled in development',
+      'Stripe checkout is not configured for this development build.',
     );
     await expect(billing.resumeSubscription()).rejects.toThrow(
-      'Billing is disabled in development',
+      'Stripe checkout is not configured for this development build.',
     );
     expect(firebase.getSummary).not.toHaveBeenCalled();
     expect(firebase.createSetupSession).not.toHaveBeenCalled();

@@ -2,7 +2,7 @@ import React from 'react';
 
 import { render, screen } from '@testing-library/react-native';
 
-import SurveyResponses from '../../app/(app)/surveys/responses';
+import SurveyResponses from '../../app/(app)/community/surveys/[id]/responses';
 import {
   Role,
   parseSurvey,
@@ -52,7 +52,7 @@ jest.mock('../../composition/appModules', () => ({
   },
 }));
 
-jest.mock('../../providers', () => ({
+jest.mock('../../presentation/providers', () => ({
   useAuth: () => ({
     user: { id: 'officer-1', email: 'officer@example.com', role: 1 },
   }),

@@ -126,14 +126,14 @@ describe('createAppModules', () => {
       }),
     };
     const modules = createAppModules(infrastructure);
-    const officer = parseUser({
-      id: 'officer-1',
-      email: 'officer@gatech.edu',
-      role: Role.Officer,
+    const president = parseUser({
+      id: 'president-1',
+      email: 'president@gatech.edu',
+      role: Role.President,
     });
 
     await expect(
-      modules.contacts.create(officer, {
+      modules.contacts.create(president, {
         name: 'Campus Cats',
         email: 'cats@gatech.edu',
       }),
@@ -141,11 +141,11 @@ describe('createAppModules', () => {
       ok: true,
       value: { id: 'contact-1', name: 'Campus Cats' },
     });
-    await expect(modules.contacts.list(officer)).resolves.toMatchObject({
+    await expect(modules.contacts.list(president)).resolves.toMatchObject({
       ok: true,
       value: [{ id: 'contact-1', name: 'Campus Cats' }],
     });
-    const tags = await modules.catalogTags.list(officer);
+    const tags = await modules.catalogTags.list(president);
     expect(tags).toMatchObject({ ok: true });
     if (!tags.ok) throw new Error('Expected catalog tags');
     expect(tags.value).toContainEqual({ id: 'adopted', label: 'Adopted' });

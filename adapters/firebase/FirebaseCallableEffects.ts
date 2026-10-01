@@ -1,7 +1,7 @@
 import { Functions, httpsCallable } from 'firebase/functions';
 
 import {
-  AnnouncementNotification,
+  AlertNotification,
   ApplicationEffects,
   WhitelistCredentials,
 } from '../../core/ports';
@@ -14,10 +14,10 @@ import {
 export class FirebaseCallableEffects implements ApplicationEffects {
   constructor(private readonly functions: Functions) {}
 
-  async notifyAnnouncement(
-    notification: AnnouncementNotification,
+  async notifyAlert(
+    notification: AlertNotification,
   ): Promise<void> {
-    await httpsCallable(this.functions, 'sendAnnouncement')({
+    await httpsCallable(this.functions, 'sendAlert')({
       title: notification.title,
       message: notification.body,
     });

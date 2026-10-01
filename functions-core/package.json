@@ -4,7 +4,7 @@
   "engines": {
     "node": "22"
   },
-  "main": "lib/coreCallables.js",
+  "main": "lib/community/coreCallables.js",
   "dependencies": {
     "firebase-admin": "^14.2.0",
     "firebase-functions": "^7.3.2"

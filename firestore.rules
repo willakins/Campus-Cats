@@ -83,16 +83,16 @@ service cloud.firestore {
       return role(clubId) >= 1;
     }
 
-    function validAnnouncementReadReceipt(data, clubId, receiptId) {
+    function validAlertReadReceipt(data, clubId, receiptId) {
       return isActiveUser(clubId)
-        && data.keys().hasOnly(['userId', 'announcementId', 'readAt'])
+        && data.keys().hasOnly(['userId', 'alertId', 'readAt'])
         && data.userId == request.auth.uid
-        && data.announcementId is string
-        && data.announcementId.size() > 0
-        && data.announcementId.size() <= 200
+        && data.alertId is string
+        && data.alertId.size() > 0
+        && data.alertId.size() <= 200
         && data.readAt is timestamp
-        && receiptId == request.auth.uid + '__' + data.announcementId
-        && exists(/databases/$(database)/documents/clubs/$(clubId)/announcements/$(data.announcementId));
+        && receiptId == request.auth.uid + '__' + data.alertId
+        && exists(/databases/$(database)/documents/clubs/$(clubId)/alerts/$(data.alertId));
     }
 
     function validEventReadReceipt(data, clubId, receiptId) {
@@ -249,7 +249,6 @@ service cloud.firestore {
         && request.resource.data.name.size() > 0
         && request.resource.data.name.size() <= 200
         && request.resource.data.graduationYear is string
-        && request.resource.data.graduationYear.size() > 0
         && request.resource.data.graduationYear.size() <= 20
         && request.resource.data.email is string
         && request.resource.data.email.size() >= 3
@@ -655,15 +654,15 @@ service cloud.firestore {
         allow create, update, delete: if isAdmin(clubId);
       }
 
-      match /announcements/{announcementId} {
+      match /alerts/{alertId} {
         allow read: if isActiveUser(clubId);
         allow create, update, delete: if isAdmin(clubId);
       }
 
-      match /announcement-read-receipts/{receiptId} {
+      match /alert-read-receipts/{receiptId} {
         allow get, list: if isActiveUser(clubId)
           && resource.data.userId == request.auth.uid;
-        allow create, update: if validAnnouncementReadReceipt(
+        allow create, update: if validAlertReadReceipt(
           request.resource.data,
           clubId,
           receiptId
@@ -798,7 +797,7 @@ service cloud.firestore {
 
       match /contact-info/{contactId} {
         allow read: if isActiveUser(clubId);
-        allow create, update, delete: if isAdmin(clubId);
+        allow create, update, delete: if hasPresidentAccess(clubId);
       }
 
       match /inaturalist-observations/{observationId} {

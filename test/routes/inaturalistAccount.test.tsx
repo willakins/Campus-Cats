@@ -6,7 +6,7 @@ import * as WebBrowser from 'expo-web-browser';
 
 import InaturalistAccount, {
   InaturalistAccountLinking,
-} from '../../app/(app)/settings/inaturalist-account';
+} from '../../presentation/screens/settings/integrations/InaturalistAccountScreen';
 import { AppThemeProvider } from '../../theme';
 
 const mockBack = jest.fn();
@@ -28,7 +28,7 @@ jest.mock('expo-web-browser', () => ({
   openAuthSessionAsync: jest.fn(),
 }));
 
-jest.mock('../../providers', () => ({
+jest.mock('../../presentation/providers', () => ({
   useAuth: () => ({
     user: { id: 'member-1', email: 'member@gatech.edu', role: 0 },
   }),
@@ -73,7 +73,7 @@ describe('iNaturalist account link route', () => {
     mockUnlink.mockResolvedValue({ ok: true, value: undefined, warnings: [] });
     jest.mocked(WebBrowser.openAuthSessionAsync).mockResolvedValue({
       type: 'success',
-      url: 'campuscats://settings/inaturalist-account?attempt=attempt-1&result=success',
+      url: 'campuscats://settings/integrations/inaturalist-account?attempt=attempt-1&result=success',
     });
   });
 

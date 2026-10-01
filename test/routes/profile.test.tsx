@@ -9,9 +9,9 @@ import {
   waitFor,
 } from '@testing-library/react-native';
 
-import EditProfile from '../../app/(app)/profile/edit-profile';
-import ProfileSightings from '../../app/(app)/profile/sightings';
-import ViewProfile from '../../app/(app)/profile/view-profile';
+import EditProfile from '../../app/(app)/profiles/edit';
+import ProfileSightings from '../../app/(app)/profiles/[id]/sightings';
+import ViewProfile from '../../app/(app)/profiles/[id]';
 import {
   Role,
   localSightingRecord,
@@ -31,11 +31,15 @@ const mockProfileUpdate = jest.fn();
 const mockSelectTitle = jest.fn();
 const mockSightingsListByReporter = jest.fn();
 const mockFavoriteForUser = jest.fn();
+const mockCatalogList = jest.fn();
 const mockCatalogGet = jest.fn();
 const mockCatalogMedia = jest.fn();
+const mockCatalogSetFavorite = jest.fn();
+const mockDeleteOwnAccount = jest.fn();
 const mockSignOut = jest.fn();
 let mockProfileId: string | undefined = 'member-1';
 let mockUserId = 'member-1';
+let mockUserRole: Role = Role.Member;
 const mockAlert = jest
   .spyOn(Alert, 'alert')
   .mockImplementation(() => undefined);
@@ -54,9 +58,13 @@ jest.mock('expo-router', () => {
   };
 });
 
-jest.mock('../../providers', () => ({
+jest.mock('../../presentation/providers', () => ({
   useAuth: () => ({
-    user: { id: mockUserId, email: 'member@gatech.edu', role: 0 },
+    user: {
+      id: mockUserId,
+      email: 'member@gatech.edu',
+      role: mockUserRole,
+    },
     signOut: mockSignOut,
   }),
 }));
@@ -75,13 +83,18 @@ jest.mock('../../composition/appModules', () => ({
         mockSightingsListByReporter(...args),
     },
     catalog: {
+      list: (...args: unknown[]) => mockCatalogList(...args),
       favoriteForUser: (...args: unknown[]) => mockFavoriteForUser(...args),
       get: (...args: unknown[]) => mockCatalogGet(...args),
       media: (...args: unknown[]) => mockCatalogMedia(...args),
+      setFavorite: (...args: unknown[]) => mockCatalogSetFavorite(...args),
     },
     imageSelection: {
       takePhoto: jest.fn(),
       pickFromLibrary: jest.fn(),
+    },
+    users: {
+      deleteOwnAccount: (...args: unknown[]) => mockDeleteOwnAccount(...args),
     },
   },
 }));
@@ -135,6 +148,15 @@ const favorite = parseCatalogEntry({
   createdAt: new Date('2026-08-01T12:00:00.000Z'),
   createdBy: actor,
 });
+const alternateFavorite = parseCatalogEntry({
+  ...favorite,
+  id: 'cat-2',
+  cat: {
+    ...favorite.cat,
+    name: 'Mittens',
+    descShort: 'Quiet tuxedo cat',
+  },
+});
 
 const renderThemed = async (content: React.ReactElement) =>
   await render(
@@ -146,7 +168,12 @@ describe('member profile routes', () => {
     jest.clearAllMocks();
     mockProfileId = 'member-1';
     mockUserId = 'member-1';
-    mockProfileSync.mockResolvedValue({ ok: true, value: profile, warnings: [] });
+    mockUserRole = Role.Member;
+    mockProfileSync.mockResolvedValue({
+      ok: true,
+      value: profile,
+      warnings: [],
+    });
     mockProfileGetOrSync.mockResolvedValue({
       ok: true,
       value: profile,
@@ -167,13 +194,35 @@ describe('member profile routes', () => {
       },
       warnings: [],
     });
+    mockCatalogList.mockResolvedValue({
+      ok: true,
+      value: [
+        { ...favorite, source: 'campus-cats' },
+        { ...alternateFavorite, source: 'campus-cats' },
+      ],
+      warnings: [],
+    });
     mockCatalogGet.mockResolvedValue({
       ok: true,
       value: { ...favorite, source: 'campus-cats' },
       warnings: [],
     });
     mockCatalogMedia.mockResolvedValue({ ok: true, value: [], warnings: [] });
+    mockCatalogSetFavorite.mockResolvedValue({
+      ok: true,
+      value: {
+        userId: actor.id,
+        catalogId: alternateFavorite.id,
+        createdAt: new Date(),
+      },
+      warnings: [],
+    });
     mockSignOut.mockResolvedValue(undefined);
+    mockDeleteOwnAccount.mockResolvedValue({
+      ok: true,
+      value: undefined,
+      warnings: [],
+    });
     mockSelectTitle.mockResolvedValue({
       ok: true,
       value: { ...profile, selectedTitleId: '' },
@@ -191,10 +240,31 @@ describe('member profile routes', () => {
     await renderThemed(<ViewProfile />);
 
     expect(await screen.findByText('Cat Watcher')).toBeOnTheScreen();
+    expect(screen.getByTestId('profile-avatar-placeholder')).toBeOnTheScreen();
+    expect(
+      screen.getByTestId('profile-avatar-placeholder-head', {
+        includeHiddenElements: true,
+      }),
+    ).toBeOnTheScreen();
+    expect(
+      screen.getByTestId('profile-avatar-placeholder-body', {
+        includeHiddenElements: true,
+      }),
+    ).toBeOnTheScreen();
     expect(screen.getAllByText('cat lover').length).toBeGreaterThan(0);
+    const selectedTitle = screen.getByTestId('profile-selected-title');
+    const displayName = screen.getByTestId('profile-display-name');
+    expect(selectedTitle).toHaveTextContent('cat lover');
+    expect(displayName).toHaveTextContent('Cat Watcher');
+    expect(selectedTitle.parent).toBe(displayName.parent);
+    expect(selectedTitle.parent?.children.indexOf(selectedTitle)).toBeLessThan(
+      displayName.parent?.children.indexOf(displayName) ?? -1,
+    );
     expect(screen.getByText('2 of 5 achievements unlocked')).toBeOnTheScreen();
     expect(screen.getByText('Previous sightings (1)')).toBeOnTheScreen();
     expect(screen.getAllByText('Goldie').length).toBeGreaterThan(0);
+    expect(screen.getByTestId('form-action-bar')).toBeOnTheScreen();
+    expect(screen.getByTestId('form-action-bar-glass')).toBeOnTheScreen();
 
     expect(
       screen.queryByRole('button', { name: 'Open account settings' }),
@@ -213,7 +283,7 @@ describe('member profile routes', () => {
     await waitFor(() => expect(mockSignOut).toHaveBeenCalledTimes(1));
     expect(mockReplace).toHaveBeenCalledWith('/login');
     await user.press(screen.getByRole('button', { name: 'Edit profile' }));
-    expect(mockPush).toHaveBeenCalledWith('/profile/edit-profile');
+    expect(mockPush).toHaveBeenCalledWith('/profiles/edit');
     await user.press(
       screen.getByRole('button', { name: 'Remove displayed title' }),
     );
@@ -230,6 +300,21 @@ describe('member profile routes', () => {
     expect(mockProfileSync).toHaveBeenCalledWith(actor);
   });
 
+  it('leaves an empty bio blank on the member profile', async () => {
+    mockProfileSync.mockResolvedValue({
+      ok: true,
+      value: { ...profile, bio: '' },
+      warnings: [],
+    });
+
+    await renderThemed(<ViewProfile />);
+
+    expect(await screen.findByText('Cat Watcher')).toBeOnTheScreen();
+    expect(
+      screen.queryByText('Add a bio to tell other members about yourself.'),
+    ).not.toBeOnTheScreen();
+  });
+
   it('labels iNaturalist account linking as coming soon', async () => {
     const user = userEvent.setup();
     await renderThemed(<ViewProfile />);
@@ -238,9 +323,11 @@ describe('member profile routes', () => {
     expect(screen.getByText('iNaturalist')).toBeOnTheScreen();
     expect(screen.getByText('Coming soon')).toBeOnTheScreen();
     await user.press(
-      screen.getByRole('button', { name: 'Learn about iNaturalist connection' }),
+      screen.getByRole('button', {
+        name: 'Learn about iNaturalist connection',
+      }),
     );
-    expect(mockPush).toHaveBeenCalledWith('/settings/inaturalist-account');
+    expect(mockPush).toHaveBeenCalledWith('/settings/integrations/inaturalist-account');
   });
 
   it('renders its skeleton while profile data is loading', async () => {
@@ -290,12 +377,16 @@ describe('member profile routes', () => {
     expect(await screen.findByText('Other Member')).toBeOnTheScreen();
     expect(screen.getByText('No favorite cat yet')).toBeOnTheScreen();
     expect(screen.getByText('No sightings yet')).toBeOnTheScreen();
-    expect(screen.queryByRole('button', { name: 'Edit profile' })).not.toBeOnTheScreen();
+    expect(
+      screen.queryByRole('button', { name: 'Edit profile' }),
+    ).not.toBeOnTheScreen();
     expect(
       screen.queryByRole('button', { name: 'Log out' }),
     ).not.toBeOnTheScreen();
     expect(screen.queryByText('Connected accounts')).not.toBeOnTheScreen();
-    expect(screen.queryByRole('button', { name: 'Remove displayed title' })).not.toBeOnTheScreen();
+    expect(
+      screen.queryByRole('button', { name: 'Remove displayed title' }),
+    ).not.toBeOnTheScreen();
     expect(mockProfileGetOrSync).toHaveBeenCalledWith('member-2');
   });
 
@@ -316,9 +407,162 @@ describe('member profile routes', () => {
       }),
     );
     expect(mockReplace).toHaveBeenCalledWith({
-      pathname: '/profile/view-profile',
+      pathname: '/profiles/[id]',
       params: { id: actor.id },
     });
+  });
+
+  it('permanently deletes an account after confirmation from the danger zone', async () => {
+    const user = userEvent.setup();
+    await renderThemed(<EditProfile />);
+
+    await user.press(
+      await screen.findByRole('button', { name: 'Delete my account' }),
+    );
+
+    expect(mockDeleteOwnAccount).not.toHaveBeenCalled();
+    expect(mockAlert).toHaveBeenCalledWith(
+      'Permanently delete your account?',
+      'This cannot be undone. Your account and personal contributions will be removed.',
+      expect.any(Array),
+    );
+    const confirmationButtons = mockAlert.mock.calls.at(-1)?.[2] ?? [];
+    await act(async () => {
+      confirmationButtons
+        .find(({ text }) => text === 'Delete my account')
+        ?.onPress?.();
+    });
+
+    await waitFor(() => {
+      expect(mockDeleteOwnAccount).toHaveBeenCalledWith(
+        actor,
+        'member@gatech.edu',
+      );
+      expect(mockSignOut).toHaveBeenCalled();
+      expect(mockReplace).toHaveBeenCalledWith('/login');
+    });
+  });
+
+  it('requires a President to transfer the presidency before account deletion', async () => {
+    mockUserRole = Role.President;
+    await renderThemed(<EditProfile />);
+
+    expect(
+      await screen.findByText(
+        'Transfer the club presidency before deleting this account.',
+      ),
+    ).toBeOnTheScreen();
+    expect(
+      screen.queryByRole('button', { name: 'Delete my account' }),
+    ).not.toBeOnTheScreen();
+  });
+
+  it('sets an owned title and favorite cat while editing the profile', async () => {
+    const user = userEvent.setup();
+    mockSelectTitle.mockResolvedValue({
+      ok: true,
+      value: { ...profile, selectedTitleId: 'ten-sightings' },
+      warnings: [],
+    });
+
+    await renderThemed(<EditProfile />);
+
+    expect(await screen.findByText('Goldie')).toBeOnTheScreen();
+    expect(screen.getByText('cat lover')).toBeOnTheScreen();
+    await user.press(screen.getByRole('button', { name: 'Browse Cat-alog' }));
+    expect(screen.getByText('Choose your favorite cat')).toBeOnTheScreen();
+    expect(
+      screen.getByRole('button', { name: 'Select Goldie as favorite cat' }),
+    ).toHaveProp('accessibilityState', { selected: true });
+    await user.type(screen.getByLabelText('Search favorite cats'), 'Mittens');
+    await user.press(
+      screen.getByRole('button', { name: 'Select Mittens as favorite cat' }),
+    );
+    await user.press(screen.getByRole('button', { name: 'Change title' }));
+    expect(screen.getByText('Title collection')).toBeOnTheScreen();
+    expect(screen.getByText('Picture Purr-fect')).toBeOnTheScreen();
+    expect(screen.getByText('Presidential Service')).toBeOnTheScreen();
+    expect(screen.getAllByText('Locked')).toHaveLength(3);
+    await user.press(
+      screen.getByRole('button', { name: 'Equip “cat collector”' }),
+    );
+    await user.press(screen.getByRole('button', { name: 'Save Profile' }));
+
+    await waitFor(() => {
+      expect(mockSelectTitle).toHaveBeenCalledWith(actor, 'ten-sightings');
+      expect(mockCatalogSetFavorite).toHaveBeenCalledWith(actor, 'cat-2');
+    });
+    expect(mockReplace).toHaveBeenCalledWith({
+      pathname: '/profiles/[id]',
+      params: { id: actor.id },
+    });
+  });
+
+  it('keeps profile editing available when favorite data is offline', async () => {
+    const user = userEvent.setup();
+    mockCatalogList.mockResolvedValue({
+      ok: false,
+      error: { code: 'dependency_failure', message: 'Catalog offline' },
+    });
+
+    await renderThemed(<EditProfile />);
+
+    expect(await screen.findByLabelText('Display name')).toBeOnTheScreen();
+    expect(
+      screen.getByText(
+        'Favorite cat selection is unavailable right now. Your current favorite will not be changed.',
+      ),
+    ).toBeOnTheScreen();
+    await user.press(screen.getByRole('button', { name: 'Save Profile' }));
+
+    await waitFor(() => expect(mockProfileUpdate).toHaveBeenCalledTimes(1));
+    expect(mockCatalogSetFavorite).not.toHaveBeenCalled();
+  });
+
+  it('checkpoints a saved title when a later favorite update fails', async () => {
+    const user = userEvent.setup();
+    mockCatalogSetFavorite
+      .mockResolvedValueOnce({
+        ok: false,
+        error: {
+          code: 'dependency_failure',
+          message: 'Could not update your favorite cat',
+        },
+      })
+      .mockResolvedValue({
+        ok: true,
+        value: {
+          userId: actor.id,
+          catalogId: alternateFavorite.id,
+          createdAt: new Date(),
+        },
+        warnings: [],
+      });
+
+    await renderThemed(<EditProfile />);
+    await user.press(
+      await screen.findByRole('button', { name: 'Browse Cat-alog' }),
+    );
+    await user.press(
+      screen.getByRole('button', { name: 'Select Mittens as favorite cat' }),
+    );
+    await user.press(screen.getByRole('button', { name: 'Change title' }));
+    await user.press(
+      screen.getByRole('button', { name: 'Equip “cat collector”' }),
+    );
+    await user.press(screen.getByRole('button', { name: 'Save Profile' }));
+
+    expect(
+      await screen.findByText(
+        'Displayed title saved, but could not update your favorite cat',
+      ),
+    ).toBeOnTheScreen();
+    expect(mockProfileUpdate).not.toHaveBeenCalled();
+
+    await user.press(screen.getByRole('button', { name: 'Save Profile' }));
+    await waitFor(() => expect(mockProfileUpdate).toHaveBeenCalledTimes(1));
+    expect(mockSelectTitle).toHaveBeenCalledTimes(1);
+    expect(mockCatalogSetFavorite).toHaveBeenCalledTimes(2);
   });
 
   it('does not allow an edit when authoritative profile media fails to load', async () => {
@@ -330,7 +574,9 @@ describe('member profile routes', () => {
 
     await renderThemed(<EditProfile />);
 
-    expect(await screen.findByText('Profile editor unavailable')).toBeOnTheScreen();
+    expect(
+      await screen.findByText('Profile editor unavailable'),
+    ).toBeOnTheScreen();
     await user.press(screen.getByRole('button', { name: 'Save Profile' }));
     expect(mockProfileUpdate).not.toHaveBeenCalled();
   });
@@ -352,7 +598,7 @@ describe('member profile routes', () => {
     );
 
     expect(mockPush).toHaveBeenCalledWith({
-      pathname: '/profile/sightings',
+      pathname: '/profiles/[id]/sightings',
       params: { id: actor.id, displayName: profile.displayName },
     });
   });

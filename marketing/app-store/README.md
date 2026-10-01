@@ -7,7 +7,7 @@ suggested App Store sequence:
 1. Live sighting map — reporting and exploring sightings
 2. Cat-alog — profiles, sightings, favorites, and recent activity
 3. Feeding stations — stock status and known cats
-4. Community hub — announcements, chat, events, surveys, votes, and donations
+4. Community hub — alerts, chat, events, surveys, votes, and donations
 
 The interface artwork is rendered deterministically from `source/preview.html` using
 the application's default app icon, Campus Field Guide colors, and shipped UI

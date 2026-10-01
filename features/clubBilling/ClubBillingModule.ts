@@ -10,7 +10,11 @@ import {
   roleAccessRequirement,
   success,
 } from '../../core/domain';
-import { BillingRedirect, ClubBillingPort } from '../../core/ports';
+import {
+  BillingRedirect,
+  ClubBillingPort,
+  ClubBillingUnavailableError,
+} from '../../core/ports';
 
 const manageDenied = (actor: User | undefined): Outcome<never> | undefined => {
   if (!actor) return failure('unauthenticated', 'Sign in to manage club billing');
@@ -75,8 +79,13 @@ export class ClubBillingModule {
     if (denied) return denied;
     try {
       return success(await this.port.setCollectionMethod(method, returnUrl));
-    } catch {
-      return failure('dependency_failure', 'Could not update the payment method');
+    } catch (error) {
+      return failure(
+        'dependency_failure',
+        error instanceof ClubBillingUnavailableError
+          ? error.message
+          : 'Could not update the payment method',
+      );
     }
   }
 
@@ -114,8 +123,13 @@ export class ClubBillingModule {
     if (denied) return denied;
     try {
       return success(await action());
-    } catch {
-      return failure('dependency_failure', 'Could not open secure billing');
+    } catch (error) {
+      return failure(
+        'dependency_failure',
+        error instanceof ClubBillingUnavailableError
+          ? error.message
+          : 'Could not open secure billing',
+      );
     }
   }
 

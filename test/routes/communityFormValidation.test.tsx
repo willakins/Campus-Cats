@@ -8,12 +8,12 @@ import {
   waitFor,
 } from '@testing-library/react-native';
 
-import CreateAnnouncement from '../../app/(app)/announcements/create-ann';
-import CreateEvent from '../../app/(app)/events/create-event';
-import CreateSurvey from '../../app/(app)/surveys/create-survey';
+import CreateAlert from '../../app/(app)/community/alerts/new';
+import CreateEvent from '../../app/(app)/community/events/new';
+import CreateSurvey from '../../app/(app)/community/surveys/new';
 import { AppThemeProvider } from '../../theme';
 
-const mockCreateAnnouncement = jest.fn();
+const mockCreateAlert = jest.fn();
 const mockCreateEvent = jest.fn();
 const mockCreateSurvey = jest.fn();
 const mockScrollTo = jest.fn();
@@ -22,8 +22,8 @@ jest.mock('expo-router', () => ({
   useRouter: () => ({ back: jest.fn(), replace: jest.fn() }),
 }));
 jest.mock('@expo/vector-icons', () => ({ Ionicons: () => null }));
-jest.mock('../../components/design', () => {
-  const actual = jest.requireActual('../../components/design');
+jest.mock('../../presentation/ui', () => {
+  const actual = jest.requireActual('../../presentation/ui');
   const ReactRuntime = require('react');
   const { View: NativeView } = require('react-native');
   return {
@@ -52,8 +52,8 @@ jest.mock('../../components/design', () => {
 });
 jest.mock('../../composition/appModules', () => ({
   appModules: {
-    announcements: {
-      create: (...args: unknown[]) => mockCreateAnnouncement(...args),
+    alerts: {
+      create: (...args: unknown[]) => mockCreateAlert(...args),
     },
     events: { create: (...args: unknown[]) => mockCreateEvent(...args) },
     surveys: { create: (...args: unknown[]) => mockCreateSurvey(...args) },
@@ -63,12 +63,12 @@ jest.mock('../../composition/appModules', () => ({
     },
   },
 }));
-jest.mock('../../providers', () => ({
+jest.mock('../../presentation/providers', () => ({
   useAuth: () => ({
     user: { id: 'officer-1', email: 'officer@gatech.edu', role: 1 },
   }),
 }));
-jest.mock('../../providers/AuthProvider', () => ({
+jest.mock('../../presentation/providers/AuthProvider', () => ({
   useAuth: () => ({
     user: { id: 'officer-1', email: 'officer@gatech.edu', role: 1 },
   }),
@@ -86,7 +86,7 @@ const layout = (y: number) => ({
 describe('community create form validation', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    mockCreateAnnouncement.mockResolvedValue({
+    mockCreateAlert.mockResolvedValue({
       ok: true,
       value: {},
       warnings: [],
@@ -164,7 +164,7 @@ describe('community create form validation', () => {
         }),
       ),
     );
-    expect(mockCreateAnnouncement).not.toHaveBeenCalled();
+    expect(mockCreateAlert).not.toHaveBeenCalled();
   });
 
   it('optionally announces a newly created survey', async () => {
@@ -176,21 +176,21 @@ describe('community create form validation', () => {
     const user = userEvent.setup();
     await renderRoute(<CreateSurvey />);
 
-    const announcementOption = screen.getByRole('checkbox', {
-      name: 'Create an announcement for this survey',
+    const alertOption = screen.getByRole('checkbox', {
+      name: 'Create an alert for this survey',
     });
-    expect(announcementOption.props.accessibilityState).toEqual({
+    expect(alertOption.props.accessibilityState).toEqual({
       checked: false,
     });
 
-    await user.press(announcementOption);
+    await user.press(alertOption);
     await user.press(screen.getByRole('button', { name: 'Free response' }));
     await user.type(screen.getByLabelText('Title'), 'Volunteer feedback');
     await user.type(screen.getByLabelText('Question'), 'What should we know?');
     await user.press(screen.getByRole('button', { name: 'Publish Survey' }));
 
     await waitFor(() =>
-      expect(mockCreateAnnouncement).toHaveBeenCalledWith(
+      expect(mockCreateAlert).toHaveBeenCalledWith(
         expect.objectContaining({ id: 'officer-1' }),
         {
           title: 'Volunteer feedback',
@@ -202,34 +202,34 @@ describe('community create form validation', () => {
     );
   });
 
-  it('marks every missing announcement field, scrolls to the first, and clears corrections', async () => {
+  it('marks every missing alert field, scrolls to the first, and clears corrections', async () => {
     const user = userEvent.setup();
-    await renderRoute(<CreateAnnouncement />);
+    await renderRoute(<CreateAlert />);
     await fireEvent(
       screen.getByTestId('form-screen-content'),
       'layout',
       layout(100),
     );
     await fireEvent(
-      screen.getByTestId('announcement-section-basics'),
+      screen.getByTestId('alert-section-basics'),
       'layout',
       layout(200),
     );
     await fireEvent(
-      screen.getByTestId('announcement-field-title'),
+      screen.getByTestId('alert-field-title'),
       'layout',
       layout(30),
     );
 
     await user.press(
-      screen.getByRole('button', { name: 'Create Announcement' }),
+      screen.getByRole('button', { name: 'Create Alert' }),
     );
 
     expect(
-      await screen.findByText('Announcement title is required.'),
+      await screen.findByText('Alert title is required.'),
     ).toBeOnTheScreen();
     expect(
-      screen.getByText('Announcement description is required.'),
+      screen.getByText('Alert description is required.'),
     ).toBeOnTheScreen();
     expect(screen.getByLabelText('Title')).toHaveStyle({
       borderColor: '#B23A3A',
@@ -240,12 +240,12 @@ describe('community create form validation', () => {
       }),
     ).toBeOnTheScreen();
     expect(mockScrollTo).toHaveBeenLastCalledWith({ y: 318, animated: true });
-    expect(mockCreateAnnouncement).not.toHaveBeenCalled();
+    expect(mockCreateAlert).not.toHaveBeenCalled();
 
     await fireEvent.changeText(screen.getByLabelText('Title'), 'Volunteer day');
     await waitFor(() =>
       expect(
-        screen.queryByText('Announcement title is required.'),
+        screen.queryByText('Alert title is required.'),
       ).not.toBeOnTheScreen(),
     );
   });
@@ -277,9 +277,10 @@ describe('community create form validation', () => {
     expect(screen.getByText('An event picture is required.')).toBeOnTheScreen();
     expect(screen.getByText('Event details are required.')).toBeOnTheScreen();
     expect(screen.getByText('Event location is required.')).toBeOnTheScreen();
-    expect(screen.getByLabelText('Photos field')).toHaveStyle({
+    expect(screen.getByRole('button', { name: 'Add photos' })).toHaveStyle({
       borderColor: '#B23A3A',
       borderWidth: 2,
+      borderRadius: 999,
     });
     expect(
       screen.getByRole('alert', {

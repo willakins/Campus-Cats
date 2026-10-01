@@ -4,7 +4,7 @@ import {
   InaturalistAccountLinkStatus,
 } from '../domain/inaturalist';
 
-export interface AnnouncementNotification {
+export interface AlertNotification {
   readonly title: string;
   readonly body: string;
 }
@@ -15,7 +15,7 @@ export interface WhitelistCredentials {
 }
 
 export interface ApplicationEffects {
-  notifyAnnouncement(notification: AnnouncementNotification): Promise<void>;
+  notifyAlert(notification: AlertNotification): Promise<void>;
   provisionWhitelistUser(credentials: WhitelistCredentials): Promise<string>;
   emailWhitelistCredentials(credentials: WhitelistCredentials): Promise<void>;
   removeProvisionedUser(userId: string): Promise<void>;

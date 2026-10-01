@@ -2,8 +2,8 @@ import React from 'react';
 
 import { render, screen, userEvent, waitFor } from '@testing-library/react-native';
 
-import CreateCommunityVote from '../../app/(app)/votes/create-vote';
-import ViewCommunityVote from '../../app/(app)/votes/view-vote';
+import CreateCommunityVote from '../../app/(app)/community/votes/new';
+import ViewCommunityVote from '../../app/(app)/community/votes/[id]';
 import {
   CommunityVote,
   Role,
@@ -16,7 +16,7 @@ const mockBack = jest.fn();
 const mockReplace = jest.fn();
 const mockPush = jest.fn();
 const mockCreate = jest.fn();
-const mockCreateAnnouncement = jest.fn();
+const mockCreateAlert = jest.fn();
 const mockGet = jest.fn();
 const mockHasNomination = jest.fn();
 const mockHasBallot = jest.fn();
@@ -38,8 +38,8 @@ jest.mock('expo-router', () => {
 
 jest.mock('../../composition/appModules', () => ({
   appModules: {
-    announcements: {
-      create: (...args: unknown[]) => mockCreateAnnouncement(...args),
+    alerts: {
+      create: (...args: unknown[]) => mockCreateAlert(...args),
     },
     communityVoting: {
       create: (...args: unknown[]) => mockCreate(...args),
@@ -58,7 +58,7 @@ jest.mock('../../composition/appModules', () => ({
   },
 }));
 
-jest.mock('../../providers', () => ({
+jest.mock('../../presentation/providers', () => ({
   useAuth: () => ({
     user: { id: 'actor-1', email: 'actor@gatech.edu', role: mockRole },
   }),
@@ -126,7 +126,7 @@ describe('community voting routes', () => {
     mockHasBallot.mockResolvedValue({ ok: true, value: false, warnings: [] });
     mockNominate.mockResolvedValue({ ok: true, value: {}, warnings: [] });
     mockVote.mockResolvedValue({ ok: true, value: undefined, warnings: [] });
-    mockCreateAnnouncement.mockResolvedValue({
+    mockCreateAlert.mockResolvedValue({
       ok: true,
       value: {},
       warnings: [],
@@ -143,14 +143,14 @@ describe('community voting routes', () => {
     const user = userEvent.setup();
     await renderCreate();
 
-    const announcementOption = screen.getByRole('checkbox', {
-      name: 'Create an announcement for this vote',
+    const alertOption = screen.getByRole('checkbox', {
+      name: 'Create an alert for this vote',
     });
-    expect(announcementOption.props.accessibilityState).toEqual({
+    expect(alertOption.props.accessibilityState).toEqual({
       checked: false,
     });
 
-    await user.press(announcementOption);
+    await user.press(alertOption);
     await user.press(
       screen.getByRole('button', { name: 'Officers only' }),
     );
@@ -166,7 +166,7 @@ describe('community voting routes', () => {
       ),
     );
     await waitFor(() =>
-      expect(mockCreateAnnouncement).toHaveBeenCalledWith(
+      expect(mockCreateAlert).toHaveBeenCalledWith(
         expect.objectContaining({ id: 'actor-1' }),
         {
           title: 'Choose our new logo',
@@ -210,10 +210,10 @@ describe('community voting routes', () => {
       ),
     );
     expect(mockReplace).toHaveBeenCalledWith({
-      pathname: '/votes/view-vote',
+      pathname: '/community/votes/[id]',
       params: { id: 'election-1' },
     });
-    expect(mockCreateAnnouncement).not.toHaveBeenCalled();
+    expect(mockCreateAlert).not.toHaveBeenCalled();
     },
   );
 
@@ -273,7 +273,7 @@ describe('community voting routes', () => {
       screen.getByRole('button', { name: "View Alex's profile" }),
     );
     expect(mockPush).toHaveBeenCalledWith({
-      pathname: '/profile/view-profile',
+      pathname: '/profiles/[id]',
       params: { id: 'candidate-1' },
     });
     await user.press(await screen.findByRole('button', { name: 'Choose Alex' }));

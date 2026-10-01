@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import { Redirect, useLocalSearchParams, useRouter } from 'expo-router';
 
-import { AuthScaffold } from '@/components/auth';
-import { AppText, Button, FeedbackBanner, StatusPill } from '@/components/design';
-import { useUniversitySelection } from '@/providers';
+import { AuthScaffold } from '@/presentation/auth';
+import { AppText, Button, FeedbackBanner, StatusPill } from '@/presentation/ui';
+import { useUniversitySelection } from '@/presentation/providers';
 
 const ClubSetupPendingScreen = () => {
   const router = useRouter();

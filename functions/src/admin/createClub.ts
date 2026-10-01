@@ -3,7 +3,8 @@ import { getApps, initializeApp } from 'firebase-admin/app';
 import { getAuth } from 'firebase-admin/auth';
 import { getFirestore } from 'firebase-admin/firestore';
 
-import { ClubProvisioningService } from '../clubProvisioning';
+import { ClubProvisioningService } from '../onboarding/clubProvisioning';
+import { PLATFORM_INFO } from '../platformInfo';
 
 interface Options {
   readonly name: string;
@@ -38,7 +39,7 @@ async function main(): Promise<void> {
           'Set your password using the secure link below, then sign in on the web to choose monthly invoices or automatic payments.',
           link,
           '',
-          'Questions? Contact willakins23@gmail.com.',
+          `Questions? Contact ${PLATFORM_INFO.supportEmail}.`,
         ].join('\n\n'),
       });
     },

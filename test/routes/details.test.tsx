@@ -4,8 +4,8 @@ import { render, screen, userEvent, waitFor } from '@testing-library/react-nativ
 
 import ViewCatalogEntry, {
   sightingsForCatalogEntry,
-} from '../../app/(app)/catalog/view-entry';
-import ViewStation from '../../app/(app)/stations/view-station';
+} from '../../presentation/screens/catalog/CatalogDetailsScreen';
+import ViewStation from '../../app/(app)/stations/[id]';
 import {
   CatalogRecord,
   Role,
@@ -76,15 +76,15 @@ jest.mock('../../composition/appModules', () => ({
   },
 }));
 
-jest.mock('../../providers', () => ({
+jest.mock('../../presentation/providers', () => ({
   useAuth: () => ({ currentUser: mockAuthUser, user: mockAuthUser }),
 }));
 
-jest.mock('../../components/entries/CatalogEntryElement', () => {
+jest.mock('../../presentation/screens/catalog/components/CatalogDetailsContent', () => {
   const mockReact = require('react');
   const { Pressable: MockPressable, Text: MockText, View: MockView } = require('react-native');
   return {
-    CatalogEntryElement: ({
+    CatalogDetailsContent: ({
       entry,
       heartCount,
       sightings,
@@ -142,11 +142,11 @@ jest.mock('../../components/entries/CatalogEntryElement', () => {
   };
 });
 
-jest.mock('../../components/entries/StationEntry', () => {
+jest.mock('../../presentation/screens/stations/components/StationDetailsContent', () => {
   const mockReact = require('react');
   const { Pressable: MockPressable, Text: MockText, View: MockView } = require('react-native');
   return {
-    StationEntry: ({
+    StationDetailsContent: ({
       station,
       contributorProfile,
       onContributorPress,
@@ -266,13 +266,15 @@ describe('catalog detail route', () => {
     await renderThemed(<ViewCatalogEntry />);
 
     expect(await screen.findByText('Goldie')).toBeOnTheScreen();
+    expect(screen.getByTestId('form-action-bar-glass')).toBeOnTheScreen();
+    expect(screen.getByTestId('screen-floating-footer')).toBeOnTheScreen();
     await user.press(screen.getByRole('button', { name: 'Edit catalog entry' }));
     expect(mockCatalogGet).toHaveBeenCalledWith(
       expect.objectContaining({ id: 'admin-1' }),
       'catalog-1',
     );
     expect(mockPush).toHaveBeenCalledWith({
-      pathname: '/catalog/edit-entry',
+      pathname: '/catalog/[id]/edit',
       params: { id: 'catalog-1' },
     });
     expect(mockCommentsList).toHaveBeenCalledWith(
@@ -297,6 +299,7 @@ describe('catalog detail route', () => {
 
     expect(await screen.findByText('Goldie')).toBeOnTheScreen();
     expect(screen.queryByRole('button', { name: 'Edit catalog entry' })).not.toBeOnTheScreen();
+    expect(screen.queryByTestId('form-action-bar')).not.toBeOnTheScreen();
   });
 
   it('loads heart counts and persists the account favorite', async () => {
@@ -322,7 +325,7 @@ describe('catalog detail route', () => {
 
     expect(mockProfileGetOrSync).toHaveBeenCalledWith('admin-1');
     expect(mockPush).toHaveBeenCalledWith({
-      pathname: '/profile/view-profile',
+      pathname: '/profiles/[id]',
       params: { id: 'admin-1' },
     });
   });
@@ -341,7 +344,7 @@ describe('catalog detail route', () => {
     }));
 
     expect(mockPush).toHaveBeenCalledWith({
-      pathname: '/sighting/view-sighting',
+      pathname: '/map/sightings/[id]',
       params: { id: 'sighting-1' },
     });
   });
@@ -436,6 +439,11 @@ describe('station detail route', () => {
     await renderThemed(<ViewStation />);
 
     expect(await screen.findByText('Library station')).toBeOnTheScreen();
+    expect(screen.getByTestId('form-action-bar-glass')).toBeOnTheScreen();
+    expect(screen.getByTestId('screen-floating-footer')).toHaveStyle({
+      position: 'absolute',
+      bottom: 0,
+    });
     await user.press(screen.getByRole('button', { name: 'Mark station restocked' }));
     expect(screen.getByRole('button', { name: 'Mark station restocked' })).toBeDisabled();
     expect(screen.getByText('Restocking…')).toBeOnTheScreen();
@@ -447,7 +455,7 @@ describe('station detail route', () => {
 
     await user.press(screen.getByRole('button', { name: 'Edit station' }));
     expect(mockPush).toHaveBeenCalledWith({
-      pathname: '/stations/edit-station',
+      pathname: '/stations/[id]/edit',
       params: { id: 'station-1' },
     });
     expect(mockCommentsList).toHaveBeenCalledWith(
@@ -474,7 +482,7 @@ describe('station detail route', () => {
 
     expect(mockProfileGetOrSync).toHaveBeenCalledWith('admin-1');
     expect(mockPush).toHaveBeenCalledWith({
-      pathname: '/profile/view-profile',
+      pathname: '/profiles/[id]',
       params: { id: 'admin-1' },
     });
   });

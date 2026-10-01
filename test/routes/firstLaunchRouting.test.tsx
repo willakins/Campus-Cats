@@ -18,7 +18,7 @@ jest.mock('expo-splash-screen', () => ({
   hide: jest.fn(),
 }));
 
-jest.mock('../../providers', () => ({
+jest.mock('../../presentation/providers', () => ({
   useAuth: () => ({ currentUser: undefined, loading: false }),
   useClub: () => ({ access: undefined, loading: false }),
   useUniversitySelection: () => ({
