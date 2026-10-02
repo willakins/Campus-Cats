@@ -29,47 +29,56 @@ community, and operational tools.
 
 ## See Campus Cats in action
 
-Select any preview to open the full-size App Store image.
+Select any preview to open the full-size image. These are illustrative marketing
+previews with fictional community data, rendered from the current UI patterns.
 
 <table>
   <tr>
     <td align="center" width="50%">
-      <a href="assets/images/app_previews/01-live-sighting-map.png">
-        <img src="assets/images/app_previews/01-live-sighting-map.png" alt="Campus Cats live sighting map preview" width="320" />
-      </a>
-      <br />
-      <strong>Live sighting map</strong>
-      <br />
-      Pin a cat sighting with its photo and condition so nearby volunteers can respond.
+      <a href="assets/images/app_previews/01-live-sighting-map.png"><img src="assets/images/app_previews/01-live-sighting-map.png" alt="Campus Cats sightings preview" width="320" /></a>
+      <br /><strong>Sightings</strong>
+      <br />Report sightings with photos, locations, and condition.
     </td>
     <td align="center" width="50%">
-      <a href="assets/images/app_previews/02-cat-catalog.png">
-        <img src="assets/images/app_previews/02-cat-catalog.png" alt="Campus Cats cat catalog preview" width="320" />
-      </a>
-      <br />
-      <strong>Cat-alog</strong>
-      <br />
-      Learn each cat's name, markings, history, favorites, and recent sightings.
+      <a href="assets/images/app_previews/02-community-hub.png"><img src="assets/images/app_previews/02-community-hub.png" alt="Campus Cats community preview" width="320" /></a>
+      <br /><strong>Community</strong>
+      <br />Bring alerts, chat, events, surveys, votes, and donations together.
     </td>
   </tr>
   <tr>
     <td align="center" width="50%">
-      <a href="assets/images/app_previews/03-feeding-stations.png">
-        <img src="assets/images/app_previews/03-feeding-stations.png" alt="Campus Cats feeding station operations preview" width="320" />
-      </a>
-      <br />
-      <strong>Feeding stations</strong>
-      <br />
-      Track what is stocked, what needs food, and which cats use each location.
+      <a href="assets/images/app_previews/03-presidential-election.png"><img src="assets/images/app_previews/03-presidential-election.png" alt="Campus Cats club presidential election preview" width="320" /></a>
+      <br /><strong>Club presidential election</strong>
+      <br />Meet nominees and cast a private ballot for the next club president.
     </td>
     <td align="center" width="50%">
-      <a href="assets/images/app_previews/04-community-hub.png">
-        <img src="assets/images/app_previews/04-community-hub.png" alt="Campus Cats community hub preview" width="320" />
-      </a>
-      <br />
-      <strong>Community hub</strong>
-      <br />
-      Bring alerts, chat, events, surveys, votes, and donations together.
+      <a href="assets/images/app_previews/04-feeding-stations.png"><img src="assets/images/app_previews/04-feeding-stations.png" alt="Campus Cats feeding stations preview" width="320" /></a>
+      <br /><strong>Feeding stations</strong>
+      <br />See stock status and the cats known at each station.
+    </td>
+  </tr>
+  <tr>
+    <td align="center" width="50%">
+      <a href="assets/images/app_previews/05-cat-catalog.png"><img src="assets/images/app_previews/05-cat-catalog.png" alt="Campus Cats cat catalog preview" width="320" /></a>
+      <br /><strong>Cat catalog</strong>
+      <br />Meet campus cats and explore their profiles, favorites, and recent activity.
+    </td>
+    <td align="center" width="50%">
+      <a href="assets/images/app_previews/06-cat-sighting-history.png"><img src="assets/images/app_previews/06-cat-sighting-history.png" alt="Campus Cats cat profile & sighting history preview" width="320" /></a>
+      <br /><strong>Cat profile & sighting history</strong>
+      <br />Scrub through recorded sightings to explore a cat’s movement over time.
+    </td>
+  </tr>
+  <tr>
+    <td align="center" width="50%">
+      <a href="assets/images/app_previews/07-member-profile.png"><img src="assets/images/app_previews/07-member-profile.png" alt="Campus Cats member profiles preview" width="320" /></a>
+      <br /><strong>Member profiles</strong>
+      <br />Celebrate achievements, choose a title, and share your contributions.
+    </td>
+    <td align="center" width="50%">
+      <a href="assets/images/app_previews/08-donation-setup.png"><img src="assets/images/app_previews/08-donation-setup.png" alt="Campus Cats donation page preview" width="320" /></a>
+      <br /><strong>Donation page</strong>
+      <br />Show your club’s cause and give members a clear path to donate.
     </td>
   </tr>
 </table>

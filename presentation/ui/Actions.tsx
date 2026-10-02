@@ -4,6 +4,7 @@ import {
   Pressable,
   PressableProps,
   StyleProp,
+  StyleSheet,
   TextStyle,
   ViewStyle,
 } from 'react-native';
@@ -13,6 +14,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useAppTheme, useReducedMotion } from '@/theme';
 import { focusRingStyle } from './focus';
 import { AppText } from './Typography';
+import { GlassSurface } from './GlassSurface';
 
 type IconName = React.ComponentProps<typeof Ionicons>['name'];
 type ButtonVariant = 'primary' | 'secondary' | 'tertiary' | 'danger';
@@ -181,15 +183,24 @@ export const IconButton = ({
           borderRadius: theme.radii.pill,
           alignItems: 'center',
           justifyContent: 'center',
-          backgroundColor: palette[0],
+          backgroundColor: variant === 'surface' ? 'transparent' : palette[0],
           borderWidth: 1,
-          borderColor: palette[2],
+          borderColor: variant === 'surface' ? theme.colors.glassBorder : palette[2],
           opacity: disabled ? 0.55 : pressed ? 0.8 : 1,
         },
         focusRingStyle(focused, theme.colors.info),
         style,
       ]}
     >
+      {variant === 'surface' ? (
+        <GlassSurface
+          accessible={false}
+          style={[
+            StyleSheet.absoluteFill,
+            { borderRadius: theme.radii.pill, pointerEvents: 'none' },
+          ]}
+        />
+      ) : null}
       {symbol ? (
         <AppText style={{ color: palette[1], fontSize: 20, lineHeight: 24 }}>
           {symbol}
@@ -216,7 +227,8 @@ export const FloatingActionButton = ({
     <IconButton
       {...props}
       icon={icon}
-      variant="primary"
+      variant="surface"
+      iconColor={theme.colors.primary}
       style={[
         theme.elevation.floating,
         {

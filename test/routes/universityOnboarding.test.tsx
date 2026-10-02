@@ -220,14 +220,24 @@ describe('university onboarding routes', () => {
     ).toBeDisabled();
     expect(screen.getByLabelText('Light theme preview')).toBeOnTheScreen();
     expect(screen.getByLabelText('Dark theme preview')).toBeOnTheScreen();
+    expect(screen.queryByLabelText('Campus Cats logo')).not.toBeOnTheScreen();
+    expect(
+      screen.queryByRole('button', { name: 'Change university' }),
+    ).not.toBeOnTheScreen();
+    await fireEvent.press(
+      screen.getByRole('button', { name: 'Primary color' }),
+    );
     await fireEvent.changeText(
-      screen.getByLabelText('Primary color'),
+      screen.getByLabelText('Custom primary color'),
       '#012169',
     );
+    await fireEvent.press(screen.getByRole('button', { name: 'Done' }));
+    await fireEvent.press(screen.getByRole('button', { name: 'Accent color' }));
     await fireEvent.changeText(
-      screen.getByLabelText('Accent color'),
+      screen.getByLabelText('Custom accent color'),
       '#F2A900',
     );
+    await fireEvent.press(screen.getByRole('button', { name: 'Done' }));
     await fireEvent.changeText(
       screen.getByLabelText('Your school email'),
       'president@emory.edu',

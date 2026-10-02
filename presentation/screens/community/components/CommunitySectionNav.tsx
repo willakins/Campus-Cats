@@ -1,3 +1,4 @@
+import { cardListViewportStyle, cardListContentStyle } from '@/theme';
 import React from 'react';
 import { Pressable, ScrollView, View } from 'react-native';
 
@@ -81,9 +82,11 @@ export const CommunitySectionGrid = ({
   return (
     <ScrollView
       accessibilityLabel="Community destinations"
+      removeClippedSubviews={false}
       showsVerticalScrollIndicator={false}
-      style={{ flex: 1 }}
+      style={[{ flex: 1 }, cardListViewportStyle(theme)]}
       contentContainerStyle={{
+        ...cardListContentStyle(theme),
         flexDirection: 'row',
         flexWrap: 'wrap',
         justifyContent: 'center',

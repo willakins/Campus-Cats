@@ -26,6 +26,15 @@ import {
 const mockTakePhoto = jest.fn();
 const mockPickFromLibrary = jest.fn();
 const mockManipulate = jest.fn();
+const mockLocationPermission = jest.fn();
+const mockCurrentPosition = jest.fn();
+
+jest.mock('expo-location', () => ({
+  Accuracy: { Balanced: 3 },
+  requestForegroundPermissionsAsync: (...args: unknown[]) =>
+    mockLocationPermission(...args),
+  getCurrentPositionAsync: (...args: unknown[]) => mockCurrentPosition(...args),
+}));
 
 jest.mock('@expo/vector-icons', () => ({ Ionicons: () => null }));
 jest.mock('expo-image-manipulator', () => ({
@@ -166,9 +175,7 @@ describe('form controls', () => {
     );
     expect(onTrailingPress).toHaveBeenCalledTimes(1);
     expect(onCheckboxChange).not.toHaveBeenCalled();
-    await user.press(
-      screen.getByRole('checkbox', { name: 'Create an alert' }),
-    );
+    await user.press(screen.getByRole('checkbox', { name: 'Create an alert' }));
     await user.press(
       screen.getByRole('radio', { name: 'External donation website' }),
     );
@@ -249,6 +256,93 @@ describe('form controls', () => {
         screen.queryByLabelText('Time of sighting options'),
       ).not.toBeOnTheScreen();
     });
+  });
+
+  it('chooses the current location and recenters the map while retaining manual selection', async () => {
+    const onChange = jest.fn();
+    const coordinates = { latitude: 33.772, longitude: -84.394 };
+    mockLocationPermission.mockResolvedValue({ granted: true });
+    mockCurrentPosition.mockResolvedValue({ coords: coordinates });
+    await renderThemed(
+      <LocationField
+        label="Sighting location"
+        allowCurrentLocation
+        value={{ latitude: 0, longitude: 0 }}
+        onChange={onChange}
+      />,
+    );
+    await fireEvent.press(
+      screen.getByRole('button', { name: 'Choose current location' }),
+    );
+    await waitFor(() => expect(onChange).toHaveBeenCalledWith(coordinates));
+    expect(mockLocationPermission).toHaveBeenCalledTimes(1);
+    expect(mockCurrentPosition).toHaveBeenCalledWith({ accuracy: 3 });
+    const map = screen.getByLabelText('Sighting location');
+    expect(map).toHaveProp(
+      'initialCamera',
+      expect.objectContaining({ center: coordinates }),
+    );
+    await fireEvent(map, 'regionChangeComplete', {
+      latitude: 33.773,
+      longitude: -84.395,
+    });
+    expect(onChange).toHaveBeenLastCalledWith({
+      latitude: 33.773,
+      longitude: -84.395,
+    });
+  });
+
+  it('keeps the selected location when permission is denied', async () => {
+    const onChange = jest.fn();
+    mockLocationPermission.mockResolvedValue({ granted: false });
+    await renderThemed(
+      <LocationField
+        label="Sighting location"
+        allowCurrentLocation
+        value={{ latitude: 33.772, longitude: -84.394 }}
+        onChange={onChange}
+      />,
+    );
+    await fireEvent.press(
+      screen.getByRole('button', { name: 'Choose current location' }),
+    );
+    expect(
+      await screen.findByText(/Location access is disabled/),
+    ).toBeOnTheScreen();
+    expect(mockCurrentPosition).not.toHaveBeenCalled();
+    expect(onChange).not.toHaveBeenCalled();
+    expect(
+      screen.getByRole('button', { name: 'Choose current location' }),
+    ).toBeEnabled();
+  });
+
+  it('shows a location lookup error and permits a retry', async () => {
+    const onChange = jest.fn();
+    mockLocationPermission.mockResolvedValue({ granted: true });
+    mockCurrentPosition.mockRejectedValueOnce(
+      new Error('Location unavailable'),
+    );
+    mockCurrentPosition.mockResolvedValueOnce({
+      coords: { latitude: 33.772, longitude: -84.394 },
+    });
+    await renderThemed(
+      <LocationField
+        label="Sighting location"
+        allowCurrentLocation
+        value={{ latitude: 0, longitude: 0 }}
+        onChange={onChange}
+      />,
+    );
+    await fireEvent.press(
+      screen.getByRole('button', { name: 'Choose current location' }),
+    );
+    expect(await screen.findByText('Location unavailable')).toBeOnTheScreen();
+    expect(onChange).not.toHaveBeenCalled();
+    await fireEvent.press(
+      screen.getByRole('button', { name: 'Choose current location' }),
+    );
+    await waitFor(() => expect(onChange).toHaveBeenCalledTimes(1));
+    expect(screen.queryByText('Location unavailable')).not.toBeOnTheScreen();
   });
 
   it('selects a named location by moving the map beneath a fixed pin', async () => {
@@ -480,16 +574,10 @@ describe('form controls', () => {
       ),
     ).toBe(true);
     expect(
-      handlers?.onMoveShouldSetPanResponder?.(
-        moveEvent as never,
-        {} as never,
-      ),
+      handlers?.onMoveShouldSetPanResponder?.(moveEvent as never, {} as never),
     ).toBe(true);
     expect(
-      handlers?.onShouldBlockNativeResponder?.(
-        moveEvent as never,
-        {} as never,
-      ),
+      handlers?.onShouldBlockNativeResponder?.(moveEvent as never, {} as never),
     ).toBe(true);
     expect(
       handlers?.onPanResponderTerminationRequest?.(

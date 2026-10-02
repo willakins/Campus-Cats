@@ -230,6 +230,7 @@ const SightingForm: React.FC<SightingFormProps> = ({
         >
           <LocationField
             label="Sighting location"
+            allowCurrentLocation={isCreate}
             value={formData.location}
             error={errors.location}
             onChange={(location) => handleChange('location', location)}

@@ -1,7 +1,6 @@
 import React, { useCallback, useState } from 'react';
 import { Alert, View } from 'react-native';
 
-import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 
 import { roleLabel } from '@/presentation/patterns/roles/rolePresentation';
@@ -9,20 +8,19 @@ import {
   AppHeader,
   AppText,
   Button,
-  Card,
   DetailSkeleton,
   EmptyState,
   ErrorState,
   FeedbackBanner,
   FormActionBar,
-  FormSection,
   IconButton,
   Screen,
   StatusPill,
 } from '@/presentation/ui';
 import { ProfileAvatar } from '@/presentation/patterns/identity';
 import { ProfileSightingListItem } from '@/presentation/screens/profiles/components';
-import { ProgressiveImage } from '@/presentation/ui/ProgressiveImage';
+import { ProfileAchievementRow, ProfileCard } from './components/ProfileCards';
+import { ProfileFavoriteCatCard } from './components/ProfileFavoriteCatCard';
 import { appModules } from '@/composition/appModules';
 import {
   ACHIEVEMENTS,
@@ -180,7 +178,7 @@ const ViewProfileScreen = () => {
         <DetailSkeleton label="Loading member profile" />
       ) : profile ? (
         <View style={{ gap: theme.spacing.lg }}>
-          <Card accent={theme.colors.violet}>
+          <ProfileCard>
             <View
               style={{
                 alignItems: 'center',
@@ -191,7 +189,7 @@ const ViewProfileScreen = () => {
               <ProfileAvatar
                 displayName={profile.displayName}
                 photoUrl={profile.profilePhotoUrl}
-                size={128}
+                size={80}
               />
               {selectedTitle ? (
                 <StatusPill
@@ -219,75 +217,64 @@ const ViewProfileScreen = () => {
                 style={{ alignSelf: 'center' }}
               />
               {profile.bio ? (
-                <AppText style={{ textAlign: 'center' }}>{profile.bio}</AppText>
+                <AppText color="muted" style={{ textAlign: 'center' }}>
+                  {profile.bio}
+                </AppText>
               ) : null}
             </View>
-          </Card>
+          </ProfileCard>
 
-          <FormSection title="Favorite cat">
-            {favorite ? (
-              <Card
-                accessibilityLabel={`View favorite cat ${favorite.cat.name}`}
-                onPress={() =>
-                  router.push({
-                    pathname: '/catalog/[id]',
-                    params: { id: favorite.id },
-                  })
-                }
-              >
-                <View
-                  style={{
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                    gap: theme.spacing.md,
-                  }}
-                >
-                  {favoritePhoto ? (
-                    <ProgressiveImage
-                      accessibilityLabel={`${favorite.cat.name} profile photo`}
-                      uri={favoritePhoto.url}
-                      resizeMode="cover"
-                      style={{
-                        width: 80,
-                        height: 80,
-                        borderRadius: theme.radii.field,
-                      }}
-                    />
-                  ) : (
-                    <View
-                      style={{
-                        width: 80,
-                        height: 80,
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        borderRadius: theme.radii.field,
-                        backgroundColor: theme.colors.goldSurface,
-                      }}
-                    >
-                      <Ionicons
-                        name="heart"
-                        size={32}
-                        color={theme.colors.gold}
-                      />
-                    </View>
-                  )}
-                  <View style={{ flex: 1 }}>
-                    <AppText variant="caption" color="primary">
-                      Favorite cat
-                    </AppText>
-                    <AppText variant="cardTitle">{favorite.cat.name}</AppText>
-                    <AppText color="muted" numberOfLines={2}>
-                      {favorite.cat.descShort}
-                    </AppText>
-                  </View>
-                  <Ionicons
-                    name="chevron-forward"
-                    size={20}
-                    color={theme.colors.textMuted}
+          <ProfileCard title="Achievements & titles">
+            <AppText variant="caption" color="muted">
+              {profile.achievementIds.length} of {ACHIEVEMENTS.length}{' '}
+              achievements unlocked
+            </AppText>
+            {isOwnProfile ? (
+              <AppText variant="caption" color="muted">
+                Tap an unlocked achievement to display its title.
+              </AppText>
+            ) : null}
+            <View>
+              {ACHIEVEMENTS.map((achievement) => {
+                const unlocked = profile.achievementIds.includes(
+                  achievement.id,
+                );
+                const selected = profile.selectedTitleId === achievement.id;
+                return (
+                  <ProfileAchievementRow
+                    key={achievement.id}
+                    achievement={achievement}
+                    unlocked={unlocked}
+                    selected={selected}
+                    busy={
+                      titleBusy === achievement.id ||
+                      (selected && titleBusy === '')
+                    }
+                    disabled={titleBusy !== undefined}
+                    onPress={
+                      isOwnProfile && unlocked
+                        ? () => void chooseTitle(selected ? '' : achievement.id)
+                        : undefined
+                    }
                   />
-                </View>
-              </Card>
-            ) : (
+                );
+              })}
+            </View>
+          </ProfileCard>
+
+          {favorite ? (
+            <ProfileFavoriteCatCard
+              entry={favorite}
+              photo={favoritePhoto}
+              onPress={() =>
+                router.push({
+                  pathname: '/catalog/[id]',
+                  params: { id: favorite.id },
+                })
+              }
+            />
+          ) : (
+            <ProfileCard title="Favorite cat">
               <EmptyState
                 title="No favorite cat yet"
                 message={
@@ -302,86 +289,17 @@ const ViewProfileScreen = () => {
                     : undefined
                 }
               />
-            )}
-          </FormSection>
+            </ProfileCard>
+          )}
 
-          <FormSection title="Achievements & titles">
-            <AppText color="muted">
-              {profile.achievementIds.length} of {ACHIEVEMENTS.length}{' '}
-              achievements unlocked
-            </AppText>
-            {ACHIEVEMENTS.map((achievement) => {
-              const unlocked = profile.achievementIds.includes(achievement.id);
-              const selected = profile.selectedTitleId === achievement.id;
-              return (
-                <Card
-                  key={achievement.id}
-                  accent={unlocked ? theme.colors.gold : theme.colors.border}
-                >
-                  <View style={{ gap: theme.spacing.sm }}>
-                    <View
-                      style={{
-                        flexDirection: 'row',
-                        alignItems: 'center',
-                        gap: theme.spacing.sm,
-                      }}
-                    >
-                      <Ionicons
-                        name={unlocked ? 'trophy' : 'lock-closed'}
-                        size={26}
-                        color={
-                          unlocked ? theme.colors.gold : theme.colors.textMuted
-                        }
-                      />
-                      <View style={{ flex: 1 }}>
-                        <AppText variant="cardTitle">
-                          {achievement.name}
-                        </AppText>
-                        <AppText color="muted">
-                          {achievement.description}
-                        </AppText>
-                      </View>
-                      <StatusPill
-                        label={unlocked ? achievement.title : 'Locked'}
-                        tone={
-                          selected
-                            ? 'success'
-                            : unlocked
-                              ? 'primary'
-                              : 'neutral'
-                        }
-                        icon={selected ? 'checkmark-circle' : undefined}
-                      />
-                    </View>
-                    {isOwnProfile && unlocked ? (
-                      <Button
-                        label={
-                          selected
-                            ? 'Remove displayed title'
-                            : `Display “${achievement.title}”`
-                        }
-                        variant={selected ? 'secondary' : 'tertiary'}
-                        size="small"
-                        loading={
-                          titleBusy === achievement.id ||
-                          (selected && titleBusy === '')
-                        }
-                        onPress={() =>
-                          void chooseTitle(selected ? '' : achievement.id)
-                        }
-                      />
-                    ) : null}
-                  </View>
-                </Card>
-              );
-            })}
-          </FormSection>
-
-          <FormSection title={`Previous sightings (${sightings.length})`}>
+          <ProfileCard title={`Previous sightings (${sightings.length})`}>
             {sightings.length ? (
               <>
                 {sightings.slice(0, 3).map((sighting) => (
-                  <ProfileSightingListItem key={sighting.id} sighting={sighting} />
+                  <ProfileSightingListItem
+                    key={sighting.id}
+                    sighting={sighting}
+                  />
                 ))}
                 {sightings.length > 3 ? (
                   <Button
@@ -410,11 +328,11 @@ const ViewProfileScreen = () => {
                 }
               />
             )}
-          </FormSection>
+          </ProfileCard>
 
           {isOwnProfile ? (
-            <FormSection title="Connected accounts">
-              <Card accent={theme.colors.info}>
+            <ProfileCard title="Connected accounts">
+              <View>
                 <View style={{ gap: theme.spacing.sm }}>
                   <AppText variant="cardTitle">iNaturalist</AppText>
                   {!featureFlags.inaturalistAccountLinking ? (
@@ -433,12 +351,14 @@ const ViewProfileScreen = () => {
                     icon="leaf-outline"
                     variant="secondary"
                     onPress={() =>
-                      router.push('/settings/integrations/inaturalist-account' as never)
+                      router.push(
+                        '/settings/integrations/inaturalist-account' as never,
+                      )
                     }
                   />
                 </View>
-              </Card>
-            </FormSection>
+              </View>
+            </ProfileCard>
           ) : null}
         </View>
       ) : (

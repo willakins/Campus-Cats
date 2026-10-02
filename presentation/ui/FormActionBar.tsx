@@ -65,7 +65,7 @@ export const FormActionBar = ({
               borderWidth: StyleSheet.hairlineWidth,
               borderColor: theme.colors.glassSelectionBorder,
               borderRadius: theme.radii.pill,
-              backgroundColor: `${theme.colors.primarySurface}D8`,
+              backgroundColor: `${theme.colors.primarySurface}38`,
               pointerEvents: 'none',
             },
           ]}

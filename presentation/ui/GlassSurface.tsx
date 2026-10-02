@@ -27,6 +27,13 @@ export const GlassSurface = ({
     isGlassEffectAPIAvailable() &&
     isLiquidGlassAvailable();
 
+  // Android has no blur target here; retain enough tint for readable controls.
+  const surfaceOpacity = isCard
+    ? 'A8'
+    : Platform.OS === 'android'
+      ? 'CC'
+      : '58';
+
   return (
     <View
       {...props}
@@ -34,7 +41,7 @@ export const GlassSurface = ({
         {
           overflow: 'hidden',
           borderRadius: isCard ? theme.radii.card : theme.radii.sheet,
-          borderWidth: StyleSheet.hairlineWidth,
+          borderWidth: isCard ? 0 : StyleSheet.hairlineWidth,
           borderColor: theme.colors.glassBorder,
         },
         style,
@@ -52,7 +59,7 @@ export const GlassSurface = ({
         <>
           <BlurView
             blurMethod={Platform.OS === 'android' ? 'none' : undefined}
-            intensity={isCard ? 64 : 80}
+            intensity={isCard ? 64 : 48}
             tint={
               theme.dark
                 ? 'systemUltraThinMaterialDark'
@@ -64,7 +71,7 @@ export const GlassSurface = ({
             style={[
               StyleSheet.absoluteFill,
               {
-                backgroundColor: `${theme.colors.surface}${isCard ? 'A8' : '38'}`,
+                backgroundColor: `${theme.colors.surface}${surfaceOpacity}`,
                 pointerEvents: 'none',
               },
             ]}

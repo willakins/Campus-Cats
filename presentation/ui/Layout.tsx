@@ -21,6 +21,7 @@ import { useAppTheme, useReducedMotion } from '@/theme';
 import { AppLogo } from '../branding';
 import { IconButton } from './Actions';
 import { GlassSurface } from './GlassSurface';
+import { CARD_SURFACE } from '@/theme';
 import { AppText } from './Typography';
 import { focusRingStyle } from './focus';
 import { cardContentStyle, cardSurfaceStyle } from './Surfaces';
@@ -308,9 +309,11 @@ interface CardProps {
   readonly children: React.ReactNode;
   readonly onPress?: () => void;
   readonly accessibilityLabel?: string;
+  /** @deprecated Cards use a neutral surface; communicate status with badges or icons. */
   readonly accent?: string;
   readonly padded?: boolean;
   readonly elevated?: boolean;
+  readonly surface?: 'glass' | 'solid';
   readonly clipsContent?: boolean;
   readonly onLayout?: ViewProps['onLayout'];
   readonly testID?: string;
@@ -331,9 +334,9 @@ export const Card = ({
   children,
   onPress,
   accessibilityLabel,
-  accent,
   padded = true,
   elevated = true,
+  surface = CARD_SURFACE,
   clipsContent = true,
   onLayout,
   testID,
@@ -342,17 +345,19 @@ export const Card = ({
   const theme = useAppTheme();
   const [focused, setFocused] = useState(false);
   const cardStyle: StyleProp<ViewStyle> = [
-    cardSurfaceStyle(theme, { accent, clipsContent, elevated, padded }),
+    cardSurfaceStyle(theme, { clipsContent, elevated, padded, surface }),
     style,
   ];
   const content = (
     <>
-      <GlassSurface
-        variant="card"
-        accessible={false}
-        testID={testID ? `${testID}-glass` : undefined}
-        style={[StyleSheet.absoluteFill, { pointerEvents: 'none' }]}
-      />
+      {surface === 'glass' ? (
+        <GlassSurface
+          variant="card"
+          accessible={false}
+          testID={testID ? `${testID}-glass` : undefined}
+          style={[StyleSheet.absoluteFill, { pointerEvents: 'none' }]}
+        />
+      ) : null}
       {children}
     </>
   );

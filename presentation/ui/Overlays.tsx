@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 
 import { useAppTheme, useReducedMotion } from '@/theme';
+import { GlassSurface } from './GlassSurface';
 
 interface OverlaySurfaceProps {
   readonly visible: boolean;
@@ -107,7 +108,7 @@ export const Dialog = ({
       onClose={onClose}
       dismissible={dismissible}
     >
-      <View
+      <GlassSurface
         style={[
           theme.elevation.floating,
           {
@@ -116,7 +117,7 @@ export const Dialog = ({
             maxHeight,
             overflow: 'hidden',
             borderRadius: theme.radii.sheet,
-            backgroundColor: theme.colors.surface,
+            backgroundColor: 'transparent',
           },
         ]}
       >
@@ -134,7 +135,7 @@ export const Dialog = ({
         >
           {children}
         </ScrollView>
-      </View>
+      </GlassSurface>
     </OverlayRoot>
   );
 };
@@ -158,7 +159,7 @@ export const BottomSheet = ({
       onClose={onClose}
       dismissible={dismissible}
     >
-      <View
+      <GlassSurface
         style={[
           theme.elevation.floating,
           {
@@ -171,13 +172,13 @@ export const BottomSheet = ({
             paddingBottom: theme.spacing.xxl,
             borderTopLeftRadius: theme.radii.sheet,
             borderTopRightRadius: theme.radii.sheet,
-            backgroundColor: theme.colors.surface,
+            backgroundColor: 'transparent',
           },
           contentStyle,
         ]}
       >
         {children}
-      </View>
+      </GlassSurface>
     </OverlayRoot>
   );
 };

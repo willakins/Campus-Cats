@@ -107,13 +107,18 @@ const HomeScreen = () => {
             style={[
               theme.elevation.floating,
               {
-                alignSelf: 'center',
+                alignSelf: 'stretch',
                 padding: theme.spacing.xs,
+                borderRadius: theme.radii.sheet,
+                borderWidth: 1,
+                borderColor: theme.colors.glassBorder,
+                backgroundColor: 'transparent',
               },
             ]}
           >
             <SegmentedControl
               label="Sighting age"
+              variant="segment"
               value={filter}
               options={[
                 { value: '7', label: '7D' },
@@ -122,7 +127,16 @@ const HomeScreen = () => {
                 { value: '365', label: '1Y' },
                 { value: 'all', label: 'All' },
               ]}
-              style={{ justifyContent: 'center' }}
+              style={{
+                justifyContent: 'center',
+                flexWrap: 'nowrap',
+                gap: theme.spacing.xxs,
+              }}
+              optionStyle={{
+                flex: 1,
+                paddingHorizontal: theme.spacing.xxs,
+                borderRadius: theme.radii.card,
+              }}
               onChange={setFilter}
             />
           </GlassSurface>

@@ -162,7 +162,7 @@ describe('sightings map route', () => {
 
     expect(await screen.findByText('2 sightings')).toBeOnTheScreen();
     expect(screen.getByTestId('sighting-age-glass-bar')).toHaveStyle({
-      alignSelf: 'center',
+      alignSelf: 'stretch',
     });
     expect(screen.getByLabelText('Sighting age')).toHaveStyle({
       justifyContent: 'center',

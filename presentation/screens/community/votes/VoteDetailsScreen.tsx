@@ -312,9 +312,9 @@ const ViewCommunityVote = () => {
               {results.options.map((option) => (
                 <Card
                   key={option.id}
-                  accent={
+                  style={
                     leadingVotes > 0 && option.votes === leadingVotes
-                      ? theme.colors.success
+                      ? { borderWidth: 2, borderColor: theme.colors.success }
                       : undefined
                   }
                 >

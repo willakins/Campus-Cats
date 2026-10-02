@@ -22,6 +22,7 @@ import { ProgressiveImage } from '@/presentation/ui/ProgressiveImage';
 interface CatalogListItemMetrics {
   readonly sightingCount?: number;
   readonly heartCount?: number;
+  readonly firstSighting?: Date;
   readonly isFavorite?: boolean;
   readonly selected?: boolean;
   readonly favoriteBusy?: boolean;
@@ -36,6 +37,7 @@ type CatalogListItemProps = CatalogRecord & CatalogListItemMetrics;
 export const CatalogListItem = React.memo(function CatalogListItem({
   sightingCount = 0,
   heartCount = 0,
+  firstSighting,
   isFavorite = false,
   selected,
   favoriteBusy = false,
@@ -132,19 +134,33 @@ export const CatalogListItem = React.memo(function CatalogListItem({
             accessibilityLabel={`${entry.cat.name} catalog metrics`}
             style={{
               marginTop: 'auto',
-              flexDirection: 'row',
-              flexWrap: 'wrap',
-              gap: theme.spacing.sm,
+              gap: theme.spacing.xxs,
             }}
           >
             <Metric
               icon="eye-outline"
               label={`${sightingCount} ${sightingCount === 1 ? 'sighting' : 'sightings'}`}
             />
-            <Metric
-              icon="heart"
-              label={`${heartCount} ${heartCount === 1 ? 'heart' : 'hearts'}`}
-            />
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: theme.spacing.sm }}>
+              <Metric
+                icon="heart"
+                label={`${heartCount} ${heartCount === 1 ? 'heart' : 'hearts'}`}
+              />
+              {firstSighting ? (
+                <Metric
+                  icon="time-outline"
+                  label={firstSighting.toLocaleDateString(undefined, {
+                    month: 'short',
+                    day: 'numeric',
+                  })}
+                  accessibilityLabel={`First sighting: ${firstSighting.toLocaleDateString(undefined, {
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric',
+                  })}`}
+                />
+              ) : null}
+            </View>
           </View>
         </CardContent>
       </Pressable>
@@ -187,13 +203,15 @@ export const CatalogListItem = React.memo(function CatalogListItem({
 const Metric = ({
   icon,
   label,
+  accessibilityLabel,
 }: {
   icon: React.ComponentProps<typeof Ionicons>['name'];
   label: string;
+  accessibilityLabel?: string;
 }) => {
   const theme = useAppTheme();
   return (
-    <View style={{ flexDirection: 'row', alignItems: 'center', gap: theme.spacing.xxs }}>
+    <View accessible={!!accessibilityLabel} accessibilityLabel={accessibilityLabel} style={{ flexDirection: 'row', alignItems: 'center', gap: theme.spacing.xxs }}>
       <Ionicons name={icon} size={15} color={theme.colors.textMuted} />
       <AppText variant="caption" color="muted">{label}</AppText>
     </View>
