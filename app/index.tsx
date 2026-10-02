@@ -5,7 +5,11 @@ import * as SplashScreen from 'expo-splash-screen';
 
 import { LoadingIndicator } from '@/presentation/ui/LoadingIndicator';
 import { clubHasAppAccess } from '@/core/domain';
-import { useAuth, useClub, useUniversitySelection } from '@/presentation/providers';
+import {
+  useAuth,
+  useClub,
+  useUniversitySelection,
+} from '@/presentation/providers';
 
 // Instruct SplashScreen not to hide yet, we want to do this manually
 SplashScreen.preventAutoHideAsync().catch(() => {
@@ -51,7 +55,7 @@ const App = () => {
     return <Redirect href="/(app)/(tabs)" />;
   } else {
     if (!universities.university) {
-      return <Redirect href={'/university-search' as never} />;
+      return <Redirect href={'/welcome' as never} />;
     }
     if (universities.university.status === 'mapped') {
       return <Redirect href="/login" />;

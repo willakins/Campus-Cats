@@ -1,4 +1,5 @@
 import React from 'react';
+import { Keyboard, StyleSheet } from 'react-native';
 
 import {
   act,
@@ -8,6 +9,7 @@ import {
   waitFor,
 } from '@testing-library/react-native';
 
+import WelcomeScreen from '../../app/welcome';
 import UniversitySearchScreen from '../../app/university-search';
 import ClubSetupScreen from '../../app/club-setup';
 import ClubSetupPendingScreen from '../../app/club-setup/pending';
@@ -129,6 +131,46 @@ describe('university onboarding routes', () => {
       },
       warnings: [],
     });
+  });
+
+  it('introduces Campus Cats and opens university search', async () => {
+    await renderScreen(<WelcomeScreen />);
+
+    expect(screen.getByText('Welcome to Campus Cats')).toBeOnTheScreen();
+    expect(screen.getByText('Care together')).toBeOnTheScreen();
+    fireEvent.press(
+      screen.getByRole('button', { name: 'Find your university' }),
+    );
+    expect(mockPush).toHaveBeenCalledWith('/university-search');
+  });
+
+  it('returns from university search to welcome without requiring history', async () => {
+    await renderScreen(<UniversitySearchScreen />);
+
+    fireEvent.press(screen.getByLabelText('Back to welcome'));
+    expect(mockReplace).toHaveBeenCalledWith('/welcome');
+  });
+
+  it('adds scroll space after the keyboard opens and removes it when hidden', async () => {
+    const listenerSpy = jest.spyOn(Keyboard, 'addListener');
+    await renderScreen(<UniversitySearchScreen />);
+    const bottomPadding = () =>
+      StyleSheet.flatten(
+        screen.getByTestId('screen-scroll-view').props.contentContainerStyle,
+      ).paddingBottom;
+    const initialPadding = bottomPadding();
+    const shown = listenerSpy.mock.calls.find(
+      ([event]) => event === 'keyboardDidShow',
+    )?.[1];
+    const hidden = listenerSpy.mock.calls.find(
+      ([event]) => event === 'keyboardDidHide',
+    )?.[1];
+
+    await act(() => shown?.({ endCoordinates: { height: 300 } } as never));
+    expect(bottomPadding()).toBe(initialPadding + 300);
+    await act(() => hidden?.({} as never));
+    expect(bottomPadding()).toBe(initialPadding);
+    listenerSpy.mockRestore();
   });
 
   it('searches after the debounce and requires selecting a returned university', async () => {
