@@ -55,7 +55,7 @@ describe('first-launch routing', () => {
   });
 
   it.each([
-    ['a first launch', undefined, '/university-search'],
+    ['a first launch', undefined, '/welcome'],
     ['a mapped saved selection', university('mapped'), '/login'],
     ['a pending saved selection', university('pending'), '/club-setup/pending'],
     ['an unclaimed saved selection', university('unclaimed'), '/club-setup'],
