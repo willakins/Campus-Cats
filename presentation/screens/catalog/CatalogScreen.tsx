@@ -1,3 +1,4 @@
+import { cardListViewportStyle, cardListContentStyle } from '@/theme';
 import React, {
   useCallback,
   useDeferredValue,
@@ -248,10 +249,13 @@ const Catalog = () => {
           <FlatList
             {...virtualizedListPerformanceProps}
             key={`catalog-${columns}`}
+            style={cardListViewportStyle(theme)}
+            removeClippedSubviews={false}
             data={error ? [] : visibleItems}
             numColumns={columns}
             keyExtractor={({ entry }) => entry.id}
             contentContainerStyle={{
+              ...cardListContentStyle(theme),
               flexGrow: 1,
               gap: theme.spacing.md,
               paddingBottom: Math.max(
@@ -268,6 +272,7 @@ const Catalog = () => {
                   {...item.entry}
                   sightingCount={item.sightingCount}
                   heartCount={item.heartCount}
+                  firstSighting={item.firstSighting}
                   isFavorite={item.isFavorite}
                   tags={item.tags}
                   favoriteBusy={favoriteBusyId !== undefined}

@@ -326,7 +326,7 @@ describe('Campus Cats design primitives', () => {
     expect(screen.getByTestId('form-action-bar')).toBeOnTheScreen();
     expect(screen.getByTestId('form-action-bar-glass')).toBeOnTheScreen();
     expect(screen.getByTestId('form-action-bar-tint')).toHaveStyle({
-      backgroundColor: '#E2E8EFD8',
+      backgroundColor: '#E2E8EF38',
       borderColor: '#FFFFFF78',
       borderRadius: 999,
     });
@@ -450,7 +450,7 @@ describe('Campus Cats design primitives', () => {
     const user = userEvent.setup();
     await renderThemed(
       <>
-        <Card padded={false} testID="field-note-card">
+        <Card surface="glass" padded={false} testID="field-note-card">
           <CardContent>
             <AppText>Field note</AppText>
           </CardContent>
@@ -486,6 +486,32 @@ describe('Campus Cats design primitives', () => {
     expect(screen.getByText('Reach an officer')).toBeOnTheScreen();
     expect(screen.getByText('Admin')).toBeOnTheScreen();
   });
+
+  it.each(['light', 'dark'] as const)(
+    'supports solid and glass cards in %s mode',
+    async (mode) => {
+      await render(
+        <AppThemeProvider colorScheme={mode}>
+          <Card surface="solid" testID="solid-card">
+            <AppText>Solid</AppText>
+          </Card>
+          <Card surface="glass" testID="glass-card">
+            <AppText>Glass</AppText>
+          </Card>
+        </AppThemeProvider>,
+      );
+      expect(screen.queryByTestId('solid-card-glass')).not.toBeOnTheScreen();
+      expect(screen.getByTestId('solid-card')).toHaveStyle({
+        backgroundColor: mode === 'dark' ? '#22303C' : '#FFFFFF',
+        borderWidth: 0,
+      });
+      expect(screen.getByTestId('glass-card-glass')).toBeOnTheScreen();
+      expect(screen.getByTestId('glass-card')).toHaveStyle({
+        backgroundColor: 'transparent',
+        borderWidth: 0,
+      });
+    },
+  );
 
   it('provides shared dialog and bottom-sheet dismissal surfaces', async () => {
     const closeDialog = jest.fn();
@@ -550,7 +576,7 @@ describe('Campus Cats design primitives', () => {
     expect(screen.getByText('Required')).toBeOnTheScreen();
     expect(screen.getByTestId('basics-section')).toHaveStyle({
       overflow: 'visible',
-      borderWidth: 1,
+      borderWidth: 0,
     });
     await user.press(screen.getByRole('button', { name: 'Edit basics' }));
     expect(editSection).toHaveBeenCalledTimes(1);

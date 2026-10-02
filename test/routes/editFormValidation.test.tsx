@@ -173,7 +173,7 @@ describe('edit form validation', () => {
     await renderThemed(<EditCatalogEntry />);
     expect(await screen.findByRole('button', { name: 'Save Entry' })).toBeEnabled();
     expect(screen.getByTestId('form-action-bar-tint')).toHaveStyle({
-      backgroundColor: '#E2E8EFD8',
+      backgroundColor: '#E2E8EF38',
     });
 
     await fireEvent(screen.getByTestId('form-screen-content'), 'layout', layout(100));

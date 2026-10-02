@@ -3,6 +3,7 @@ import {
   Pressable,
   StyleProp,
   TextInput,
+  useWindowDimensions,
   View,
   ViewProps,
   ViewStyle,
@@ -12,6 +13,7 @@ import { Ionicons } from '@expo/vector-icons';
 
 import { useAppTheme } from '@/theme';
 import { Card } from './Layout';
+import { GlassSurface } from './GlassSurface';
 import { AppText } from './Typography';
 
 interface SearchFieldProps {
@@ -33,8 +35,13 @@ export const SearchField = ({
 }: SearchFieldProps) => {
   const theme = useAppTheme();
   const [focused, setFocused] = useState(false);
+  const { fontScale } = useWindowDimensions();
+  const inputHeight = Math.max(
+    theme.layout.minTouchTarget - 4,
+    (theme.typography.body.fontSize ?? 16) * 1.5 * Math.min(fontScale, 2),
+  );
   return (
-    <View
+    <GlassSurface
       style={{
         minHeight: theme.layout.minTouchTarget,
         flexDirection: 'row',
@@ -44,12 +51,13 @@ export const SearchField = ({
         borderWidth: focused ? 2 : 1,
         borderColor: focused ? theme.colors.primary : theme.colors.border,
         borderRadius: theme.radii.field,
-        backgroundColor: theme.colors.surface,
+        backgroundColor: 'transparent',
       }}
     >
       <Ionicons name="search" size={20} color={theme.colors.textMuted} />
       <TextInput
         accessibilityLabel={accessibilityLabel}
+        maxFontSizeMultiplier={2}
         placeholder={placeholder}
         value={value}
         onChangeText={onChangeText}
@@ -65,12 +73,15 @@ export const SearchField = ({
         placeholderTextColor={theme.colors.textMuted}
         selectionColor={theme.colors.primary}
         style={[
-          theme.typography.body,
           {
+            // Let native single-line inputs center their font without body line spacing.
+            fontSize: theme.typography.body.fontSize,
+            fontWeight: theme.typography.body.fontWeight,
             flex: 1,
             minWidth: 0,
-            height: theme.layout.minTouchTarget,
+            height: inputHeight,
             paddingVertical: 0,
+            includeFontPadding: false,
             color: theme.colors.text,
             textAlignVertical: 'center',
             outlineWidth: 0,
@@ -95,7 +106,7 @@ export const SearchField = ({
           />
         </Pressable>
       ) : null}
-    </View>
+    </GlassSurface>
   );
 };
 
@@ -224,8 +235,6 @@ export const FormSection = ({
       elevated={false}
       style={{
         gap: theme.spacing.md,
-        borderWidth: 1,
-        borderColor: theme.colors.border,
       }}
     >
       <View

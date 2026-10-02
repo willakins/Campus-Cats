@@ -57,7 +57,7 @@ export const VoteChoiceCard = ({
   );
   return (
     <Card
-      accent={selected ? theme.colors.primary : undefined}
+      style={selected ? { borderWidth: 2, borderColor: theme.colors.primary } : undefined}
       padded={false}
     >
       {profileUserId ? (

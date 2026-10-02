@@ -1,3 +1,4 @@
+import { cardListViewportStyle, cardListContentStyle } from '@/theme';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Animated, Easing, FlatList, Platform, View } from 'react-native';
 
@@ -312,10 +313,12 @@ const Community = () => {
       return (
         <FlatList
           {...virtualizedListPerformanceProps}
+          style={cardListViewportStyle(theme)}
           testID="alerts-list"
           data={errors.alerts ? [] : visibleAlerts}
           keyExtractor={(alert) => alert.id}
           contentContainerStyle={{
+            ...cardListContentStyle(theme),
             flexGrow: 1,
             justifyContent:
               errors.alerts || visibleAlerts.length === 0
@@ -362,10 +365,12 @@ const Community = () => {
       return (
         <FlatList
           {...virtualizedListPerformanceProps}
+          style={cardListViewportStyle(theme)}
           testID="events-list"
           data={errors.events ? [] : visibleEvents}
           keyExtractor={(event) => event.id}
           contentContainerStyle={{
+            ...cardListContentStyle(theme),
             flexGrow: 1,
             justifyContent:
               errors.events || visibleEvents.length === 0
@@ -404,10 +409,12 @@ const Community = () => {
       return (
         <FlatList
           {...virtualizedListPerformanceProps}
+          style={cardListViewportStyle(theme)}
           testID="surveys-list"
           data={errors.surveys ? [] : visibleSurveys}
           keyExtractor={(survey) => survey.id}
           contentContainerStyle={{
+            ...cardListContentStyle(theme),
             flexGrow: 1,
             justifyContent:
               errors.surveys || visibleSurveys.length === 0
@@ -446,10 +453,12 @@ const Community = () => {
       return (
         <FlatList
           {...virtualizedListPerformanceProps}
+          style={cardListViewportStyle(theme)}
           testID="votes-list"
           data={errors.votes ? [] : visibleVotes}
           keyExtractor={(vote) => vote.id}
           contentContainerStyle={{
+            ...cardListContentStyle(theme),
             flexGrow: 1,
             justifyContent:
               errors.votes || visibleVotes.length === 0
