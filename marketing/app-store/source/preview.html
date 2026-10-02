@@ -444,6 +444,91 @@
       .slide[data-slide="2"] .kicker { color: var(--teal); }
       .slide[data-slide="3"] .kicker { color: var(--green); }
       .slide[data-slide="4"] .kicker { color: var(--coral); }
+
+      /* Shared floating material follows the current GlassSurface treatment. */
+      .phone { left: 45px; width: 350px; top: 258px; height: 676px; }
+      .bottom-nav { left: 18px; right: 18px; bottom: 15px; height: 56px; border: 1px solid #ffffffa8; border-radius: 30px; padding: 4px; background: #ffffff58; backdrop-filter: blur(18px) saturate(1.4); box-shadow: inset 0 1px 0 #ffffffb8, 0 8px 24px #18314f20; }
+      .nav-item { width: 45px; height: 45px; border-radius: 50%; }
+      .nav-item.active { background: #ffffff70; border: 1px solid #ffffff78; }
+      .search,.map-toolbar,.fab,.heart,.glass-action { background: #ffffff58; backdrop-filter: blur(12px) saturate(1.3); border: 1px solid #ffffffa8; box-shadow: inset 0 1px 0 #ffffffb8, 0 5px 18px #18314f12; }
+      .fab { border-radius: 50%; color: var(--navy); bottom: 88px; }
+      .map-toolbar { border-radius: 26px; }
+      .report-btn { left: auto; right: 17px; bottom: 89px; border-radius: 50%; width: 52px; height: 52px; padding: 0; display: grid; place-items: center; color: var(--navy); background: #ffffff88; backdrop-filter: blur(14px); border: 1px solid #ffffffb8; font-size: 28px; }
+      .community-card { height: 133px; }
+      .community-card.green { background: var(--coral-soft); }
+      .cat-card,.station,.panel { background: #ffffffa8; border: 1px solid #ffffffa8; box-shadow: 0 5px 16px #18314f0b; }
+      .detail-pad { padding: 16px; }
+      .detail-pad .app-title { font-size: 25px; margin-bottom: 12px; }
+      .panel { border-radius: 18px; padding: 14px; margin-bottom: 12px; }
+      .panel h2 { margin: 0 0 7px; font-size: 18px; letter-spacing: -.3px; }
+      .panel p { margin: 5px 0; font-size: 12px; line-height: 1.45; color: var(--muted); }
+      .panel.gold { border-left: 4px solid var(--gold); }
+      .pill-row { display: flex; flex-wrap: wrap; gap: 5px; margin: 8px 0; }
+      .pill { padding: 5px 8px; font-size: 10px; font-weight: 700; border-radius: 20px; background: var(--navy-soft); color: var(--navy); }
+      .pill.green { color: var(--green); background: var(--green-soft); }
+      .pill.gold { color: #9a6500; background: var(--gold-soft); }
+      .candidate { display: flex; gap: 10px; align-items: flex-start; }
+      .avatar { flex-shrink: 0; width: 42px; height: 42px; border-radius: 50%; display: grid; place-items: center; background: var(--violet-soft); color: var(--violet); font-weight: 800; font-size: 15px; }
+      .candidate strong { font-size: 14px; }
+      .candidate p { margin-top: 6px; font-size: 11px; }
+      .selected { border: 2px solid var(--navy); }
+      .radio { margin-left: auto; color: var(--navy); font-size: 18px; }
+      .glass-action { padding: 14px; border-radius: 26px; color: var(--navy); font-size: 13px; font-weight: 800; text-align: center; }
+      .solid-action { padding: 13px; border-radius: 26px; background: var(--navy); color: white; font-size: 12px; font-weight: 700; text-align: center; }
+      .mini-hero { display: flex; align-items: center; gap: 13px; margin-bottom: 12px; }
+      .mini-hero img { width: 80px; height: 80px; border-radius: 18px; object-fit: cover; }
+      .mini-hero h2 { font-size: 26px; margin: 0 0 5px; }
+      .mini-hero p { font-size: 11px; color: var(--muted); margin: 0; line-height: 1.4; }
+      .history-map { position: relative; height: 216px; border-radius: 16px; overflow: hidden; background: url('./apple-maps-georgia-tech.png') 50% 50% / cover; }
+      .history-map svg { width: 100%; height: 100%; }
+      .history-map .map-credit { position: absolute; bottom: 3px; left: 7px; font-size: 8px; color: #333; background: #ffffffb8; padding: 2px 4px; border-radius: 4px; }
+      .timeline { position: relative; margin: 20px 8px 10px; height: 5px; background: var(--border); border-radius: 5px; }
+      .timeline::before { content: ''; display: block; width: 72%; height: 5px; background: var(--navy); border-radius: 5px; }
+      .timeline::after { content: ''; position: absolute; left: 72%; top: -7px; width: 19px; height: 19px; border-radius: 50%; border: 3px solid white; background: var(--navy); }
+      .timeline-labels { display: flex; justify-content: space-between; color: var(--muted); font-size: 10px; }
+      .profile-head { text-align: center; padding: 14px; }
+      .profile-head .avatar { margin: 0 auto 8px; width: 64px; height: 64px; font-size: 24px; }
+      .profile-head h2 { margin: 8px 0; font-size: 23px; }
+      .achievement { display: flex; gap: 10px; align-items: center; padding: 10px 0; border-top: 1px solid var(--border); }
+      .achievement strong { font-size: 12px; }
+      .achievement p { font-size: 10px; margin: 3px 0; }
+      .award { color: var(--gold); font-size: 24px; }
+      .form-label { font-size: 10px; font-weight: 700; margin: 11px 0 6px; }
+      .input-preview { padding: 10px; border: 1px solid var(--border); background: var(--cream); border-radius: 12px; font-size: 11px; line-height: 1.4; }
+      .donation-photo { width: 100%; height: 75px; object-fit: cover; object-position: 50% 43%; border-radius: 12px; }
+      .sample-note { position: absolute; bottom: 5px; left: 0; right: 0; text-align: center; font-size: 8px; color: var(--muted); letter-spacing: .3px; }
+      .app-content { padding-bottom: 0; }
+      .slide[data-slide="5"] .panel { padding: 11px; margin-bottom: 9px; }
+      .slide[data-slide="5"] .panel.gold p { font-size: 11px; }
+      .slide[data-slide="5"] .candidate p { font-size: 10px; }
+      .slide[data-slide="5"] .candidate .pill-row { margin: 5px 0; }
+      .slide[data-slide="6"] .history-map { height: 170px; }
+      .slide[data-slide="6"] .panel { padding: 11px; margin-bottom: 9px; }
+      .slide[data-slide="6"] .mini-hero { margin-bottom: 9px; }
+      .slide[data-slide="6"] .mini-hero img { width: 66px; height: 66px; }
+      .slide[data-slide="7"] .profile-head { padding: 10px; }
+      .slide[data-slide="7"] .profile-head img { width: 48px !important; height: 48px !important; margin-bottom: 6px !important; }
+      .slide[data-slide="7"] .profile-head h2 { margin: 6px 0; }
+      .slide[data-slide="7"] .achievement { padding: 8px 0; }
+      .slide[data-slide="7"] .panel { margin-bottom: 9px; }
+      .search-row { display:flex; align-items:center; gap:6px; }
+      .search-row .search { flex:1; min-width:0; padding:0 10px; }
+      .tool-button { width:40px; height:40px; border-radius:50%; display:grid; place-items:center; color:var(--navy); background:#ffffff58; border:1px solid #ffffffa8; font-size:19px; }
+      .tool-button.primary { background:var(--navy); color:white; }
+      .cat-card > img { height:100px; }
+      .cat-body { padding:9px; }
+      .slide[data-slide="7"] .profile-head p { font-size:11px; }
+      .slide[data-slide="7"] .achievement { padding:6px 0; }
+      .slide[data-slide="7"] .panel { padding:11px; }
+      .donation-sections { display:flex; align-items:center; justify-content:space-between; gap:3px; margin:0 0 12px; font-size:9px; font-weight:700; color:var(--muted); }
+      .donation-sections span { padding:7px 3px; }
+      .donation-sections .current { color:var(--coral); background:var(--coral-soft); border-radius:14px; padding:7px 9px; }
+      .donation-cover { width:100%; height:195px; object-fit:cover; object-position:50% 42%; border-radius:18px; display:block; margin-bottom:12px; }
+      .donation-story { border-left:4px solid var(--coral); padding:12px; margin-bottom:12px; }
+      .donation-story h2 { font-size:21px; line-height:1.1; }
+      .donation-story p { font-size:11px; line-height:1.4; margin:8px 0 0; }
+      .donation-page .app-title { margin-bottom:10px; }
+
     </style>
   </head>
   <body>
@@ -451,6 +536,8 @@
     <script>
       const glyphs = {
         'add': 0xf103,
+        'swap-vertical': 62899,
+        'filter-outline': 62213,
         'add-circle-outline': 0xf105,
         'alert-circle': 0xf113,
         'basket-outline': 0xf17c,
@@ -465,6 +552,7 @@
         'map-outline': 0xf443,
         'megaphone-outline': 0xf44f,
         'menu-outline': 0xf452,
+        'person-circle-outline': 62634,
         'paw': 0xf499,
         'paw-outline': 0xf49a,
         'people-outline': 0xf4a3,
@@ -487,7 +575,7 @@
           <div class="nav-item ${active === 'community' ? 'active' : ''}" aria-label="Community">${icon('people-outline')}</div>
           <div class="nav-item ${active === 'stations' ? 'active' : ''}" aria-label="Stations">${icon('basket-outline')}</div>
           <div class="nav-item ${active === 'cats' ? 'active' : ''}" aria-label="Cats">${icon('paw-outline')}</div>
-          <div class="nav-item" aria-label="More">${icon('menu-outline')}</div>
+          <div class="nav-item ${active === 'profile' ? 'active' : ''}" aria-label="Profile">${icon('person-circle-outline')}</div>
         </div>`;
 
       const phone = (content, active) => `
@@ -496,7 +584,7 @@
             <div class="island"></div>
             <div class="statusbar"><span>9:41</span><span class="status-icons">● ◖ ▰</span></div>
             <div class="app-content">${content}</div>
-            ${nav(active)}
+            ${active ? nav(active) : ''}
           </div>
         </div>`;
 
@@ -506,7 +594,8 @@
           <div class="kicker">${kicker}</div>
           <h1>${title}</h1>
           <p class="dek">${dek}</p>
-          ${phone(content, active)}
+          ${phone(content, number >= 5 && number !== 8 ? null : active)}
+          <div class="sample-note">Illustrative interface · Demo community data</div>
         </section>`;
 
       const slides = {
@@ -526,7 +615,7 @@
               <div class="filter-chip">7D</div><div class="filter-chip">30D</div><div class="filter-chip">90D</div><div class="filter-chip">1Y</div><div class="filter-chip active">All</div>
             </div>
             <div class="count-pill">${icon('paw')} &nbsp; 18 sightings</div>
-            <div class="report-btn">${icon('add-circle-outline')} &nbsp; Report a sighting</div>`,
+            <div class="report-btn">${icon('add')}</div>`,
         }),
         2: () => shell({
           number: 2,
@@ -538,20 +627,20 @@
             <div class="app-pad">
               <div class="eyebrow">Meet the colony</div>
               <div class="app-title">Cat catalog</div>
-              <div class="search">${icon('search-outline')} <span>Search cats</span></div>
+              <div class="search-row"><div class="search">${icon('search-outline')} <span>Search cats</span></div><div class="tool-button primary">${icon('swap-vertical')}</div><div class="tool-button">${icon('filter-outline')}</div></div>
               <div class="toolbar-meta"><span>Sorted by name: a to z</span><span>3 cats</span></div>
               <div class="cat-grid">
                 <article class="cat-card">
                   <img src="${cats.alex}" /><div class="heart">${icon('heart-outline')}</div>
-                  <div class="cat-body"><div class="cat-name">Alex</div><div class="cat-desc">A quiet gray tabby who likes shaded walkways.</div><div class="metrics"><span>${icon('eye-outline')} 7 sightings</span><span>${icon('heart')} 5 hearts</span><span>${icon('time-outline')} Jul 28</span></div></div>
+                  <div class="cat-body"><div class="cat-name">Alex</div><div class="cat-desc">A quiet gray tabby who likes shaded walkways.</div><div class="metrics"><span>${icon('eye-outline')} 7 sightings</span><span>${icon('heart')} 5 hearts</span><span>${icon('time-outline')} Sep 28</span></div></div>
                 </article>
                 <article class="cat-card">
                   <img src="${cats.goldie}" /><div class="heart" style="color:white;background:var(--navy);border-color:var(--navy)">${icon('heart')}</div>
-                  <div class="cat-body"><div class="cat-name">Goldie</div><div class="cat-desc">A sunny orange regular near the student center.</div><div class="metrics"><span>${icon('eye-outline')} 18 sightings</span><span>${icon('heart')} 9 hearts</span><span>${icon('time-outline')} Aug 4</span></div></div>
+                  <div class="cat-body"><div class="cat-name">Goldie</div><div class="cat-desc">A sunny orange regular near the student center.</div><div class="metrics"><span>${icon('eye-outline')} 18 sightings</span><span>${icon('heart')} 9 hearts</span><span>${icon('time-outline')} Oct 2</span></div></div>
                 </article>
                 <article class="cat-card">
                   <img src="${cats.mimi}" /><div class="heart">${icon('heart-outline')}</div>
-                  <div class="cat-body"><div class="cat-name">Mimi</div><div class="cat-desc">A cautious tuxedo cat who visits at dusk.</div><div class="metrics"><span>${icon('eye-outline')} 12 sightings</span><span>${icon('heart')} 14 hearts</span><span>${icon('time-outline')} Aug 2</span></div></div>
+                  <div class="cat-body"><div class="cat-name">Mimi</div><div class="cat-desc">A cautious tuxedo cat who visits at dusk.</div><div class="metrics"><span>${icon('eye-outline')} 12 sightings</span><span>${icon('heart')} 14 hearts</span><span>${icon('time-outline')} Oct 1</span></div></div>
                 </article>
               </div>
             </div>`,
@@ -600,8 +689,40 @@
         }),
       };
 
+
+      slides[5] = () => shell({ number: 5, kicker: 'CLUB PRESIDENTIAL ELECTION', title: 'Give every<br />member a voice.', dek: 'Meet the nominees and cast one private ballot for your next club president.', active: 'community', content: `
+        <div class="detail-pad"><div class="eyebrow">One member, one vote</div><div class="app-title">Community vote</div>
+        <div class="panel gold"><div class="pill-row"><span class="pill gold">President election</span><span class="pill green">Voting open</span></div><h2>Choose our next<br />club president</h2><p>Help shape another year of care for our campus cats.</p><p>Voting ends Oct 9, 2026 · 5:00 PM</p></div>
+        <div class="panel"><h2 style="font-size:14px">Private ballot</h2><p>Choose one nominee. Results appear after voting closes.</p></div>
+        <div class="panel selected candidate"><div class="avatar">JL</div><div><strong>Jordan Lee</strong><div class="pill-row"><span class="pill green">cat collector</span></div><p>More volunteer workdays, stocked stations, and a warm welcome for every new member.</p></div><span class="radio">◉</span></div>
+        <div class="panel candidate"><div class="avatar" style="background:var(--teal-soft);color:var(--teal)">AM</div><div><strong>Avery Morgan</strong><p>Let’s bring our community together around everyday cat care.</p></div><span class="radio">○</span></div>
+        <div class="solid-action">Submit Vote</div></div>` });
+      slides[6] = () => shell({ number: 6, kicker: 'SIGHTING HISTORY & MOVEMENT', title: 'Learn their<br />favorite places.', dek: 'Explore a cat’s profile, then scrub through recorded sightings to spot patterns over time.', active: 'cats', content: `
+        <div class="detail-pad"><div class="eyebrow">Cat catalog · Goldie</div><div class="app-title">A familiar face. A story.</div>
+        <div class="mini-hero"><img src="${cats.goldie}" /><div><h2>Goldie</h2><p>A sunny orange regular near<br />the student center.</p><div class="pill-row"><span class="pill green">TNR complete</span><span class="pill">9 hearts</span></div></div></div>
+        <div class="panel"><h2 style="font-size:15px">Profile</h2><p>Friendly orange tabby. Often spotted around shaded campus walkways in the afternoon.</p></div>
+        <div class="panel"><h2>Sighting history</h2><p><strong style="color:var(--ink)">Sighting 7 of 9</strong><br />Oct 1, 2026 · 4:15 PM</p>
+        <div class="history-map"><svg viewBox="0 0 270 216"><path d="M55 170 L78 148 L115 155 L133 118 L178 99 L161 62 L213 43" fill="none" stroke="white" stroke-width="7"/><path d="M55 170 L78 148 L115 155 L133 118 L178 99 L161 62 L213 43" fill="none" stroke="#18314f" stroke-width="3" stroke-linejoin="round"/>${[[55,170],[78,148],[115,155],[133,118],[178,99],[161,62],[213,43]].map(([x,y],i)=>`<circle cx="${x}" cy="${y}" r="${i===6?9:5}" fill="${i===6?'#b94c3c':'#18314f'}" stroke="white" stroke-width="3"/>`).join('')}</svg><span class="map-credit">Map imagery © Apple</span></div>
+        <div class="timeline"></div><div class="timeline-labels"><span>Oldest</span><span>Newest</span></div><p style="font-size:10px;margin-top:10px">Path through 7 mapped sightings</p></div></div>` });
+      slides[7] = () => shell({ number: 7, kicker: 'MEMBER PROFILES', title: 'Make your<br />care count.', dek: 'Earn achievements, choose a title, and let fellow members get to know you.', active: 'profile', content: `
+        <div class="detail-pad"><div class="eyebrow">Campus Cats community</div><div class="app-title">Member profile</div>
+        <div class="panel profile-head"><img src="${cats.mimi}" alt="Jordan’s profile photo" style="width:64px;height:64px;object-fit:cover;border-radius:50%;display:block;margin:0 auto 10px"/><span class="pill green">cat collector</span><h2>Jordan Lee</h2><span class="pill">Member</span><p>Cat spotter, weekend volunteer,<br />and Goldie’s biggest fan.</p></div>
+        <div class="panel"><h2>Achievements & titles</h2><p>3 of 5 achievements unlocked</p>
+        <div class="achievement"><span class="award">${icon('checkmark-circle')}</span><div><strong>Ten Cats Spotted</strong><p>Report 10 cat sightings.</p></div><span class="pill green" style="margin-left:auto">cat collector</span></div>
+        <div class="achievement"><span class="award">${icon('checkmark-circle')}</span><div><strong>First Field Report</strong><p>Report your first cat sighting.</p></div><span class="pill" style="margin-left:auto">cat lover</span></div>
+        <div class="achievement"><span class="award">${icon('checkmark-circle')}</span><div><strong>Picture Purr-fect</strong><p>Add a profile picture.</p></div></div></div>
+        <div class="panel"><h2 style="font-size:16px">Previous sightings (18)</h2><div class="mini-hero" style="margin:9px 0 0"><img src="${cats.goldie}" style="width:44px;height:44px;border-radius:12px"/><div><strong style="font-size:13px">Goldie near the student center</strong><p>Oct 2 · Healthy · Campus walkway</p></div></div></div></div>` });
+      slides[8] = () => shell({ number: 8, kicker: 'SUPPORT YOUR CAMPUS CATS', title: 'Small gifts.<br />More care.', dek: 'Bring your club’s cause to the community, with one clear path to support the cats they love.', active: 'community', content: `
+        <div class="detail-pad donation-page"><div class="eyebrow">Stay connected</div><div class="app-title">Community</div>
+        <div class="donation-sections"><span>Alerts</span><span>Chat</span><span>Events</span><span>Surveys</span><span>Votes</span><span class="current">Donate</span></div>
+        <img class="donation-cover" src="${cats.goldie}" alt="Goldie, an orange campus cat" />
+        <div class="panel donation-story"><h2>Help us care for<br />campus cats</h2><p>They’re part of our campus.<br />Together, we can keep them cared for.</p><p>Your support helps our club provide food, veterinary care, and safe shelter for cats like Goldie.</p><p>Every contribution helps.</p></div>
+        <div class="solid-action">Donate on external website ↗</div></div>` });
+      // Requested story order; preserve the original slide implementations above.
+      const orderedSlides = [slides[1], slides[4], slides[5], slides[3], slides[2], slides[6], slides[7], slides[8]];
+
       const selected = Number(new URLSearchParams(location.search).get('slide') || 1);
-      document.getElementById('root').innerHTML = (slides[selected] || slides[1])();
+      document.getElementById('root').innerHTML = (orderedSlides[selected - 1] || orderedSlides[0])();
     </script>
   </body>
 </html>

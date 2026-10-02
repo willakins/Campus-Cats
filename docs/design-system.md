@@ -9,7 +9,7 @@ stations, and administration.
 
 - Use semantic theme tokens; screens and components do not contain raw colors.
 - Let cat photography and content lead. Accent colors belong on icons, chips, status
-  labels, and narrow card edges rather than large saturated backgrounds.
+  labels, and selected-state outlines. Reading cards use neutral surfaces.
 - Pair every status color with explicit text and an icon.
 - Preserve system font scaling, a minimum 44-by-44 point target, and WCAG AA contrast.
 - Follow the device light/dark appearance and reduce nonessential motion when requested.
@@ -80,3 +80,20 @@ remain the boundary for destructive and role-changing actions.
 - Destructive actions are not identified by color alone and retain native
   confirmation dialogs. Required light/dark text pairs are covered by automated WCAG
   AA contrast tests.
+
+## Card appearance
+
+`theme/cards.ts` owns the shared card fill, outline, and shadow. The app defaults
+to solid, borderless cards with soft shadows; dark cards use `surfaceSubtle` for
+separation from the page. Set `CARD_SURFACE` to `'glass'` in that file to switch
+all default cards, including member profile sections, back to glass.
+
+`Card` uses this setting automatically. `cardSurfaceStyle` in
+`presentation/ui/Surfaces.ts` combines the appearance with shared padding and
+`theme.radii.card`. Keep surface and shadow settings out of screen styles.
+`elevated={false}` intentionally removes a card's shadow for embedded content or
+forms. Explicit `surface` overrides are available for exceptional cases; ordinary
+screen cards should inherit the default. Selected cards may add a semantic outline.
+
+Floating navigation and controls use `GlassSurface` independently, so switching
+reading cards does not change those controls.

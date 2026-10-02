@@ -88,6 +88,17 @@ const Stations = () => {
         />
         <SegmentedControl
           label="Station stock filter"
+          variant="segment"
+          style={{
+            flexWrap: 'nowrap',
+            gap: theme.spacing.xxs,
+            padding: theme.spacing.xxs,
+            borderWidth: 1,
+            borderColor: theme.colors.border,
+            borderRadius: theme.radii.card,
+            backgroundColor: theme.colors.surface,
+          }}
+          optionStyle={{ flex: 1, paddingHorizontal: theme.spacing.xxs }}
           value={filter}
           options={[
             { value: 'All', label: 'All' },

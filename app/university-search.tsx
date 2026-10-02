@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Platform, ScrollView, View } from 'react-native';
+import { Keyboard, Platform, ScrollView, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import Head from 'expo-router/head';
 import { Ionicons } from '@expo/vector-icons';
@@ -8,6 +8,7 @@ import {
   AppText,
   Card,
   FeedbackBanner,
+  IconButton,
   Screen,
   SearchField,
   StatusPill,
@@ -20,13 +21,12 @@ import { useAppTheme } from '@/theme';
 const UniversitySearchScreen = () => {
   const router = useRouter();
   const theme = useAppTheme();
-  const {
-    selectUniversity,
-    universitySearch,
-    rememberUniversitySearch,
-  } = useUniversitySelection();
+  const { selectUniversity, universitySearch, rememberUniversitySearch } =
+    useUniversitySelection();
   const scrollRef = useRef<ScrollView>(null);
   const searchCardOffset = useRef(0);
+  const contentOffset = useRef(0);
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
   const [query, setQuery] = useState(universitySearch.query);
   const [results, setResults] = useState<readonly UniversitySearchResult[]>(
     universitySearch.results,
@@ -89,10 +89,27 @@ const UniversitySearchScreen = () => {
     !searching && normalizedQuery.length >= 2 && !results.length && !error;
   const scrollSearchToTop = useCallback(() => {
     scrollRef.current?.scrollTo({
-      y: Math.max(0, searchCardOffset.current - theme.spacing.sm),
+      y: Math.max(
+        0,
+        contentOffset.current + searchCardOffset.current - theme.spacing.sm,
+      ),
       animated: true,
     });
   }, [theme.spacing.sm]);
+
+  useEffect(() => {
+    const shown = Keyboard.addListener('keyboardDidShow', (event) => {
+      setKeyboardHeight(event.endCoordinates.height);
+      scrollSearchToTop();
+    });
+    const hidden = Keyboard.addListener('keyboardDidHide', () => {
+      setKeyboardHeight(0);
+    });
+    return () => {
+      shown.remove();
+      hidden.remove();
+    };
+  }, [scrollSearchToTop]);
 
   return (
     <>
@@ -106,11 +123,15 @@ const UniversitySearchScreen = () => {
         keyboardAware
         scrollRef={scrollRef}
         onContentSizeChange={() => {
-          if (normalizedQuery.length >= 2) scrollSearchToTop();
+          if (keyboardHeight > 0 || normalizedQuery.length >= 2)
+            scrollSearchToTop();
         }}
-        contentStyle={{ paddingBottom: theme.spacing.huge }}
+        contentStyle={{ paddingBottom: theme.spacing.huge + keyboardHeight }}
       >
         <View
+          onLayout={({ nativeEvent }) => {
+            contentOffset.current = nativeEvent.layout.y;
+          }}
           style={{
             width: '100%',
             maxWidth: theme.layout.maxAuthWidth,
@@ -119,6 +140,12 @@ const UniversitySearchScreen = () => {
             paddingTop: theme.spacing.xl,
           }}
         >
+          <IconButton
+            icon="arrow-back"
+            accessibilityLabel="Back to welcome"
+            onPress={() => router.replace('/welcome' as never)}
+            style={{ alignSelf: 'flex-start' }}
+          />
           <View
             style={{
               overflow: 'hidden',
@@ -360,7 +387,6 @@ const UniversitySearchScreen = () => {
               })}
             </View>
           ) : null}
-
         </View>
       </Screen>
     </>

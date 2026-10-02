@@ -1,13 +1,13 @@
 import { useEffect, useMemo, useState } from 'react';
 import { View } from 'react-native';
 import { Redirect, useRouter } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 
-import { AuthScaffold, AuthTextField } from '@/presentation/auth';
+import { AuthTextField } from '@/presentation/auth';
+import { FormScreen, HexColorPicker } from '@/presentation/forms';
 import {
   AppText,
   Button,
-  Card,
-  FeedbackBanner,
   FormSection,
   SegmentedControl,
   StatusPill,
@@ -25,7 +25,7 @@ import { createBrandedTheme, useAppTheme } from '@/theme';
 const ClubSetupScreen = () => {
   const router = useRouter();
   const theme = useAppTheme();
-  const { university, clearUniversity } = useUniversitySelection();
+  const { university } = useUniversitySelection();
   const [draft, setDraft] = useState<ClubSetupDraft>({
     universityId: university?.id ?? '',
     clubName: university ? defaultClubName(university.name) : '',
@@ -94,18 +94,55 @@ const ClubSetupScreen = () => {
     });
   };
 
-  const changeUniversity = async () => {
-    await clearUniversity();
-    router.replace('/university-search' as never);
-  };
-
   return (
-    <AuthScaffold
-      title="Start a Campus Cats club"
-      subtitle={`${university.name} does not have a club yet. Set up its identity and invite the President.`}
-      onBack={() => void changeUniversity()}
+    <FormScreen
+      title="Start a club"
+      eyebrow={university.name}
+      onBack={() => {
+        if (router.canGoBack()) router.back();
+        else router.replace('/university-search');
+      }}
+      saveLabel="Email President for verification"
+      savingLabel="Sending verification…"
+      busy={busy}
+      error={error}
+      onSave={() => void submit()}
     >
-      {error ? <FeedbackBanner message={error} tone="danger" /> : null}
+      <View
+        style={{
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: theme.spacing.sm,
+          padding: theme.spacing.md,
+          borderRadius: theme.radii.card,
+          backgroundColor: theme.colors.primarySurface,
+        }}
+      >
+        <View
+          style={{
+            width: theme.layout.minTouchTarget,
+            height: theme.layout.minTouchTarget,
+            alignItems: 'center',
+            justifyContent: 'center',
+            borderRadius: theme.radii.pill,
+            backgroundColor: theme.colors.surface,
+          }}
+        >
+          <Ionicons
+            name="people-outline"
+            size={24}
+            color={theme.colors.primary}
+          />
+        </View>
+        <View style={{ flex: 1, gap: theme.spacing.xxs }}>
+          <AppText variant="label" color="primary">
+            Your club starts here
+          </AppText>
+          <AppText variant="caption" color="muted">
+            Choose a name and colors, then verify your President.
+          </AppText>
+        </View>
+      </View>
       <FormSection title="Club identity">
         <AuthTextField
           label="Club name"
@@ -115,21 +152,27 @@ const ClubSetupScreen = () => {
         />
       </FormSection>
       <FormSection title="Club colors">
-        <AuthTextField
+        <AppText color="muted">
+          Make it feel like your campus. See how your colors look in both
+          themes.
+        </AppText>
+        <HexColorPicker
           label="Primary color"
-          required
           value={draft.primaryColor}
-          autoCapitalize="characters"
-          onChangeText={(value) => update('primaryColor', value)}
+          onChange={(value) => update('primaryColor', value)}
         />
-        <AuthTextField
+        <HexColorPicker
           label="Accent color"
-          required
           value={draft.accentColor}
-          autoCapitalize="characters"
-          onChangeText={(value) => update('accentColor', value)}
+          onChange={(value) => update('accentColor', value)}
         />
-        <View style={{ flexDirection: 'row', gap: theme.spacing.sm }}>
+        <View
+          style={{
+            flexDirection: 'row',
+            flexWrap: 'wrap',
+            gap: theme.spacing.sm,
+          }}
+        >
           {(['light', 'dark'] as const).map((mode) => {
             const preview = previews?.[mode];
             return (
@@ -138,13 +181,15 @@ const ClubSetupScreen = () => {
                 accessibilityLabel={`${mode === 'light' ? 'Light' : 'Dark'} theme preview`}
                 style={{
                   flex: 1,
+                  minWidth: 140,
                   minHeight: 120,
                   gap: theme.spacing.sm,
                   padding: theme.spacing.sm,
                   borderRadius: theme.radii.field,
                   borderWidth: 1,
                   borderColor: preview?.colors.border ?? theme.colors.border,
-                  backgroundColor: preview?.colors.background ?? theme.colors.surface,
+                  backgroundColor:
+                    preview?.colors.background ?? theme.colors.surface,
                 }}
               >
                 <AppText
@@ -159,7 +204,8 @@ const ClubSetupScreen = () => {
                     justifyContent: 'center',
                     paddingHorizontal: theme.spacing.sm,
                     borderRadius: theme.radii.field,
-                    backgroundColor: preview?.colors.primary ?? theme.colors.surfaceSubtle,
+                    backgroundColor:
+                      preview?.colors.primary ?? theme.colors.surfaceSubtle,
                   }}
                 >
                   <AppText
@@ -174,7 +220,9 @@ const ClubSetupScreen = () => {
                 </View>
                 <AppText
                   variant="caption"
-                  style={{ color: preview?.colors.gold ?? theme.colors.textMuted }}
+                  style={{
+                    color: preview?.colors.gold ?? theme.colors.textMuted,
+                  }}
                 >
                   Accent color
                 </AppText>
@@ -184,8 +232,12 @@ const ClubSetupScreen = () => {
         </View>
       </FormSection>
       <FormSection title="Club President">
+        <AppText color="muted">
+          We’ll send a verification link to this person’s school email.
+        </AppText>
         <SegmentedControl
           label="Who is the President?"
+          variant="segment"
           value={draft.presidentChoice}
           options={[
             { value: 'self', label: "I'm the President" },
@@ -210,10 +262,16 @@ const ClubSetupScreen = () => {
         />
       </FormSection>
       <FormSection title="Sign-in methods">
-        <Card style={{ gap: theme.spacing.xs }}>
-          <StatusPill label="Email login enabled" tone="success" icon="mail-outline" />
-          <AppText color="muted">Members will use approved email accounts.</AppText>
-        </Card>
+        <View style={{ gap: theme.spacing.xs }}>
+          <StatusPill
+            label="Email login enabled"
+            tone="success"
+            icon="mail-outline"
+          />
+          <AppText color="muted">
+            Members will use approved email accounts.
+          </AppText>
+        </View>
         <Button
           label="Single sign-on · Coming soon"
           icon="school-outline"
@@ -222,23 +280,7 @@ const ClubSetupScreen = () => {
           onPress={() => undefined}
         />
       </FormSection>
-      <Button
-        label="Email President for verification"
-        icon="mail-outline"
-        fullWidth
-        loading={busy}
-        loadingLabel="Sending verification…"
-        disabled={busy}
-        onPress={() => void submit()}
-      />
-      <Button
-        label="Change university"
-        variant="tertiary"
-        fullWidth
-        disabled={busy}
-        onPress={() => void changeUniversity()}
-      />
-    </AuthScaffold>
+    </FormScreen>
   );
 };
 

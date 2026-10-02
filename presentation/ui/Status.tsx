@@ -36,15 +36,29 @@ interface ChipProps {
   readonly label: string;
   readonly selected?: boolean;
   readonly onPress?: () => void;
+  readonly variant?: 'outlined' | 'segment';
+  readonly style?: StyleProp<ViewStyle>;
 }
 
-export const Chip = ({ label, selected = false, onPress }: ChipProps) => {
+export const Chip = ({
+  label,
+  selected = false,
+  onPress,
+  variant = 'outlined',
+  style: customStyle,
+}: ChipProps) => {
   const theme = useAppTheme();
   const [focused, setFocused] = useState(false);
   const content = (
     <AppText
       variant="label"
-      style={{ color: selected ? theme.colors.onPrimary : theme.colors.text }}
+      style={{
+        color: selected
+          ? theme.colors.onPrimary
+          : variant === 'segment'
+            ? theme.colors.textMuted
+            : theme.colors.text,
+      }}
     >
       {label}
     </AppText>
@@ -52,10 +66,18 @@ export const Chip = ({ label, selected = false, onPress }: ChipProps) => {
   const style = {
     minHeight: theme.layout.minTouchTarget,
     paddingHorizontal: theme.spacing.md,
-    borderRadius: theme.radii.pill,
+    borderRadius: variant === 'segment' ? theme.radii.field : theme.radii.pill,
     borderWidth: 1,
-    borderColor: selected ? theme.colors.primary : theme.colors.border,
-    backgroundColor: selected ? theme.colors.primary : theme.colors.surface,
+    borderColor: selected
+      ? theme.colors.primary
+      : variant === 'segment'
+        ? 'transparent'
+        : theme.colors.border,
+    backgroundColor: selected
+      ? theme.colors.primary
+      : variant === 'segment'
+        ? 'transparent'
+        : theme.colors.surface,
     alignItems: 'center' as const,
     justifyContent: 'center' as const,
   };
@@ -69,6 +91,7 @@ export const Chip = ({ label, selected = false, onPress }: ChipProps) => {
       onBlur={() => setFocused(false)}
       style={({ pressed }) => [
         style,
+        customStyle,
         { opacity: pressed ? 0.8 : 1 },
         focusRingStyle(focused, theme.colors.info),
       ]}
@@ -76,7 +99,7 @@ export const Chip = ({ label, selected = false, onPress }: ChipProps) => {
       {content}
     </Pressable>
   ) : (
-    <View style={style}>{content}</View>
+    <View style={[style, customStyle]}>{content}</View>
   );
 };
 
@@ -91,6 +114,8 @@ interface SegmentedControlProps<Value extends string> {
   readonly options: readonly SegmentedOption<Value>[];
   readonly onChange: (value: Value) => void;
   readonly style?: StyleProp<ViewStyle>;
+  readonly variant?: ChipProps['variant'];
+  readonly optionStyle?: StyleProp<ViewStyle>;
 }
 
 export const SegmentedControl = <Value extends string>({
@@ -99,6 +124,8 @@ export const SegmentedControl = <Value extends string>({
   options,
   onChange,
   style,
+  variant = 'outlined',
+  optionStyle,
 }: SegmentedControlProps<Value>) => {
   const theme = useAppTheme();
   return (
@@ -115,6 +142,8 @@ export const SegmentedControl = <Value extends string>({
           key={option.value}
           label={option.label}
           selected={option.value === value}
+          variant={variant}
+          style={optionStyle}
           onPress={() => onChange(option.value)}
         />
       ))}

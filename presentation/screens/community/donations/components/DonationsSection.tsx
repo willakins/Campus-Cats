@@ -1,3 +1,4 @@
+import { cardListViewportStyle, cardListContentStyle } from '@/theme';
 import React from 'react';
 import { Linking, ScrollView, View } from 'react-native';
 
@@ -47,9 +48,10 @@ export const DonationsSection = ({
 
   return (
     <ScrollView
-      style={{ flex: 1 }}
+      style={[{ flex: 1 }, cardListViewportStyle(theme)]}
       showsVerticalScrollIndicator={false}
       contentContainerStyle={{
+        ...cardListContentStyle(theme),
         flexGrow: 1,
         justifyContent: 'center',
         gap: theme.spacing.md,

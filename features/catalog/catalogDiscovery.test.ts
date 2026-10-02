@@ -139,6 +139,7 @@ describe('catalog discovery', () => {
         heartCount: 4,
         isFavorite: true,
         mostRecentSighting: new Date('2025-05-02T12:00:00.000Z'),
+        firstSighting: new Date('2025-05-01T12:00:00.000Z'),
       },
       {
         entry: { id: 'inat-guide-2001' },
@@ -146,8 +147,20 @@ describe('catalog discovery', () => {
         heartCount: 7,
         isFavorite: false,
         mostRecentSighting: new Date('2025-05-03T12:00:00.000Z'),
+        firstSighting: new Date('2025-05-03T12:00:00.000Z'),
       },
     ]);
+  });
+
+  it('finds the first sighting regardless of list order and leaves unseen cats undated', () => {
+    const items = buildCatalogItems(
+      [goldie, localEntry('alex', 'Alex', 'Library')],
+      [...campusSightings].reverse(),
+      { counts: {} },
+    );
+
+    expect(items[0].firstSighting).toEqual(new Date('2025-05-01T12:00:00.000Z'));
+    expect(items[1].firstSighting).toBeUndefined();
   });
 
   it('moves one account heart without disturbing other accounts', () => {
