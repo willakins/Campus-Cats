@@ -196,6 +196,7 @@ describe('list item consistency', () => {
         {...catalogEntry}
         sightingCount={3}
         heartCount={2}
+        firstSighting={new Date('2025-07-28T12:00:00')}
         isFavorite={false}
         onToggleFavorite={onToggleFavorite}
       />,
@@ -203,6 +204,8 @@ describe('list item consistency', () => {
 
     expect(screen.getByText('3 sightings')).toBeOnTheScreen();
     expect(screen.getByText('2 hearts')).toBeOnTheScreen();
+    expect(screen.getByText('Jul 28')).toBeOnTheScreen();
+    expect(screen.getByLabelText('First sighting: July 28, 2025')).toBeOnTheScreen();
     expect(screen.getByLabelText('Goldie catalog metrics')).toHaveStyle({
       marginTop: 'auto',
     });

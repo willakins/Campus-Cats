@@ -41,6 +41,7 @@ export interface CatalogListItem {
   readonly entry: CatalogRecord;
   readonly sightingCount: number;
   readonly mostRecentSighting?: Date;
+  readonly firstSighting?: Date;
   readonly heartCount: number;
   readonly isFavorite: boolean;
   readonly tags: readonly CatalogTag[];
@@ -94,6 +95,13 @@ export function buildCatalogItems(
   );
   return entries.map((entry) => {
     const matchingSightings = sightingsForCatalogEntry(entry, sightings);
+    const firstSighting = matchingSightings.reduce<Date | undefined>(
+      (earliest, sighting) =>
+        !earliest || sighting.date.getTime() < earliest.getTime()
+          ? sighting.date
+          : earliest,
+      undefined,
+    );
     const mostRecentSighting = matchingSightings.reduce<Date | undefined>(
       (latest, sighting) =>
         !latest || sighting.date.getTime() > latest.getTime()
@@ -105,6 +113,7 @@ export function buildCatalogItems(
       entry,
       sightingCount: matchingSightings.length,
       mostRecentSighting,
+      firstSighting,
       heartCount: favorites.counts[entry.id] ?? 0,
       isFavorite: favorites.selectedCatalogId === entry.id,
       tags: catalogTagsForEntry(

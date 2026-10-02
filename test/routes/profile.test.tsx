@@ -265,6 +265,14 @@ describe('member profile routes', () => {
     expect(screen.getAllByText('Goldie').length).toBeGreaterThan(0);
     expect(screen.getByTestId('form-action-bar')).toBeOnTheScreen();
     expect(screen.getByTestId('form-action-bar-glass')).toBeOnTheScreen();
+    expect(screen.getByText('View cat profile')).toBeOnTheScreen();
+    await user.press(
+      screen.getByRole('button', { name: 'View favorite cat Goldie' }),
+    );
+    expect(mockPush).toHaveBeenCalledWith({
+      pathname: '/catalog/[id]',
+      params: { id: favorite.id },
+    });
 
     expect(
       screen.queryByRole('button', { name: 'Open account settings' }),
@@ -288,6 +296,57 @@ describe('member profile routes', () => {
       screen.getByRole('button', { name: 'Remove displayed title' }),
     );
     expect(mockSelectTitle).toHaveBeenCalledWith(actor, '');
+  });
+
+  it('selects a title from an unlocked achievement row and prevents duplicate changes', async () => {
+    const user = userEvent.setup();
+    let completeTitleChange!: (result: unknown) => void;
+    mockSelectTitle.mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          completeTitleChange = resolve;
+        }),
+    );
+
+    await renderThemed(<ViewProfile />);
+    const collector = await screen.findByRole('button', {
+      name: 'Display “cat collector”',
+    });
+    expect(collector).toHaveProp('accessibilityState', {
+      selected: false,
+      disabled: false,
+      busy: false,
+    });
+    expect(
+      screen.queryByRole('button', { name: 'Display “prez”' }),
+    ).not.toBeOnTheScreen();
+    expect(screen.getAllByText('Locked')).toHaveLength(3);
+    await user.press(collector);
+    expect(mockSelectTitle).toHaveBeenCalledWith(actor, 'ten-sightings');
+    expect(collector).toBeDisabled();
+    expect(
+      screen.getByRole('button', { name: 'Remove displayed title' }),
+    ).toBeDisabled();
+    await user.press(collector);
+    expect(mockSelectTitle).toHaveBeenCalledTimes(1);
+
+    await act(async () =>
+      completeTitleChange({
+        ok: true,
+        value: { ...profile, selectedTitleId: 'ten-sightings' },
+        warnings: [],
+      }),
+    );
+    expect(screen.getByTestId('profile-selected-title')).toHaveTextContent(
+      'cat collector',
+    );
+    expect(
+      screen.getByRole('button', { name: 'Remove displayed title' }),
+    ).toHaveProp('accessibilityState', {
+      selected: true,
+      disabled: false,
+      busy: false,
+    });
   });
 
   it('opens the signed-in member profile when the route omits an ID', async () => {
@@ -327,7 +386,9 @@ describe('member profile routes', () => {
         name: 'Learn about iNaturalist connection',
       }),
     );
-    expect(mockPush).toHaveBeenCalledWith('/settings/integrations/inaturalist-account');
+    expect(mockPush).toHaveBeenCalledWith(
+      '/settings/integrations/inaturalist-account',
+    );
   });
 
   it('renders its skeleton while profile data is loading', async () => {
@@ -386,6 +447,9 @@ describe('member profile routes', () => {
     expect(screen.queryByText('Connected accounts')).not.toBeOnTheScreen();
     expect(
       screen.queryByRole('button', { name: 'Remove displayed title' }),
+    ).not.toBeOnTheScreen();
+    expect(
+      screen.queryByRole('button', { name: 'Display “cat collector”' }),
     ).not.toBeOnTheScreen();
     expect(mockProfileGetOrSync).toHaveBeenCalledWith('member-2');
   });

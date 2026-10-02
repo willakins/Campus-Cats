@@ -181,6 +181,44 @@ describe('authentication routes', () => {
     expect(mockReplace).not.toHaveBeenCalledWith('/university-search');
   });
 
+  it.each([true, false])(
+    'returns to university selection after logout without history (SSO: %s)',
+    async (hasSso) => {
+      mockCanGoBack = false;
+      if (!hasSso) {
+        mockSelectedUniversity = {
+          ...mockGeorgiaTech,
+          club: { ...mockGeorgiaTech.club!, saml: undefined },
+        };
+      }
+      const user = userEvent.setup();
+      await renderThemed(<LoginScreen />);
+      await user.press(screen.getByRole('button', { name: 'Back' }));
+
+      expect(mockReplace).toHaveBeenCalledWith('/university-search');
+      expect(mockBack).not.toHaveBeenCalled();
+      expect(mockClearUniversity).not.toHaveBeenCalled();
+    },
+  );
+
+  it('returns from email to sign-in choices before selecting a different university without history', async () => {
+    mockCanGoBack = false;
+    const user = userEvent.setup();
+    await renderThemed(<LoginScreen />);
+    await user.press(
+      screen.getByRole('button', { name: 'Sign in with email' }),
+    );
+    await user.press(screen.getByRole('button', { name: 'Back' }));
+    expect(
+      screen.getByRole('header', { name: 'Sign in to Campus Cats' }),
+    ).toBeOnTheScreen();
+    expect(mockReplace).not.toHaveBeenCalled();
+    expect(mockBack).not.toHaveBeenCalled();
+
+    await user.press(screen.getByRole('button', { name: 'Back' }));
+    expect(mockReplace).toHaveBeenCalledWith('/university-search');
+  });
+
   it('opens email sign-in directly for a club without SSO', async () => {
     mockSelectedUniversity = {
       id: '139658',
