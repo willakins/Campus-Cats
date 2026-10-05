@@ -177,7 +177,7 @@ const SightingForm: React.FC<SightingFormProps> = ({
             />
           ) : (
             <FormTextInput
-              label="Cat name"
+              label="Cat name" maxLength={120}
               required
               error={errors.name}
               value={formData.name}
@@ -279,7 +279,7 @@ const SightingForm: React.FC<SightingFormProps> = ({
       </FormSection>
       <FormSection title="Notes">
         <FormTextInput
-          label="Additional notes"
+          label="Additional notes" maxLength={5000}
           hideLabel
           value={formData.info}
           placeholder="What was the cat doing?"

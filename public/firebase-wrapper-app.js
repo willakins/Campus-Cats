@@ -12,6 +12,29 @@
   const networkFailureMessage =
     'Georgia Tech SSO needs an internet connection. Reconnect and try again.';
 
+  // Credentials may only return to our native route or this hosted app. Never
+  // use a caller-controlled URL as an unrestricted credential redirect.
+  const validCallback = (value, location) => {
+    try {
+      if (/[\s\\]/.test(value)) return false;
+      const url = new URL(value);
+      if (url.username || url.password || url.port || url.search || url.hash) return false;
+      if (url.protocol === 'campuscats:') {
+        return (url.hostname === 'saml-sign-in' && !url.pathname) ||
+          (!url.hostname && url.pathname === '/saml-sign-in');
+      }
+      const hosts = [location.hostname];
+      if (/^[a-z0-9-]+\.(firebaseapp\.com|web\.app)$/.test(location.hostname)) {
+        hosts.push(location.hostname.replace(/\.(firebaseapp\.com|web\.app)$/, '.firebaseapp.com'));
+        hosts.push(location.hostname.replace(/\.(firebaseapp\.com|web\.app)$/, '.web.app'));
+      }
+      return url.protocol === 'https:' && hosts.includes(url.hostname) &&
+        url.pathname === '/saml-sign-in';
+    } catch {
+      return false;
+    }
+  };
+
   const renderFailure = (render, message, canRetry = true) => {
     render({ state: 'error', message, canRetry });
   };
@@ -21,8 +44,11 @@
     const linkingUri = parameters.get('linkingUri');
     const apiKey = parameters.get('apiKey');
     const authDomain = parameters.get('authDomain');
+    const state = parameters.get('state');
 
-    if (!linkingUri || !apiKey || !authDomain) {
+    if (!linkingUri || !apiKey || !authDomain ||
+        authDomain !== location.hostname || !validCallback(linkingUri, location) ||
+        !state || !/^[A-Za-z0-9_-]{16,200}$/.test(state)) {
       renderFailure(
         render,
         'Georgia Tech SSO is not configured for this web app.',
@@ -51,7 +77,12 @@
       const auth = app.auth();
       const provider = new firebase.auth.SAMLAuthProvider('saml.gt-sso');
 
-      if (storage.getItem(stateKey) === 'pending') {
+      const expectedSession = JSON.stringify({ linkingUri, apiKey, authDomain, state });
+      const pendingSession = storage.getItem(stateKey);
+      if (pendingSession && pendingSession !== expectedSession) {
+        throw new Error('SSO return does not match the pending session');
+      }
+      if (pendingSession === expectedSession) {
         render({
           state: 'loading',
           message: 'Completing Georgia Tech sign-in…',
@@ -64,15 +95,15 @@
 
         storage.removeItem(stateKey);
         const callback = new URL(linkingUri);
-        callback.searchParams.set(
-          'credential',
-          JSON.stringify(result.credential.toJSON()),
-        );
+        // Fragments stay in the browser and are not sent to hosting/access logs.
+        callback.hash = new URLSearchParams({
+          state, credential: JSON.stringify(result.credential.toJSON()),
+        }).toString();
         location.replace(callback.toString());
         return;
       }
 
-      storage.setItem(stateKey, 'pending');
+      storage.setItem(stateKey, expectedSession);
       render({
         state: 'loading',
         message: 'Redirecting to Georgia Tech…',

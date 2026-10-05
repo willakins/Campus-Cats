@@ -19,6 +19,7 @@ import { FirebaseCommunityVotingGateway } from './FirebaseCommunityVotingGateway
 import { FirebaseCatalogDiscovery } from './FirebaseCatalogDiscovery';
 import { FirebaseCatalogFavorites } from './FirebaseCatalogFavorites';
 import { FirebaseCatalogReads } from './FirebaseCatalogReads';
+import { FirebaseValidatedContentWriter } from './FirebaseValidatedContentWriter';
 import { FirebaseDocumentStore } from './FirebaseDocumentStore';
 import { FirebaseInaturalistEffects } from './FirebaseInaturalistEffects';
 import { FirebaseInaturalistReader } from './FirebaseInaturalistReader';
@@ -55,7 +56,7 @@ export function createFirebaseBackend(
   const firebaseClubBilling = new FirebaseClubBilling(db, functions);
   const tenantScope = new FirebaseTenantScope();
   const documents = new TenantDocumentStore(
-    new FirebaseDocumentStore(db, () => auth.currentUser?.uid ?? 'signed-out'),
+    new FirebaseDocumentStore(db, () => auth.currentUser?.uid ?? 'signed-out', new FirebaseValidatedContentWriter(functions)),
     tenantScope,
   );
   const media = new TenantMediaStore(

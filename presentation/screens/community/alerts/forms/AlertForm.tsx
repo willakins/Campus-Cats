@@ -87,7 +87,7 @@ const AlertForm: React.FC<AlertFormProps> = ({
           }
         >
           <FormTextInput
-            label="Title"
+            label="Title" maxLength={120}
             required
             error={errors.title}
             value={formData.title}
@@ -101,7 +101,7 @@ const AlertForm: React.FC<AlertFormProps> = ({
           }
         >
           <FormTextInput
-            label="Description"
+            label="Description" maxLength={5000}
             required
             error={errors.info}
             value={formData.info}
@@ -124,7 +124,7 @@ const AlertForm: React.FC<AlertFormProps> = ({
       </FormSection>
       <FormSection title="Credits">
         <FormTextInput
-          label="Author alias"
+          label="Author alias" maxLength={120}
           helper="Optional—when blank, the contributor ID remains visible."
           value={formData.authorAlias}
           placeholder="Campus Cats Team"

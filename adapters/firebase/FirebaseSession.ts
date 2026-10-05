@@ -102,7 +102,13 @@ export class FirebaseSession implements SessionPort {
             }
           },
           (error) => {
-            if (active && currentRevision === revision) onError(error);
+            if (!active || currentRevision !== revision) return;
+            if (error.code === 'permission-denied') {
+              this.tenantScope?.clearAuthenticatedClub();
+              onChange(undefined);
+              void signOut(this.auth).catch(onError);
+            }
+            onError(error);
           },
         );
       },

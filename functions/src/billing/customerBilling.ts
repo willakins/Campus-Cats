@@ -41,6 +41,7 @@ interface BillingActor {
 }
 
 interface BillingAccount {
+  readonly verifiedCustomer?: Stripe.Customer;
   readonly customerId?: string;
   readonly subscriptionId?: string;
   readonly outstandingInvoiceId?: string;
@@ -117,8 +118,8 @@ export class CustomerBillingService {
   }
 
   async getSummary(authUid: string | undefined) {
-    const { club } = await this.requirePresident(authUid);
-    const account = await this.account(club.id);
+    const { actor, club } = await this.requirePresident(authUid);
+    const account = await this.verifiedAccount(club.id);
     const period = localMonthPeriod(this.now(), club.timezone);
     const usageSnapshot = await this.dependencies.firestore
       .collection(CLUBS)
@@ -139,6 +140,9 @@ export class CustomerBillingService {
         ])
       : [undefined, { data: [] }, undefined];
 
+    for (const invoice of invoices.data)
+      this.assertCustomer(invoice.customer, account.customerId);
+    await this.assertResponseAccess(actor, account);
     return {
       ...accessResponse(club),
       billingEmail: club.billingEmail,
@@ -183,6 +187,7 @@ export class CustomerBillingService {
       this.dependencies.config.webAppOrigin,
     );
     const account = await this.ensureCustomer(club, actor.email);
+    await this.assertActor(actor);
     const session = await this.dependencies.stripe.checkout.sessions.create({
       mode: 'setup',
       customer: account.customerId,
@@ -202,6 +207,7 @@ export class CustomerBillingService {
       cancel_url: appendResult(safeReturnUrl, 'cancelled'),
     });
     if (!session.url) throw new Error('Stripe Checkout URL was not created');
+    await this.assertResponseAccess(actor, account);
     return { url: session.url };
   }
 
@@ -209,14 +215,15 @@ export class CustomerBillingService {
     authUid: string | undefined,
     returnUrl: unknown,
   ): Promise<{ readonly url: string }> {
-    const { club } = await this.requirePresident(authUid);
-    const account = await this.account(club.id);
+    const { actor, club } = await this.requirePresident(authUid);
+    const account = await this.verifiedAccount(club.id);
     if (!account.customerId) {
       throw new HandlerError(
         'failed-precondition',
         'Complete billing setup first',
       );
     }
+    await this.assertActor(actor);
     const session =
       await this.dependencies.stripe.billingPortal.sessions.create({
         customer: account.customerId,
@@ -225,14 +232,15 @@ export class CustomerBillingService {
           this.dependencies.config.webAppOrigin,
         ),
       });
+    await this.assertResponseAccess(actor, account);
     return { url: session.url };
   }
 
   async payOutstandingInvoice(
     authUid: string | undefined,
   ): Promise<{ readonly url: string }> {
-    const { club } = await this.requirePresident(authUid);
-    const account = await this.account(club.id);
+    const { actor, club } = await this.requirePresident(authUid);
+    const account = await this.verifiedAccount(club.id);
     if (!account.customerId) {
       throw new HandlerError(
         'failed-precondition',
@@ -253,6 +261,8 @@ export class CustomerBillingService {
     if (!invoice?.hosted_invoice_url) {
       throw new HandlerError('not-found', 'No payable invoice was found');
     }
+    this.assertCustomer(invoice.customer, account.customerId);
+    await this.assertResponseAccess(actor, account);
     return { url: invoice.hosted_invoice_url };
   }
 
@@ -275,6 +285,7 @@ export class CustomerBillingService {
       );
     }
     const account = await this.ensureCustomer(club, actor.email);
+    await this.assertActor(actor);
     if (
       !account.subscriptionId &&
       method === 'manual' &&
@@ -310,11 +321,13 @@ export class CustomerBillingService {
           },
           { merge: true },
         );
-      return this.createBillingDetailsPortal(account, returnUrl);
+      return this.createBillingDetailsPortal(account, returnUrl, actor);
     }
     if (method === 'automatic' && !(await this.defaultPaymentMethod(account))) {
       return this.createSetupSessionForMethod(actor, club, returnUrl, method);
     }
+    await this.verifySubscription(club.id, account);
+    await this.assertActor(actor);
     let subscriptionId = account.subscriptionId;
     let activatingSubscription: Stripe.Subscription | undefined;
     const activating = !subscriptionId;
@@ -387,6 +400,7 @@ export class CustomerBillingService {
   private async createBillingDetailsPortal(
     account: Required<Pick<BillingAccount, 'customerId'>> & BillingAccount,
     returnUrl: unknown,
+    actor: BillingActor,
   ): Promise<{ readonly url: string }> {
     const session =
       await this.dependencies.stripe.billingPortal.sessions.create({
@@ -396,20 +410,23 @@ export class CustomerBillingService {
           this.dependencies.config.webAppOrigin,
         ),
       });
+    await this.assertResponseAccess(actor, account);
     return { url: session.url };
   }
 
   async scheduleCancellation(
     authUid: string | undefined,
   ): Promise<AccessResponse> {
-    const { club } = await this.requirePresident(authUid);
-    const account = await this.account(club.id);
+    const { actor, club } = await this.requirePresident(authUid);
+    const account = await this.verifiedAccount(club.id);
     if (!account.subscriptionId) {
       throw new HandlerError(
         'failed-precondition',
         'No active subscription exists',
       );
     }
+    await this.verifySubscription(club.id, account);
+    await this.assertActor(actor);
     const subscription = await this.dependencies.stripe.subscriptions.update(
       account.subscriptionId,
       { cancel_at_period_end: true },
@@ -434,9 +451,10 @@ export class CustomerBillingService {
     authUid: string | undefined,
     value: unknown,
   ): Promise<void> {
-    const { club } = await this.requirePresident(authUid);
+    const { actor, club } = await this.requirePresident(authUid);
     const email = billingEmail(value);
-    const account = await this.account(club.id);
+    const account = await this.verifiedAccount(club.id);
+    await this.assertActor(actor);
     await Promise.all([
       this.clubReference(club.id).set(
         { billingEmail: email, updatedAt: Timestamp.fromDate(this.now()) },
@@ -458,14 +476,16 @@ export class CustomerBillingService {
   async resumeSubscription(
     authUid: string | undefined,
   ): Promise<AccessResponse> {
-    const { club } = await this.requirePresident(authUid);
-    const account = await this.account(club.id);
+    const { actor, club } = await this.requirePresident(authUid);
+    const account = await this.verifiedAccount(club.id);
     if (!account.subscriptionId) {
       throw new HandlerError(
         'failed-precondition',
         'No subscription can be resumed',
       );
     }
+    await this.verifySubscription(club.id, account);
+    await this.assertActor(actor);
     await this.dependencies.stripe.subscriptions.update(
       account.subscriptionId,
       {
@@ -981,24 +1001,42 @@ export class CustomerBillingService {
     eventId: string,
   ): Promise<void> {
     const clubId = session.metadata?.clubId;
-    if (!clubId || !session.customer) return;
+    if (
+      !clubId ||
+      session.metadata?.purpose !== 'activate_or_update_collection'
+    )
+      return;
+    if (
+      session.mode !== 'setup' ||
+      session.status !== 'complete' ||
+      !session.customer ||
+      !session.setup_intent
+    ) {
+      throw this.ownershipError();
+    }
     const club = await this.club(clubId);
+    let account = await this.verifiedAccount(clubId);
     const customerId = stripeId(session.customer);
+    this.assertCustomer(customerId, account.customerId);
+    await this.verifySubscription(clubId, account);
     const collectionMethod: CollectionMethod =
       session.metadata?.collectionMethod === 'manual' ? 'manual' : 'automatic';
-    if (session.setup_intent) {
-      const setupIntent = await this.dependencies.stripe.setupIntents.retrieve(
-        stripeId(session.setup_intent),
+    const setupIntent = await this.dependencies.stripe.setupIntents.retrieve(
+      stripeId(session.setup_intent),
+    );
+    this.assertCustomer(setupIntent.customer, customerId);
+    if (setupIntent.status !== 'succeeded' || !setupIntent.payment_method)
+      throw this.ownershipError();
+    const paymentMethod =
+      await this.dependencies.stripe.paymentMethods.retrieve(
+        stripeId(setupIntent.payment_method),
       );
-      if (setupIntent.payment_method) {
-        await this.dependencies.stripe.customers.update(customerId, {
-          invoice_settings: {
-            default_payment_method: stripeId(setupIntent.payment_method),
-          },
-        });
-      }
-    }
-    let account = await this.account(clubId);
+    this.assertCustomer(paymentMethod.customer, customerId);
+    await this.dependencies.stripe.customers.update(customerId, {
+      invoice_settings: {
+        default_payment_method: stripeId(setupIntent.payment_method),
+      },
+    });
     let activatingSubscription: Stripe.Subscription | undefined;
     const activating = !account.subscriptionId;
     if (!account.subscriptionId) {
@@ -1252,8 +1290,8 @@ export class CustomerBillingService {
     const clubId = subscription.metadata.clubId;
     if (!clubId) return;
     const account = await this.account(clubId);
-    if (account.subscriptionId && account.subscriptionId !== subscription.id)
-      return;
+    if (account.subscriptionId !== subscription.id) return;
+    this.assertCustomer(subscription.customer, account.customerId);
     const scheduledEndAt = subscription.cancel_at_period_end
       ? subscriptionPeriodEnd(subscription)
       : undefined;
@@ -1289,6 +1327,7 @@ export class CustomerBillingService {
     if (!clubId || !subscription.trial_end) return;
     const account = await this.account(clubId);
     if (account.subscriptionId !== subscription.id) return;
+    this.assertCustomer(subscription.customer, account.customerId);
     const club = await this.club(clubId);
     const trialEndsAt = new Date(subscription.trial_end * 1000);
     const ending = subscription.cancel_at_period_end;
@@ -1308,6 +1347,7 @@ export class CustomerBillingService {
     if (!clubId) return;
     const account = await this.account(clubId);
     if (account.subscriptionId !== subscription.id) return;
+    this.assertCustomer(subscription.customer, account.customerId);
     const club = await this.club(clubId);
     const reason = account.suspensionReason ?? 'cancellation';
     await Promise.all([
@@ -1418,7 +1458,7 @@ export class CustomerBillingService {
     club: StoredClub,
     presidentEmail: string,
   ): Promise<Required<Pick<BillingAccount, 'customerId'>> & BillingAccount> {
-    const account = await this.account(club.id);
+    const account = await this.verifiedAccount(club.id);
     if (account.customerId)
       return { ...account, customerId: account.customerId };
     const customer = await this.dependencies.stripe.customers.create(
@@ -1550,6 +1590,7 @@ export class CustomerBillingService {
     if (
       !snapshot.exists ||
       data?.banned === true ||
+      data?.deletionPending === true ||
       (data?.role !== 3 && data?.role !== 4) ||
       typeof data.email !== 'string' ||
       typeof data.clubId !== 'string'
@@ -1572,6 +1613,72 @@ export class CustomerBillingService {
     const snapshot = await this.clubReference(clubId).get();
     if (!snapshot.exists) throw new HandlerError('not-found', 'Club not found');
     return storedClub(snapshot.id, snapshot.data()!);
+  }
+
+  private ownershipError(): HandlerError {
+    return new HandlerError(
+      'failed-precondition',
+      'Billing account ownership could not be verified',
+    );
+  }
+
+  private assertCustomer(actual: unknown, expected: string | undefined): void {
+    const id =
+      typeof actual === 'string'
+        ? actual
+        : (actual as { id?: unknown } | null)?.id;
+    if (!expected || id !== expected) throw this.ownershipError();
+  }
+
+  private async verifiedAccount(clubId: string): Promise<BillingAccount> {
+    const account = await this.account(clubId);
+    if (!account.customerId) {
+      if (account.subscriptionId || account.outstandingInvoiceId)
+        throw this.ownershipError();
+      return account;
+    }
+    const customer = await this.dependencies.stripe.customers.retrieve(
+      account.customerId,
+    );
+    if (
+      customer.deleted ||
+      customer.id !== account.customerId ||
+      customer.metadata?.clubId !== clubId
+    ) {
+      throw this.ownershipError();
+    }
+    return { ...account, verifiedCustomer: customer };
+  }
+
+  private async verifySubscription(
+    clubId: string,
+    account: BillingAccount,
+  ): Promise<void> {
+    if (!account.subscriptionId) return;
+    const subscription = await this.dependencies.stripe.subscriptions.retrieve(
+      account.subscriptionId,
+    );
+    this.assertCustomer(subscription.customer, account.customerId);
+    if (subscription.metadata?.clubId !== clubId) throw this.ownershipError();
+  }
+
+  private async assertActor(actor: BillingActor): Promise<void> {
+    const current = await this.requirePresident(actor.id);
+    if (current.actor.clubId !== actor.clubId) {
+      throw new HandlerError(
+        'permission-denied',
+        'Billing membership changed; reload to continue',
+      );
+    }
+  }
+
+  private async assertResponseAccess(
+    actor: BillingActor,
+    account: BillingAccount,
+  ): Promise<void> {
+    await this.assertActor(actor);
+    const current = await this.account(actor.clubId);
+    if (current.customerId !== account.customerId) throw this.ownershipError();
   }
 
   private async account(clubId: string): Promise<BillingAccount> {
@@ -1605,23 +1712,28 @@ export class CustomerBillingService {
     invoice: Stripe.Invoice,
   ): Promise<string | undefined> {
     const metadata = invoice.parent?.subscription_details?.metadata;
-    if (metadata?.clubId) return metadata.clubId;
     const customerId = stripeId(invoice.customer);
     const snapshot = await this.dependencies.firestore
       .collection(ACCOUNTS)
       .where('customerId', '==', customerId)
-      .limit(1)
+      .limit(2)
       .get();
-    return snapshot.docs[0]?.id;
+    const clubId = snapshot.docs[0]?.id;
+    if (
+      snapshot.docs.length > 1 ||
+      (metadata?.clubId && clubId !== metadata.clubId)
+    )
+      throw this.ownershipError();
+    return clubId;
   }
 
   private async defaultPaymentMethod(
     account: BillingAccount,
   ): Promise<string | undefined> {
     if (!account.customerId) return undefined;
-    const customer = await this.dependencies.stripe.customers.retrieve(
-      account.customerId,
-    );
+    const customer =
+      account.verifiedCustomer ??
+      (await this.dependencies.stripe.customers.retrieve(account.customerId));
     if (customer.deleted) return undefined;
     return customer.invoice_settings.default_payment_method
       ? stripeId(customer.invoice_settings.default_payment_method)
@@ -1632,9 +1744,9 @@ export class CustomerBillingService {
     account: BillingAccount,
   ): Promise<boolean> {
     if (!account.customerId) return false;
-    const customer = await this.dependencies.stripe.customers.retrieve(
-      account.customerId,
-    );
+    const customer =
+      account.verifiedCustomer ??
+      (await this.dependencies.stripe.customers.retrieve(account.customerId));
     if (customer.deleted) return false;
     return customerHasRequiredBillingDetails(customer);
   }
@@ -1646,6 +1758,7 @@ export class CustomerBillingService {
     if (!paymentMethodId) return undefined;
     const paymentMethod =
       await this.dependencies.stripe.paymentMethods.retrieve(paymentMethodId);
+    this.assertCustomer(paymentMethod.customer, account.customerId);
     return paymentMethod.card
       ? `${paymentMethod.card.wallet?.type === 'apple_pay' ? 'Apple Pay · ' : ''}${paymentMethod.card.brand.toUpperCase()} ending in ${paymentMethod.card.last4}`
       : paymentMethod.type;
@@ -2006,7 +2119,10 @@ function requiredReturnUrl(value: unknown, webAppOrigin: string): string {
   } catch {
     throw new HandlerError('invalid-argument', 'Return URL is invalid');
   }
-  if (parsed.protocol !== 'https:' && parsed.hostname !== 'localhost') {
+  if (
+    parsed.protocol !== 'https:' &&
+    !(parsed.protocol === 'http:' && parsed.hostname === 'localhost')
+  ) {
     throw new HandlerError('invalid-argument', 'Return URL must use HTTPS');
   }
   let configured: URL;
@@ -2018,7 +2134,12 @@ function requiredReturnUrl(value: unknown, webAppOrigin: string): string {
       'The billing web origin has not been configured',
     );
   }
-  if (parsed.hostname !== 'localhost' && parsed.origin !== configured.origin) {
+  if (
+    parsed.origin !== configured.origin ||
+    parsed.username ||
+    parsed.password ||
+    value.length > 2048
+  ) {
     throw new HandlerError(
       'invalid-argument',
       'Return URL origin is not allowed',

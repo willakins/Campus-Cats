@@ -24,6 +24,23 @@ const member = parseUser({
 });
 
 describe('canonical domain models', () => {
+  it('bounds free text, rejects control characters, and preserves plain Unicode text', () => {
+    const sighting = {
+      id: 'sighting-1', name: "  O’Malley <3 🐈  ", info: '<script>alert(1)</script>\nStill plain text',
+      fed: true, health: true, date: new Date(), location: { latitude: 0, longitude: 0 }, timeOfDay: 'Morning',
+    };
+    expect(parseSighting(sighting).name).toBe('O’Malley <3 🐈');
+    expect(parseSighting(sighting).info).toBe(sighting.info);
+    expect(() => parseSighting({ ...sighting, name: 'a'.repeat(121) })).toThrow();
+    expect(() => parseSighting({ ...sighting, info: 'a'.repeat(5001) })).toThrow();
+    expect(() => parseSighting({ ...sighting, info: 'hidden\u0000text' })).toThrow();
+    expect(() => parseSighting({ ...sighting, id: 'cat/nested/path' })).toThrow();
+  });
+
+  it.each(['javascript:alert(1)', 'data:text/html,hello', 'https://user:pass@example.com', 'https://example.com/\npath'])('rejects unsafe contact URLs: %s', (websiteUrl) => {
+    expect(() => parseContact({ id: 'contact-1', name: 'Club', email: 'cats@example.com', websiteUrls: [websiteUrl] })).toThrow();
+  });
+
   it('defaults legacy accounts to not agreed and preserves recorded terms consent', () => {
     expect(member.agreedToTerms).toBeUndefined();
     expect(member.termsVersion).toBeUndefined();

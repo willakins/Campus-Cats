@@ -155,6 +155,7 @@ function buildDependencies(overrides: Partial<HandlerDependencies> = {}) {
     async sendWhitelistCredentials(email) {
       operations.push(`email:${email}`);
     },
+    async consumeWhitelistQuota() {},
     async findWhitelistByEmail() {
       return false;
     },
@@ -440,9 +441,11 @@ describe('callable handlers', () => {
       { authUid: 'super-1', data: { userId: 'admin-1' } },
       dependencies,
     );
-    assert.deepEqual(operations.slice(-2), [
+    assert.deepEqual(operations.slice(-4), [
+      'prepare-deletion:admin-1',
       'delete-user:admin-1',
       'delete-auth:admin-1',
+      'complete-deletion:admin-1',
     ]);
     await rejectsWithCode(
       () =>
@@ -716,6 +719,24 @@ describe('callable handlers', () => {
     );
   });
 
+  it('rejects a rate-limited public application before querying or writing applications', async () => {
+    const checks: string[] = [];
+    const dependencies = {
+      ...buildDependencies().dependencies,
+      async consumeWhitelistQuota(ip: string | undefined, email: string) {
+        checks.push(`${ip}:${email}`);
+        throw new Error('Application limit reached');
+      },
+      async findWhitelistByEmail() { throw new Error('Application lookup must not run'); },
+      async createWhitelistApplication() { throw new Error('Application write must not run'); },
+    };
+    const request = { clientIp: '192.0.2.10', data: {
+      name: 'Alex', email: 'Alex@Example.com', clientIp: '198.51.100.1',
+    } };
+    await assert.rejects(handleSubmitWhitelistApplication(request, dependencies), /Application limit reached/);
+    assert.deepEqual(checks, ['192.0.2.10:alex@example.com']);
+  });
+
   it('authorizes and propagates whitelist email provider failures', async () => {
     const { dependencies } = buildDependencies({
       async sendWhitelistCredentials() {
@@ -882,5 +903,25 @@ describe('callable handlers', () => {
         ),
       'invalid-argument',
     );
+  });
+});
+
+
+describe('untrusted text at callable boundaries', () => {
+  it('rejects oversized or malformed membership applications before persistence', async () => {
+    for (const patch of [
+      { name: 'x'.repeat(201) }, { graduationYear: 'x'.repeat(21) },
+      { codeWord: 'x'.repeat(201) }, { name: 'bad\u0000name' },
+      { email: 'a@example.com\r\nBcc: b@example.com' },
+    ]) {
+      let persisted = false;
+      const dependencies = buildDependencies({
+        createWhitelistApplication: async () => { persisted = true; return { created: true, id: 'id' }; },
+      });
+      await assert.rejects(handleSubmitWhitelistApplication({ data: {
+        name: 'Alex', email: 'alex@example.com', ...patch,
+      } }, dependencies.dependencies), { code: 'invalid-argument' });
+      assert.equal(persisted, false);
+    }
   });
 });

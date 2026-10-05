@@ -40,7 +40,7 @@ export class InMemoryMediaStore implements MediaStore {
     this.maybeFail('upload');
     const asset = {
       id: upload.id,
-      url: `memory://${upload.id}`,
+      url: `https://media.example.test/${upload.id}`,
       role: upload.role,
     } as const;
     this.#assets.set(asset.id, asset);

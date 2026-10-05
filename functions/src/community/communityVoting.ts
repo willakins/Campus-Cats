@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 
-import { HandlerError, ManagedUser } from '../shared/handlers';
+import { HandlerError, ManagedUser, stringValue } from '../shared/handlers';
 import {
   StoredParticipationAudience,
   assertCanParticipate,
@@ -157,7 +157,7 @@ export async function handleSubmitCommunityNomination(
   }
   const pitch =
     typeof request.data.pitch === 'string'
-      ? request.data.pitch.trim()
+      ? stringValue(request.data.pitch, 'pitch', 500).trim()
       : undefined;
   if (request.data.action === 'abstain' && pitch) {
     throw new HandlerError(

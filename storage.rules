@@ -12,7 +12,16 @@ service firebase.storage {
 
     function sameClub(clubId) {
       return signedIn()
+        && sessionIsCurrent(userDocument().data)
         && userDocument().data.clubId == clubId;
+    }
+
+    function sessionIsCurrent(user) {
+      return (!('deletionPending' in user) || user.deletionPending != true)
+        && (!('sessionRevokedAt' in user)
+        || (user.sessionRevokedAt is int
+          && request.auth.token.auth_time is int
+          && request.auth.token.auth_time > user.sessionRevokedAt));
     }
 
     function clubDocument(clubId) {
@@ -67,25 +76,30 @@ service firebase.storage {
 
     function validImage() {
       return request.resource.size <= 10 * 1024 * 1024
-        && request.resource.contentType.matches('image/.*')
+        && request.resource.contentType.matches('image/(jpeg|png|webp|gif|avif|heic|heif)')
         && !('billingInitiatedBy' in request.resource.metadata);
     }
 
+    function hasSighting(clubId, sightingId) {
+      return firestore.exists(/databases/(default)/documents/clubs/$(clubId)/cat-sightings/$(sightingId));
+    }
+
+    function ownsSightingRecord(clubId, sightingId) {
+      return firestore.get(/databases/(default)/documents/clubs/$(clubId)/content-contributors/$(('sighting__' + sightingId))).data.user.id == request.auth.uid;
+    }
+
     function ownsSighting(clubId, sightingId) {
-      return isActiveUser(clubId)
-        && (
-          resource.metadata.ownerId == request.auth.uid
-          || (
-            firestore.exists(/databases/(default)/documents/clubs/$(clubId)/cat-sightings/$(sightingId))
-            && firestore.exists(/databases/(default)/documents/clubs/$(clubId)/content-contributors/$(('sighting__' + sightingId)))
-            && firestore.get(/databases/(default)/documents/clubs/$(clubId)/content-contributors/$(('sighting__' + sightingId))).data.user.id == request.auth.uid
-          )
-        );
+      return isActiveUser(clubId) && (
+        hasSighting(clubId, sightingId)
+          ? ownsSightingRecord(clubId, sightingId)
+          : resource.metadata.ownerId == request.auth.uid
+      );
     }
 
     match /clubs/{clubId}/cat-sightings/{sightingId}/{fileName} {
       allow read: if isActiveUser(clubId);
       allow create: if isActiveUser(clubId)
+        && (!hasSighting(clubId, sightingId) || ownsSightingRecord(clubId, sightingId))
         && validImage()
         && request.resource.metadata.ownerId == request.auth.uid;
       allow update: if ownsSighting(clubId, sightingId)

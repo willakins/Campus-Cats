@@ -110,6 +110,35 @@ async function rejectsWithCode(
 }
 
 describe('iNaturalist account linking', () => {
+  it('rejects callbacks after membership is removed, banned, or moved to another club', async () => {
+    for (const current of [undefined, { ...member, banned: true }, { ...member, clubId: 'another-club' }]) {
+      const { value, links, operations } = buildDependencies();
+      const begun = await handleBeginInaturalistAccountLink({ authUid: member.id, data: {} }, value);
+      value.getUser = async () => current;
+      const result = await handleInaturalistAccountCallback({
+        state: new URL(begun.authorizationUrl).searchParams.get('state'), code: 'code',
+      }, value);
+      assert.equal(new URL(result.redirectUrl).searchParams.get('result'), 'error');
+      assert.equal(links.size, 0);
+      assert.deepEqual(operations, []);
+    }
+  });
+
+  it('rechecks membership after the provider returns and still revokes its token', async () => {
+    const { value, links, operations } = buildDependencies();
+    const begun = await handleBeginInaturalistAccountLink({ authUid: member.id, data: {} }, value);
+    value.oauth.getIdentity = async () => {
+      value.getUser = async () => ({ ...member, banned: true });
+      return { inaturalistUserId: 42, login: 'cat_watcher' };
+    };
+    const result = await handleInaturalistAccountCallback({
+      state: new URL(begun.authorizationUrl).searchParams.get('state'), code: 'code',
+    }, value);
+    assert.equal(new URL(result.redirectUrl).searchParams.get('result'), 'error');
+    assert.equal(links.size, 0);
+    assert.ok(operations.includes('revoke:oauth-token'));
+  });
+
   it('starts a short-lived, state-bound PKCE authorization for an active user', async () => {
     const { attempts, value } = buildDependencies();
     const result = await handleBeginInaturalistAccountLink(

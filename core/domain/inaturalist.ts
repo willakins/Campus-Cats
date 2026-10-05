@@ -1,3 +1,4 @@
+import { httpUrlSchema } from './inputValidation';
 import { z } from 'zod';
 
 import { DisplayMediaAsset, ExternalMediaAsset, MediaAssetId } from '../ports';
@@ -26,13 +27,13 @@ const mediaIdSchema = z.custom<MediaAssetId>(
 export const externalMediaAssetSchema = z.object({
   kind: z.literal('external'),
   id: mediaIdSchema,
-  url: z.string().url(),
-  thumbnailUrl: z.string().url(),
+  url: httpUrlSchema,
+  thumbnailUrl: httpUrlSchema,
   role: z.enum(['profile', 'gallery']),
-  sourceUrl: z.string().url(),
+  sourceUrl: httpUrlSchema,
   attribution: requiredText,
   licenseCode: requiredText,
-  licenseUrl: z.string().url(),
+  licenseUrl: httpUrlSchema,
 });
 
 export const importModerationSchema = z.object({
@@ -86,7 +87,7 @@ export const importedObservationSchema = z.object({
   id: z.number().int().positive(),
   uuid: z.string().uuid(),
   projectId: z.number().int().positive(),
-  sourceUrl: z.string().url(),
+  sourceUrl: httpUrlSchema,
   sourceUpdatedAt: validDate,
   observedAt: validDate,
   observedOn: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
@@ -149,7 +150,7 @@ export const catalogOverrideSchema = z.object({
 export const importedCatalogProfileSchema = z.object({
   id: z.number().int().positive(),
   guideId: z.number().int().positive(),
-  sourceUrl: z.string().url(),
+  sourceUrl: httpUrlSchema,
   sourceUpdatedAt: validDate,
   displayName: requiredText,
   shortDescription: requiredText,

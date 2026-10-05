@@ -18,6 +18,7 @@ import {
   StoredDocument,
 } from '../../core/ports';
 import { InFlightReads } from './InFlightReads';
+import type { FirebaseValidatedContentWriter } from './FirebaseValidatedContentWriter';
 
 export class FirebaseDocumentStore implements DocumentStore {
   private readonly lists = new InFlightReads<readonly StoredDocument[]>();
@@ -26,6 +27,10 @@ export class FirebaseDocumentStore implements DocumentStore {
   constructor(
     private readonly firestore: Firestore,
     private readonly readScope: () => string = () => '',
+    private readonly contentWriter?: Pick<
+      FirebaseValidatedContentWriter,
+      'createSurvey' | 'saveTags' | 'createContest'
+    >,
   ) {}
 
   async list(collectionPath: string): Promise<readonly StoredDocument[]> {
@@ -87,7 +92,34 @@ export class FirebaseDocumentStore implements DocumentStore {
   ): Promise<void> {
     this.clearReads();
     try {
-      await setDoc(doc(this.firestore, collectionPath, id), data);
+      const surveyPath = /^clubs\/([^/]+)\/community-surveys$/.exec(
+        collectionPath,
+      );
+      const tagsPath = /^clubs\/([^/]+)\/catalog-tag-settings$/.exec(
+        collectionPath,
+      );
+      const votePath = /^clubs\/([^/]+)\/community-votes$/.exec(collectionPath);
+      if (votePath && data.kind === 'contest') {
+        if (!this.contentWriter)
+          throw new Error(
+            'Contest creation requires the validated server writer',
+          );
+        await this.contentWriter.createContest(votePath[1], id, data);
+      } else if (tagsPath) {
+        if (id !== 'catalog' || !this.contentWriter)
+          throw new Error(
+            'Tag configuration requires the validated server writer',
+          );
+        await this.contentWriter.saveTags(tagsPath[1], data.tags);
+      } else if (surveyPath && data.status === 'open') {
+        if (!this.contentWriter)
+          throw new Error(
+            'Survey creation requires the validated server writer',
+          );
+        await this.contentWriter.createSurvey(surveyPath[1], id, data);
+      } else {
+        await setDoc(doc(this.firestore, collectionPath, id), data);
+      }
     } finally {
       this.clearReads();
     }
@@ -103,6 +135,31 @@ export class FirebaseDocumentStore implements DocumentStore {
   }
 
   async commit(writes: readonly DocumentWrite[]): Promise<void> {
+    const tagSettings = writes.find((write) =>
+      /^clubs\/[^/]+\/catalog-tag-settings$/.test(write.collection),
+    );
+    if (tagSettings) {
+      if (
+        tagSettings.operation !== 'put' ||
+        tagSettings.id !== 'catalog' ||
+        !this.contentWriter
+      ) {
+        throw new Error(
+          'Tag configuration requires the validated server writer',
+        );
+      }
+      this.clearReads();
+      try {
+        await this.contentWriter.saveTags(
+          tagSettings.collection.split('/')[1],
+          tagSettings.data.tags,
+          writes.filter((write) => write !== tagSettings),
+        );
+      } finally {
+        this.clearReads();
+      }
+      return;
+    }
     const batch = writeBatch(this.firestore);
     for (const write of writes) {
       const reference = doc(this.firestore, write.collection, write.id);

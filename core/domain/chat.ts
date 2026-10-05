@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { plainText } from './inputValidation';
 
 import { chatMessageIdSchema, userIdSchema } from './ids';
 import { publicProfileSchema } from './models';
@@ -14,7 +15,7 @@ export const chatDayKeySchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
 
 export const chatMessageSchema = z.object({
   id: chatMessageIdSchema,
-  body: z.string().trim().min(1).max(CHAT_MESSAGE_CHARACTER_LIMIT),
+  body: plainText.trim().min(1).max(CHAT_MESSAGE_CHARACTER_LIMIT),
   createdById: userIdSchema,
   createdAt: validDate,
   dayKey: chatDayKeySchema,
@@ -26,7 +27,7 @@ export const chatReactionSchema = z.object({
   messageId: chatMessageIdSchema,
   messageDayKey: chatDayKeySchema,
   userId: userIdSchema,
-  emoji: z.string().trim().min(1).max(32),
+  emoji: plainText.trim().min(1).max(32),
   updatedAt: validDate,
 });
 

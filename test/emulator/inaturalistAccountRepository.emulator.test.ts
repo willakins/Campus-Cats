@@ -24,6 +24,7 @@ describe('Firebase iNaturalist account-link transactions', () => {
     firebaseUid: string,
     attemptId: string,
   ) {
+    await firestore.collection('users').doc(firebaseUid).set({ clubId: 'campus-cats', banned: false });
     await repository.createAttempt(stateHash, {
       firebaseUid,
       clubId: 'campus-cats',
@@ -36,6 +37,40 @@ describe('Firebase iNaturalist account-link transactions', () => {
     const attempt = await repository.claimAttempt(stateHash, now);
     expect(attempt).toMatchObject({ firebaseUid, status: 'processing' });
   }
+
+  it('does not recreate a link from a callback already processing when unlinked', async () => {
+    await beginAndClaim('state-unlinked', 'unlinked-member', 'attempt-unlinked');
+    await repository.unlink('unlinked-member');
+    await expect(repository.completeAttempt('state-unlinked', { inaturalistUserId: 100, login: 'unlinked' }, now))
+      .rejects.toMatchObject({ code: 'failed-precondition' });
+    expect(await repository.getLink('unlinked-member')).toBeUndefined();
+  });
+
+  it('invalidates an older callback when a new linking attempt starts', async () => {
+    await beginAndClaim('state-older', 'new-attempt-member', 'attempt-older');
+    await beginAndClaim('state-newer', 'new-attempt-member', 'attempt-newer');
+    await expect(repository.completeAttempt('state-older', { inaturalistUserId: 101, login: 'older' }, now))
+      .rejects.toMatchObject({ code: 'failed-precondition' });
+    await repository.completeAttempt('state-newer', { inaturalistUserId: 102, login: 'newer' }, now);
+    expect(await repository.getLink('new-attempt-member')).toMatchObject({ inaturalistUserId: 102 });
+  });
+
+  it('rejects completion after expiration and after a ban, deletion, or tenant change', async () => {
+    for (const action of ['expired', 'banned', 'pending-deletion', 'deleted', 'moved']) {
+      const uid = `invalid-${action}`;
+      const state = `state-${action}`;
+      await beginAndClaim(state, uid, `attempt-${action}`);
+      const member = firestore.collection('users').doc(uid);
+      if (action === 'banned') await member.update({ banned: true });
+      if (action === 'pending-deletion') await member.update({ deletionPending: true });
+      if (action === 'deleted') await member.delete();
+      if (action === 'moved') await member.update({ clubId: 'another-club' });
+      const completedAt = action === 'expired' ? new Date(now.getTime() + 10 * 60_000) : now;
+      await expect(repository.completeAttempt(state, { inaturalistUserId: 103, login: 'invalid' }, completedAt))
+        .rejects.toMatchObject({ code: action === 'expired' ? 'failed-precondition' : 'permission-denied' });
+      expect(await repository.getLink(uid)).toBeUndefined();
+    }
+  });
 
   it('enforces one owner per numeric iNaturalist account and relinks atomically', async () => {
     await beginAndClaim('state-member-1', 'member-1', 'attempt-1');

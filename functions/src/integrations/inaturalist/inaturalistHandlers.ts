@@ -1,4 +1,4 @@
-import { HandlerError, ManagedUser } from '../../shared/handlers';
+import { HandlerError, ManagedUser, stringValue as validatedString } from '../../shared/handlers';
 import { ImportedRecordKind } from './firebaseInaturalist';
 import { SyncRunSummary } from './inaturalist';
 
@@ -114,7 +114,7 @@ async function requireAdmin(
 ): Promise<ManagedUser> {
   if (!uid) throw new HandlerError('unauthenticated', 'Authentication required');
   const actor = await dependencies.getUser(uid);
-  if (!actor || actor.role < 1) {
+  if (!actor || actor.banned || actor.role < 1) {
     throw new HandlerError(
       'permission-denied',
       'Officer access required',
@@ -133,17 +133,10 @@ function importedKind(value: unknown): ImportedRecordKind {
   return value;
 }
 
-const stringOverrideFields = new Set([
-  'name',
-  'descShort',
-  'descLong',
-  'colorPattern',
-  'behavior',
-  'yearsRecorded',
-  'AoR',
-  'furPattern',
-  'coverPhotoId',
-]);
+const stringOverrideLimits: Readonly<Record<string, number>> = {
+  name: 120, descShort: 300, descLong: 5000, colorPattern: 120, behavior: 5000,
+  yearsRecorded: 120, AoR: 300, furPattern: 120, coverPhotoId: 200,
+};
 
 function catalogOverrides(value: unknown): Readonly<Record<string, unknown>> {
   if (typeof value !== 'object' || value === null || Array.isArray(value)) {
@@ -152,12 +145,12 @@ function catalogOverrides(value: unknown): Readonly<Record<string, unknown>> {
   const input = value as Record<string, unknown>;
   const output: Record<string, unknown> = {};
   for (const [key, fieldValue] of Object.entries(input)) {
-    if (stringOverrideFields.has(key)) {
+    if (Object.prototype.hasOwnProperty.call(stringOverrideLimits, key)) {
       const parsed = requiredString(fieldValue, key);
-      if (parsed.length > 5000) {
+      if (parsed.length > stringOverrideLimits[key]) {
         throw new HandlerError(
           'invalid-argument',
-          `${key} must be 5000 characters or fewer`,
+          `${key} must be ${stringOverrideLimits[key]} characters or fewer`,
         );
       }
       output[key] = parsed;
@@ -233,11 +226,5 @@ function requiredString(value: unknown, field: string): string {
 }
 
 function stringValue(value: unknown, field: string): string {
-  if (typeof value !== 'string') {
-    throw new HandlerError(
-      'invalid-argument',
-      `${field} must be a string`,
-    );
-  }
-  return value;
+  return validatedString(value, field);
 }

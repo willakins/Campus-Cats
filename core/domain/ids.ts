@@ -1,6 +1,8 @@
 import { z } from 'zod';
 
-const nonEmptyId = z.string().trim().min(1);
+const nonEmptyId = z.string().trim().min(1).max(200)
+  // eslint-disable-next-line no-control-regex -- Reject non-printing input controls.
+  .regex(/^[^/\x00-\x1F\x7F]+$/u).refine((id) => id !== '.' && id !== '..');
 
 export const userIdSchema = nonEmptyId.brand<'UserId'>();
 export const sightingIdSchema = nonEmptyId.brand<'SightingId'>();
