@@ -166,6 +166,26 @@ Authentication, maps, notifications, email, billing, and data-backed features re
 their corresponding service configuration. Start with the
 [installation guide](docs/installation.md) and [testing guide](docs/testing.md).
 
+### Build and upload to TestFlight
+
+From the repository root, run:
+
+```bash
+npm run deploy:ios
+```
+
+This builds the production iOS app using EAS Build and automatically uploads it
+to App Store Connect app `6744487550`. EAS increments the build number for each
+production build. After Apple processes the upload, use TestFlight to test it,
+then select that build in App Store Connect and submit it for App Review when
+ready. Uploading does not automatically publish the app.
+
+The first run may prompt for Expo login, Apple Developer credentials, and signing
+setup. Configure the app's production environment variables in the EAS
+`production` environment; the cloud build does not receive the gitignored local
+`.env.production.local` file. The cloud build works from Linux, macOS, or Windows.
+This command uploads the mobile app; backend deployments are managed separately.
+
 ### Documentation
 
 - [System design](docs/architecture/system-design.md)
