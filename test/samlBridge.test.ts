@@ -5,7 +5,9 @@ import { runInNewContext } from 'node:vm';
 const { runSamlBridge } = require('../public/firebase-wrapper-app.js');
 
 const linkingUri = 'campuscats://saml-sign-in';
-const search = `?linkingUri=${encodeURIComponent(linkingUri)}&apiKey=web-api-key&authDomain=campus-cats.firebaseapp.com`;
+const state = 'nonce-for-this-sign-in';
+const pendingSession = JSON.stringify({ linkingUri, apiKey: 'web-api-key', authDomain: 'campus-cats.firebaseapp.com', state });
+const search = `?linkingUri=${encodeURIComponent(linkingUri)}&apiKey=web-api-key&authDomain=campus-cats.firebaseapp.com&state=${state}`;
 
 const createHarness = ({
   pending = false,
@@ -23,7 +25,7 @@ const createHarness = ({
     initializeApp: jest.fn(() => ({ auth: () => auth })),
     auth: { SAMLAuthProvider: jest.fn(() => provider) },
   };
-  const storageValues = new Map(pending ? [['campus-cats:saml-redirect', 'pending']] : []);
+  const storageValues = new Map(pending ? [['campus-cats:saml-redirect', pendingSession]] : []);
   const storage = {
     values: storageValues,
     getItem: jest.fn((key: string) => storageValues.get(key) ?? null),
@@ -31,6 +33,8 @@ const createHarness = ({
     removeItem: jest.fn((key: string) => storageValues.delete(key)),
   };
   const location = {
+    origin: 'https://campus-cats.firebaseapp.com',
+    hostname: 'campus-cats.firebaseapp.com',
     search,
     replace: jest.fn(),
     reload: jest.fn(),
@@ -41,6 +45,39 @@ const createHarness = ({
 };
 
 describe('Firebase SAML bridge', () => {
+  it('rejects a changed callback/session after the identity-provider redirect', async () => {
+    const harness = createHarness({ pending: true });
+    harness.location.search = search.replace(state, 'different-state-for-this-sign-in');
+    await runSamlBridge(harness);
+    expect(harness.location.replace).not.toHaveBeenCalled();
+    expect(harness.auth.getRedirectResult).not.toHaveBeenCalled();
+    expect(harness.render).toHaveBeenLastCalledWith(expect.objectContaining({ state: 'error' }));
+  });
+
+  it.each([
+    'https://attacker.example/saml-sign-in',
+    'javascript:alert(1)',
+    'campuscats://attacker/saml-sign-in',
+    'campuscats://saml-sign-in/extra',
+    'https://campus-cats.firebaseapp.com/other',
+    'https://campus-cats.firebaseapp.com/saml-sign-in?next=https://attacker.example',
+  ])('never sends an SSO credential to %s', async (callback) => {
+    const credential = { toJSON: () => ({ token: 'secret' }) };
+    const harness = createHarness({ pending: true, redirectResult: { credential } });
+    harness.location.search = `?linkingUri=${encodeURIComponent(callback)}&apiKey=web-api-key&authDomain=campus-cats.firebaseapp.com&state=${state}`;
+    await runSamlBridge(harness);
+    expect(harness.location.replace).not.toHaveBeenCalled();
+    expect(harness.firebase.initializeApp).not.toHaveBeenCalled();
+    expect(harness.render).toHaveBeenLastCalledWith(expect.objectContaining({ state: 'error' }));
+  });
+
+  it('rejects an auth domain supplied by another site', async () => {
+    const harness = createHarness();
+    harness.location.search = search.replace('campus-cats.firebaseapp.com', 'attacker.example');
+    await runSamlBridge(harness);
+    expect(harness.firebase.initializeApp).not.toHaveBeenCalled();
+  });
+
   it('starts a fresh SAML redirect and records recoverable session state', async () => {
     const harness = createHarness();
 
@@ -48,7 +85,7 @@ describe('Firebase SAML bridge', () => {
 
     expect(harness.storage.setItem).toHaveBeenCalledWith(
       'campus-cats:saml-redirect',
-      'pending',
+      pendingSession,
     );
     expect(harness.auth.signInWithRedirect).toHaveBeenCalledWith(harness.provider);
   });
@@ -75,9 +112,20 @@ describe('Firebase SAML bridge', () => {
     expect(harness.location.replace).toHaveBeenCalledTimes(1);
     const callback = new URL(harness.location.replace.mock.calls[0][0]);
     expect(`${callback.protocol}//${callback.host}${callback.pathname}`).toBe(linkingUri);
-    expect(JSON.parse(callback.searchParams.get('credential') ?? '{}')).toEqual(
+    expect(callback.search).toBe('');
+    expect(JSON.parse(new URLSearchParams(callback.hash.slice(1)).get('credential') ?? '{}')).toEqual(
       credential.toJSON(),
     );
+  });
+
+  it.each(['campuscats:///saml-sign-in', 'https://campus-cats.firebaseapp.com/saml-sign-in', 'https://campus-cats.web.app/saml-sign-in'])('allows the trusted callback %s', async (linkingUri) => {
+    const credential = { toJSON: () => ({ token: 'secret' }) };
+    const harness = createHarness({ pending: true, redirectResult: { credential } });
+    harness.location.search = `?linkingUri=${encodeURIComponent(linkingUri)}&apiKey=web-api-key&authDomain=campus-cats.firebaseapp.com&state=${state}`;
+    harness.storage.values.set('campus-cats:saml-redirect', JSON.stringify({ linkingUri, apiKey: 'web-api-key', authDomain: 'campus-cats.firebaseapp.com', state }));
+    await runSamlBridge(harness);
+    expect(harness.location.replace).toHaveBeenCalledTimes(1);
+    expect(new URL(harness.location.replace.mock.calls[0][0]).search).toBe('');
   });
 
   it('reports incomplete web configuration without calling Firebase', async () => {
@@ -195,7 +243,7 @@ describe('Firebase SAML bridge', () => {
     await runSamlBridge(harness);
 
     expect(harness.auth.signInWithRedirect).toHaveBeenCalledTimes(2);
-    expect(harness.storage.values.get('campus-cats:saml-redirect')).toBe('pending');
+    expect(harness.storage.values.get('campus-cats:saml-redirect')).toBe(pendingSession);
     expect(harness.render).toHaveBeenLastCalledWith({
       state: 'loading',
       message: 'Redirecting to Georgia Tech…',

@@ -1,8 +1,9 @@
+import { authorizedMemberRequest } from '../shared/firebaseCallableAccess';
+import { firebaseClubAccessAllowed } from '../shared/firebaseClubAccess';
 import { getApps, initializeApp } from 'firebase-admin/app';
 import { Timestamp, getFirestore } from 'firebase-admin/firestore';
 import { logger } from 'firebase-functions/logger';
 import {
-  CallableRequest,
   HttpsError,
   onCall,
 } from 'firebase-functions/v2/https';
@@ -108,33 +109,19 @@ const getUser = async (id: string): Promise<ManagedUser | undefined> => {
   ) {
     throw new HandlerError('internal', 'Stored user profile is invalid');
   }
-  const clubId = typeof data.clubId === 'string' ? data.clubId : 'campus-cats';
+  if (typeof data.clubId !== 'string' || !data.clubId) return undefined;
+  const clubId = data.clubId;
   const clubData = (
     await firestore.collection('clubs').doc(clubId).get()
   ).data();
-  const now = new Date();
-  const graceEndsAt =
-    clubData?.graceEndsAt instanceof Timestamp
-      ? clubData.graceEndsAt.toDate()
-      : undefined;
-  const scheduledEndAt =
-    clubData?.scheduledEndAt instanceof Timestamp
-      ? clubData.scheduledEndAt.toDate()
-      : undefined;
-  const hasAccess =
-    clubData?.maintenanceMode !== true &&
-    (clubData?.billingEnforcementEnabled !== true ||
-      (clubData?.accessState === 'enabled' &&
-        (!graceEndsAt || now < graceEndsAt) &&
-        (!scheduledEndAt || now < scheduledEndAt)));
-  if (!hasAccess) return undefined;
+  if (!firebaseClubAccessAllowed(clubData)) return undefined;
   return {
     id: snapshot.id,
     email: data.email,
     role: data.role,
     clubId,
     platformAdmin: data.platformAdmin === true,
-    banned: data.banned === true,
+    banned: data.banned === true || data.deletionPending === true,
   };
 };
 
@@ -338,15 +325,11 @@ const votingDependencies: BallotDependencies = {
   },
 };
 
-const requestFor = <T>(request: CallableRequest<T>) => ({
-  authUid: request.auth?.uid,
-  data: request.data,
-});
-
 const execute = async <T>(operation: () => Promise<T>): Promise<T> => {
   try {
     return await operation();
   } catch (error) {
+    if (error instanceof HttpsError) throw error;
     if (error instanceof HandlerError) {
       throw new HttpsError(error.code, error.message);
     }
@@ -359,13 +342,13 @@ const execute = async <T>(operation: () => Promise<T>): Promise<T> => {
 };
 
 export const submitCommunityBallot = onCall((request) =>
-  execute(() =>
-    handleSubmitCommunityBallot(requestFor(request), votingDependencies),
+  execute(async () =>
+    handleSubmitCommunityBallot(await authorizedMemberRequest(request), votingDependencies),
   ),
 );
 
 export const syncPublicProfile = onCall((request) =>
-  execute(() =>
-    handleSyncPublicProfile(requestFor(request), profileDependencies),
+  execute(async () =>
+    handleSyncPublicProfile(await authorizedMemberRequest(request), profileDependencies),
   ),
 );

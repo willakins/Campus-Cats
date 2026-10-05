@@ -925,10 +925,20 @@ function optionalDate(value: unknown): Date | undefined {
   return parsed;
 }
 
+function safeWebUrl(value: string): string {
+  const url = new URL(value);
+  // eslint-disable-next-line no-control-regex -- URLs must not contain invisible controls.
+  if (value.length > 2048 || /[\s\x00-\x1F\x7F\\]/u.test(value) ||
+      !['http:', 'https:'].includes(url.protocol) || !url.hostname || url.username || url.password) {
+    throw new Error('Expected an HTTP or HTTPS URL without credentials');
+  }
+  return url.toString();
+}
+
 function requiredUrl(value: unknown, field: string): string {
   const url = requiredString(value, field);
   try {
-    return new URL(url).toString();
+    return safeWebUrl(url);
   } catch {
     throw new Error(`${field} must be a URL`);
   }
@@ -937,7 +947,7 @@ function requiredUrl(value: unknown, field: string): string {
 function optionalUrl(value: unknown): string | undefined {
   if (typeof value !== 'string' || !value.trim()) return undefined;
   try {
-    return new URL(value).toString();
+    return safeWebUrl(value);
   } catch {
     return undefined;
   }

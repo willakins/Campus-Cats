@@ -1,4 +1,5 @@
 import type { LiveMemberAccess } from './readGateway';
+import { clubAccessAllowed } from '../shared/clubAccess';
 
 export interface FirebaseAuthorizationDependencies {
   projectId: string;
@@ -7,13 +8,6 @@ export interface FirebaseAuthorizationDependencies {
   getAuthUser: (uid: string) => Promise<{ disabled: boolean } | undefined>;
   getMember: (uid: string) => Promise<Record<string, unknown> | undefined>;
   getClub: (id: string) => Promise<Record<string, unknown> | undefined>;
-}
-
-function deadlineAllows(value: unknown, now: Date): boolean {
-  if (value === null || value === undefined) return true;
-  return (
-    value instanceof Date && Number.isFinite(value.getTime()) && now < value
-  );
 }
 
 export function createFirebaseAuthorizer(
@@ -27,6 +21,7 @@ export function createFirebaseAuthorizer(
     if (
       !authUser ||
       !member ||
+      member.deletionPending === true ||
       typeof member.clubId !== 'string' ||
       !member.clubId ||
       typeof member.role !== 'number' ||
@@ -39,13 +34,7 @@ export function createFirebaseAuthorizer(
       return undefined;
     const club = await dependencies.getClub(member.clubId);
     if (!club) return undefined;
-    const now = dependencies.now();
-    const enabled =
-      club.maintenanceMode !== true &&
-      (club.billingEnforcementEnabled !== true ||
-        (club.accessState === 'enabled' &&
-          deadlineAllows(club.graceEndsAt, now) &&
-          deadlineAllows(club.scheduledEndAt, now)));
+    const enabled = clubAccessAllowed(club, dependencies.now());
     return {
       clubId: member.clubId,
       firebaseProjectId: dependencies.projectId,

@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { plainText, httpUrlSchema } from './inputValidation';
 
 import {
   communityVoteIdSchema,
@@ -8,7 +9,7 @@ import {
 import { userSnapshotSchema } from './models';
 import { participationAudienceSchema } from './participation';
 
-const requiredText = z.string().trim().min(1);
+const requiredText = plainText.trim().min(1);
 const validDate = z.date().refine((date) => !Number.isNaN(date.getTime()), {
   message: 'Expected a valid date',
 });
@@ -21,7 +22,7 @@ export const communityVoteKindSchema = z.enum([
 export const communityVoteOptionSchema = z.object({
   id: communityVoteOptionIdSchema,
   label: requiredText.max(120),
-  imageUrl: z.string().url().max(2048).optional(),
+  imageUrl: httpUrlSchema.optional(),
 });
 
 export const communityVoteSchema = z
@@ -29,7 +30,7 @@ export const communityVoteSchema = z
     id: communityVoteIdSchema,
     kind: communityVoteKindSchema,
     title: requiredText.max(120),
-    details: z.string().trim().max(5000),
+    details: plainText.trim().max(5000),
     participationAudience: participationAudienceSchema,
     options: z.array(communityVoteOptionSchema).max(20),
     createdAt: validDate,
@@ -94,7 +95,7 @@ export const communityVoteNomineeSchema = z.object({
   voteId: communityVoteIdSchema,
   userId: userIdSchema,
   displayName: requiredText.max(60),
-  pitch: z.string().trim().max(500).optional(),
+  pitch: plainText.trim().max(500).optional(),
   nominatedAt: validDate,
 });
 

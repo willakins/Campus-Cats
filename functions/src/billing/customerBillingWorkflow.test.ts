@@ -306,6 +306,19 @@ class MemoryStripe {
       if (!customer) throw new Error(`Missing customer ${id}`);
       return customer;
     },
+    update: async (id: string, input: Stripe.CustomerUpdateParams) => {
+      const customer = { ...this.customerRecords.get(id), ...input } as Stripe.Customer;
+      this.customerRecords.set(id, customer);
+      return customer;
+    },
+  };
+
+  readonly setupIntents = {
+    retrieve: async () => ({ id: 'seti_alpha', customer: 'cus_alpha', payment_method: 'pm_alpha', status: 'succeeded' }),
+  };
+
+  readonly paymentMethods = {
+    retrieve: async () => ({ id: 'pm_alpha', customer: 'cus_alpha' }),
   };
 
   readonly prices = {
@@ -368,6 +381,10 @@ const setup = (
   const notifications: string[] = [];
   const clock = { now };
   const stripe = new MemoryStripe(() => clock.now);
+  stripe.customerRecords.set('cus_alpha', {
+    id: 'cus_alpha', metadata: { clubId: 'alpha' },
+    invoice_settings: { default_payment_method: 'pm_alpha' },
+  } as unknown as Stripe.Customer);
   const service = new CustomerBillingService({
     firestore: firestore as unknown as Firestore,
     stripe: stripe as unknown as Stripe,
@@ -407,6 +424,7 @@ describe('customer billing workflows', () => {
     context.stripe.customerRecords.set('cus_alpha', {
       id: 'cus_alpha',
       object: 'customer',
+      metadata: { clubId: 'alpha' },
       deleted: false,
       invoice_settings: { default_payment_method: 'pm_alpha' },
     } as unknown as Stripe.Customer);
@@ -459,8 +477,10 @@ describe('customer billing workflows', () => {
     const session = {
       id: 'cs_trial',
       object: 'checkout.session',
+      mode: 'setup',
+      status: 'complete',
       customer: 'cus_alpha',
-      setup_intent: null,
+      setup_intent: 'seti_alpha',
       metadata: {
         clubId: 'alpha',
         purpose: 'activate_or_update_collection',
@@ -559,6 +579,7 @@ describe('customer billing workflows', () => {
     });
     context.stripe.customerRecords.set('cus_alpha', {
       id: 'cus_alpha',
+      metadata: { clubId: 'alpha' },
       object: 'customer',
       deleted: false,
       invoice_settings: { default_payment_method: 'pm_alpha' },
@@ -682,6 +703,7 @@ describe('customer billing workflows', () => {
     });
     const trial = {
       id: 'sub_alpha',
+      customer: 'cus_alpha',
       object: 'subscription',
       status: 'trialing',
       trial_end: trialEndsAt,
@@ -929,4 +951,13 @@ describe('customer billing workflows', () => {
       'complete',
     );
   });
+});
+
+it('rejects untrusted and executable billing return URLs before contacting Stripe', async () => {
+  const context = setup(new Date('2026-10-05T00:00:00Z'));
+  context.firestore.seed('users/president-1', { email: 'president@example.com', role: 3, clubId: 'alpha' });
+  context.firestore.seed('clubs/alpha', club());
+  for (const url of ['javascript://localhost/%0Aalert(1)', 'http://localhost:8081/billing', 'https://attacker.example/billing', 'https://user:pass@app.example.com/billing']) {
+    await assert.rejects(context.service.createSetupSession('president-1', url), { code: 'invalid-argument' });
+  }
 });

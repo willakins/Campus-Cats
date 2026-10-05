@@ -1,8 +1,4 @@
-import {
-  FieldValue,
-  Firestore,
-  Timestamp,
-} from 'firebase-admin/firestore';
+import { FieldValue, Firestore, Timestamp } from 'firebase-admin/firestore';
 
 import { HandlerError } from '../../shared/handlers';
 import {
@@ -15,9 +11,7 @@ const ATTEMPTS = 'inaturalist-link-attempts';
 const ACCOUNT_LINKS = 'inaturalist-account-links';
 const PUBLIC_LINKS = 'inaturalist-public-links';
 
-export class FirebaseInaturalistAccountLinkRepository
-  implements InaturalistAccountLinkRepository
-{
+export class FirebaseInaturalistAccountLinkRepository implements InaturalistAccountLinkRepository {
   constructor(private readonly firestore: Firestore) {}
 
   async createAttempt(
@@ -37,7 +31,10 @@ export class FirebaseInaturalistAccountLinkRepository
         throw new HandlerError('already-exists', 'Please try linking again');
       }
       for (const document of existing.docs) {
-        if (document.data().status === 'pending') {
+        if (
+          document.data().status === 'pending' ||
+          document.data().status === 'processing'
+        ) {
           transaction.update(document.ref, { status: 'failed' });
         }
       }
@@ -89,8 +86,33 @@ export class FirebaseInaturalistAccountLinkRepository
       const attempt = attemptSnapshot.exists
         ? deserializeAttempt(attemptSnapshot.data())
         : undefined;
-      if (!attempt || attempt.status !== 'processing') {
-        throw new HandlerError('failed-precondition', 'Link attempt is no longer valid');
+      if (
+        !attempt ||
+        attempt.status !== 'processing' ||
+        attempt.expiresAt <= completedAt
+      ) {
+        throw new HandlerError(
+          'failed-precondition',
+          'Link attempt is no longer valid',
+        );
+      }
+      // Read membership in the same transaction as the link write so a ban,
+      // deletion, or tenant change cannot race the OAuth callback.
+      const member = (
+        await transaction.get(
+          this.firestore.collection('users').doc(attempt.firebaseUid),
+        )
+      ).data();
+      if (
+        !member ||
+        member.banned === true ||
+        member.deletionPending === true ||
+        member.clubId !== attempt.clubId
+      ) {
+        throw new HandlerError(
+          'permission-denied',
+          'Active club membership is required',
+        );
       }
       const accountReference = this.firestore
         .collection(ACCOUNT_LINKS)
@@ -98,8 +120,7 @@ export class FirebaseInaturalistAccountLinkRepository
       const targetPublicReference = this.tenantCollection(
         attempt.clubId,
         PUBLIC_LINKS,
-      )
-        .doc(String(identity.inaturalistUserId));
+      ).doc(String(identity.inaturalistUserId));
       const [accountSnapshot, targetPublicSnapshot] = await Promise.all([
         transaction.get(accountReference),
         transaction.get(targetPublicReference),
@@ -114,10 +135,14 @@ export class FirebaseInaturalistAccountLinkRepository
           'That iNaturalist account is already linked',
         );
       }
-      const previousId = positiveInteger(accountSnapshot.data()?.inaturalistUserId);
+      const previousId = positiveInteger(
+        accountSnapshot.data()?.inaturalistUserId,
+      );
       const previousPublicReference =
         previousId && previousId !== identity.inaturalistUserId
-          ? this.tenantCollection(attempt.clubId, PUBLIC_LINKS).doc(String(previousId))
+          ? this.tenantCollection(attempt.clubId, PUBLIC_LINKS).doc(
+              String(previousId),
+            )
           : undefined;
       const previousPublicSnapshot = previousPublicReference
         ? await transaction.get(previousPublicReference)
@@ -168,7 +193,9 @@ export class FirebaseInaturalistAccountLinkRepository
     return attempt?.firebaseUid === firebaseUid ? attempt : undefined;
   }
 
-  async getLink(firebaseUid: string): Promise<InaturalistLinkIdentity | undefined> {
+  async getLink(
+    firebaseUid: string,
+  ): Promise<InaturalistLinkIdentity | undefined> {
     const snapshot = await this.firestore
       .collection(ACCOUNT_LINKS)
       .doc(firebaseUid)
@@ -185,18 +212,36 @@ export class FirebaseInaturalistAccountLinkRepository
       .collection(ACCOUNT_LINKS)
       .doc(firebaseUid);
     await this.firestore.runTransaction(async (transaction) => {
-      const accountSnapshot = await transaction.get(accountReference);
-      if (!accountSnapshot.exists) return;
+      const [accountSnapshot, attempts] = await Promise.all([
+        transaction.get(accountReference),
+        transaction.get(
+          this.firestore
+            .collection(ATTEMPTS)
+            .where('firebaseUid', '==', firebaseUid),
+        ),
+      ]);
       const id = positiveInteger(accountSnapshot.data()?.inaturalistUserId);
-      const clubId = typeof accountSnapshot.data()?.clubId === 'string'
-        ? accountSnapshot.data()!.clubId
-        : 'campus-cats';
+      const clubId =
+        typeof accountSnapshot.data()?.clubId === 'string'
+          ? accountSnapshot.data()!.clubId
+          : 'campus-cats';
       const publicReference = id
         ? this.tenantCollection(clubId, PUBLIC_LINKS).doc(String(id))
         : undefined;
       const publicSnapshot = publicReference
         ? await transaction.get(publicReference)
         : undefined;
+      // Invalidate in-flight callbacks even when the initial link has not yet
+      // been written. Otherwise unlinking can be undone by a delayed callback.
+      for (const attempt of attempts.docs) {
+        if (
+          attempt.data().status === 'pending' ||
+          attempt.data().status === 'processing'
+        ) {
+          transaction.update(attempt.ref, { status: 'failed' });
+        }
+      }
+      if (!accountSnapshot.exists) return;
       if (publicReference && publicSnapshot?.data()?.userId === firebaseUid) {
         transaction.delete(publicReference);
       }
@@ -246,7 +291,9 @@ function deserializeAttempt(data: Record<string, unknown> | undefined) {
   } satisfies InaturalistLinkAttempt;
 }
 
-function isAttemptStatus(value: unknown): value is InaturalistLinkAttempt['status'] {
+function isAttemptStatus(
+  value: unknown,
+): value is InaturalistLinkAttempt['status'] {
   return (
     value === 'pending' ||
     value === 'processing' ||

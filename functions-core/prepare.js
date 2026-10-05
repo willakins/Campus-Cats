@@ -12,6 +12,12 @@ const destination = resolve(__dirname, 'lib');
 const compiledModules = [
   'community/coreCallables.js',
   'shared/handlers.js',
+  'shared/callableAccess.js',
+  'shared/clubAccess.js',
+  'shared/firebaseCallableAccess.js',
+  'shared/firebaseClubAccess.js',
+  'relational/firebaseAuthorization.js',
+  'relational/firebaseCallableAuthorization.js',
   'community/communityVoting.js',
   'community/participation.js',
 ];

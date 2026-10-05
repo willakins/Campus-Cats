@@ -61,12 +61,19 @@ export class ClubProvisioningService {
         .where('role', '==', 3);
       const now = Timestamp.fromDate(this.now());
       await firestore.runTransaction(async (transaction) => {
-        const [club, existingUser, mapping, existingPresidents] = await Promise.all([
+        const [club, existingUser, mapping, existingPresidents, deletionJob] = await Promise.all([
           transaction.get(clubReference),
           transaction.get(userReference),
           mappingReference ? transaction.get(mappingReference) : Promise.resolve(undefined),
           transaction.get(presidents),
+          transaction.get(firestore.collection('account-deletion-jobs').doc(user.uid)),
         ]);
+        if (existingUser.data()?.deletionPending === true || deletionJob.data()?.status === 'pending') {
+          throw new Error('The President account is awaiting deletion');
+        }
+        if (user.disabled === true || existingUser.data()?.banned === true) {
+          throw new Error('The President account must be active');
+        }
         if (
           existingUser.exists &&
           typeof existingUser.data()?.clubId === 'string' &&

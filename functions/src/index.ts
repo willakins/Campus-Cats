@@ -1,3 +1,14 @@
+import { firebaseClubAccessAllowed } from './shared/firebaseClubAccess';
+import {
+  authorizedMemberRequest,
+  verifiedAccountRequest,
+} from './shared/firebaseCallableAccess';
+import { handleCreateContest } from './community/contestCreation';
+import { handleSaveCatalogTags } from './community/catalogTagConfiguration';
+import { handleCreateSurvey } from './community/surveyCreation';
+import { FirebaseWhitelistRateLimiter } from './onboarding/whitelistRateLimit';
+import { revokeMemberSessions } from './platform/sessionRevocation';
+import { requestSourceAddress } from './shared/requestSourceAddress';
 import { createHash, randomBytes, randomUUID } from 'node:crypto';
 
 export {
@@ -24,8 +35,10 @@ import { getApps, initializeApp } from 'firebase-admin/app';
 import { getAuth } from 'firebase-admin/auth';
 import {
   DocumentReference,
+  QueryDocumentSnapshot,
   FieldValue,
   Timestamp,
+  Transaction,
   getFirestore,
 } from 'firebase-admin/firestore';
 import { getStorage } from 'firebase-admin/storage';
@@ -51,6 +64,9 @@ import {
   ManagedUser,
   PublicProfile,
   WhitelistApplication,
+  assertCanChangeMemberRole,
+  assertCanRemoveMember,
+  requireCanDiscipline,
   handleAddDisciplinaryNotice,
   handleCreateWhitelistUser,
   handleDeleteOwnAccount,
@@ -357,6 +373,7 @@ async function deleteAccountData(user: ManagedUser): Promise<void> {
     {
       readonly reference: DocumentReference;
       readonly data: Record<string, unknown>;
+      readonly lastUpdateTime: Timestamp;
     }
   >();
   const mediaPrefixesToDelete = new Set<string>([
@@ -372,11 +389,16 @@ async function deleteAccountData(user: ManagedUser): Promise<void> {
     updates.delete(reference.path);
   };
   const update = (
-    reference: DocumentReference,
+    document: QueryDocumentSnapshot,
     data: Record<string, unknown>,
   ) => {
+    const reference = document.ref;
     if (!deletions.has(reference.path)) {
-      updates.set(reference.path, { reference, data });
+      updates.set(reference.path, {
+        reference,
+        data,
+        lastUpdateTime: document.updateTime,
+      });
     }
   };
   const query = async (collectionName: string, field: string, value: unknown) =>
@@ -494,7 +516,7 @@ async function deleteAccountData(user: ManagedUser): Promise<void> {
   for (const collectionName of sharedCollections) {
     const snapshots = await query(collectionName, 'createdBy.id', userId);
     snapshots.docs.forEach((document) => {
-      update(document.ref, { createdBy: deletedAccountSnapshot(clubId) });
+      update(document, { createdBy: deletedAccountSnapshot(clubId) });
       const mediaCollection = {
         stations: 'stations',
         alerts: 'alerts',
@@ -511,7 +533,7 @@ async function deleteAccountData(user: ManagedUser): Promise<void> {
   }
   const legacyCatalog = await query('catalog', 'createdBy.id', userId);
   legacyCatalog.docs.forEach((entry) => {
-    update(entry.ref, { createdBy: FieldValue.delete() });
+    update(entry, { createdBy: FieldValue.delete() });
     mediaPrefixesToAnonymize.add(`clubs/${clubId}/catalog/${entry.id}/`);
   });
 
@@ -521,7 +543,7 @@ async function deleteAccountData(user: ManagedUser): Promise<void> {
     userId,
   );
   restrictionsUpdatedByUser.docs.forEach((restriction) =>
-    update(restriction.ref, { updatedById: 'deleted-account' }),
+    update(restriction, { updatedById: 'deleted-account' }),
   );
 
   const clubUsers = await firestore
@@ -551,7 +573,7 @@ async function deleteAccountData(user: ManagedUser): Promise<void> {
       moderationUpdate.bannedByEmail = 'deleted-account@campus-cats.invalid';
     }
     if (Object.keys(moderationUpdate).length) {
-      update(account.ref, moderationUpdate);
+      update(account, moderationUpdate);
     }
   }
 
@@ -573,7 +595,7 @@ async function deleteAccountData(user: ManagedUser): Promise<void> {
     .where('actorId', '==', userId)
     .get();
   usageEvents.docs.forEach((event) =>
-    update(event.ref, { actorId: 'deleted-account' }),
+    update(event, { actorId: 'deleted-account' }),
   );
 
   remove(firestore.collection('users').doc(userId));
@@ -586,8 +608,6 @@ async function deleteAccountData(user: ManagedUser): Promise<void> {
   ]) {
     remove(tenantCollection(clubId, collectionName).doc(userId));
   }
-
-  await inaturalistAccountRepository.unlink(userId);
 
   const bucket = storage.bucket();
   for (const prefix of mediaPrefixesToDelete) {
@@ -604,10 +624,95 @@ async function deleteAccountData(user: ManagedUser): Promise<void> {
     }
   }
 
-  const writer = firestore.bulkWriter();
-  deletions.forEach((reference) => writer.delete(reference));
-  updates.forEach(({ reference, data }) => writer.update(reference, data));
-  await writer.close();
+  // Retain ownership/receipt records until all dependent cleanup succeeds, so
+  // retries can still discover anonymous responses, ballots and content children.
+  const deleteLast = new Set([
+    'users',
+    'content-contributors',
+    'cat-sightings',
+    'chat-messages',
+    'survey-submission-receipts',
+    'community-vote-ballot-receipts',
+  ]);
+  for (const finalPhase of [false, true]) {
+    const writer = firestore.bulkWriter();
+    // close() drains the queue but never rejects for individual failed writes.
+    // Version checks prevent cleanup from overwriting concurrent moderation.
+    const results = Promise.allSettled([
+      ...Array.from(deletions.values())
+        .filter(
+          (reference) => deleteLast.has(reference.parent.id) === finalPhase,
+        )
+        .map((reference) => writer.delete(reference)),
+      ...(finalPhase
+        ? []
+        : Array.from(updates.values(), ({ reference, data, lastUpdateTime }) =>
+            writer.update(reference, data, { lastUpdateTime }),
+          )),
+    ]);
+    await writer.close();
+    for (const result of await results) {
+      if (result.status === 'rejected') throw result.reason;
+    }
+  }
+  await inaturalistAccountRepository.unlink(userId);
+}
+
+function managedUserFromData(
+  id: string,
+  data: Record<string, unknown> | undefined,
+): ManagedUser {
+  if (
+    !data ||
+    typeof data.email !== 'string' ||
+    typeof data.clubId !== 'string' ||
+    !data.clubId ||
+    (data.role !== 0 &&
+      data.role !== 1 &&
+      data.role !== 2 &&
+      data.role !== 3 &&
+      data.role !== 4)
+  ) {
+    throw new HandlerError('permission-denied', 'Valid membership required');
+  }
+  return {
+    id,
+    email: data.email,
+    clubId: data.clubId,
+    role: data.role,
+    platformAdmin: data.platformAdmin === true,
+    banned: data.banned === true,
+    deletionPending: data.deletionPending === true,
+  };
+}
+
+async function currentManagementActor(
+  transaction: Transaction,
+  expected: Pick<ManagedUser, 'id' | 'clubId'>,
+): Promise<ManagedUser> {
+  const snapshot = await transaction.get(
+    firestore.collection('users').doc(expected.id),
+  );
+  const data = snapshot.data();
+  const actor = managedUserFromData(expected.id, data);
+  const club = await transaction.get(
+    firestore.collection('clubs').doc(actor.clubId),
+  );
+  if (
+    actor.clubId !== expected.clubId ||
+    actor.role < 1 ||
+    actor.banned ||
+    actor.deletionPending ||
+    data?.agreedToTerms !== true ||
+    data?.termsVersion !== '2026-08-28' ||
+    !firebaseClubAccessAllowed(club.data())
+  ) {
+    throw new HandlerError(
+      'permission-denied',
+      'Current officer access required',
+    );
+  }
+  return actor;
 }
 
 const dependencies: HandlerDependencies = {
@@ -632,6 +737,7 @@ const dependencies: HandlerDependencies = {
       clubId: typeof data.clubId === 'string' ? data.clubId : 'campus-cats',
       platformAdmin: data.platformAdmin === true,
       banned: data.banned === true,
+      deletionPending: data.deletionPending === true,
     };
   },
   async getPendingAccountDeletion(id): Promise<ManagedUser | undefined> {
@@ -662,22 +768,56 @@ const dependencies: HandlerDependencies = {
       banned: data.banned === true,
     };
   },
-  async prepareAccountDeletion(user): Promise<void> {
-    await firestore
+  async prepareAccountDeletion(user, manager): Promise<void> {
+    const reference = firestore.collection('users').doc(user.id);
+    const jobReference = firestore
       .collection('account-deletion-jobs')
-      .doc(user.id)
-      .set(
+      .doc(user.id);
+    await firestore.runTransaction(async (transaction) => {
+      const [snapshot, job] = await Promise.all([
+        transaction.get(reference),
+        transaction.get(jobReference),
+      ]);
+      if (!snapshot.exists && job.data()?.status !== 'pending') {
+        throw new HandlerError('not-found', 'Account not found');
+      }
+      const target = managedUserFromData(
+        user.id,
+        snapshot.exists ? snapshot.data() : job.data(),
+      );
+      if (target.email !== user.email || target.clubId !== user.clubId) {
+        throw new HandlerError(
+          'failed-precondition',
+          'Account details changed; confirm deletion again',
+        );
+      }
+      if (manager) {
+        assertCanRemoveMember(
+          await currentManagementActor(transaction, manager),
+          target,
+        );
+      } else if (target.role === 3) {
+        throw new HandlerError(
+          'failed-precondition',
+          'Transfer the club presidency before deleting this account',
+        );
+      }
+      if (snapshot.exists)
+        transaction.update(reference, { deletionPending: true });
+      transaction.set(
+        jobReference,
         {
-          email: user.email,
-          role: user.role,
-          clubId: user.clubId,
-          platformAdmin: user.platformAdmin === true,
-          banned: user.banned === true,
+          email: target.email,
+          role: target.role,
+          clubId: target.clubId,
+          platformAdmin: target.platformAdmin === true,
+          banned: target.banned === true,
           status: 'pending',
           updatedAt: FieldValue.serverTimestamp(),
         },
         { merge: true },
       );
+    });
   },
   async completeAccountDeletion(id): Promise<void> {
     await firestore.collection('account-deletion-jobs').doc(id).set(
@@ -707,33 +847,19 @@ const dependencies: HandlerDependencies = {
     ) {
       throw new HandlerError('internal', 'Stored user profile is invalid');
     }
-    const clubId =
-      typeof data.clubId === 'string' ? data.clubId : 'campus-cats';
+    if (typeof data.clubId !== 'string' || !data.clubId) return undefined;
+    const clubId = data.clubId;
     const club = await firestore.collection('clubs').doc(clubId).get();
     const clubData = club.data();
-    const now = new Date();
-    const graceEndsAt =
-      clubData?.graceEndsAt instanceof Timestamp
-        ? clubData.graceEndsAt.toDate()
-        : undefined;
-    const scheduledEndAt =
-      clubData?.scheduledEndAt instanceof Timestamp
-        ? clubData.scheduledEndAt.toDate()
-        : undefined;
-    const hasAccess =
-      clubData?.maintenanceMode !== true &&
-      (clubData?.billingEnforcementEnabled !== true ||
-        (clubData?.accessState === 'enabled' &&
-          (!graceEndsAt || now < graceEndsAt) &&
-          (!scheduledEndAt || now < scheduledEndAt)));
-    if (!hasAccess) return undefined;
+    if (!firebaseClubAccessAllowed(clubData)) return undefined;
     return {
       id: snapshot.id,
       email: data.email,
       role: data.role,
       clubId,
       platformAdmin: data.platformAdmin === true,
-      banned: data.banned === true,
+      banned: data.banned === true || data.deletionPending === true,
+      deletionPending: data.deletionPending === true,
     };
   },
 
@@ -743,6 +869,7 @@ const dependencies: HandlerDependencies = {
     if (
       !snapshot.exists ||
       data?.banned === true ||
+      data?.deletionPending === true ||
       data?.role !== 4 ||
       typeof data.email !== 'string' ||
       typeof data.clubId !== 'string'
@@ -818,7 +945,10 @@ const dependencies: HandlerDependencies = {
       .get();
     return snapshot.docs
       .map((document) => document.data())
-      .filter((profile) => profile.banned !== true)
+      .filter(
+        (profile) =>
+          profile.banned !== true && profile.deletionPending !== true,
+      )
       .map((profile) => profile.expoPushToken)
       .filter((token): token is string => typeof token === 'string' && !!token);
   },
@@ -866,25 +996,29 @@ const dependencies: HandlerDependencies = {
   },
 
   async deleteUser(id) {
-    const user = await dependencies.getAccountUser(id);
-    if (!user) return;
+    const user = await dependencies.getPendingAccountDeletion(id);
+    if (!user)
+      throw new HandlerError(
+        'failed-precondition',
+        'Account deletion must be reserved first',
+      );
     await deleteAccountData(user);
   },
 
-  async updateUserRole(id, role) {
+  async updateUserRole(id, role, actor) {
     const reference = firestore.collection('users').doc(id);
     await firestore.runTransaction(async (transaction) => {
       const snapshot = await transaction.get(reference);
       if (!snapshot.exists) {
         throw new HandlerError('not-found', 'User not found');
       }
-      if (snapshot.data()?.banned === true) {
-        throw new HandlerError(
-          'permission-denied',
-          'Unban this account before changing its role',
-        );
-      }
-      const clubId = String(snapshot.data()?.clubId ?? 'campus-cats');
+      const target = managedUserFromData(id, snapshot.data());
+      assertCanChangeMemberRole(
+        await currentManagementActor(transaction, actor),
+        target,
+        role,
+      );
+      const clubId = target.clubId;
       const publicReference = tenantCollection(clubId, 'public-profiles').doc(
         id,
       );
@@ -895,11 +1029,7 @@ const dependencies: HandlerDependencies = {
       } else {
         transaction.set(
           publicReference,
-          publicProfileDefaults(
-            String(snapshot.data()?.email ?? ''),
-            role,
-            String(snapshot.data()?.clubId ?? 'campus-cats'),
-          ),
+          publicProfileDefaults(target.email, role, clubId),
         );
       }
     });
@@ -912,19 +1042,18 @@ const dependencies: HandlerDependencies = {
       if (!snapshot.exists) {
         throw new HandlerError('not-found', 'User not found');
       }
-      if (snapshot.data()?.role !== 0) {
-        throw new HandlerError(
-          'permission-denied',
-          'Only member accounts can receive disciplinary notices',
-        );
-      }
+      const currentActor = await currentManagementActor(transaction, actor);
+      requireCanDiscipline(
+        currentActor,
+        managedUserFromData(id, snapshot.data()),
+      );
       transaction.update(reference, {
         disciplinaryNotices: FieldValue.arrayUnion({
           id: randomUUID(),
           message,
           createdAt: Timestamp.now(),
           issuedById: actor.id,
-          issuedByEmail: actor.email,
+          issuedByEmail: currentActor.email,
         }),
       });
     });
@@ -933,27 +1062,32 @@ const dependencies: HandlerDependencies = {
   async setUserBanned(id, banned, actor) {
     const reference = firestore.collection('users').doc(id);
     if (banned) {
-      await inaturalistAccountRepository.unlink(id);
       await firestore.runTransaction(async (transaction) => {
         const snapshot = await transaction.get(reference);
         if (!snapshot.exists) {
           throw new HandlerError('not-found', 'User not found');
         }
-        if (snapshot.data()?.role !== 0) {
-          throw new HandlerError(
-            'permission-denied',
-            'Only member accounts can be banned',
-          );
-        }
+        const currentActor = await currentManagementActor(transaction, actor);
+        requireCanDiscipline(
+          currentActor,
+          managedUserFromData(id, snapshot.data()),
+        );
         transaction.update(reference, {
           banned: true,
+          sessionRevokedAt: Math.max(
+            Number.isSafeInteger(snapshot.data()?.sessionRevokedAt)
+              ? snapshot.data()!.sessionRevokedAt
+              : 0,
+            Math.floor(Date.now() / 1000),
+          ),
           bannedAt: Timestamp.now(),
           bannedById: actor.id,
-          bannedByEmail: actor.email,
+          bannedByEmail: currentActor.email,
         });
       });
       await auth.updateUser(id, { disabled: true });
-      await auth.revokeRefreshTokens(id);
+      await revokeMemberSessions(firestore, auth, id);
+      await inaturalistAccountRepository.unlink(id);
       return;
     }
 
@@ -967,12 +1101,20 @@ const dependencies: HandlerDependencies = {
         'Only member accounts can be unbanned',
       );
     }
+    await revokeMemberSessions(firestore, auth, id);
     await auth.updateUser(id, { disabled: false });
-    await reference.update({
-      banned: false,
-      bannedAt: FieldValue.delete(),
-      bannedById: FieldValue.delete(),
-      bannedByEmail: FieldValue.delete(),
+    await firestore.runTransaction(async (transaction) => {
+      const target = await transaction.get(reference);
+      requireCanDiscipline(
+        await currentManagementActor(transaction, actor),
+        managedUserFromData(id, target.data()),
+      );
+      transaction.update(reference, {
+        banned: false,
+        bannedAt: FieldValue.delete(),
+        bannedById: FieldValue.delete(),
+        bannedByEmail: FieldValue.delete(),
+      });
     });
   },
 
@@ -1017,6 +1159,13 @@ const dependencies: HandlerDependencies = {
       ]);
       const actor = actorSnapshot.data();
       const successor = successorSnapshot.data();
+      await currentManagementActor(transaction, { id: actorId, clubId });
+      if (successor?.banned === true || successor?.deletionPending === true) {
+        throw new HandlerError(
+          'permission-denied',
+          'An active successor is required',
+        );
+      }
       if (!actorSnapshot.exists || !successorSnapshot.exists) {
         throw new HandlerError(
           'not-found',
@@ -1121,9 +1270,11 @@ const dependencies: HandlerDependencies = {
       from: 'gtcampuscats@gmail.com',
       subject: 'Campus Cats – Whitelist Approved!',
       text: `Your Campus Cats account is ready. Your temporary password is: ${password}`,
-      html: `<p>Your Campus Cats account is ready.</p><p>Your temporary password is: <strong>${password}</strong></p>`,
     });
   },
+
+  consumeWhitelistQuota: (clientIp, email) =>
+    new FirebaseWhitelistRateLimiter(firestore).consume(clientIp, email),
 
   async findWhitelistByEmail(email, clubId) {
     const [club, mapping, snapshot] = await Promise.all([
@@ -1247,7 +1398,9 @@ const dependencies: HandlerDependencies = {
       return (
         ownerId === id &&
         typeof metadata.contentType === 'string' &&
-        metadata.contentType.startsWith('image/') &&
+        /^image\/(jpeg|png|webp|gif|avif|heic|heif)$/.test(
+          metadata.contentType,
+        ) &&
         Number(metadata.size) <= 10 * 1024 * 1024
       );
     } catch {
@@ -1670,6 +1823,7 @@ async function execute<T>(operation: () => Promise<T>): Promise<T> {
   try {
     return await operation();
   } catch (error) {
+    if (error instanceof HttpsError) throw error;
     if (error instanceof HandlerError) {
       throw new HttpsError(error.code, error.message);
     }
@@ -1683,28 +1837,40 @@ async function execute<T>(operation: () => Promise<T>): Promise<T> {
 
 const requestFor = <T>(request: CallableRequest<T>) => ({
   authUid: request.auth?.uid,
+  clientIp: requestSourceAddress(request.rawRequest),
   data: request.data,
 });
 
 export const sendWhitelistEmail = onCall(
   { secrets: [SENDGRID_API_KEY] },
   (request) =>
-    execute(() => handleSendWhitelistEmail(requestFor(request), dependencies)),
+    execute(async () =>
+      handleSendWhitelistEmail(
+        await authorizedMemberRequest(request),
+        dependencies,
+      ),
+    ),
 );
 
 export const searchUniversities = onCall((request) =>
-  execute(() =>
+  execute(async () =>
     handleSearchUniversities(
-      { data: request.data, clientIp: request.rawRequest.ip },
+      {
+        data: request.data,
+        clientIp: requestSourceAddress(request.rawRequest),
+      },
       universityOnboardingDependencies(),
     ),
   ),
 );
 
 export const getUniversity = onCall((request) =>
-  execute(() =>
+  execute(async () =>
     handleGetUniversity(
-      { data: request.data, clientIp: request.rawRequest.ip },
+      {
+        data: request.data,
+        clientIp: requestSourceAddress(request.rawRequest),
+      },
       universityOnboardingDependencies(),
     ),
   ),
@@ -1713,9 +1879,12 @@ export const getUniversity = onCall((request) =>
 export const requestClubSetup = onCall(
   { secrets: [SENDGRID_API_KEY] },
   (request) =>
-    execute(() =>
+    execute(async () =>
       handleRequestClubSetup(
-        { data: request.data, clientIp: request.rawRequest.ip },
+        {
+          data: request.data,
+          clientIp: requestSourceAddress(request.rawRequest),
+        },
         universityOnboardingDependencies(),
       ),
     ),
@@ -1724,24 +1893,32 @@ export const requestClubSetup = onCall(
 export const verifyClubSetup = onCall(
   { secrets: [SENDGRID_API_KEY] },
   (request) =>
-    execute(() =>
+    execute(async () =>
       handleVerifyClubSetup(
-        { data: request.data, clientIp: request.rawRequest.ip },
+        {
+          data: request.data,
+          clientIp: requestSourceAddress(request.rawRequest),
+        },
         universityOnboardingDependencies(),
       ),
     ),
 );
 
 export const getBillingSummary = onCall((request) =>
-  execute(() => handleGetBillingSummary(requestFor(request), dependencies)),
+  execute(async () =>
+    handleGetBillingSummary(
+      await verifiedAccountRequest(request),
+      dependencies,
+    ),
+  ),
 );
 
 export const getClubBillingSummary = onCall(
   { secrets: [STRIPE_SECRET_KEY, SENDGRID_API_KEY] },
   (request) =>
-    execute(() =>
+    execute(async () =>
       handleGetClubBillingSummary(
-        requestFor(request),
+        await verifiedAccountRequest(request),
         customerBillingService(),
       ),
     ),
@@ -1750,9 +1927,9 @@ export const getClubBillingSummary = onCall(
 export const createClubBillingSetupSession = onCall(
   { secrets: [STRIPE_SECRET_KEY, SENDGRID_API_KEY] },
   (request) =>
-    execute(() =>
+    execute(async () =>
       handleCreateClubBillingSetupSession(
-        requestFor(request),
+        await verifiedAccountRequest(request),
         customerBillingService(),
       ),
     ),
@@ -1761,9 +1938,9 @@ export const createClubBillingSetupSession = onCall(
 export const createClubBillingPortalSession = onCall(
   { secrets: [STRIPE_SECRET_KEY, SENDGRID_API_KEY] },
   (request) =>
-    execute(() =>
+    execute(async () =>
       handleCreateClubBillingPortalSession(
-        requestFor(request),
+        await verifiedAccountRequest(request),
         customerBillingService(),
       ),
     ),
@@ -1772,9 +1949,9 @@ export const createClubBillingPortalSession = onCall(
 export const payClubOutstandingInvoice = onCall(
   { secrets: [STRIPE_SECRET_KEY, SENDGRID_API_KEY] },
   (request) =>
-    execute(() =>
+    execute(async () =>
       handlePayClubOutstandingInvoice(
-        requestFor(request),
+        await verifiedAccountRequest(request),
         customerBillingService(),
       ),
     ),
@@ -1783,9 +1960,9 @@ export const payClubOutstandingInvoice = onCall(
 export const setClubCollectionMethod = onCall(
   { secrets: [STRIPE_SECRET_KEY, SENDGRID_API_KEY] },
   (request) =>
-    execute(() =>
+    execute(async () =>
       handleSetClubCollectionMethod(
-        requestFor(request),
+        await verifiedAccountRequest(request),
         customerBillingService(),
       ),
     ),
@@ -1794,9 +1971,9 @@ export const setClubCollectionMethod = onCall(
 export const updateClubBillingEmail = onCall(
   { secrets: [STRIPE_SECRET_KEY, SENDGRID_API_KEY] },
   (request) =>
-    execute(() =>
+    execute(async () =>
       handleUpdateClubBillingEmail(
-        requestFor(request),
+        await verifiedAccountRequest(request),
         customerBillingService(),
       ),
     ),
@@ -1805,9 +1982,9 @@ export const updateClubBillingEmail = onCall(
 export const scheduleClubCancellation = onCall(
   { secrets: [STRIPE_SECRET_KEY, SENDGRID_API_KEY] },
   (request) =>
-    execute(() =>
+    execute(async () =>
       handleScheduleClubCancellation(
-        requestFor(request),
+        await verifiedAccountRequest(request),
         customerBillingService(),
       ),
     ),
@@ -1816,118 +1993,227 @@ export const scheduleClubCancellation = onCall(
 export const resumeClubSubscription = onCall(
   { secrets: [STRIPE_SECRET_KEY, SENDGRID_API_KEY] },
   (request) =>
-    execute(() =>
+    execute(async () =>
       handleResumeClubSubscription(
-        requestFor(request),
+        await verifiedAccountRequest(request),
         customerBillingService(),
       ),
     ),
 );
 
 export const migrateContributorPrivacy = onCall((request) =>
-  execute(() =>
-    handleMigrateContributorPrivacy(requestFor(request), dependencies),
+  execute(async () =>
+    handleMigrateContributorPrivacy(
+      await authorizedMemberRequest(request),
+      dependencies,
+    ),
   ),
 );
 
 export const updatePublicProfile = onCall((request) =>
-  execute(() => handleUpdatePublicProfile(requestFor(request), dependencies)),
+  execute(async () =>
+    handleUpdatePublicProfile(
+      await authorizedMemberRequest(request),
+      dependencies,
+    ),
+  ),
 );
 
 export const selectProfileTitle = onCall((request) =>
-  execute(() => handleSelectProfileTitle(requestFor(request), dependencies)),
+  execute(async () =>
+    handleSelectProfileTitle(
+      await authorizedMemberRequest(request),
+      dependencies,
+    ),
+  ),
 );
 
 export const createWhitelistUser = onCall((request) =>
-  execute(() => handleCreateWhitelistUser(requestFor(request), dependencies)),
+  execute(async () =>
+    handleCreateWhitelistUser(
+      await authorizedMemberRequest(request),
+      dependencies,
+    ),
+  ),
 );
 
 export const removeWhitelistUser = onCall((request) =>
-  execute(() => handleRemoveManagedUser(requestFor(request), dependencies)),
+  execute(async () =>
+    handleRemoveManagedUser(
+      await authorizedMemberRequest(request),
+      dependencies,
+    ),
+  ),
 );
 
 export const updateUserRole = onCall((request) =>
-  execute(() => handleUpdateUserRole(requestFor(request), dependencies)),
+  execute(async () =>
+    handleUpdateUserRole(await authorizedMemberRequest(request), dependencies),
+  ),
 );
 
 export const addDisciplinaryNotice = onCall((request) =>
-  execute(() => handleAddDisciplinaryNotice(requestFor(request), dependencies)),
+  execute(async () =>
+    handleAddDisciplinaryNotice(
+      await authorizedMemberRequest(request),
+      dependencies,
+    ),
+  ),
 );
 
 export const setUserBanned = onCall((request) =>
-  execute(() => handleSetUserBanned(requestFor(request), dependencies)),
+  execute(async () =>
+    handleSetUserBanned(await authorizedMemberRequest(request), dependencies),
+  ),
 );
 
 export const transferPresidency = onCall((request) =>
-  execute(() => handleTransferPresidency(requestFor(request), dependencies)),
+  execute(async () =>
+    handleTransferPresidency(
+      await authorizedMemberRequest(request),
+      dependencies,
+    ),
+  ),
 );
 
 export const removeManagedUser = onCall((request) =>
-  execute(() => handleRemoveManagedUser(requestFor(request), dependencies)),
+  execute(async () =>
+    handleRemoveManagedUser(
+      await authorizedMemberRequest(request),
+      dependencies,
+    ),
+  ),
 );
 
 export const deleteOwnAccount = onCall((request) =>
-  execute(() => handleDeleteOwnAccount(requestFor(request), dependencies)),
+  execute(async () =>
+    handleDeleteOwnAccount(await verifiedAccountRequest(request), dependencies),
+  ),
 );
 
 export const sendAlert = onCall((request) =>
-  execute(() => handleSendAlert(requestFor(request), dependencies)),
+  execute(async () =>
+    handleSendAlert(await authorizedMemberRequest(request), dependencies),
+  ),
 );
 
 export const submitWhitelistApplication = onCall((request) =>
-  execute(() =>
+  execute(async () =>
     handleSubmitWhitelistApplication(requestFor(request), dependencies),
   ),
 );
 
+export const createContest = onCall((request) =>
+  execute(async () =>
+    handleCreateContest(await authorizedMemberRequest(request), {
+      getUser: dependencies.getUser,
+      now: () => new Date(),
+      create: async (clubId, id, data) => {
+        await tenantCollection(clubId, 'community-votes')
+          .doc(id)
+          .create({
+            ...data,
+            createdAt: Timestamp.fromDate(data.createdAt as Date),
+            votingStartsAt: Timestamp.fromDate(data.votingStartsAt as Date),
+            votingEndsAt: Timestamp.fromDate(data.votingEndsAt as Date),
+          });
+      },
+    }),
+  ),
+);
+
+export const saveCatalogTags = onCall((request) =>
+  execute(async () =>
+    handleSaveCatalogTags(await authorizedMemberRequest(request), {
+      getUser: dependencies.getUser,
+      save: async (clubId, tags, assignments) => {
+        const batch = firestore.batch();
+        batch.set(
+          tenantCollection(clubId, 'catalog-tag-settings').doc('catalog'),
+          { tags },
+        );
+        for (const assignment of assignments) {
+          batch.set(
+            tenantCollection(clubId, 'catalog-tag-assignments').doc(
+              assignment.catalogId,
+            ),
+            { tagIds: assignment.tagIds },
+          );
+        }
+        await batch.commit();
+      },
+    }),
+  ),
+);
+
+export const createSurvey = onCall((request) =>
+  execute(async () =>
+    handleCreateSurvey(await authorizedMemberRequest(request), {
+      getUser: dependencies.getUser,
+      now: () => new Date(),
+      create: async (clubId, id, data) => {
+        await tenantCollection(clubId, 'community-surveys')
+          .doc(id)
+          .create({
+            ...data,
+            createdAt: Timestamp.fromDate(data.createdAt as Date),
+          });
+      },
+    }),
+  ),
+);
+
 export const submitSurveyResponse = onCall((request) =>
-  execute(() =>
+  execute(async () =>
     handleSubmitSurveyResponse(
-      requestFor(request),
+      await authorizedMemberRequest(request),
       surveySubmissionDependencies,
     ),
   ),
 );
 
 export const submitCommunityNomination = onCall((request) =>
-  execute(() =>
+  execute(async () =>
     handleSubmitCommunityNomination(
-      requestFor(request),
+      await authorizedMemberRequest(request),
       communityVotingDependencies,
     ),
   ),
 );
 
 export const getCommunityVoteResults = onCall((request) =>
-  execute(() =>
+  execute(async () =>
     handleGetCommunityVoteResults(
-      requestFor(request),
+      await authorizedMemberRequest(request),
       communityVotingDependencies,
     ),
   ),
 );
 
 export const moderateInaturalistRecord = onCall((request) =>
-  execute(() =>
+  execute(async () =>
     handleModerateInaturalistRecord(
-      requestFor(request),
+      await authorizedMemberRequest(request),
       inaturalistDependencies,
     ),
   ),
 );
 
 export const updateInaturalistCatalog = onCall((request) =>
-  execute(() =>
+  execute(async () =>
     handleUpdateInaturalistCatalog(
-      requestFor(request),
+      await authorizedMemberRequest(request),
       inaturalistDependencies,
     ),
   ),
 );
 
 export const linkInaturalistCatalog = onCall((request) =>
-  execute(() =>
-    handleLinkInaturalistCatalog(requestFor(request), inaturalistDependencies),
+  execute(async () =>
+    handleLinkInaturalistCatalog(
+      await authorizedMemberRequest(request),
+      inaturalistDependencies,
+    ),
   ),
 );
 
