@@ -71,6 +71,22 @@ const validDraft = {
 };
 
 describe('SightingsModule', () => {
+  it('starts imported reads while local sightings are still pending', async () => {
+    const { module, documents, imports } = buildModule();
+    let resolve!: (value: []) => void;
+    jest.spyOn(documents, 'list').mockReturnValueOnce(
+      new Promise((yes) => {
+        resolve = yes;
+      }),
+    );
+    const importedRead = jest.spyOn(imports, 'listObservations');
+    const result = module.list(member);
+    await Promise.resolve();
+    expect(importedRead).toHaveBeenCalledWith(false);
+    resolve([]);
+    await expect(result).resolves.toMatchObject({ ok: true, value: [] });
+  });
+
   it('creates and retrieves a sighting through its public interface', async () => {
     const { module, media } = buildModule();
 
@@ -251,6 +267,8 @@ describe('SightingsModule', () => {
 
   it('joins imported project sightings by verified numeric observer ID', async () => {
     const { module, documents, imports, codecs } = buildModule();
+    const fullImportList = jest.spyOn(imports, 'listObservations');
+    const observerQuery = jest.spyOn(imports, 'listObservationsByObserver');
     const linkedAt = new Date('2025-04-11T12:00:00.000Z');
     await documents.put('inaturalist-public-links', '42', {
       userId: member.id,
@@ -279,7 +297,26 @@ describe('SightingsModule', () => {
       lastSeenRunId: 'run-1',
       moderation: { hidden: false, reason: '' },
     });
-    imports.observations.set('321', codecs.inaturalistObservation.encode(imported));
+    imports.observations.set(
+      '321',
+      codecs.inaturalistObservation.encode(imported),
+    );
+    imports.observations.set(
+      '322',
+      codecs.inaturalistObservation.encode({
+        ...imported,
+        id: 322,
+        observer: { id: 99, login: 'someone_else' },
+      }),
+    );
+    imports.observations.set(
+      '323',
+      codecs.inaturalistObservation.encode({
+        ...imported,
+        id: 323,
+        visible: false,
+      }),
+    );
 
     await expect(module.linkedReporter(otherMember, 42)).resolves.toEqual({
       ok: true,
@@ -300,6 +337,8 @@ describe('SightingsModule', () => {
       ],
     });
 
+    expect(observerQuery).toHaveBeenCalledWith(42);
+    expect(fullImportList).not.toHaveBeenCalled();
     await documents.remove('inaturalist-public-links', '42');
     await expect(
       module.listByReporter(otherMember, member.id),

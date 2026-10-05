@@ -7,11 +7,7 @@ import {
 } from '../../core/domain';
 
 export type CatalogSort =
-  | 'name-asc'
-  | 'name-desc'
-  | 'sightings'
-  | 'recent'
-  | 'hearts';
+  'name-asc' | 'name-desc' | 'sightings' | 'recent' | 'hearts';
 
 export interface CatalogSortOption {
   readonly value: CatalogSort;
@@ -79,7 +75,9 @@ export function sightingsForCatalogEntry(
         sighting.name === entry.cat.name
       );
     }
-    return sighting.source === 'campus-cats' && sighting.name === entry.cat.name;
+    return (
+      sighting.source === 'campus-cats' && sighting.name === entry.cat.name
+    );
   });
 }
 
@@ -125,12 +123,12 @@ export function buildCatalogItems(
   });
 }
 
-export function filterAndSortCatalog(
-  items: readonly CatalogListItem[],
+export function filterAndSortCatalog<Item extends CatalogListItem>(
+  items: readonly Item[],
   search: string,
   sort: CatalogSort,
   selectedTagIds: readonly string[] = [],
-): readonly CatalogListItem[] {
+): readonly Item[] {
   const query = search.trim().toLocaleLowerCase();
   const searchFiltered = query
     ? items.filter(({ entry, tags }) =>
@@ -152,7 +150,10 @@ export function filterAndSortCatalog(
       case 'sightings':
         return right.sightingCount - left.sightingCount || tieBreak;
       case 'recent':
-        return compareRecent(left.mostRecentSighting, right.mostRecentSighting) || tieBreak;
+        return (
+          compareRecent(left.mostRecentSighting, right.mostRecentSighting) ||
+          tieBreak
+        );
       case 'hearts':
         return right.heartCount - left.heartCount || tieBreak;
       case 'name-asc':
@@ -179,12 +180,14 @@ export function defaultCatalogTagIdsForEntry(
   return defaultCatalogTagIdsForCat(entry.cat);
 }
 
-export function defaultCatalogTagIdsForCat(cat: Readonly<{
-  currentStatus?: Cat['currentStatus'];
-  tnr?: Cat['tnr'];
-  sex?: Cat['sex'];
-  furLength?: Cat['furLength'];
-}>): readonly string[] {
+export function defaultCatalogTagIdsForCat(
+  cat: Readonly<{
+    currentStatus?: Cat['currentStatus'];
+    tnr?: Cat['tnr'];
+    sex?: Cat['sex'];
+    furLength?: Cat['furLength'];
+  }>,
+): readonly string[] {
   const tags = new Set<string>();
   const { currentStatus, tnr, sex, furLength } = cat;
 

@@ -1,0 +1,76 @@
+{
+  "projectRef": "pxhopyutjuggdmzzpies",
+  "verifiedAt": "2026-10-05T14:14:54.155Z",
+  "capacity": {
+    "comments": 100,
+    "sightings": 680,
+    "database_bytes": 19019443,
+    "catalog_entries": 113,
+    "media_references": 1594,
+    "postgres_version": "17.11",
+    "memberships_enabled": 0,
+    "linked_catalog_entries": 46,
+    "schema_migration_count": 5,
+    "application_index_bytes": 2834432,
+    "effective_catalog_entries": 67,
+    "application_table_and_index_bytes": 7200768
+  },
+  "rlsAndClientGrantsVerified": true,
+  "apiQueriesVerified": true,
+  "paginationVerified": true,
+  "projectAndClubIsolationVerified": true,
+  "privateSchemaUnexposed": true,
+  "catalogDiscoveryVerified": true,
+  "catalogDetailsVerified": true,
+  "sqlWritesRemainDisabled": true,
+  "rpcRoundTripMilliseconds": {
+    "cc_catalog_page": [
+      520,
+      65,
+      93,
+      173
+    ],
+    "cc_sightings_in_bounds": [
+      64
+    ],
+    "cc_cat_sightings": [
+      68
+    ],
+    "cc_community_summary": [
+      68
+    ],
+    "cc_catalog_discovery": [
+      83,
+      69,
+      72,
+      66,
+      74,
+      74,
+      73,
+      70,
+      217,
+      94,
+      65
+    ],
+    "cc_catalog_record": [
+      59,
+      59
+    ],
+    "cc_catalog_media_page": [
+      60,
+      57,
+      63
+    ],
+    "cc_catalog_favorite_counts": [
+      62,
+      57
+    ],
+    "cc_catalog_favorite": [
+      69,
+      55
+    ],
+    "cc_member_profile": [
+      60
+    ]
+  }
+}

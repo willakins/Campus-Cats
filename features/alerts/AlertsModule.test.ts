@@ -81,6 +81,25 @@ const draft = {
 };
 
 describe('AlertsModule', () => {
+  it('starts the member receipt query while the alert query is still pending', async () => {
+    const { module, documents } = buildModule();
+    let resolve!: (value: []) => void;
+    jest.spyOn(documents, 'list').mockReturnValueOnce(
+      new Promise((yes) => {
+        resolve = yes;
+      }),
+    );
+    const receipts = jest.spyOn(documents, 'listWhereEqual');
+    const result = module.list(member);
+    expect(receipts).toHaveBeenCalledWith(
+      COLLECTIONS.alertReadReceipts,
+      'userId',
+      member.id,
+    );
+    resolve([]);
+    await expect(result).resolves.toMatchObject({ ok: true, value: [] });
+  });
+
   it('lists alerts newest first and loads details by ID', async () => {
     const { module, documents } = buildModule();
     const older = parseAlert({

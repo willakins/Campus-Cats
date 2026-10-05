@@ -49,6 +49,29 @@ const buildContributors = () => {
 };
 
 describe('ContentContributors', () => {
+  it('reads privacy settings once and queries only the requested content kind', async () => {
+    const documents = new InMemoryDocumentStore();
+    const getSettings = jest.fn().mockResolvedValue(DEFAULT_APP_SETTINGS);
+    const contributors = new ContentContributors({
+      documents,
+      settings: { getSettings },
+      codec: createPersistenceCodecs(dateObjectCodec).contentContributor,
+    });
+    await documents.commit([
+      contributors.write('sighting', 'one', member),
+      contributors.write('catalog', 'two', otherMember),
+    ]);
+    const fullScan = jest.spyOn(documents, 'list');
+    const query = jest.spyOn(documents, 'listWhereEqual');
+    await expect(contributors.listVisible(officer, 'sighting')).resolves.toEqual({
+      canView: true,
+      byContentId: new Map([['one', member]]),
+    });
+    expect(getSettings).toHaveBeenCalledTimes(1);
+    expect(query).toHaveBeenCalledWith(COLLECTIONS.contentContributors, 'kind', 'sighting');
+    expect(fullScan).not.toHaveBeenCalled();
+  });
+
   it('returns no contributor collection to anonymous members', async () => {
     const { contributors } = buildContributors();
 

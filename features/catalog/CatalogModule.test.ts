@@ -9,12 +9,19 @@ import {
   dateObjectCodec,
   DEFAULT_APP_SETTINGS,
   parseUser,
+  parseCatalogEntry,
+  localCatalogRecord,
 } from '../../core/domain';
 import { MediaCoordinator, storedMedia } from '../../core/media';
 import { CatalogModule } from './CatalogModule';
 import { ContentContributors } from '../appSettings';
+import type { RelationalCatalogBackend } from '../../core/ports';
 
-const admin = parseUser({ id: 'admin-1', email: 'admin@gatech.edu', role: Role.Officer });
+const admin = parseUser({
+  id: 'admin-1',
+  email: 'admin@gatech.edu',
+  role: Role.Officer,
+});
 const member = parseUser({
   id: 'member-1',
   email: 'member@gatech.edu',
@@ -35,7 +42,9 @@ const cat = {
   sex: 'Female' as const,
 };
 
-function buildModule() {
+function buildModule(
+  overrides: Partial<ConstructorParameters<typeof CatalogModule>[0]> = {},
+) {
   const documents = new InMemoryDocumentStore();
   const media = new InMemoryMediaStore();
   const ids = new SequenceIdGenerator(['cat-1', 'profile-1']);
@@ -56,6 +65,7 @@ function buildModule() {
       contributors,
       codecs,
       imports: { reader: imports, codec: codecs.inaturalistCatalog },
+      ...overrides,
     }),
     documents,
     media,
@@ -76,9 +86,16 @@ describe('CatalogModule', () => {
 
     expect(created).toMatchObject({
       ok: true,
-      value: { id: 'cat-1', cat: { name: 'Goldie' }, createdBy: { id: 'admin-1' } },
+      value: {
+        id: 'cat-1',
+        cat: { name: 'Goldie' },
+        createdBy: { id: 'admin-1' },
+      },
     });
-    await expect(module.list()).resolves.toMatchObject({ ok: true, value: [{ id: 'cat-1' }] });
+    await expect(module.list()).resolves.toMatchObject({
+      ok: true,
+      value: [{ id: 'cat-1' }],
+    });
     await expect(module.get('cat-1')).resolves.toMatchObject({
       ok: true,
       value: { id: 'cat-1', source: 'campus-cats' },
@@ -92,8 +109,12 @@ describe('CatalogModule', () => {
       catalogId: 'cat-1',
       tagIds: ['feral', 'tnr-complete'],
     });
-    await expect(module.remove(admin, 'cat-1')).resolves.toMatchObject({ ok: true });
-    expect(await documents.get('catalog-tag-assignments', 'cat-1')).toBeUndefined();
+    await expect(module.remove(admin, 'cat-1')).resolves.toMatchObject({
+      ok: true,
+    });
+    expect(
+      await documents.get('catalog-tag-assignments', 'cat-1'),
+    ).toBeUndefined();
   });
 
   it('shows separately stored catalog contributors only to officers by default', async () => {
@@ -104,7 +125,9 @@ describe('CatalogModule', () => {
       photos: ['file://profile.jpg'],
     });
 
-    expect((await documents.get('catalog', 'cat-1'))?.data).not.toHaveProperty('createdBy');
+    expect((await documents.get('catalog', 'cat-1'))?.data).not.toHaveProperty(
+      'createdBy',
+    );
     await expect(module.get(member, 'cat-1')).resolves.toMatchObject({
       ok: true,
       value: { createdBy: undefined },
@@ -244,7 +267,11 @@ describe('CatalogModule', () => {
     const { module } = buildModule();
 
     await expect(
-      module.create(member, { cat, credits: '', photos: ['file://profile.jpg'] }),
+      module.create(member, {
+        cat,
+        credits: '',
+        photos: ['file://profile.jpg'],
+      }),
     ).resolves.toMatchObject({ ok: false, error: { code: 'forbidden' } });
   });
 
@@ -288,10 +315,12 @@ describe('CatalogModule', () => {
       ok: false,
       error: { code: 'unauthenticated' },
     });
-    await expect(module.setFavorite(undefined, 'cat-1')).resolves.toMatchObject({
-      ok: false,
-      error: { code: 'unauthenticated' },
-    });
+    await expect(module.setFavorite(undefined, 'cat-1')).resolves.toMatchObject(
+      {
+        ok: false,
+        error: { code: 'unauthenticated' },
+      },
+    );
     await expect(module.setFavorite(member, '   ')).resolves.toMatchObject({
       ok: false,
       error: { code: 'validation' },
@@ -309,7 +338,10 @@ describe('CatalogModule', () => {
       }),
     ).resolves.toEqual({
       ok: false,
-      error: { code: 'validation', message: 'Short Description field must not be empty' },
+      error: {
+        code: 'validation',
+        message: 'Short Description field must not be empty',
+      },
     });
     await expect(
       module.create(admin, { cat, credits: '', photos: [] }),
@@ -321,7 +353,11 @@ describe('CatalogModule', () => {
 
   it('records the current editor while preserving the existing data shape', async () => {
     const { module, media } = buildModule();
-    await module.create(admin, { cat, credits: '', photos: ['file://profile.jpg'] });
+    await module.create(admin, {
+      cat,
+      credits: '',
+      photos: ['file://profile.jpg'],
+    });
     const superAdmin = parseUser({
       id: 'super-1',
       email: 'super@gatech.edu',
@@ -375,29 +411,48 @@ describe('CatalogModule', () => {
       profile: storedMedia('catalog/cat-1/profile-1.jpg'),
       gallery: [],
     };
-    await expect(buildModule().module.update(undefined, 'missing', update)).resolves.toMatchObject({
+    await expect(
+      buildModule().module.update(undefined, 'missing', update),
+    ).resolves.toMatchObject({
       ok: false,
       error: { code: 'unauthenticated' },
     });
-    await expect(buildModule().module.update(member, 'missing', update)).resolves.toMatchObject({
+    await expect(
+      buildModule().module.update(member, 'missing', update),
+    ).resolves.toMatchObject({
       ok: false,
       error: { code: 'forbidden' },
     });
-    await expect(buildModule().module.update(admin, 'missing', update)).resolves.toMatchObject({
+    await expect(
+      buildModule().module.update(admin, 'missing', update),
+    ).resolves.toMatchObject({
       ok: false,
       error: { code: 'not_found' },
     });
 
     const invalid = buildModule();
-    await invalid.module.create(admin, { cat, credits: '', photos: ['file://profile.jpg'] });
+    await invalid.module.create(admin, {
+      cat,
+      credits: '',
+      photos: ['file://profile.jpg'],
+    });
     await expect(
-      invalid.module.update(admin, 'cat-1', { ...update, cat: { ...cat, name: '' } }),
+      invalid.module.update(admin, 'cat-1', {
+        ...update,
+        cat: { ...cat, name: '' },
+      }),
     ).resolves.toMatchObject({ ok: false, error: { code: 'validation' } });
 
     const failed = buildModule();
-    await failed.module.create(admin, { cat, credits: '', photos: ['file://profile.jpg'] });
+    await failed.module.create(admin, {
+      cat,
+      credits: '',
+      photos: ['file://profile.jpg'],
+    });
     failed.media.failNext('list', new Error('offline'));
-    await expect(failed.module.update(admin, 'cat-1', update)).resolves.toMatchObject({
+    await expect(
+      failed.module.update(admin, 'cat-1', update),
+    ).resolves.toMatchObject({
       ok: false,
       error: { code: 'dependency_failure' },
     });
@@ -407,26 +462,45 @@ describe('CatalogModule', () => {
     const createFailure = buildModule();
     createFailure.media.failNext('list', new Error('offline'));
     await expect(
-      createFailure.module.create(admin, { cat, credits: '', photos: ['file://profile.jpg'] }),
-    ).resolves.toMatchObject({ ok: false, error: { code: 'dependency_failure' } });
+      createFailure.module.create(admin, {
+        cat,
+        credits: '',
+        photos: ['file://profile.jpg'],
+      }),
+    ).resolves.toMatchObject({
+      ok: false,
+      error: { code: 'dependency_failure' },
+    });
 
-    await expect(buildModule().module.remove(undefined, 'missing')).resolves.toMatchObject({
+    await expect(
+      buildModule().module.remove(undefined, 'missing'),
+    ).resolves.toMatchObject({
       ok: false,
       error: { code: 'unauthenticated' },
     });
-    await expect(buildModule().module.remove(member, 'missing')).resolves.toMatchObject({
+    await expect(
+      buildModule().module.remove(member, 'missing'),
+    ).resolves.toMatchObject({
       ok: false,
       error: { code: 'forbidden' },
     });
-    await expect(buildModule().module.remove(admin, 'missing')).resolves.toMatchObject({
+    await expect(
+      buildModule().module.remove(admin, 'missing'),
+    ).resolves.toMatchObject({
       ok: false,
       error: { code: 'not_found' },
     });
 
     const documentFailure = buildModule();
-    await documentFailure.module.create(admin, { cat, credits: '', photos: ['file://profile.jpg'] });
+    await documentFailure.module.create(admin, {
+      cat,
+      credits: '',
+      photos: ['file://profile.jpg'],
+    });
     documentFailure.documents.failNext('commit', new Error('offline'));
-    await expect(documentFailure.module.remove(admin, 'cat-1')).resolves.toMatchObject({
+    await expect(
+      documentFailure.module.remove(admin, 'cat-1'),
+    ).resolves.toMatchObject({
       ok: false,
       error: { code: 'dependency_failure' },
     });
@@ -439,10 +513,161 @@ describe('CatalogModule', () => {
         photos: ['file://profile.jpg'],
       });
       cleanupFailure.media.failNext(operation, new Error('offline'));
-      await expect(cleanupFailure.module.remove(admin, 'cat-1')).resolves.toMatchObject({
+      await expect(
+        cleanupFailure.module.remove(admin, 'cat-1'),
+      ).resolves.toMatchObject({
         ok: true,
         warnings: [{ code: 'cleanup_failed' }],
       });
     }
+  });
+});
+
+function relationalBackend(
+  overrides: Partial<RelationalCatalogBackend> = {},
+): RelationalCatalogBackend {
+  const unavailable = async () => {
+    throw new Error('SQL unavailable');
+  };
+  return {
+    discovery: { query: unavailable },
+    favorites: { setFavorite: unavailable },
+    reads: {
+      get: unavailable,
+      listPage: unavailable,
+      media: unavailable,
+      favoriteForUser: unavailable,
+      favoriteSummary: unavailable,
+    },
+    ...overrides,
+  };
+}
+
+describe('catalog discovery backend selection', () => {
+  it('loads details, picker pages, media and favorites entirely through the SQL reader', async () => {
+    const entry = localCatalogRecord(
+      parseCatalogEntry({
+        id: 'cat',
+        cat,
+        credits: 'Club',
+        createdAt: new Date('2026-10-05T00:00:00Z'),
+      }),
+    );
+    const reads = {
+      get: jest.fn().mockResolvedValue(entry),
+      listPage: jest
+        .fn()
+        .mockResolvedValueOnce({
+          items: [entry],
+          nextCursor: { sortName: 'goldie', id: 'cat' },
+        })
+        .mockResolvedValueOnce({ items: [] }),
+      media: jest.fn().mockResolvedValue([]),
+      favoriteForUser: jest.fn().mockResolvedValue(undefined),
+      favoriteSummary: jest.fn().mockResolvedValue({ counts: { cat: 3 } }),
+    };
+    const { module, documents, media } = buildModule({
+      relationalCatalog: relationalBackend({ reads }),
+    });
+    const documentGet = jest.spyOn(documents, 'get'),
+      documentList = jest.spyOn(documents, 'list'),
+      mediaList = jest.spyOn(media, 'list');
+    await expect(module.list(member)).resolves.toMatchObject({
+      ok: true,
+      value: [entry],
+    });
+    expect(reads.listPage).toHaveBeenNthCalledWith(2, {
+      sortName: 'goldie',
+      id: 'cat',
+    });
+    await expect(module.get(member, 'cat')).resolves.toMatchObject({
+      ok: true,
+      value: entry,
+    });
+    await expect(module.media('cat')).resolves.toMatchObject({
+      ok: true,
+      value: [],
+    });
+    await expect(module.favoriteForUser('member')).resolves.toMatchObject({
+      ok: true,
+      value: undefined,
+    });
+    await expect(module.favoriteSummary(member)).resolves.toMatchObject({
+      ok: true,
+      value: { counts: { cat: 3 } },
+    });
+    reads.get.mockResolvedValueOnce(undefined);
+    await expect(module.get(member, 'missing')).resolves.toMatchObject({
+      ok: false,
+      error: { code: 'not_found' },
+    });
+    reads.get.mockRejectedValueOnce(new Error('SQL unavailable'));
+    await expect(module.get(member, 'cat')).resolves.toMatchObject({
+      ok: false,
+      error: { code: 'dependency_failure' },
+    });
+    expect(documentGet).not.toHaveBeenCalled();
+    expect(documentList).not.toHaveBeenCalled();
+    expect(mediaList).not.toHaveBeenCalled();
+  });
+
+  it('reports SQL read failures and blocks legacy edits before any Firebase or Storage write', async () => {
+    const { module, documents, media } = buildModule({
+      relationalCatalog: relationalBackend(),
+    });
+    const commit = jest.spyOn(documents, 'commit'),
+      upload = jest.spyOn(media, 'upload');
+    for (const result of await Promise.all([
+      module.list(member),
+      module.get(member, 'cat'),
+      module.media('cat'),
+      module.favoriteForUser('member'),
+      module.favoriteSummary(member),
+      module.create(admin, { cat, credits: '', photos: ['file://photo'] }),
+      module.update(admin, 'cat', {
+        cat,
+        credits: '',
+        profile: storedMedia('photo'),
+        gallery: [],
+      }),
+      module.remove(admin, 'cat'),
+    ]))
+      expect(result).toMatchObject({
+        ok: false,
+        error: { code: 'dependency_failure' },
+      });
+    expect(commit).not.toHaveBeenCalled();
+    expect(upload).not.toHaveBeenCalled();
+  });
+
+  it('uses the paired SQL reader/writer and never falls back to Firebase after failures', async () => {
+    const query = jest
+      .fn()
+      .mockResolvedValue({ items: [], total: 0, availableTags: [] });
+    const setFavorite = jest.fn().mockResolvedValue(undefined);
+    const { module, documents } = buildModule({
+      relationalCatalog: relationalBackend({
+        discovery: { query },
+        favorites: { setFavorite },
+      }),
+    });
+    const list = jest.spyOn(documents, 'list');
+    const put = jest.spyOn(documents, 'put');
+    expect(module.usesPagedDiscovery).toBe(true);
+    await expect(
+      module.discover(member, { pageSize: 40, search: 'Goldie' }),
+    ).resolves.toMatchObject({ ok: true });
+    await expect(module.setFavorite(member, 'cat')).resolves.toMatchObject({
+      ok: true,
+    });
+    expect(setFavorite).toHaveBeenCalledWith('cat');
+    query.mockRejectedValue(new Error('SQL unavailable'));
+    setFavorite.mockRejectedValue(new Error('SQL unavailable'));
+    await expect(module.discover(member)).resolves.toMatchObject({ ok: false });
+    await expect(module.setFavorite(member, 'cat')).resolves.toMatchObject({
+      ok: false,
+    });
+    expect(list).not.toHaveBeenCalled();
+    expect(put).not.toHaveBeenCalled();
   });
 });

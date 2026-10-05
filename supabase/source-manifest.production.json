@@ -1,0 +1,19 @@
+{
+  "version": 1,
+  "project": "campuscats-d7a5e",
+  "club": "campus-cats",
+  "relationshipSources": {
+    "inaturalist-guide-profiles": "root"
+  },
+  "sources": {
+    "users": "root",
+    "public-profiles": "root",
+    "catalog": "root",
+    "cat-sightings": "root",
+    "stations": "root",
+    "alerts": "root",
+    "inaturalist-observations": "tenant",
+    "inaturalist-guide-profiles": "tenant",
+    "sighting-comments": "tenant"
+  }
+}

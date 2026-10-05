@@ -35,6 +35,7 @@ import { appModules } from '@/composition/appModules';
 import {
   CommunityVote,
   Survey,
+  Outcome,
   canAccessRolePolicy,
   communityVotePhase,
   isExpiredEvent,
@@ -102,7 +103,13 @@ const Community = () => {
   const [hasIncompleteSurvey, setHasIncompleteSurvey] = useState(false);
   const [hasUnsubmittedBallot, setHasUnsubmittedBallot] = useState(false);
   const [hasUnreadChatPing, setHasUnreadChatPing] = useState(false);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState({
+    alerts: true,
+    events: true,
+    surveys: true,
+    votes: true,
+  });
+  const loadGeneration = useRef(0);
   const [errors, setErrors] = useState<
     Partial<Record<CommunitySection, string>>
   >({});
@@ -165,58 +172,80 @@ const Community = () => {
     [actor.id],
   );
 
-  const load = useCallback(async (isActive: () => boolean = () => true) => {
-    setLoading(true);
-    setErrors({});
-    const [alertResult, eventResult, surveyResult, voteResult] =
+  const load = useCallback(
+    async (isActive: () => boolean = () => true) => {
+      const generation = ++loadGeneration.current;
+      const current = () => isActive() && generation === loadGeneration.current;
+      setLoading({ alerts: true, events: true, surveys: true, votes: true });
+      setErrors({});
+      setHasIncompleteSurvey(false);
+      setHasUnsubmittedBallot(false);
+      const loadSection = async <T,>(
+        key: 'alerts' | 'events' | 'surveys' | 'votes',
+        read: () => Promise<Outcome<readonly T[]>>,
+        publish: (items: readonly T[]) => void,
+      ) => {
+        try {
+          const result = await read();
+          if (!current()) return;
+          if (result.ok) publish(result.value);
+          else
+            setErrors((previous) => ({
+              ...previous,
+              [key]: result.error.message,
+            }));
+        } catch {
+          if (current())
+            setErrors((previous) => ({
+              ...previous,
+              [key]: `Could not load ${key}`,
+            }));
+        } finally {
+          if (current())
+            setLoading((previous) => ({ ...previous, [key]: false }));
+        }
+      };
       await Promise.all([
-        appModules.alerts.list(actor),
-        appModules.events.list(actor),
-        appModules.surveys.list(actor),
-        appModules.communityVoting.list(actor),
+        loadSection('alerts', () => appModules.alerts.list(actor), setAlerts),
+        loadSection('events', () => appModules.events.list(actor), setEvents),
+        loadSection(
+          'surveys',
+          () => appModules.surveys.list(actor),
+          (items) => {
+            setSurveys(items);
+            setHasIncompleteSurvey(false);
+            void appModules.surveys
+              .hasIncompleteOpenSurvey(actor, items)
+              .then((result) => {
+                if (current())
+                  setHasIncompleteSurvey(result.ok && result.value);
+              })
+              .catch(() => {
+                if (current()) setHasIncompleteSurvey(false);
+              });
+          },
+        ),
+        loadSection(
+          'votes',
+          () => appModules.communityVoting.list(actor),
+          (items) => {
+            setVotes(items);
+            setHasUnsubmittedBallot(false);
+            void appModules.communityVoting
+              .hasUnsubmittedOpenBallot(actor, items)
+              .then((result) => {
+                if (current())
+                  setHasUnsubmittedBallot(result.ok && result.value);
+              })
+              .catch(() => {
+                if (current()) setHasUnsubmittedBallot(false);
+              });
+          },
+        ),
       ]);
-    if (!isActive()) return;
-    if (alertResult.ok) setAlerts(alertResult.value);
-    else
-      setErrors((current) => ({
-        ...current,
-        alerts: alertResult.error.message,
-      }));
-    if (eventResult.ok) setEvents(eventResult.value);
-    else
-      setErrors((current) => ({
-        ...current,
-        events: eventResult.error.message,
-      }));
-    if (surveyResult.ok) setSurveys(surveyResult.value);
-    else
-      setErrors((current) => ({
-        ...current,
-        surveys: surveyResult.error.message,
-      }));
-    if (voteResult.ok) setVotes(voteResult.value);
-    else
-      setErrors((current) => ({ ...current, votes: voteResult.error.message }));
-    const [surveyAttentionResult, voteAttentionResult] = await Promise.all([
-      surveyResult.ok
-        ? appModules.surveys.hasIncompleteOpenSurvey(actor, surveyResult.value)
-        : undefined,
-      voteResult.ok
-        ? appModules.communityVoting.hasUnsubmittedOpenBallot(
-            actor,
-            voteResult.value,
-          )
-        : undefined,
-    ]);
-    if (!isActive()) return;
-    setHasIncompleteSurvey(
-      surveyAttentionResult?.ok ? surveyAttentionResult.value : false,
-    );
-    setHasUnsubmittedBallot(
-      voteAttentionResult?.ok ? voteAttentionResult.value : false,
-    );
-    setLoading(false);
-  }, [actor.id, actor.role]);
+    },
+    [actor.id, actor.role],
+  );
 
   useFocusTask(load);
 
@@ -618,7 +647,7 @@ const Community = () => {
             />
           </View>
         ) : null}
-        {section && loading && section !== 'chat' && section !== 'donate' ? (
+        {section && section !== 'chat' && section !== 'donate' && loading[section] ? (
           <CardListSkeleton label={`Loading ${section}`} />
         ) : section ? (
           list

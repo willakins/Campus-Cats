@@ -5,6 +5,14 @@ export function inaturalistReaderContract(
   createReader: () => Promise<InaturalistReader> | InaturalistReader,
 ): void {
   describe(`${adapterName} iNaturalist reader contract`, () => {
+    it('returns only visible observations for the requested numeric observer', async () => {
+      const reader = await createReader();
+      await expect(reader.listObservationsByObserver(42)).resolves.toEqual([
+        expect.objectContaining({ id: '1001' }),
+      ]);
+      await expect(reader.listObservationsByObserver(43)).resolves.toEqual([]);
+    });
+
     it('separates member-visible records from officer audit reads', async () => {
       const reader = await createReader();
 

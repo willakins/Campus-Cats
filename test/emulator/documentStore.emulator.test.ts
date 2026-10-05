@@ -31,7 +31,7 @@ describe('Firebase document adapter', () => {
     await environment.withSecurityRulesDisabled(async (context) => {
       await setDoc(doc(context.firestore(), 'users', 'super-admin-1'), {
         email: 'admin@gatech.edu',
-        role: 2,
+        role: 3,
         clubId: 'campus-cats',
         platformAdmin: false,
         banned: false,
@@ -60,7 +60,7 @@ describe('Firebase document adapter', () => {
         new FirebaseDocumentStore(
           environment
             .authenticatedContext('super-admin-1', {
-              role: 2,
+              role: 3,
               email: 'admin@gatech.edu',
             })
             .firestore() as unknown as Firestore,

@@ -1,0 +1,777 @@
+{
+  "checkedAt": "2026-10-05T15:07:08.916Z",
+  "databaseScope": "selected relational copy; no production app traffic",
+  "sampleCountPerQuery": 3,
+  "caveats": [
+    "Execution time is database-side, excluding Firebase gateway and client/network latency.",
+    "Discovery is PL/pgSQL; its outer Result plan reports time/buffers but hides internal node plans.",
+    "Base-table probes cover index predicates; they are not a reproduction of full discovery or effective-catalog queries.",
+    "Three sequential samples are diagnostics, not a production p95 or concurrent load test."
+  ],
+  "samples": {
+    "recentSightings": [
+      {
+        "planningMs": 17.926,
+        "executionMs": 3.305,
+        "sharedBlocksHit": 4,
+        "sharedBlocksRead": 0,
+        "tempBlocksRead": 0,
+        "tempBlocksWritten": 0,
+        "nodes": [
+          {
+            "type": "Limit",
+            "estimatedRows": 100,
+            "actualRows": 100,
+            "loops": 1
+          },
+          {
+            "type": "Index Only Scan",
+            "relation": "sightings",
+            "index": "sightings_recent_idx",
+            "estimatedRows": 680,
+            "actualRows": 100,
+            "loops": 1
+          }
+        ]
+      },
+      {
+        "planningMs": 0.128,
+        "executionMs": 0.069,
+        "sharedBlocksHit": 4,
+        "sharedBlocksRead": 0,
+        "tempBlocksRead": 0,
+        "tempBlocksWritten": 0,
+        "nodes": [
+          {
+            "type": "Limit",
+            "estimatedRows": 100,
+            "actualRows": 100,
+            "loops": 1
+          },
+          {
+            "type": "Index Only Scan",
+            "relation": "sightings",
+            "index": "sightings_recent_idx",
+            "estimatedRows": 680,
+            "actualRows": 100,
+            "loops": 1
+          }
+        ]
+      },
+      {
+        "planningMs": 0.12,
+        "executionMs": 0.085,
+        "sharedBlocksHit": 4,
+        "sharedBlocksRead": 0,
+        "tempBlocksRead": 0,
+        "tempBlocksWritten": 0,
+        "nodes": [
+          {
+            "type": "Limit",
+            "estimatedRows": 100,
+            "actualRows": 100,
+            "loops": 1
+          },
+          {
+            "type": "Index Only Scan",
+            "relation": "sightings",
+            "index": "sightings_recent_idx",
+            "estimatedRows": 680,
+            "actualRows": 100,
+            "loops": 1
+          }
+        ]
+      }
+    ],
+    "catalogHistory": [
+      {
+        "planningMs": 0.982,
+        "executionMs": 2.43,
+        "sharedBlocksHit": 6,
+        "sharedBlocksRead": 0,
+        "tempBlocksRead": 0,
+        "tempBlocksWritten": 0,
+        "nodes": [
+          {
+            "type": "Limit",
+            "estimatedRows": 2,
+            "actualRows": 2,
+            "loops": 1
+          },
+          {
+            "type": "Limit",
+            "estimatedRows": 1,
+            "actualRows": 1,
+            "loops": 1
+          },
+          {
+            "type": "Index Only Scan",
+            "relation": "sightings",
+            "index": "sightings_catalog_date_idx",
+            "estimatedRows": 17,
+            "actualRows": 1,
+            "loops": 1
+          },
+          {
+            "type": "Index Scan",
+            "relation": "sightings",
+            "index": "sightings_catalog_date_idx",
+            "estimatedRows": 2,
+            "actualRows": 2,
+            "loops": 1
+          }
+        ]
+      },
+      {
+        "planningMs": 0.18,
+        "executionMs": 0.056,
+        "sharedBlocksHit": 6,
+        "sharedBlocksRead": 0,
+        "tempBlocksRead": 0,
+        "tempBlocksWritten": 0,
+        "nodes": [
+          {
+            "type": "Limit",
+            "estimatedRows": 2,
+            "actualRows": 2,
+            "loops": 1
+          },
+          {
+            "type": "Limit",
+            "estimatedRows": 1,
+            "actualRows": 1,
+            "loops": 1
+          },
+          {
+            "type": "Index Only Scan",
+            "relation": "sightings",
+            "index": "sightings_catalog_date_idx",
+            "estimatedRows": 17,
+            "actualRows": 1,
+            "loops": 1
+          },
+          {
+            "type": "Index Scan",
+            "relation": "sightings",
+            "index": "sightings_catalog_date_idx",
+            "estimatedRows": 2,
+            "actualRows": 2,
+            "loops": 1
+          }
+        ]
+      },
+      {
+        "planningMs": 0.188,
+        "executionMs": 0.059,
+        "sharedBlocksHit": 6,
+        "sharedBlocksRead": 0,
+        "tempBlocksRead": 0,
+        "tempBlocksWritten": 0,
+        "nodes": [
+          {
+            "type": "Limit",
+            "estimatedRows": 2,
+            "actualRows": 2,
+            "loops": 1
+          },
+          {
+            "type": "Limit",
+            "estimatedRows": 1,
+            "actualRows": 1,
+            "loops": 1
+          },
+          {
+            "type": "Index Only Scan",
+            "relation": "sightings",
+            "index": "sightings_catalog_date_idx",
+            "estimatedRows": 17,
+            "actualRows": 1,
+            "loops": 1
+          },
+          {
+            "type": "Index Scan",
+            "relation": "sightings",
+            "index": "sightings_catalog_date_idx",
+            "estimatedRows": 2,
+            "actualRows": 2,
+            "loops": 1
+          }
+        ]
+      }
+    ],
+    "guideHistory": [
+      {
+        "planningMs": 0.278,
+        "executionMs": 4.861,
+        "sharedBlocksHit": 14,
+        "sharedBlocksRead": 0,
+        "tempBlocksRead": 0,
+        "tempBlocksWritten": 0,
+        "nodes": [
+          {
+            "type": "Limit",
+            "estimatedRows": 7,
+            "actualRows": 8,
+            "loops": 1
+          },
+          {
+            "type": "Limit",
+            "estimatedRows": 1,
+            "actualRows": 1,
+            "loops": 1
+          },
+          {
+            "type": "Index Only Scan",
+            "relation": "sightings",
+            "index": "sightings_guide_idx",
+            "estimatedRows": 120,
+            "actualRows": 1,
+            "loops": 1
+          },
+          {
+            "type": "Incremental Sort",
+            "estimatedRows": 7,
+            "actualRows": 8,
+            "loops": 1
+          },
+          {
+            "type": "Index Scan",
+            "relation": "sightings",
+            "index": "sightings_guide_idx",
+            "estimatedRows": 7,
+            "actualRows": 8,
+            "loops": 1
+          }
+        ]
+      },
+      {
+        "planningMs": 0.197,
+        "executionMs": 0.1,
+        "sharedBlocksHit": 5,
+        "sharedBlocksRead": 0,
+        "tempBlocksRead": 0,
+        "tempBlocksWritten": 0,
+        "nodes": [
+          {
+            "type": "Limit",
+            "estimatedRows": 7,
+            "actualRows": 8,
+            "loops": 1
+          },
+          {
+            "type": "Limit",
+            "estimatedRows": 1,
+            "actualRows": 1,
+            "loops": 1
+          },
+          {
+            "type": "Index Only Scan",
+            "relation": "sightings",
+            "index": "sightings_guide_idx",
+            "estimatedRows": 120,
+            "actualRows": 1,
+            "loops": 1
+          },
+          {
+            "type": "Incremental Sort",
+            "estimatedRows": 7,
+            "actualRows": 8,
+            "loops": 1
+          },
+          {
+            "type": "Index Scan",
+            "relation": "sightings",
+            "index": "sightings_guide_idx",
+            "estimatedRows": 7,
+            "actualRows": 8,
+            "loops": 1
+          }
+        ]
+      },
+      {
+        "planningMs": 0.205,
+        "executionMs": 0.066,
+        "sharedBlocksHit": 5,
+        "sharedBlocksRead": 0,
+        "tempBlocksRead": 0,
+        "tempBlocksWritten": 0,
+        "nodes": [
+          {
+            "type": "Limit",
+            "estimatedRows": 7,
+            "actualRows": 8,
+            "loops": 1
+          },
+          {
+            "type": "Limit",
+            "estimatedRows": 1,
+            "actualRows": 1,
+            "loops": 1
+          },
+          {
+            "type": "Index Only Scan",
+            "relation": "sightings",
+            "index": "sightings_guide_idx",
+            "estimatedRows": 120,
+            "actualRows": 1,
+            "loops": 1
+          },
+          {
+            "type": "Incremental Sort",
+            "estimatedRows": 7,
+            "actualRows": 8,
+            "loops": 1
+          },
+          {
+            "type": "Index Scan",
+            "relation": "sightings",
+            "index": "sightings_guide_idx",
+            "estimatedRows": 7,
+            "actualRows": 8,
+            "loops": 1
+          }
+        ]
+      }
+    ],
+    "localCatalogNames": [
+      {
+        "planningMs": 10.184,
+        "executionMs": 11.852,
+        "sharedBlocksHit": 39,
+        "sharedBlocksRead": 0,
+        "tempBlocksRead": 0,
+        "tempBlocksWritten": 0,
+        "nodes": [
+          {
+            "type": "Limit",
+            "estimatedRows": 40,
+            "actualRows": 40,
+            "loops": 1
+          },
+          {
+            "type": "Index Scan",
+            "relation": "catalog",
+            "index": "catalog_name_idx",
+            "estimatedRows": 113,
+            "actualRows": 40,
+            "loops": 1
+          }
+        ]
+      },
+      {
+        "planningMs": 0.111,
+        "executionMs": 0.096,
+        "sharedBlocksHit": 39,
+        "sharedBlocksRead": 0,
+        "tempBlocksRead": 0,
+        "tempBlocksWritten": 0,
+        "nodes": [
+          {
+            "type": "Limit",
+            "estimatedRows": 40,
+            "actualRows": 40,
+            "loops": 1
+          },
+          {
+            "type": "Index Scan",
+            "relation": "catalog",
+            "index": "catalog_name_idx",
+            "estimatedRows": 113,
+            "actualRows": 40,
+            "loops": 1
+          }
+        ]
+      },
+      {
+        "planningMs": 0.101,
+        "executionMs": 0.099,
+        "sharedBlocksHit": 39,
+        "sharedBlocksRead": 0,
+        "tempBlocksRead": 0,
+        "tempBlocksWritten": 0,
+        "nodes": [
+          {
+            "type": "Limit",
+            "estimatedRows": 40,
+            "actualRows": 40,
+            "loops": 1
+          },
+          {
+            "type": "Index Scan",
+            "relation": "catalog",
+            "index": "catalog_name_idx",
+            "estimatedRows": 113,
+            "actualRows": 40,
+            "loops": 1
+          }
+        ]
+      }
+    ],
+    "catalogMedia": [
+      {
+        "planningMs": 16.77,
+        "executionMs": 2.981,
+        "sharedBlocksHit": 6,
+        "sharedBlocksRead": 0,
+        "tempBlocksRead": 0,
+        "tempBlocksWritten": 0,
+        "nodes": [
+          {
+            "type": "Limit",
+            "estimatedRows": 1,
+            "actualRows": 1,
+            "loops": 1
+          },
+          {
+            "type": "Limit",
+            "estimatedRows": 1,
+            "actualRows": 1,
+            "loops": 1
+          },
+          {
+            "type": "Index Only Scan",
+            "relation": "media_references",
+            "index": "media_catalog_page_idx",
+            "estimatedRows": 195,
+            "actualRows": 1,
+            "loops": 1
+          },
+          {
+            "type": "Index Only Scan",
+            "relation": "media_references",
+            "index": "media_catalog_page_idx",
+            "estimatedRows": 1,
+            "actualRows": 1,
+            "loops": 1
+          }
+        ]
+      },
+      {
+        "planningMs": 0.181,
+        "executionMs": 0.055,
+        "sharedBlocksHit": 6,
+        "sharedBlocksRead": 0,
+        "tempBlocksRead": 0,
+        "tempBlocksWritten": 0,
+        "nodes": [
+          {
+            "type": "Limit",
+            "estimatedRows": 1,
+            "actualRows": 1,
+            "loops": 1
+          },
+          {
+            "type": "Limit",
+            "estimatedRows": 1,
+            "actualRows": 1,
+            "loops": 1
+          },
+          {
+            "type": "Index Only Scan",
+            "relation": "media_references",
+            "index": "media_catalog_page_idx",
+            "estimatedRows": 195,
+            "actualRows": 1,
+            "loops": 1
+          },
+          {
+            "type": "Index Only Scan",
+            "relation": "media_references",
+            "index": "media_catalog_page_idx",
+            "estimatedRows": 1,
+            "actualRows": 1,
+            "loops": 1
+          }
+        ]
+      },
+      {
+        "planningMs": 0.245,
+        "executionMs": 0.059,
+        "sharedBlocksHit": 6,
+        "sharedBlocksRead": 0,
+        "tempBlocksRead": 0,
+        "tempBlocksWritten": 0,
+        "nodes": [
+          {
+            "type": "Limit",
+            "estimatedRows": 1,
+            "actualRows": 1,
+            "loops": 1
+          },
+          {
+            "type": "Limit",
+            "estimatedRows": 1,
+            "actualRows": 1,
+            "loops": 1
+          },
+          {
+            "type": "Index Only Scan",
+            "relation": "media_references",
+            "index": "media_catalog_page_idx",
+            "estimatedRows": 195,
+            "actualRows": 1,
+            "loops": 1
+          },
+          {
+            "type": "Index Only Scan",
+            "relation": "media_references",
+            "index": "media_catalog_page_idx",
+            "estimatedRows": 1,
+            "actualRows": 1,
+            "loops": 1
+          }
+        ]
+      }
+    ],
+    "discovery:name-asc": [
+      {
+        "planningMs": 0.021,
+        "executionMs": 96.277,
+        "sharedBlocksHit": 1897,
+        "sharedBlocksRead": 0,
+        "tempBlocksRead": 0,
+        "tempBlocksWritten": 0,
+        "nodes": [
+          {
+            "type": "Result",
+            "estimatedRows": 1,
+            "actualRows": 1,
+            "loops": 1
+          }
+        ]
+      },
+      {
+        "planningMs": 0.02,
+        "executionMs": 12.535,
+        "sharedBlocksHit": 855,
+        "sharedBlocksRead": 0,
+        "tempBlocksRead": 0,
+        "tempBlocksWritten": 0,
+        "nodes": [
+          {
+            "type": "Result",
+            "estimatedRows": 1,
+            "actualRows": 1,
+            "loops": 1
+          }
+        ]
+      },
+      {
+        "planningMs": 0.02,
+        "executionMs": 12.106,
+        "sharedBlocksHit": 855,
+        "sharedBlocksRead": 0,
+        "tempBlocksRead": 0,
+        "tempBlocksWritten": 0,
+        "nodes": [
+          {
+            "type": "Result",
+            "estimatedRows": 1,
+            "actualRows": 1,
+            "loops": 1
+          }
+        ]
+      }
+    ],
+    "discovery:name-desc": [
+      {
+        "planningMs": 0.018,
+        "executionMs": 11.792,
+        "sharedBlocksHit": 855,
+        "sharedBlocksRead": 0,
+        "tempBlocksRead": 0,
+        "tempBlocksWritten": 0,
+        "nodes": [
+          {
+            "type": "Result",
+            "estimatedRows": 1,
+            "actualRows": 1,
+            "loops": 1
+          }
+        ]
+      },
+      {
+        "planningMs": 0.018,
+        "executionMs": 11.505,
+        "sharedBlocksHit": 855,
+        "sharedBlocksRead": 0,
+        "tempBlocksRead": 0,
+        "tempBlocksWritten": 0,
+        "nodes": [
+          {
+            "type": "Result",
+            "estimatedRows": 1,
+            "actualRows": 1,
+            "loops": 1
+          }
+        ]
+      },
+      {
+        "planningMs": 0.019,
+        "executionMs": 14.253,
+        "sharedBlocksHit": 872,
+        "sharedBlocksRead": 0,
+        "tempBlocksRead": 0,
+        "tempBlocksWritten": 0,
+        "nodes": [
+          {
+            "type": "Result",
+            "estimatedRows": 1,
+            "actualRows": 1,
+            "loops": 1
+          }
+        ]
+      }
+    ],
+    "discovery:sightings": [
+      {
+        "planningMs": 0.019,
+        "executionMs": 12.211,
+        "sharedBlocksHit": 855,
+        "sharedBlocksRead": 0,
+        "tempBlocksRead": 0,
+        "tempBlocksWritten": 0,
+        "nodes": [
+          {
+            "type": "Result",
+            "estimatedRows": 1,
+            "actualRows": 1,
+            "loops": 1
+          }
+        ]
+      },
+      {
+        "planningMs": 0.019,
+        "executionMs": 11.964,
+        "sharedBlocksHit": 855,
+        "sharedBlocksRead": 0,
+        "tempBlocksRead": 0,
+        "tempBlocksWritten": 0,
+        "nodes": [
+          {
+            "type": "Result",
+            "estimatedRows": 1,
+            "actualRows": 1,
+            "loops": 1
+          }
+        ]
+      },
+      {
+        "planningMs": 0.02,
+        "executionMs": 12.084,
+        "sharedBlocksHit": 855,
+        "sharedBlocksRead": 0,
+        "tempBlocksRead": 0,
+        "tempBlocksWritten": 0,
+        "nodes": [
+          {
+            "type": "Result",
+            "estimatedRows": 1,
+            "actualRows": 1,
+            "loops": 1
+          }
+        ]
+      }
+    ],
+    "discovery:recent": [
+      {
+        "planningMs": 0.02,
+        "executionMs": 16.121,
+        "sharedBlocksHit": 855,
+        "sharedBlocksRead": 0,
+        "tempBlocksRead": 0,
+        "tempBlocksWritten": 0,
+        "nodes": [
+          {
+            "type": "Result",
+            "estimatedRows": 1,
+            "actualRows": 1,
+            "loops": 1
+          }
+        ]
+      },
+      {
+        "planningMs": 0.018,
+        "executionMs": 9.891,
+        "sharedBlocksHit": 855,
+        "sharedBlocksRead": 0,
+        "tempBlocksRead": 0,
+        "tempBlocksWritten": 0,
+        "nodes": [
+          {
+            "type": "Result",
+            "estimatedRows": 1,
+            "actualRows": 1,
+            "loops": 1
+          }
+        ]
+      },
+      {
+        "planningMs": 0.019,
+        "executionMs": 10.128,
+        "sharedBlocksHit": 855,
+        "sharedBlocksRead": 0,
+        "tempBlocksRead": 0,
+        "tempBlocksWritten": 0,
+        "nodes": [
+          {
+            "type": "Result",
+            "estimatedRows": 1,
+            "actualRows": 1,
+            "loops": 1
+          }
+        ]
+      }
+    ],
+    "discovery:hearts": [
+      {
+        "planningMs": 0.019,
+        "executionMs": 10.126,
+        "sharedBlocksHit": 855,
+        "sharedBlocksRead": 0,
+        "tempBlocksRead": 0,
+        "tempBlocksWritten": 0,
+        "nodes": [
+          {
+            "type": "Result",
+            "estimatedRows": 1,
+            "actualRows": 1,
+            "loops": 1
+          }
+        ]
+      },
+      {
+        "planningMs": 0.019,
+        "executionMs": 10.428,
+        "sharedBlocksHit": 855,
+        "sharedBlocksRead": 0,
+        "tempBlocksRead": 0,
+        "tempBlocksWritten": 0,
+        "nodes": [
+          {
+            "type": "Result",
+            "estimatedRows": 1,
+            "actualRows": 1,
+            "loops": 1
+          }
+        ]
+      },
+      {
+        "planningMs": 0.019,
+        "executionMs": 10.183,
+        "sharedBlocksHit": 855,
+        "sharedBlocksRead": 0,
+        "tempBlocksRead": 0,
+        "tempBlocksWritten": 0,
+        "nodes": [
+          {
+            "type": "Result",
+            "estimatedRows": 1,
+            "actualRows": 1,
+            "loops": 1
+          }
+        ]
+      }
+    ]
+  }
+}
