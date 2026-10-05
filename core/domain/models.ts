@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { plainText, httpUrlSchema } from './inputValidation';
 
 import {
   alertIdSchema,
@@ -14,21 +15,13 @@ import {
 import { roleSchema } from './roles';
 import { achievementIdSchema } from './achievements';
 
-const requiredText = z.string().trim().min(1);
-const httpUrl = z
-  .string()
-  .trim()
-  .url()
-  .max(2048)
-  .refine(
-    (value) => value.startsWith('https://') || value.startsWith('http://'),
-    { message: 'Expected an http or https URL' },
-  );
+const requiredText = plainText.trim().min(1);
+const httpUrl = httpUrlSchema;
 const optionalHttpUrl = z.union([z.literal(''), httpUrl]).default('');
 const optionalSocialUrl = (hosts: readonly string[]) =>
   optionalHttpUrl.refine(
     (value) =>
-      !value || hosts.includes(new URL(value).hostname.replace(/^www\./, '')),
+      !value || (httpUrlSchema.safeParse(value).success && hosts.includes(new URL(value).hostname.replace(/^www\./, ''))),
     { message: `Expected a ${hosts.join(' or ')} URL` },
   );
 const validDate = z.date().refine((date) => !Number.isNaN(date.getTime()), {
@@ -63,23 +56,23 @@ export const coordinatesSchema = z.object({
 
 export const userSnapshotSchema = z.object({
   id: userIdSchema,
-  email: z.string().trim().email(),
+  email: plainText.trim().email().max(320),
   role: roleSchema,
-  clubId: z.string().trim().min(1).max(120).default('campus-cats'),
+  clubId: plainText.trim().min(1).max(120).default('campus-cats'),
   platformAdmin: z.boolean().default(false),
 });
 
 export const userSchema = userSnapshotSchema.extend({
   agreedToTerms: z.boolean().optional(),
-  termsVersion: z.string().trim().max(40).optional(),
+  termsVersion: plainText.trim().max(40).optional(),
 });
 
 export const disciplinaryNoticeSchema = z.object({
   id: requiredText,
-  message: z.string().trim().min(1).max(500),
+  message: plainText.trim().min(1).max(500),
   createdAt: validDate,
   issuedById: userIdSchema,
-  issuedByEmail: z.string().trim().email(),
+  issuedByEmail: plainText.trim().email().max(320),
 });
 
 export const managedUserSchema = userSchema.extend({
@@ -90,10 +83,10 @@ export const managedUserSchema = userSchema.extend({
 export const publicProfileSchema = z
   .object({
     id: userIdSchema,
-    displayName: z.string().trim().min(1).max(60),
-    bio: z.string().trim().max(500).default(''),
+    displayName: plainText.trim().min(1).max(60),
+    bio: plainText.trim().max(500).default(''),
     profilePhotoUrl: z
-      .union([z.literal(''), z.string().url().max(2048)])
+      .union([z.literal(''), httpUrlSchema])
       .default(''),
     role: roleSchema,
     achievementIds: z.array(achievementIdSchema).default([]),
@@ -123,7 +116,7 @@ export const publicProfileSchema = z
 
 export const commentTargetSchema = z.object({
   kind: z.enum(['sighting', 'catalog', 'station']),
-  id: z.string().trim().min(1).max(200),
+  id: plainText.trim().min(1).max(200),
 });
 
 export const COMMENT_CHARACTER_LIMIT = 300;
@@ -131,15 +124,15 @@ export const COMMENT_CHARACTER_LIMIT = 300;
 const externalCommentAuthorSchema = z.object({
   id: z.number().int().positive(),
   login: requiredText,
-  displayName: z.string().trim().min(1).max(120).optional(),
-  sourceUrl: z.string().url(),
+  displayName: plainText.trim().min(1).max(120).optional(),
+  sourceUrl: httpUrlSchema,
 });
 
 export const commentSchema = z
   .object({
     id: commentIdSchema,
     target: commentTargetSchema,
-    body: z.string().trim().min(1).max(10000),
+    body: plainText.trim().min(1).max(10000),
     createdAt: validDate,
     source: z.enum(['campus-cats', 'inaturalist']).default('campus-cats'),
     createdById: userIdSchema.optional(),
@@ -147,7 +140,7 @@ export const commentSchema = z
     externalAuthor: externalCommentAuthorSchema.optional(),
     sourceCommentId: z.number().int().positive().optional(),
     sourceCommentUuid: z.string().uuid().optional(),
-    sourceUrl: z.string().url().optional(),
+    sourceUrl: httpUrlSchema.optional(),
     sourceUpdatedAt: validDate.optional(),
     lastSeenRunId: requiredText.optional(),
   })
@@ -191,24 +184,24 @@ export const commentSchema = z
 
 export const sightingSchema = z.object({
   id: sightingIdSchema,
-  name: requiredText,
-  info: z.string(),
+  name: requiredText.max(120),
+  info: plainText.max(5000),
   fed: z.boolean(),
   health: z.boolean(),
   date: validDate,
   location: coordinatesSchema,
   createdBy: userSnapshotSchema.optional(),
-  timeOfDay: requiredText,
+  timeOfDay: requiredText.max(40),
 });
 
 export const catSchema = z.object({
-  name: requiredText,
-  descShort: requiredText,
-  descLong: requiredText,
-  colorPattern: requiredText,
-  behavior: z.string(),
-  yearsRecorded: requiredText,
-  AoR: requiredText,
+  name: requiredText.max(120),
+  descShort: requiredText.max(300),
+  descLong: requiredText.max(5000),
+  colorPattern: requiredText.max(120),
+  behavior: plainText.max(5000),
+  yearsRecorded: requiredText.max(120),
+  AoR: requiredText.max(300),
   currentStatus: z.enum([
     'Feral',
     'Adopted',
@@ -217,7 +210,7 @@ export const catSchema = z.object({
     'Unknown',
   ]),
   furLength: z.enum(['Short', 'Medium', 'Long', 'Unknown']),
-  furPattern: requiredText,
+  furPattern: requiredText.max(120),
   tnr: z.enum(['Yes', 'No', 'Unknown']),
   sex: z.enum(['Male', 'Female', 'Unknown']),
 });
@@ -225,7 +218,7 @@ export const catSchema = z.object({
 export const catalogEntrySchema = z.object({
   id: catalogEntryIdSchema,
   cat: catSchema,
-  credits: z.string(),
+  credits: plainText.max(1000),
   createdAt: validDate,
   createdBy: userSnapshotSchema.optional(),
 });
@@ -238,7 +231,7 @@ export const catalogFavoriteSchema = z.object({
 
 export const catalogTagSchema = z.object({
   id: catalogTagIdSchema,
-  label: z.string().trim().min(1).max(40),
+  label: plainText.trim().min(1).max(40),
 });
 
 export const catalogTagSettingsSchema = z
@@ -286,29 +279,29 @@ export const catalogTagAssignmentSchema = z
 
 export const stationSchema = z.object({
   id: stationIdSchema,
-  name: requiredText,
+  name: requiredText.max(120),
   location: coordinatesSchema,
   lastStocked: validDate,
   stockingFreq: z.number().finite().positive(),
-  knownCats: z.string(),
+  knownCats: plainText.max(1000),
   createdBy: userSnapshotSchema,
 });
 
 export const alertSchema = z.object({
   id: alertIdSchema,
-  title: requiredText,
-  info: requiredText,
+  title: requiredText.max(120),
+  info: requiredText.max(5000),
   createdAt: validDate,
   createdBy: userSnapshotSchema,
-  authorAlias: z.string(),
+  authorAlias: plainText.max(120),
 });
 
 export const whitelistApplicationSchema = z.object({
   id: whitelistApplicationIdSchema,
-  name: requiredText,
-  graduationYear: z.string().trim(),
-  email: z.string().trim().email(),
-  codeWord: z.string(),
+  name: requiredText.max(200),
+  graduationYear: plainText.trim().max(20),
+  email: plainText.trim().email().max(320),
+  codeWord: plainText.max(200),
 });
 
 export const contactSchema = z.preprocess(
@@ -326,8 +319,8 @@ export const contactSchema = z.preprocess(
   },
   z.object({
     id: contactIdSchema,
-    name: requiredText,
-    email: z.string().trim().email(),
+    name: requiredText.max(120),
+    email: plainText.trim().email().max(320),
     instagramUrl: optionalSocialUrl(['instagram.com']),
     xUrl: optionalSocialUrl(['x.com']),
     websiteUrls: z.array(httpUrl).max(3).default([]),

@@ -225,6 +225,24 @@ const buildService = (
 };
 
 describe('club provisioning', () => {
+  it('does not clear an existing account ban during provisioning', async () => {
+    const context = buildService();
+    context.auth.seed('president@emory.edu', 'existing-user');
+    context.firestore.seed('users/existing-user', { clubId: 'club-139658', role: 0, banned: true });
+    await assert.rejects(() => context.service.provision(request()), /must be active/);
+    assert.equal(context.firestore.read('users/existing-user')?.banned, true);
+    assert.equal(context.invitations.length, 0);
+  });
+  it('does not reprovision an account with pending deletion, including after its profile was removed', async () => {
+    for (const profileExists of [true, false]) {
+      const context = buildService();
+      context.auth.seed('president@example.com', 'existing-user');
+      context.firestore.seed('account-deletion-jobs/existing-user', { status: 'pending' });
+      if (profileExists) context.firestore.seed('users/existing-user', { role: 2, clubId: clubIdForUniversity('139658'), deletionPending: true });
+      await assert.rejects(() => context.service.provision({ ...request(), presidentEmail: 'president@example.com' }), /deletion/i);
+      assert.equal(context.invitations.length, 0);
+    }
+  });
   it('uses a stable club ID derived from the Scorecard institution', () => {
     assert.equal(clubIdForUniversity('139755'), 'club-139755');
     assert.throws(() => clubIdForUniversity('../campus-cats'));

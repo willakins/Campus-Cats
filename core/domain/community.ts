@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { plainText, httpUrlSchema } from './inputValidation';
 
 import {
   clubEventIdSchema,
@@ -11,7 +12,7 @@ import {
 import { userSnapshotSchema } from './models';
 import { participationAudienceSchema } from './participation';
 
-const requiredText = z.string().trim().min(1);
+const requiredText = plainText.trim().min(1);
 const validDate = z.date().refine((date) => !Number.isNaN(date.getTime()), {
   message: 'Expected a valid date',
 });
@@ -23,7 +24,7 @@ export const clubEventSchema = z.object({
   location: requiredText.max(300),
   startsAt: validDate,
   expiresAt: validDate,
-  imageUrl: z.string().url().max(2048),
+  imageUrl: httpUrlSchema,
   createdAt: validDate,
   createdBy: userSnapshotSchema,
 });
@@ -77,7 +78,7 @@ export const surveySchema = z
   .object({
     id: surveyIdSchema,
     title: requiredText.max(120),
-    details: z.string().trim().max(5000),
+    details: plainText.trim().max(5000),
     anonymous: z.boolean(),
     participationAudience: participationAudienceSchema,
     status: z.enum(['open', 'closed']),
@@ -113,7 +114,7 @@ export const surveySchema = z
 export const surveyAnswerSchema = z.object({
   questionId: surveyQuestionIdSchema,
   value: z.union([
-    z.string().max(5000),
+    plainText.max(5000),
     z.array(surveyOptionIdSchema).max(20),
   ]),
 });

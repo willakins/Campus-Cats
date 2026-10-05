@@ -9,6 +9,7 @@ export interface ManagedUser {
   readonly clubId: string;
   readonly platformAdmin?: boolean;
   readonly banned?: boolean;
+  readonly deletionPending?: boolean;
 }
 
 export type AchievementId =
@@ -47,7 +48,7 @@ export interface HandlerDependencies {
   getUser(id: string): Promise<ManagedUser | undefined>;
   getAccountUser(id: string): Promise<ManagedUser | undefined>;
   getPendingAccountDeletion(id: string): Promise<ManagedUser | undefined>;
-  prepareAccountDeletion(user: ManagedUser): Promise<void>;
+  prepareAccountDeletion(user: ManagedUser, actor?: ManagedUser): Promise<void>;
   completeAccountDeletion(id: string): Promise<void>;
   getDeveloper(id: string): Promise<ManagedUser | undefined>;
   getBillingSummary(): Promise<BillingSummary>;
@@ -57,7 +58,7 @@ export interface HandlerDependencies {
   deleteAuthUser(id: string): Promise<void>;
   putUser(user: ManagedUser): Promise<void>;
   deleteUser(id: string): Promise<void>;
-  updateUserRole(id: string, role: Role): Promise<void>;
+  updateUserRole(id: string, role: Role, actor: ManagedUser): Promise<void>;
   addDisciplinaryNotice(
     id: string,
     message: string,
@@ -66,6 +67,10 @@ export interface HandlerDependencies {
   setUserBanned(id: string, banned: boolean, actor: ManagedUser): Promise<void>;
   transferPresidency(actorId: string, successorId: string): Promise<void>;
   sendWhitelistCredentials(email: string, password: string): Promise<void>;
+  consumeWhitelistQuota(
+    clientIp: string | undefined,
+    email: string,
+  ): Promise<void>;
   findWhitelistByEmail(email: string, clubId: string): Promise<boolean>;
   createWhitelistApplication(
     application: WhitelistApplication,
@@ -100,6 +105,7 @@ export type HandlerErrorCode =
   | 'already-exists'
   | 'failed-precondition'
   | 'not-found'
+  | 'resource-exhausted'
   | 'internal';
 
 export class HandlerError extends Error {
@@ -113,6 +119,7 @@ export class HandlerError extends Error {
 
 interface HandlerRequest<T> {
   readonly authUid?: string;
+  readonly clientIp?: string;
   readonly data: T;
 }
 
@@ -155,7 +162,7 @@ export async function handleSyncPublicProfile(
   const requestedUserId =
     request.data.userId === undefined
       ? requestingUser.id
-      : requiredString(request.data.userId, 'userId');
+      : validDocumentId(request.data.userId, 'userId');
   const profileOwner =
     requestedUserId === requestingUser.id
       ? requestingUser
@@ -301,7 +308,7 @@ export async function handleSendAlert(
   dependencies: HandlerDependencies,
 ): Promise<{ readonly success: true; readonly sent: number }> {
   const actor = await requireAdmin(request.authUid, dependencies);
-  const title = requiredString(request.data.title, 'title');
+  const title = requiredString(request.data.title, 'title', 120);
   const body = requiredString(request.data.message, 'message');
   const tokens = [
     ...new Set(
@@ -330,7 +337,7 @@ export async function handleSendWhitelistEmail(
 ): Promise<{ readonly success: true }> {
   await requireAdmin(request.authUid, dependencies);
   const email = validEmail(request.data.email);
-  const password = requiredString(request.data.password, 'password');
+  const password = validPassword(request.data.password);
   await dependencies.sendWhitelistCredentials(email, password);
   return { success: true };
 }
@@ -344,7 +351,7 @@ export async function handleCreateWhitelistUser(
 ): Promise<{ readonly success: true; readonly uid: string }> {
   const actor = await requireAdmin(request.authUid, dependencies);
   const email = validEmail(request.data.email);
-  const password = requiredString(request.data.password, 'password');
+  const password = validPassword(request.data.password);
   const uid = await dependencies.createAuthUser(email, password);
   try {
     await dependencies.putUser({
@@ -373,18 +380,16 @@ export async function handleRemoveManagedUser(
   dependencies: HandlerDependencies,
 ): Promise<{ readonly success: true }> {
   const actor = await requireAdmin(request.authUid, dependencies);
-  const userId = requiredString(request.data.userId, 'userId');
-  const target = await dependencies.getUser(userId);
+  const userId = validDocumentId(request.data.userId, 'userId');
+  const target =
+    (await dependencies.getUser(userId)) ??
+    (await dependencies.getPendingAccountDeletion(userId));
   if (!target) throw new HandlerError('not-found', 'User not found');
-  requireCanManage(actor, target);
-  if (target.role >= 3) {
-    throw new HandlerError(
-      'permission-denied',
-      'Presidents and developers cannot be removed through user management',
-    );
-  }
+  assertCanRemoveMember(actor, target);
+  await dependencies.prepareAccountDeletion(target, actor);
   await dependencies.deleteUser(userId);
   await dependencies.deleteAuthUser(userId);
+  await dependencies.completeAccountDeletion(userId);
   return { success: true };
 }
 
@@ -432,15 +437,38 @@ export async function handleUpdateUserRole(
   dependencies: HandlerDependencies,
 ): Promise<{ readonly success: true }> {
   const actor = await requireAdmin(request.authUid, dependencies);
-  const userId = requiredString(request.data.userId, 'userId');
+  const userId = validDocumentId(request.data.userId, 'userId');
   const role = validManagedRole(request.data.role);
   const target = await dependencies.getUser(userId);
   if (!target) throw new HandlerError('not-found', 'User not found');
+  assertCanChangeMemberRole(actor, target, role);
+  await dependencies.updateUserRole(userId, role, actor);
+  return { success: true };
+}
+
+export function assertCanRemoveMember(
+  actor: ManagedUser,
+  target: ManagedUser,
+): void {
   requireCanManage(actor, target);
-  if (target.banned) {
+  if (target.role >= 3) {
     throw new HandlerError(
       'permission-denied',
-      'Unban this account before changing its role',
+      'Presidents and developers cannot be removed through user management',
+    );
+  }
+}
+
+export function assertCanChangeMemberRole(
+  actor: ManagedUser,
+  target: ManagedUser,
+  role: Role,
+): void {
+  requireCanManage(actor, target);
+  if (target.banned || target.deletionPending) {
+    throw new HandlerError(
+      'permission-denied',
+      'An active account is required before changing its role',
     );
   }
   if (target.role >= 3) {
@@ -450,8 +478,6 @@ export async function handleUpdateUserRole(
     );
   }
   requireCanChangeRole(actor, target, role);
-  await dependencies.updateUserRole(userId, role);
-  return { success: true };
 }
 
 export async function handleAddDisciplinaryNotice(
@@ -462,7 +488,7 @@ export async function handleAddDisciplinaryNotice(
   dependencies: HandlerDependencies,
 ): Promise<{ readonly success: true }> {
   const actor = await requireAdmin(request.authUid, dependencies);
-  const userId = requiredString(request.data.userId, 'userId');
+  const userId = validDocumentId(request.data.userId, 'userId');
   const message = requiredString(request.data.message, 'message');
   if (message.length > 500) {
     throw new HandlerError(
@@ -485,7 +511,7 @@ export async function handleSetUserBanned(
   dependencies: HandlerDependencies,
 ): Promise<{ readonly success: true }> {
   const actor = await requireAdmin(request.authUid, dependencies);
-  const userId = requiredString(request.data.userId, 'userId');
+  const userId = validDocumentId(request.data.userId, 'userId');
   const banned = booleanValue(request.data.banned, 'banned');
   const target = await dependencies.getUser(userId);
   if (!target) throw new HandlerError('not-found', 'User not found');
@@ -499,7 +525,7 @@ export async function handleTransferPresidency(
   dependencies: HandlerDependencies,
 ): Promise<{ readonly success: true; readonly actorRole: 1 | 4 }> {
   const actor = await requireAdmin(request.authUid, dependencies);
-  const userId = requiredString(request.data.userId, 'userId');
+  const userId = validDocumentId(request.data.userId, 'userId');
   const target = await dependencies.getUser(userId);
   if (!target) throw new HandlerError('not-found', 'User not found');
   if (actor.clubId !== target.clubId) {
@@ -511,10 +537,10 @@ export async function handleTransferPresidency(
       'The presidential successor must be a Vice-President',
     );
   }
-  if (target.banned) {
+  if (target.banned || target.deletionPending) {
     throw new HandlerError(
       'permission-denied',
-      'A banned account cannot become President',
+      'An active account is required to become President',
     );
   }
   if (actor.id === target.id || (actor.role !== 3 && actor.role !== 4)) {
@@ -541,17 +567,18 @@ export async function handleSubmitWhitelistApplication(
       ? 'campus-cats'
       : requiredClubId(request.data.clubId);
   const application: WhitelistApplication = {
-    name: requiredString(request.data.name, 'name'),
+    name: requiredString(request.data.name, 'name', 200),
     graduationYear:
       request.data.graduationYear === undefined
         ? ''
-        : stringValue(request.data.graduationYear, 'graduationYear').trim(),
+        : stringValue(request.data.graduationYear, 'graduationYear', 20).trim(),
     email: validEmail(request.data.email),
     codeWord:
       request.data.codeWord === undefined
         ? ''
-        : stringValue(request.data.codeWord, 'codeWord'),
+        : stringValue(request.data.codeWord, 'codeWord', 200),
   };
+  await dependencies.consumeWhitelistQuota(request.clientIp, application.email);
   if (await dependencies.findWhitelistByEmail(application.email, clubId)) {
     return { status: 'conflict' };
   }
@@ -582,7 +609,7 @@ async function requireAdmin(
   if (!uid)
     throw new HandlerError('unauthenticated', 'Authentication required');
   const user = await dependencies.getUser(uid);
-  if (!user || user.banned || user.role < 1) {
+  if (!user || user.banned || user.deletionPending || user.role < 1) {
     throw new HandlerError('permission-denied', 'Officer access required');
   }
   return user;
@@ -595,14 +622,21 @@ async function requireUser(
   if (!uid)
     throw new HandlerError('unauthenticated', 'Authentication required');
   const user = await dependencies.getUser(uid);
-  if (!user || user.banned) {
+  if (!user || user.banned || user.deletionPending) {
     throw new HandlerError('permission-denied', 'Active membership required');
   }
   return user;
 }
 
-function requireCanDiscipline(actor: ManagedUser, target: ManagedUser): void {
+export function requireCanDiscipline(
+  actor: ManagedUser,
+  target: ManagedUser,
+): void {
   if (
+    actor.banned ||
+    actor.deletionPending ||
+    actor.role < 1 ||
+    target.deletionPending ||
     actor.clubId !== target.clubId ||
     actor.id === target.id ||
     target.role !== 0
@@ -616,6 +650,9 @@ function requireCanDiscipline(actor: ManagedUser, target: ManagedUser): void {
 
 function requireCanManage(actor: ManagedUser, target: ManagedUser): void {
   if (
+    actor.banned ||
+    actor.deletionPending ||
+    actor.role < 1 ||
     actor.clubId !== target.clubId ||
     actor.id === target.id ||
     actor.role <= target.role
@@ -656,16 +693,43 @@ function requireCanChangeRole(
   }
 }
 
-function requiredString(value: unknown, field: string): string {
-  const parsed = stringValue(value, field).trim();
+function requiredString(value: unknown, field: string, max = 5000): string {
+  const parsed = stringValue(value, field, max).trim();
   if (!parsed)
     throw new HandlerError('invalid-argument', `${field} is required`);
   return parsed;
 }
 
-function stringValue(value: unknown, field: string): string {
+export function stringValue(value: unknown, field: string, max = 5000): string {
   if (typeof value !== 'string') {
     throw new HandlerError('invalid-argument', `${field} must be a string`);
+  }
+  // eslint-disable-next-line no-control-regex -- Reject non-printing input controls.
+  if (value.length > max || /[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/u.test(value)) {
+    throw new HandlerError(
+      'invalid-argument',
+      `${field} contains invalid or excessive text`,
+    );
+  }
+  return value;
+}
+
+export function validDocumentId(value: unknown, field: string): string {
+  const id = requiredString(value, field, 200);
+  // eslint-disable-next-line no-control-regex -- Document IDs cannot contain path separators or controls.
+  if (/[\x00-\x1F\x7F/]/u.test(id) || id === '.' || id === '..') {
+    throw new HandlerError('invalid-argument', `${field} is invalid`);
+  }
+  return id;
+}
+
+function validPassword(value: unknown): string {
+  // Passwords are opaque: never trim, normalize, truncate, or HTML-sanitize them.
+  if (typeof value !== 'string' || value.length < 6 || value.length > 4096) {
+    throw new HandlerError(
+      'invalid-argument',
+      'Password must contain 6 to 4096 characters',
+    );
   }
   return value;
 }
@@ -678,8 +742,8 @@ function booleanValue(value: unknown, field: string): boolean {
 }
 
 function validEmail(value: unknown): string {
-  const email = requiredString(value, 'email').toLowerCase();
-  if (!/^[^@]+@[^@]+\.[^@]+$/.test(email)) {
+  const email = requiredString(value, 'email', 320).toLowerCase();
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
     throw new HandlerError('invalid-argument', 'email must be valid');
   }
   return email;

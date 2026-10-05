@@ -136,7 +136,7 @@ describe('ProfilesModule', () => {
     expect(result).toMatchObject({ ok: true });
     expect(media.ids()).toEqual(['public-profiles/member-1/photo-1.jpg']);
     expect(effects.operations).toEqual([
-      'update-public-profile:Cat Watcher:Tech Tower cat fan:memory://public-profiles/member-1/photo-1.jpg',
+      'update-public-profile:Cat Watcher:Tech Tower cat fan:https://media.example.test/public-profiles/member-1/photo-1.jpg',
     ]);
   });
 

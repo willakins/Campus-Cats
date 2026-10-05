@@ -164,21 +164,21 @@ const CatalogForm: React.FC<CatalogFormProps> = ({
             onRequiredFieldLayout?.('name', 'basics', nativeEvent.layout.y)
           }
         >
-          <FormTextInput label="Cat name" required={localFieldsRequired} error={errors.name} value={formData.name} placeholder="Name" onChangeText={(text) => handleChange('name', text)} />
+          <FormTextInput label="Cat name" maxLength={120} required={localFieldsRequired} error={errors.name} value={formData.name} placeholder="Name" onChangeText={(text) => handleChange('name', text)} />
         </View>
         <View
           onLayout={({ nativeEvent }) =>
             onRequiredFieldLayout?.('descShort', 'basics', nativeEvent.layout.y)
           }
         >
-          <FormTextInput label="Short description" required={localFieldsRequired} error={errors.descShort} value={formData.descShort} placeholder="A short descriptive phrase" onChangeText={(text) => handleChange('descShort', text)} />
+          <FormTextInput label="Short description" maxLength={300} required={localFieldsRequired} error={errors.descShort} value={formData.descShort} placeholder="A short descriptive phrase" onChangeText={(text) => handleChange('descShort', text)} />
         </View>
         <View
           onLayout={({ nativeEvent }) =>
             onRequiredFieldLayout?.('descLong', 'basics', nativeEvent.layout.y)
           }
         >
-          <FormTextInput label="Long description" required={localFieldsRequired} error={errors.descLong} value={formData.descLong} placeholder="Describe this cat" multiline onChangeText={(text) => handleChange('descLong', text)} />
+          <FormTextInput label="Long description" maxLength={5000} required={localFieldsRequired} error={errors.descLong} value={formData.descLong} placeholder="Describe this cat" multiline onChangeText={(text) => handleChange('descLong', text)} />
         </View>
       </FormSection>
       <FormSection title="Status">
@@ -224,29 +224,29 @@ const CatalogForm: React.FC<CatalogFormProps> = ({
             onRequiredFieldLayout?.('colorPattern', 'fieldNotes', nativeEvent.layout.y)
           }
         >
-          <FormTextInput label="Detailed color pattern" required={localFieldsRequired} error={errors.colorPattern} value={formData.colorPattern} placeholder="Colors and unique features" onChangeText={(text) => handleChange('colorPattern', text)} />
+          <FormTextInput label="Detailed color pattern" maxLength={120} required={localFieldsRequired} error={errors.colorPattern} value={formData.colorPattern} placeholder="Colors and unique features" onChangeText={(text) => handleChange('colorPattern', text)} />
         </View>
-        <FormTextInput label="Behavior" value={formData.behavior} placeholder="How does this cat act?" multiline onChangeText={(text) => handleChange('behavior', text)} />
+        <FormTextInput label="Behavior" maxLength={5000} value={formData.behavior} placeholder="How does this cat act?" multiline onChangeText={(text) => handleChange('behavior', text)} />
         <View
           onLayout={({ nativeEvent }) =>
             onRequiredFieldLayout?.('yearsRecorded', 'fieldNotes', nativeEvent.layout.y)
           }
         >
-          <FormTextInput label="Years recorded" required={localFieldsRequired} error={errors.yearsRecorded} value={formData.yearsRecorded} placeholder="Years this cat has been seen" onChangeText={(text) => handleChange('yearsRecorded', text)} />
+          <FormTextInput label="Years recorded" maxLength={120} required={localFieldsRequired} error={errors.yearsRecorded} value={formData.yearsRecorded} placeholder="Years this cat has been seen" onChangeText={(text) => handleChange('yearsRecorded', text)} />
         </View>
         <View
           onLayout={({ nativeEvent }) =>
             onRequiredFieldLayout?.('AoR', 'fieldNotes', nativeEvent.layout.y)
           }
         >
-          <FormTextInput label="Area of residence" required={localFieldsRequired} error={errors.AoR} value={formData.AoR} placeholder="Where does this cat spend time?" onChangeText={(text) => handleChange('AoR', text)} />
+          <FormTextInput label="Area of residence" maxLength={300} required={localFieldsRequired} error={errors.AoR} value={formData.AoR} placeholder="Where does this cat spend time?" onChangeText={(text) => handleChange('AoR', text)} />
         </View>
         <View
           onLayout={({ nativeEvent }) =>
             onRequiredFieldLayout?.('furPattern', 'fieldNotes', nativeEvent.layout.y)
           }
         >
-          <FormTextInput label="Fur pattern" required={localFieldsRequired} error={errors.furPattern} value={formData.furPattern} placeholder="Calico, tabby, black and white…" onChangeText={(text) => handleChange('furPattern', text)} />
+          <FormTextInput label="Fur pattern" maxLength={120} required={localFieldsRequired} error={errors.furPattern} value={formData.furPattern} placeholder="Calico, tabby, black and white…" onChangeText={(text) => handleChange('furPattern', text)} />
         </View>
       </FormSection>
       <FormSection
@@ -280,7 +280,7 @@ const CatalogForm: React.FC<CatalogFormProps> = ({
       </FormSection>
       <FormSection title="Credits">
         <FormTextInput
-          label="Sources and credits"
+          label="Sources and credits" maxLength={1000}
           value={formData.credits}
           placeholder="Photo sources and writing credits"
           multiline

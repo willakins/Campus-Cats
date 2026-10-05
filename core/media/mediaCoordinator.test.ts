@@ -7,12 +7,12 @@ describe('MediaCoordinator', () => {
     const media = new InMemoryMediaStore([
       {
         id: 'catalog/cat-1/profile-old.jpg',
-        url: 'memory://profile-old',
+        url: 'https://media.example.test/profile-old',
         role: 'profile',
       },
       {
         id: 'catalog/cat-1/gallery-old.jpg',
-        url: 'memory://gallery-old',
+        url: 'https://media.example.test/gallery-old',
         role: 'gallery',
       },
     ]);
@@ -51,7 +51,7 @@ describe('MediaCoordinator', () => {
     const media = new InMemoryMediaStore([
       {
         id: 'cat-sightings/sighting-1/profile.jpg',
-        url: 'memory://profile',
+        url: 'https://media.example.test/profile',
         role: 'profile',
       },
     ]);
@@ -83,7 +83,7 @@ describe('MediaCoordinator', () => {
     const media = new InMemoryMediaStore([
       {
         id: 'stations/station-1/obsolete.jpg',
-        url: 'memory://obsolete',
+        url: 'https://media.example.test/obsolete',
         role: 'gallery',
       },
     ]);
@@ -116,12 +116,12 @@ describe('MediaCoordinator', () => {
     const media = new InMemoryMediaStore([
       {
         id: 'alerts/alert-1/keep.jpg',
-        url: 'memory://keep',
+        url: 'https://media.example.test/keep',
         role: 'gallery',
       },
       {
         id: 'alerts/alert-1/delete.jpg',
-        url: 'memory://delete',
+        url: 'https://media.example.test/delete',
         role: 'gallery',
       },
     ]);
@@ -257,7 +257,7 @@ describe('MediaCoordinator', () => {
     const media = new InMemoryMediaStore([
       {
         id: 'alerts/alert-1/obsolete.jpg',
-        url: 'memory://obsolete',
+        url: 'https://media.example.test/obsolete',
         role: 'gallery',
       },
     ]);

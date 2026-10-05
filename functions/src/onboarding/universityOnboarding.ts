@@ -3,7 +3,7 @@ import { timingSafeEqual } from 'node:crypto';
 import { Firestore, Timestamp } from 'firebase-admin/firestore';
 
 import { ClubProvisioningRequest, ProvisionedClub } from './clubProvisioning';
-import { HandlerError } from '../shared/handlers';
+import { stringValue, HandlerError } from '../shared/handlers';
 import { UniversitySearchResult } from './universityCatalog';
 
 export interface ClubSetupRequestRecord extends ClubProvisioningRequest {
@@ -487,7 +487,7 @@ const requiredString = (value: unknown, field: string): string => {
   if (typeof value !== 'string' || !value.trim()) {
     throw new HandlerError('invalid-argument', `${field} is required`);
   }
-  return value.trim();
+  return stringValue(value, field, 5000).trim();
 };
 
 const boundedString = (value: unknown, field: string, maximum: number): string => {

@@ -2,6 +2,7 @@ import {
   onAuthStateChanged,
   sendPasswordResetEmail,
   signInWithEmailAndPassword,
+  signOut,
 } from 'firebase/auth';
 import { getDoc, onSnapshot, serverTimestamp, setDoc } from 'firebase/firestore';
 
@@ -44,6 +45,31 @@ const buildSession = (
 
 describe('FirebaseSession authenticated profiles', () => {
   beforeEach(() => jest.clearAllMocks());
+
+  it('clears the local session when rules reject its profile, but preserves it on network errors', () => {
+    let authChanged: ((user: unknown) => void) | undefined;
+    let profileError: ((error: unknown) => void) | undefined;
+    mockedOnAuthStateChanged.mockImplementation((_auth, callback) => {
+      authChanged = callback as (user: unknown) => void;
+      return jest.fn();
+    });
+    mockedOnSnapshot.mockImplementation((_reference, _callback, onError) => {
+      profileError = onError as (error: unknown) => void;
+      return jest.fn();
+    });
+    jest.mocked(signOut).mockResolvedValue(undefined);
+    const observer = jest.fn();
+    const errors = jest.fn();
+    const stop = buildSession().observeCurrentUser(observer, errors);
+    authChanged?.({ uid: 'member-1', email: 'member@example.com' });
+    profileError?.({ code: 'unavailable' });
+    expect(signOut).not.toHaveBeenCalled();
+    expect(observer).not.toHaveBeenCalled();
+    profileError?.({ code: 'permission-denied' });
+    expect(signOut).toHaveBeenCalledTimes(1);
+    expect(observer).toHaveBeenCalledWith(undefined);
+    stop();
+  });
 
   it('uses the Firebase Auth email when profile casing differs', async () => {
     mockedGetDoc.mockResolvedValue({

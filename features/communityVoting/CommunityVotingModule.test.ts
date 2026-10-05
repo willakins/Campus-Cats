@@ -198,11 +198,11 @@ describe('CommunityVotingModule', () => {
         options: [
           {
             id: 'option-1',
-            imageUrl: 'memory://community-votes/vote-1/image-1.jpg',
+            imageUrl: 'https://media.example.test/community-votes/vote-1/image-1.jpg',
           },
           {
             id: 'option-2',
-            imageUrl: 'memory://community-votes/vote-1/image-2.jpg',
+            imageUrl: 'https://media.example.test/community-votes/vote-1/image-2.jpg',
           },
         ],
       },

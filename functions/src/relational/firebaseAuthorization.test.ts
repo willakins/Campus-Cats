@@ -27,6 +27,7 @@ test('missing member, club or current terms fail closed', async () => {
     [member, undefined],
     [{ ...member, agreedToTerms: false }, {}],
     [{ ...member, termsVersion: 'old' }, {}],
+    [{ ...member, deletionPending: true }, {}],
   ] as const)
     assert.equal(await authorize(user, club)('uid'), undefined);
 });

@@ -1,10 +1,11 @@
+import { authorizedMemberRequest } from '../../shared/firebaseCallableAccess';
+import { firebaseClubAccessAllowed } from '../../shared/firebaseClubAccess';
 import {randomUUID} from 'node:crypto';
 
 import {getApps, initializeApp} from 'firebase-admin/app';
-import {Timestamp, getFirestore} from 'firebase-admin/firestore';
+import {getFirestore} from 'firebase-admin/firestore';
 import {logger} from 'firebase-functions/logger';
 import {
-  CallableRequest,
   HttpsError,
   onCall,
 } from 'firebase-functions/v2/https';
@@ -45,32 +46,18 @@ const getUser = async (id: string): Promise<ManagedUser | undefined> => {
   ) {
     throw new HandlerError('internal', 'Stored user profile is invalid');
   }
-  const clubId = typeof data.clubId === 'string' ? data.clubId : 'campus-cats';
+  if (typeof data.clubId !== 'string' || !data.clubId) return undefined;
+  const clubId = data.clubId;
   const club = await firestore.collection('clubs').doc(clubId).get();
   const clubData = club.data();
-  const now = new Date();
-  const graceEndsAt =
-    clubData?.graceEndsAt instanceof Timestamp
-      ? clubData.graceEndsAt.toDate()
-      : undefined;
-  const scheduledEndAt =
-    clubData?.scheduledEndAt instanceof Timestamp
-      ? clubData.scheduledEndAt.toDate()
-      : undefined;
-  const hasAccess =
-    clubData?.maintenanceMode !== true &&
-    (clubData?.billingEnforcementEnabled !== true ||
-      (clubData?.accessState === 'enabled' &&
-        (!graceEndsAt || now < graceEndsAt) &&
-        (!scheduledEndAt || now < scheduledEndAt)));
-  if (!hasAccess) return undefined;
+  if (!firebaseClubAccessAllowed(clubData)) return undefined;
   return {
     id: snapshot.id,
     email: data.email,
     role: data.role,
     clubId,
     platformAdmin: data.platformAdmin === true,
-    banned: data.banned === true,
+    banned: data.banned === true || data.deletionPending === true,
   };
 };
 
@@ -78,6 +65,7 @@ async function execute<T>(operation: () => Promise<T>): Promise<T> {
   try {
     return await operation();
   } catch (error) {
+    if (error instanceof HttpsError) throw error;
     if (error instanceof HandlerError) {
       throw new HttpsError(error.code, error.message);
     }
@@ -89,14 +77,9 @@ async function execute<T>(operation: () => Promise<T>): Promise<T> {
   }
 }
 
-const requestFor = <T>(request: CallableRequest<T>) => ({
-  authUid: request.auth?.uid,
-  data: request.data,
-});
-
 export const runInaturalistSync = onCall((request) =>
-  execute(() =>
-    handleRunInaturalistSync(requestFor(request), {
+  execute(async () =>
+    handleRunInaturalistSync(await authorizedMemberRequest(request), {
       getUser,
       runSync: synchronizeInaturalist,
     }),

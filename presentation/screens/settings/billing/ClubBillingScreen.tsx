@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Linking, Platform, View } from 'react-native';
 import { useRouter } from 'expo-router';
 
@@ -30,6 +30,12 @@ import { useAppTheme } from '@/theme';
 
 const ClubBilling = () => {
   const { user } = useAuth();
+  // Discard all previous billing state when the signed-in account or scope changes.
+  return <ClubBillingContent key={`${user.id}:${user.clubId}:${user.role}`} />;
+};
+
+const ClubBillingContent = () => {
+  const { user } = useAuth();
   const { access } = useClub();
   const router = useRouter();
   const theme = useAppTheme();
@@ -43,21 +49,36 @@ const ClubBilling = () => {
   const [busy, setBusy] = useState<string>();
   const [error, setError] = useState<string>();
   const [billingEmail, setBillingEmail] = useState('');
+  const mounted = useRef(true);
+  useEffect(() => {
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+    };
+  }, []);
 
-  const load = useCallback((isActive: () => boolean = () => true) => {
-    if (!authorized || development || Platform.OS !== 'web') return;
-    setLoading(true);
-    setError(undefined);
-    void appModules.clubBilling.summary(user).then((result) => {
-      if (!isActive()) return;
-      setLoading(false);
-      if (result.ok) {
-        setSummary(result.value);
-        setBillingEmail(result.value.billingEmail);
-      }
-      else setError(result.error.message);
-    });
-  }, [authorized, development, user.id]);
+  const load = useCallback(
+    (isActive: () => boolean = () => true) => {
+      if (!authorized || development || Platform.OS !== 'web') return;
+      setLoading(true);
+      setError(undefined);
+      void appModules.clubBilling.summary(user).then((result) => {
+        if (!mounted.current || !isActive()) return;
+        setLoading(false);
+        if (result.ok) {
+          if (result.value.clubId !== user.clubId) {
+            setSummary(undefined);
+            setBillingEmail('');
+            setError('Billing membership changed. Reload to continue.');
+            return;
+          }
+          setSummary(result.value);
+          setBillingEmail(result.value.billingEmail);
+        } else setError(result.error.message);
+      });
+    },
+    [authorized, development, user.id, user.clubId],
+  );
 
   useFocusTask(load);
 
@@ -71,6 +92,7 @@ const ClubBilling = () => {
     setBusy(key);
     setError(undefined);
     const result = await action();
+    if (!mounted.current) return;
     setBusy(undefined);
     if (!result.ok) {
       setError(result.error.message);
@@ -81,9 +103,7 @@ const ClubBilling = () => {
     );
   };
 
-  const setCollectionMethod = async (
-    method: 'manual' | 'automatic',
-  ) => {
+  const setCollectionMethod = async (method: 'manual' | 'automatic') => {
     if (busy) return;
     setBusy(method);
     setError(undefined);
@@ -92,6 +112,7 @@ const ClubBilling = () => {
       method,
       returnUrl(),
     );
+    if (!mounted.current) return;
     setBusy(undefined);
     if (!result.ok) {
       setError(result.error.message);
@@ -111,6 +132,7 @@ const ClubBilling = () => {
     const result = cancel
       ? await appModules.clubBilling.scheduleCancellation(user)
       : await appModules.clubBilling.resumeSubscription(user);
+    if (!mounted.current) return;
     setBusy(undefined);
     if (!result.ok) setError(result.error.message);
     else load();
@@ -124,6 +146,7 @@ const ClubBilling = () => {
       user,
       billingEmail,
     );
+    if (!mounted.current) return;
     setBusy(undefined);
     if (!result.ok) setError(result.error.message);
     else load();
@@ -148,7 +171,9 @@ const ClubBilling = () => {
           onRetry={load}
         />
       ) : summary ? (
-        <View style={{ gap: theme.spacing.lg, paddingBottom: theme.spacing.xl }}>
+        <View
+          style={{ gap: theme.spacing.lg, paddingBottom: theme.spacing.xl }}
+        >
           {error ? <FeedbackBanner message={error} tone="danger" /> : null}
           <FormSection title="Subscription">
             <Card accent={theme.colors.primary}>
@@ -166,7 +191,10 @@ const ClubBilling = () => {
                 </AppText>
                 <BillingRow
                   label="Outstanding balance"
-                  value={formatMoney(summary.outstandingBalance, summary.currency)}
+                  value={formatMoney(
+                    summary.outstandingBalance,
+                    summary.currency,
+                  )}
                 />
                 {summary.graceEndsAt ? (
                   <FeedbackBanner
@@ -187,9 +215,7 @@ const ClubBilling = () => {
                   />
                 ) : null}
                 {clubIsInTrial(summary) ? (
-                  <FeedbackBanner
-                    message={trialStatusMessage(summary)}
-                  />
+                  <FeedbackBanner message={trialStatusMessage(summary)} />
                 ) : null}
               </View>
             </Card>
@@ -236,7 +262,10 @@ const ClubBilling = () => {
                   loading={busy === 'setup'}
                   onPress={() =>
                     void runRedirect('setup', () =>
-                      appModules.clubBilling.createSetupSession(user, returnUrl()),
+                      appModules.clubBilling.createSetupSession(
+                        user,
+                        returnUrl(),
+                      ),
                     )
                   }
                 />
@@ -257,7 +286,9 @@ const ClubBilling = () => {
                   onPress={() => void setCollectionMethod('manual')}
                 />
               </>
-            ) : summary.accessState === 'suspended' ? null : clubIsInTrial(summary) ? null : summary.collectionMethod === 'manual' ? (
+            ) : summary.accessState === 'suspended' ? null : clubIsInTrial(
+                summary,
+              ) ? null : summary.collectionMethod === 'manual' ? (
               <Button
                 label="Turn On Automatic Payments"
                 icon="repeat-outline"
@@ -280,7 +311,10 @@ const ClubBilling = () => {
                 loading={busy === 'portal'}
                 onPress={() =>
                   void runRedirect('portal', () =>
-                    appModules.clubBilling.createPortalSession(user, returnUrl()),
+                    appModules.clubBilling.createPortalSession(
+                      user,
+                      returnUrl(),
+                    ),
                   )
                 }
               />
@@ -365,8 +399,7 @@ const ClubBilling = () => {
 
 const NativeBillingStatus = ({ access }: { readonly access?: ClubAccess }) => {
   const theme = useAppTheme();
-  const development =
-    process.env.EXPO_PUBLIC_APP_ENV === 'development';
+  const development = process.env.EXPO_PUBLIC_APP_ENV === 'development';
   if (!access) {
     return (
       <ErrorState
@@ -390,8 +423,8 @@ const NativeBillingStatus = ({ access }: { readonly access?: ClubAccess }) => {
             {development
               ? 'Billing disabled in development'
               : access.collectionMethod === 'automatic'
-              ? 'Automatic payment'
-              : 'Manual invoice payment'}
+                ? 'Automatic payment'
+                : 'Manual invoice payment'}
           </AppText>
           {access.graceEndsAt ? (
             <FeedbackBanner
@@ -442,9 +475,7 @@ const BillingRow = ({ label, value }: { label: string; value: string }) => (
   </View>
 );
 
-const statusTone = (
-  summary: ClubAccess,
-): 'success' | 'warning' | 'danger' =>
+const statusTone = (summary: ClubAccess): 'success' | 'warning' | 'danger' =>
   summary.accessState === 'suspended'
     ? 'danger'
     : summary.paymentStanding === 'past_due' || summary.scheduledEndAt

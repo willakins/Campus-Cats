@@ -165,3 +165,12 @@ describe('iNaturalist callable handlers', () => {
     ]);
   });
 });
+
+
+it('blocks banned officers from iNaturalist synchronization and moderation', async () => {
+  const { value, operations } = dependencies();
+  value.getUser = async () => ({ id: 'officer', email: 'officer@example.com', clubId: 'campus-cats', role: 1, banned: true });
+  await assert.rejects(handleRunInaturalistSync({ authUid: 'officer', data: {} }, value), { code: 'permission-denied' });
+  await assert.rejects(handleModerateInaturalistRecord({ authUid: 'officer', data: { kind: 'catalog', id: 1, hidden: true, reason: 'hidden' } }, value), { code: 'permission-denied' });
+  assert.deepEqual(operations, []);
+});
