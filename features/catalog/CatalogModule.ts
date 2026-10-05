@@ -4,6 +4,8 @@ import {
   CatalogFavorite,
   CatalogRecord,
   CatalogTagAssignment,
+  CatalogTag,
+  SightingRecord,
   Cat,
   Clock,
   PersistenceCodec,
@@ -28,8 +30,16 @@ import {
   DocumentStore,
   InaturalistReader,
   MediaStore,
+  CatalogDiscoveryQuery,
+  CatalogDiscoveryPage,
+  RelationalCatalogBackend,
+  CatalogPageCursor,
 } from '../../core/ports';
-import { CatalogFavoriteSummary } from './catalogDiscovery';
+import {
+  CatalogFavoriteSummary,
+  buildCatalogItems,
+  filterAndSortCatalog,
+} from './catalogDiscovery';
 import { ContentContributors } from '../appSettings';
 
 export interface CatalogDraft {
@@ -48,6 +58,16 @@ export interface CatalogUpdate {
 }
 
 interface CatalogDependencies {
+  readonly relationalCatalog?: RelationalCatalogBackend;
+  readonly discoverySightings?: (
+    actor: User,
+  ) => Promise<Outcome<readonly SightingRecord[]>>;
+  readonly discoveryTags?: {
+    list(actor: User | undefined): Promise<Outcome<readonly CatalogTag[]>>;
+    assignments(
+      actor: User | undefined,
+    ): Promise<Outcome<readonly CatalogTagAssignment[]>>;
+  };
   readonly documents: DocumentStore;
   readonly media: MediaStore;
   readonly mediaCoordinator: MediaCoordinator;
@@ -68,29 +88,128 @@ interface CatalogDependencies {
 export class CatalogModule {
   constructor(private readonly dependencies: CatalogDependencies) {}
 
-  async list(actor?: User): Promise<Outcome<readonly CatalogRecord[]>> {
-    const [localAttempt, importedAttempt, contributorAttempt] = await Promise.allSettled([
-      this.dependencies.documents.list(COLLECTIONS.catalog),
-      this.dependencies.imports
-        ? this.dependencies.imports.reader.listCatalog(false)
-        : Promise.resolve(undefined),
-      this.dependencies.contributors.visibleByContentId(actor, 'catalog'),
+  get usesPagedDiscovery(): boolean {
+    return !!this.dependencies.relationalCatalog;
+  }
+
+  async discover(
+    actor: User | undefined,
+    query: CatalogDiscoveryQuery = {},
+  ): Promise<Outcome<CatalogDiscoveryPage>> {
+    if (!actor)
+      return failure('unauthenticated', 'Sign in to view the catalog');
+    if (this.dependencies.relationalCatalog) {
+      try {
+        return success(
+          await this.dependencies.relationalCatalog.discovery.query(query),
+        );
+      } catch {
+        return failure('dependency_failure', 'Could not load the catalog');
+      }
+    }
+    // Compatibility path while Firebase is authoritative. Never fall back to a stale store after SQL failure.
+    const [entries, metrics, favorites, tags, assignments] = await Promise.all([
+      this.list(actor),
+      this.dependencies.discoverySightings?.(actor) ??
+        Promise.resolve(success<readonly SightingRecord[]>([])),
+      this.favoriteSummary(actor),
+      this.dependencies.discoveryTags
+        ? this.dependencies.discoveryTags.list(actor)
+        : Promise.resolve(success<readonly CatalogTag[]>([])),
+      this.dependencies.discoveryTags
+        ? this.dependencies.discoveryTags.assignments(actor)
+        : Promise.resolve(success<readonly CatalogTagAssignment[]>([])),
     ]);
+    if (!entries.ok) return entries;
+    const availableTags = tags.ok ? tags.value : [];
+    const items = filterAndSortCatalog(
+      buildCatalogItems(
+        entries.value,
+        metrics.ok ? metrics.value : [],
+        favorites.ok ? favorites.value : { counts: {} },
+        availableTags,
+        assignments.ok ? assignments.value : [],
+      ),
+      query.search ?? '',
+      query.sort ?? 'name-asc',
+      query.tagIds,
+    );
+    const warnings = [entries, metrics, favorites, tags, assignments].flatMap(
+      (result) =>
+        result.ok
+          ? result.warnings
+          : [
+              {
+                code: 'partial_completion' as const,
+                message: result.error.message,
+              },
+            ],
+    );
+    return success(
+      {
+        items,
+        total: items.length,
+        availableTags,
+        selectedCatalogId: favorites.ok
+          ? favorites.value.selectedCatalogId
+          : undefined,
+      },
+      warnings,
+    );
+  }
+
+  async list(actor?: User): Promise<Outcome<readonly CatalogRecord[]>> {
+    if (this.dependencies.relationalCatalog) {
+      try {
+        const items: CatalogRecord[] = [],
+          seen = new Set<string>();
+        let cursor: CatalogPageCursor | undefined;
+        do {
+          const page =
+            await this.dependencies.relationalCatalog.reads.listPage(cursor);
+          for (const item of page.items) {
+            if (seen.has(item.id)) throw new Error('Repeated catalog page');
+            seen.add(item.id);
+            items.push(item);
+          }
+          if (page.nextCursor && !page.items.length)
+            throw new Error('Empty catalog page with cursor');
+          cursor = page.nextCursor;
+        } while (cursor);
+        return success(items);
+      } catch {
+        return failure('dependency_failure', 'Could not load the catalog');
+      }
+    }
+    const [localAttempt, importedAttempt, contributorAttempt] =
+      await Promise.allSettled([
+        this.dependencies.documents.list(COLLECTIONS.catalog),
+        this.dependencies.imports
+          ? this.dependencies.imports.reader.listCatalog(false)
+          : Promise.resolve(undefined),
+        this.dependencies.contributors.listVisible(actor, 'catalog'),
+      ]);
     if (localAttempt.status === 'rejected') {
       return failure('dependency_failure', 'Could not load the catalog');
     }
 
     let localEntries: readonly CatalogEntry[];
     try {
-      const contributors = contributorAttempt.status === 'fulfilled'
-        ? contributorAttempt.value
-        : new Map<string, User>();
-      const canViewContributors = await this.dependencies.contributors.canView(actor);
+      const contributors =
+        contributorAttempt.status === 'fulfilled'
+          ? contributorAttempt.value.byContentId
+          : new Map<string, User>();
+      const canViewContributors =
+        contributorAttempt.status === 'fulfilled'
+          ? contributorAttempt.value.canView
+          : await this.dependencies.contributors.canView(actor);
       localEntries = localAttempt.value.map(({ id, data }) => {
         const decoded = this.dependencies.codecs.catalog.decode(id, data);
         return withCatalogContributor(
           decoded,
-          canViewContributors ? contributors.get(id) ?? decoded.createdBy : undefined,
+          canViewContributors
+            ? (contributors.get(id) ?? decoded.createdBy)
+            : undefined,
         );
       });
     } catch {
@@ -157,6 +276,19 @@ export class CatalogModule {
       return failure('unauthenticated', 'Sign in to view catalog favorites');
     }
 
+    if (this.dependencies.relationalCatalog) {
+      try {
+        return success(
+          await this.dependencies.relationalCatalog.reads.favoriteSummary(),
+        );
+      } catch {
+        return failure(
+          'dependency_failure',
+          'Could not load catalog favorites',
+        );
+      }
+    }
+
     try {
       const documents = await this.dependencies.documents.list(
         COLLECTIONS.catalogFavorites,
@@ -199,6 +331,17 @@ export class CatalogModule {
   async favoriteForUser(
     userId: string,
   ): Promise<Outcome<CatalogFavorite | undefined>> {
+    if (this.dependencies.relationalCatalog) {
+      try {
+        return success(
+          await this.dependencies.relationalCatalog.reads.favoriteForUser(
+            userId,
+          ),
+        );
+      } catch {
+        return failure('dependency_failure', 'Could not load the favorite cat');
+      }
+    }
     try {
       const document = await this.dependencies.documents.get(
         COLLECTIONS.catalogFavorites,
@@ -228,6 +371,21 @@ export class CatalogModule {
       return failure('validation', 'Choose a valid catalog profile');
     }
 
+    if (this.dependencies.relationalCatalog) {
+      try {
+        return success(
+          await this.dependencies.relationalCatalog.favorites.setFavorite(
+            catalogId?.trim(),
+          ),
+        );
+      } catch {
+        return failure(
+          'dependency_failure',
+          'Could not update your favorite cat',
+        );
+      }
+    }
+
     try {
       if (catalogId === undefined) {
         await this.dependencies.documents.remove(
@@ -249,7 +407,10 @@ export class CatalogModule {
       );
       return success(favorite);
     } catch {
-      return failure('dependency_failure', 'Could not update your favorite cat');
+      return failure(
+        'dependency_failure',
+        'Could not update your favorite cat',
+      );
     }
   }
 
@@ -260,15 +421,27 @@ export class CatalogModule {
     const actor = typeof actorOrId === 'string' ? undefined : actorOrId;
     const id = typeof actorOrId === 'string' ? actorOrId : requestedId;
     if (!id) return failure('validation', 'Missing catalog entry ID');
+    if (this.dependencies.relationalCatalog) {
+      try {
+        const entry = await this.dependencies.relationalCatalog.reads.get(id);
+        return entry
+          ? success(entry)
+          : failure('not_found', 'Catalog entry not found');
+      } catch {
+        return failure(
+          'dependency_failure',
+          'Could not load the catalog entry',
+        );
+      }
+    }
     const importedId = importedCatalogId(id);
     if (importedId !== undefined) {
       if (!this.dependencies.imports) {
         return failure('not_found', 'Catalog entry not found');
       }
       try {
-        const document = await this.dependencies.imports.reader.getCatalog(
-          importedId,
-        );
+        const document =
+          await this.dependencies.imports.reader.getCatalog(importedId);
         if (!document) return failure('not_found', 'Catalog entry not found');
         const profile = this.dependencies.imports.codec.decode(
           document.id,
@@ -279,27 +452,36 @@ export class CatalogModule {
           : undefined;
         return success(importedCatalogRecord(profile, linked));
       } catch {
-        return failure('dependency_failure', 'Could not load the catalog entry');
+        return failure(
+          'dependency_failure',
+          'Could not load the catalog entry',
+        );
       }
     }
     try {
-      const document = await this.dependencies.documents.get(COLLECTIONS.catalog, id);
+      const document = await this.dependencies.documents.get(
+        COLLECTIONS.catalog,
+        id,
+      );
       if (!document) return failure('not_found', 'Catalog entry not found');
       const decoded = this.dependencies.codecs.catalog.decode(
         document.id,
         document.data,
       );
-      const canViewContributors = await this.dependencies.contributors.canView(actor);
-      const contributor = await this.dependencies.contributors.visibleForContent(
-        actor,
-        'catalog',
-        id,
-      );
+      const canViewContributors =
+        await this.dependencies.contributors.canView(actor);
+      const contributor =
+        await this.dependencies.contributors.visibleForContent(
+          actor,
+          'catalog',
+          id,
+        );
       return success(
         localCatalogRecord(
           withCatalogContributor(
             decoded,
-            contributor ?? (canViewContributors ? decoded.createdBy : undefined),
+            contributor ??
+              (canViewContributors ? decoded.createdBy : undefined),
           ),
         ),
       );
@@ -309,13 +491,21 @@ export class CatalogModule {
   }
 
   async media(id: string): Promise<Outcome<readonly DisplayMediaAsset[]>> {
+    if (this.dependencies.relationalCatalog) {
+      try {
+        return success(
+          await this.dependencies.relationalCatalog.reads.media(id),
+        );
+      } catch {
+        return failure('dependency_failure', 'Could not load catalog media');
+      }
+    }
     const importedId = importedCatalogId(id);
     if (importedId !== undefined) {
       if (!this.dependencies.imports) return success([]);
       try {
-        const document = await this.dependencies.imports.reader.getCatalog(
-          importedId,
-        );
+        const document =
+          await this.dependencies.imports.reader.getCatalog(importedId);
         if (!document) return failure('not_found', 'Catalog entry not found');
         const profile = this.dependencies.imports.codec.decode(
           document.id,
@@ -333,15 +523,25 @@ export class CatalogModule {
       }
     }
     try {
-      return success(await this.dependencies.media.list(`${COLLECTIONS.catalog}/${id}`));
+      return success(
+        await this.dependencies.media.list(`${COLLECTIONS.catalog}/${id}`),
+      );
     } catch {
       return failure('dependency_failure', 'Could not load catalog media');
     }
   }
 
-  async create(actor: User | undefined, draft: CatalogDraft): Promise<Outcome<CatalogEntry>> {
+  async create(
+    actor: User | undefined,
+    draft: CatalogDraft,
+  ): Promise<Outcome<CatalogEntry>> {
     const denied = mutationDenied(actor);
     if (denied) return denied;
+    if (this.dependencies.relationalCatalog)
+      return failure(
+        'dependency_failure',
+        'Catalog editing is unavailable during database integration',
+      );
     const validation = validateCatalog(draft.cat, draft.photos.length);
     if (validation) return failure('validation', validation);
 
@@ -383,6 +583,11 @@ export class CatalogModule {
   ): Promise<Outcome<CatalogEntry>> {
     const denied = mutationDenied(actor);
     if (denied) return denied;
+    if (this.dependencies.relationalCatalog)
+      return failure(
+        'dependency_failure',
+        'Catalog editing is unavailable during database integration',
+      );
     if (importedCatalogId(id) !== undefined) {
       return failure(
         'forbidden',
@@ -433,6 +638,11 @@ export class CatalogModule {
   async remove(actor: User | undefined, id: string): Promise<Outcome<void>> {
     const denied = mutationDenied(actor);
     if (denied) return denied;
+    if (this.dependencies.relationalCatalog)
+      return failure(
+        'dependency_failure',
+        'Catalog editing is unavailable during database integration',
+      );
     if (importedCatalogId(id) !== undefined) {
       return failure(
         'forbidden',
@@ -459,13 +669,20 @@ export class CatalogModule {
         },
       ]);
     } catch {
-      return failure('dependency_failure', 'Could not delete the catalog entry');
+      return failure(
+        'dependency_failure',
+        'Could not delete the catalog entry',
+      );
     }
 
     try {
-      const assets = await this.dependencies.media.list(`${COLLECTIONS.catalog}/${id}`);
+      const assets = await this.dependencies.media.list(
+        `${COLLECTIONS.catalog}/${id}`,
+      );
       const cleanup = await Promise.allSettled(
-        assets.map(({ id: mediaId }) => this.dependencies.media.remove(mediaId)),
+        assets.map(({ id: mediaId }) =>
+          this.dependencies.media.remove(mediaId),
+        ),
       );
       return success(
         undefined,
@@ -473,7 +690,8 @@ export class CatalogModule {
           ? [
               {
                 code: 'cleanup_failed',
-                message: 'The catalog entry was deleted, but some media remains',
+                message:
+                  'The catalog entry was deleted, but some media remains',
               },
             ]
           : [],
@@ -488,15 +706,26 @@ export class CatalogModule {
     }
   }
 
-  private async getLocal(actor: User | undefined, id: string): Promise<CatalogEntry | undefined> {
+  private async getLocal(
+    actor: User | undefined,
+    id: string,
+  ): Promise<CatalogEntry | undefined> {
     const document = await this.dependencies.documents.get(
       COLLECTIONS.catalog,
       id,
     );
     if (!document) return undefined;
-    const decoded = this.dependencies.codecs.catalog.decode(document.id, document.data);
-    const canViewContributors = await this.dependencies.contributors.canView(actor);
-    const contributor = await this.dependencies.contributors.visibleForContent(actor, 'catalog', id);
+    const decoded = this.dependencies.codecs.catalog.decode(
+      document.id,
+      document.data,
+    );
+    const canViewContributors =
+      await this.dependencies.contributors.canView(actor);
+    const contributor = await this.dependencies.contributors.visibleForContent(
+      actor,
+      'catalog',
+      id,
+    );
     return withCatalogContributor(
       decoded,
       contributor ?? (canViewContributors ? decoded.createdBy : undefined),
@@ -511,12 +740,14 @@ function catalogTagAssignmentWrite(
 ) {
   if (tagIds === undefined) return [];
   const assignment = parseCatalogTagAssignment({ catalogId, tagIds });
-  return [{
-    operation: 'put' as const,
-    collection: COLLECTIONS.catalogTagAssignments,
-    id: catalogId,
-    data: codec.encode(assignment),
-  }];
+  return [
+    {
+      operation: 'put' as const,
+      collection: COLLECTIONS.catalogTagAssignments,
+      id: catalogId,
+      data: codec.encode(assignment),
+    },
+  ];
 }
 
 function withCatalogContributor(
@@ -569,7 +800,7 @@ function importedCatalogRecord(
     visible: profile.visible,
     moderation: profile.moderation,
     localContribution: linkedLocal
-        ? {
+      ? {
           createdAt: linkedLocal.createdAt,
           createdBy: linkedLocal.createdBy,
           credits: linkedLocal.credits,
@@ -579,7 +810,8 @@ function importedCatalogRecord(
 }
 
 function mutationDenied(actor: User | undefined): Outcome<never> | undefined {
-  if (!actor) return failure('unauthenticated', 'Sign in to manage the catalog');
+  if (!actor)
+    return failure('unauthenticated', 'Sign in to manage the catalog');
   if (!canAccessRolePolicy(actor.role, roleAccessPolicies.manageCatalog)) {
     return failure(
       'forbidden',

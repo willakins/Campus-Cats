@@ -16,6 +16,9 @@ import { FirebaseClubBilling } from './FirebaseClubBilling';
 import { FirebaseChatGateway } from './FirebaseChatGateway';
 import { FirebaseCallableEffects } from './FirebaseCallableEffects';
 import { FirebaseCommunityVotingGateway } from './FirebaseCommunityVotingGateway';
+import { FirebaseCatalogDiscovery } from './FirebaseCatalogDiscovery';
+import { FirebaseCatalogFavorites } from './FirebaseCatalogFavorites';
+import { FirebaseCatalogReads } from './FirebaseCatalogReads';
 import { FirebaseDocumentStore } from './FirebaseDocumentStore';
 import { FirebaseInaturalistEffects } from './FirebaseInaturalistEffects';
 import { FirebaseInaturalistReader } from './FirebaseInaturalistReader';
@@ -43,14 +46,16 @@ const firebaseDates = {
   },
 };
 
-export function createFirebaseBackend(): AppBackend {
+export function createFirebaseBackend(
+  options: { catalogDiscovery?: 'postgres' } = {},
+): AppBackend {
   const functions = getFunctions(app);
   const codecs = createPersistenceCodecs(firebaseDates);
   const firebaseEffects = new FirebaseCallableEffects(functions);
   const firebaseClubBilling = new FirebaseClubBilling(db, functions);
   const tenantScope = new FirebaseTenantScope();
   const documents = new TenantDocumentStore(
-    new FirebaseDocumentStore(db),
+    new FirebaseDocumentStore(db, () => auth.currentUser?.uid ?? 'signed-out'),
     tenantScope,
   );
   const media = new TenantMediaStore(
@@ -58,6 +63,15 @@ export function createFirebaseBackend(): AppBackend {
     tenantScope,
   );
   return {
+    ...(options.catalogDiscovery === 'postgres'
+      ? {
+          relationalCatalog: {
+            discovery: new FirebaseCatalogDiscovery(functions),
+            favorites: new FirebaseCatalogFavorites(functions),
+            reads: new FirebaseCatalogReads(functions),
+          },
+        }
+      : {}),
     documents,
     media,
     chat: new FirebaseChatGateway(db, functions, tenantScope, {
@@ -73,7 +87,11 @@ export function createFirebaseBackend(): AppBackend {
     },
     clubBilling: createClubBillingGateway(firebaseClubBilling),
     inaturalist: {
-      reader: new FirebaseInaturalistReader(db, tenantScope),
+      reader: new FirebaseInaturalistReader(
+        db,
+        tenantScope,
+        () => auth.currentUser?.uid ?? 'signed-out',
+      ),
       effects: new FirebaseInaturalistEffects(functions),
     },
     session: createSessionGateway(
@@ -86,7 +104,10 @@ export function createFirebaseBackend(): AppBackend {
     ),
     surveySubmissions: new FirebaseSurveySubmissionGateway(functions),
     communityVoting: new FirebaseCommunityVotingGateway(functions),
-    whitelistSubmissions: new FirebaseWhitelistSubmission(functions, tenantScope),
+    whitelistSubmissions: new FirebaseWhitelistSubmission(
+      functions,
+      tenantScope,
+    ),
     universityOnboarding: createUniversityOnboardingGateway(functions),
     universitySelections: new AsyncStorageUniversitySelection(tenantScope),
     codecs,

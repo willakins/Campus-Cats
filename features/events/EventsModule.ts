@@ -51,10 +51,21 @@ interface EventsDependencies {
 export class EventsModule {
   constructor(private readonly dependencies: EventsDependencies) {}
 
-  async list(actor: User | undefined): Promise<Outcome<readonly EventListItem[]>> {
+  async list(
+    actor: User | undefined,
+  ): Promise<Outcome<readonly EventListItem[]>> {
     if (!actor) return failure('unauthenticated', 'Sign in to view events');
     try {
-      const documents = await this.dependencies.documents.list(COLLECTIONS.events);
+      const [contentAttempt, receiptAttempt] = await Promise.allSettled([
+        this.dependencies.documents.list(COLLECTIONS.events),
+        this.dependencies.documents.listWhereEqual(
+          COLLECTIONS.eventReadReceipts,
+          'userId',
+          actor.id,
+        ),
+      ]);
+      if (contentAttempt.status === 'rejected') throw contentAttempt.reason;
+      const documents = contentAttempt.value;
       let receiptDocuments: Awaited<
         ReturnType<DocumentStore['listWhereEqual']>
       > = [];
@@ -62,13 +73,9 @@ export class EventsModule {
         readonly code: 'partial_completion';
         readonly message: string;
       }[] = [];
-      try {
-        receiptDocuments = await this.dependencies.documents.listWhereEqual(
-          COLLECTIONS.eventReadReceipts,
-          'userId',
-          actor.id,
-        );
-      } catch {
+      if (receiptAttempt.status === 'fulfilled') {
+        receiptDocuments = receiptAttempt.value;
+      } else {
         receiptWarnings = [
           {
             code: 'partial_completion',
@@ -98,12 +105,12 @@ export class EventsModule {
             canAccessRolePolicy(actor.role, roleAccessPolicies.manageEvents) ||
             !isExpiredEvent(event, now),
         )
-        .sort((left, right) => left.startsAt.getTime() - right.startsAt.getTime());
-      return success(
-        events,
-        [
-          ...receiptWarnings,
-          ...(invalidCount
+        .sort(
+          (left, right) => left.startsAt.getTime() - right.startsAt.getTime(),
+        );
+      return success(events, [
+        ...receiptWarnings,
+        ...(invalidCount
           ? [
               {
                 code: 'partial_completion' as const,
@@ -111,8 +118,7 @@ export class EventsModule {
               },
             ]
           : []),
-        ],
-      );
+      ]);
     } catch {
       return failure('dependency_failure', 'Could not load events');
     }

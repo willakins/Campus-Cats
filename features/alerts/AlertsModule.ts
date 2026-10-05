@@ -58,21 +58,23 @@ export class AlertsModule {
   async list(
     actor: User | undefined,
   ): Promise<Outcome<readonly AlertListItem[]>> {
-    if (!actor)
-      return failure('unauthenticated', 'Sign in to view alerts');
+    if (!actor) return failure('unauthenticated', 'Sign in to view alerts');
     try {
-      const documents = await this.dependencies.documents.list(
-        COLLECTIONS.alerts,
-      );
-      let receiptDocuments: readonly StoredDocument[] = [];
-      let receiptWarning: readonly OutcomeMessage<OutcomeWarningCode>[] = [];
-      try {
-        receiptDocuments = await this.dependencies.documents.listWhereEqual(
+      const [contentAttempt, receiptAttempt] = await Promise.allSettled([
+        this.dependencies.documents.list(COLLECTIONS.alerts),
+        this.dependencies.documents.listWhereEqual(
           COLLECTIONS.alertReadReceipts,
           'userId',
           actor.id,
-        );
-      } catch {
+        ),
+      ]);
+      if (contentAttempt.status === 'rejected') throw contentAttempt.reason;
+      const documents = contentAttempt.value;
+      let receiptDocuments: readonly StoredDocument[] = [];
+      let receiptWarning: readonly OutcomeMessage<OutcomeWarningCode>[] = [];
+      if (receiptAttempt.status === 'fulfilled') {
+        receiptDocuments = receiptAttempt.value;
+      } else {
         receiptWarning = [
           {
             code: 'partial_completion',

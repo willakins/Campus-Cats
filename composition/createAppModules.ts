@@ -5,6 +5,7 @@ import {
   BillingProviderPresentation,
   BillingReader,
   ChatGateway,
+  RelationalCatalogBackend,
   CommunityVotingGateway,
   ClubBillingPort,
   DocumentStore,
@@ -46,6 +47,7 @@ import { WhitelistModule } from '../features/whitelist';
 import { UniversityOnboardingModule } from '../features/universityOnboarding';
 
 export interface AppBackend {
+  readonly relationalCatalog?: RelationalCatalogBackend;
   readonly documents: DocumentStore;
   readonly media: MediaStore;
   readonly effects: ApplicationEffects;
@@ -111,6 +113,7 @@ export function createAppModules(
     chat,
     clock,
     codecs,
+    relationalCatalog,
     documents,
     communityVoting,
     effects,
@@ -136,6 +139,21 @@ export function createAppModules(
     documents,
     settings: appSettings,
     codec: codecs.contentContributor,
+  });
+  const catalogTags = new CatalogTagsModule({ documents, ids, codecs });
+  const sightings = new SightingsModule({
+    clock,
+    documents,
+    media,
+    mediaCoordinator: mediaCoordinator(),
+    ids,
+    contributors,
+    codecs,
+    imports: {
+      reader: inaturalist.reader,
+      codec: codecs.inaturalistObservation,
+      publicLinkCodec: codecs.inaturalistPublicLink,
+    },
   });
 
   return Object.freeze({
@@ -167,6 +185,9 @@ export function createAppModules(
       },
     }),
     catalog: new CatalogModule({
+      relationalCatalog,
+      discoveryTags: catalogTags,
+      discoverySightings: (actor) => sightings.list(actor),
       documents,
       media,
       mediaCoordinator: mediaCoordinator(),
@@ -179,7 +200,7 @@ export function createAppModules(
         codec: codecs.inaturalistCatalog,
       },
     }),
-    catalogTags: new CatalogTagsModule({ documents, ids, codecs }),
+    catalogTags,
     contacts: new ContactsModule({ documents, ids, codecs }),
     communityVoting: new CommunityVotingModule({
       documents,
@@ -221,20 +242,7 @@ export function createAppModules(
       codecs,
     }),
     session: new SessionModule({ session }),
-    sightings: new SightingsModule({
-      clock,
-      documents,
-      media,
-      mediaCoordinator: mediaCoordinator(),
-      ids,
-      contributors,
-      codecs,
-      imports: {
-        reader: inaturalist.reader,
-        codec: codecs.inaturalistObservation,
-        publicLinkCodec: codecs.inaturalistPublicLink,
-      },
-    }),
+    sightings,
     stations: new StationsModule({
       documents,
       media,

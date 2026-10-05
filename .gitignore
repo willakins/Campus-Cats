@@ -46,3 +46,7 @@ coverage/
 
 # Local repository helper files and credentials
 repo.txt
+
+# Supabase CLI local state
+/supabase/.temp/
+/supabase/.branches/

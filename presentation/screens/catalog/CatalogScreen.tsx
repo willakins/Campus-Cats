@@ -9,7 +9,7 @@ import React, {
 } from 'react';
 import { FlatList, useWindowDimensions, View } from 'react-native';
 
-import { useRouter } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 
 import {
   AppHeader,
@@ -36,21 +36,16 @@ import {
   canAccessRolePolicy,
   CatalogRecord,
   CatalogTag,
-  CatalogTagAssignment,
-  SightingRecord,
   roleAccessPolicies,
 } from '@/core/domain';
-import {
-  buildCatalogItems,
-  CatalogFavoriteSummary,
-  CatalogSort,
-  filterAndSortCatalog,
-  moveCatalogFavorite,
-} from '@/features/catalog';
+import { CatalogSort, filterAndSortCatalog } from '@/features/catalog';
 import { useAuth } from '@/presentation/providers';
 import { useAppTheme } from '@/theme';
 
-const emptyFavorites: CatalogFavoriteSummary = { counts: {} };
+import type {
+  CatalogDiscoveryCard,
+  CatalogDiscoveryCursor,
+} from '@/core/ports';
 
 const Catalog = () => {
   const { currentUser, user } = useAuth();
@@ -75,13 +70,14 @@ const Catalog = () => {
     theme.layout.maxContentWidth,
     theme.spacing.md,
   );
-  const [entries, setEntries] = useState<readonly CatalogRecord[]>([]);
-  const [sightings, setSightings] = useState<readonly SightingRecord[]>([]);
-  const [favorites, setFavorites] = useState<CatalogFavoriteSummary>(emptyFavorites);
+  const [cards, setCards] = useState<readonly CatalogDiscoveryCard[]>([]);
   const [tags, setTags] = useState<readonly CatalogTag[]>([]);
-  const [tagAssignments, setTagAssignments] = useState<
-    readonly CatalogTagAssignment[]
-  >([]);
+  const [total, setTotal] = useState(0);
+  const [nextCursor, setNextCursor] = useState<CatalogDiscoveryCursor>();
+  const [loadingMore, setLoadingMore] = useState(false);
+  const generation = useRef(0);
+  const moreRequest = useRef(false);
+  const paged = appModules.catalog.usesPagedDiscovery;
   const [query, setQuery] = useState('');
   const deferredQuery = useDeferredValue(query);
   const [sort, setSort] = useState<CatalogSort>('name-asc');
@@ -98,82 +94,99 @@ const Catalog = () => {
     readonly tone: 'danger' | 'success';
   }>();
 
-  const load = useCallback(async (isActive: () => boolean = () => true) => {
-    setLoading(true);
-    setError(undefined);
-    setFeedback(undefined);
-    setToast(undefined);
-    const actor = currentUserRef.current;
-    const [
-      catalogResult,
-      sightingsResult,
-      favoritesResult,
-      tagsResult,
-      assignmentsResult,
-    ] = await Promise.all([
-      appModules.catalog.list(actor),
-      appModules.sightings.list(actor),
-      actor
-        ? appModules.catalog.favoriteSummary(actor)
-        : Promise.resolve(undefined),
-      actor ? appModules.catalogTags.list(actor) : Promise.resolve(undefined),
-      actor
-        ? appModules.catalogTags.assignments(actor)
-        : Promise.resolve(undefined),
-    ]);
-    if (!isActive()) return;
-    const warnings: string[] = [];
-    if (catalogResult.ok) {
-      setEntries(catalogResult.value);
-      warnings.push(...catalogResult.warnings.map(({ message }) => message));
-    } else setError(catalogResult.error.message);
-    if (sightingsResult.ok) setSightings(sightingsResult.value);
-    else {
-      setSightings([]);
-      warnings.push(sightingsResult.error.message);
-    }
-    if (favoritesResult?.ok) {
-      setFavorites(favoritesResult.value);
-      warnings.push(...favoritesResult.warnings.map(({ message }) => message));
-    } else if (favoritesResult && !favoritesResult.ok) {
-      setFavorites(emptyFavorites);
-      warnings.push(favoritesResult.error.message);
-    } else setFavorites(emptyFavorites);
-    if (tagsResult?.ok) {
-      const configuredIds = new Set<string>(
-        tagsResult.value.map(({ id }) => id),
-      );
-      setTags(tagsResult.value);
-      setSelectedTagIds((current) =>
-        current.filter((tagId) => configuredIds.has(tagId)),
-      );
-    } else {
-      setTags([]);
-      if (tagsResult && !tagsResult.ok) warnings.push(tagsResult.error.message);
-    }
-    if (assignmentsResult?.ok) setTagAssignments(assignmentsResult.value);
-    else {
-      setTagAssignments([]);
-      if (assignmentsResult && !assignmentsResult.ok) {
-        warnings.push(assignmentsResult.error.message);
+  const selectedTagsKey = JSON.stringify([...selectedTagIds].sort());
+  const serverQuery = paged ? deferredQuery : '';
+  const serverSort = paged ? sort : 'name-asc';
+  const serverTagsKey = paged ? selectedTagsKey : '[]';
+  const load = useCallback(
+    async (isActive: () => boolean = () => true) => {
+      const version = ++generation.current;
+      moreRequest.current = false;
+      setLoadingMore(false);
+      setNextCursor(undefined);
+      setLoading(true);
+      setError(undefined);
+      setFeedback(undefined);
+      const result = await appModules.catalog.discover(currentUserRef.current, {
+        search: serverQuery,
+        sort: serverSort,
+        tagIds: JSON.parse(serverTagsKey) as string[],
+        pageSize: 40,
+      });
+      if (!isActive() || version !== generation.current) return;
+      if (result.ok) {
+        setCards(result.value.items);
+        setTags(result.value.availableTags);
+        setTotal(result.value.total);
+        setNextCursor(result.value.nextCursor);
+        const configuredIds = new Set<string>(
+          result.value.availableTags.map(({ id }) => id),
+        );
+        setSelectedTagIds((current) =>
+          current.every((id) => configuredIds.has(id))
+            ? current
+            : current.filter((id) => configuredIds.has(id)),
+        );
+        if (result.warnings.length)
+          setFeedback({
+            message: result.warnings.map(({ message }) => message).join(' '),
+            tone: 'warning',
+          });
+      } else {
+        setError(result.error.message);
+        setCards([]);
+        setTotal(0);
       }
-    }
-    if (warnings.length > 0) {
-      setFeedback({ message: warnings.join(' '), tone: 'warning' });
-    }
-    setLoading(false);
-  }, [currentUserId]);
+      setLoading(false);
+    },
+    [currentUserId, serverQuery, serverSort, serverTagsKey],
+  );
 
   useFocusTask(load);
-
-  const catalogItems = useMemo(
-    () => buildCatalogItems(entries, sightings, favorites, tags, tagAssignments),
-    [entries, favorites, sightings, tagAssignments, tags],
+  // Discard outstanding page requests after blur/unmount or a new focused query.
+  useFocusEffect(
+    useCallback(
+      () => () => {
+        generation.current++;
+      },
+      [],
+    ),
   );
   const visibleItems = useMemo(
-    () => filterAndSortCatalog(catalogItems, deferredQuery, sort, selectedTagIds),
-    [catalogItems, deferredQuery, selectedTagIds, sort],
+    () =>
+      paged
+        ? cards
+        : filterAndSortCatalog(cards, deferredQuery, sort, selectedTagIds),
+    [cards, deferredQuery, paged, sort, selectedTagIds],
   );
+
+  const loadMore = useCallback(async () => {
+    if (!paged || loading || !nextCursor || moreRequest.current) return;
+    moreRequest.current = true;
+    setLoadingMore(true);
+    const version = generation.current;
+    const result = await appModules.catalog.discover(currentUserRef.current, {
+      search: serverQuery,
+      sort: serverSort,
+      tagIds: JSON.parse(serverTagsKey) as string[],
+      pageSize: 40,
+      cursor: nextCursor,
+    });
+    if (version !== generation.current) return;
+    if (result.ok) {
+      setCards((current) => {
+        const existing = new Set(current.map(({ entry }) => entry.id));
+        return [
+          ...current,
+          ...result.value.items.filter(({ entry }) => !existing.has(entry.id)),
+        ];
+      });
+      setNextCursor(result.value.nextCursor);
+      setTotal(result.value.total);
+    } else setFeedback({ message: result.error.message, tone: 'warning' });
+    moreRequest.current = false;
+    setLoadingMore(false);
+  }, [loading, nextCursor, paged, serverQuery, serverSort, serverTagsKey]);
 
   const toggleFavorite = useCallback(
     async (entry: CatalogRecord) => {
@@ -185,21 +198,37 @@ const Catalog = () => {
         });
         return;
       }
-      const nextCatalogId =
-        favorites.selectedCatalogId === entry.id ? undefined : entry.id;
+      const nextCatalogId = cards.some(
+        (card) => card.entry.id === entry.id && card.isFavorite,
+      )
+        ? undefined
+        : entry.id;
       setFavoriteBusyId(entry.id);
       setToast(undefined);
-      const result = await appModules.catalog.setFavorite(
-        actor,
-        nextCatalogId,
-      );
+      const result = await appModules.catalog.setFavorite(actor, nextCatalogId);
       if (!result.ok) {
         setToast({ message: result.error.message, tone: 'danger' });
         setFavoriteBusyId(undefined);
         return;
       }
 
-      setFavorites((current) => moveCatalogFavorite(current, nextCatalogId));
+      if (paged) {
+        // Sorting by hearts can change page boundaries; refresh after an accepted mutation.
+        await load();
+      } else
+        setCards((current) =>
+          current.map((card) => ({
+            ...card,
+            isFavorite: card.entry.id === nextCatalogId,
+            heartCount: Math.max(
+              0,
+              card.heartCount -
+                (card.isFavorite ? 1 : 0) +
+                (card.entry.id === nextCatalogId ? 1 : 0),
+            ),
+          })),
+        );
+
       setToast({
         message: nextCatalogId
           ? `${entry.cat.name} is now your favorite cat.`
@@ -208,28 +237,34 @@ const Catalog = () => {
       });
       setFavoriteBusyId(undefined);
     },
-    [favorites.selectedCatalogId],
+    [cards, load, paged],
   );
 
   return (
     <>
       <Screen
-        floatingAction={isAdmin ? (
-          <FloatingActionButton
-            accessibilityLabel="Create catalog entry"
-            accessibilityHint="Opens the new catalog entry form"
-            onPress={() => router.push('/catalog/new')}
-          />
-        ) : undefined}
+        floatingAction={
+          isAdmin ? (
+            <FloatingActionButton
+              accessibilityLabel="Create catalog entry"
+              accessibilityHint="Opens the new catalog entry form"
+              onPress={() => router.push('/catalog/new')}
+            />
+          ) : undefined
+        }
       >
         <AppHeader title="Cat-alog" eyebrow="Meet the colony" />
-        <View style={{ gap: theme.spacing.sm, paddingBottom: theme.spacing.md }}>
+        <View
+          style={{ gap: theme.spacing.sm, paddingBottom: theme.spacing.md }}
+        >
           <CatalogToolbar
             query={query}
             sort={sort}
             availableTags={tags}
             selectedTagIds={selectedTagIds}
-            resultCount={loading ? undefined : visibleItems.length}
+            resultCount={
+              loading ? undefined : paged ? total : visibleItems.length
+            }
             onQueryChange={setQuery}
             onSortChange={setSort}
             onSelectedTagIdsChange={setSelectedTagIds}
@@ -253,6 +288,18 @@ const Catalog = () => {
             removeClippedSubviews={false}
             data={error ? [] : visibleItems}
             numColumns={columns}
+            onEndReached={() => void loadMore()}
+            onEndReachedThreshold={0.5}
+            ListFooterComponent={
+              loadingMore ? (
+                <CardListSkeleton
+                  label="Loading more cats"
+                  count={columns}
+                  columns={columns}
+                  layout="cover"
+                />
+              ) : undefined
+            }
             keyExtractor={({ entry }) => entry.id}
             contentContainerStyle={{
               ...cardListContentStyle(theme),
@@ -270,6 +317,7 @@ const Catalog = () => {
               <View style={{ width: cardWidth, minWidth: 0 }}>
                 <CatalogListItem
                   {...item.entry}
+                  cover={item.cover}
                   sightingCount={item.sightingCount}
                   heartCount={item.heartCount}
                   firstSighting={item.firstSighting}
@@ -288,7 +336,7 @@ const Catalog = () => {
                   onRetry={() => void load()}
                 />
               ) : (query.trim() || selectedTagIds.length > 0) &&
-                entries.length > 0 ? (
+                (paged || cards.length > 0) ? (
                 <EmptyState
                   title="No matching cats"
                   message="No profiles match the current search and filters. Try broadening your choices."

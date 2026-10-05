@@ -54,6 +54,25 @@ const draft = {
 };
 
 describe('EventsModule', () => {
+  it('starts the member receipt query while the event query is still pending', async () => {
+    const { module, documents } = buildModule();
+    let resolve!: (value: []) => void;
+    jest.spyOn(documents, 'list').mockReturnValueOnce(
+      new Promise((yes) => {
+        resolve = yes;
+      }),
+    );
+    const receipts = jest.spyOn(documents, 'listWhereEqual');
+    const result = module.list(member);
+    expect(receipts).toHaveBeenCalledWith(
+      COLLECTIONS.eventReadReceipts,
+      'userId',
+      member.id,
+    );
+    resolve([]);
+    await expect(result).resolves.toMatchObject({ ok: true, value: [] });
+  });
+
   it('requires authentication to list or inspect events', async () => {
     const { module } = buildModule();
 

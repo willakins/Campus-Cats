@@ -1,0 +1,42 @@
+{
+  "sourceProject": "campuscats-d7a5e",
+  "sourceClub": "campus-cats",
+  "exportCompletedAt": "2026-10-02T20:26:36.069Z",
+  "sourceConsistent": false,
+  "duplicateCollections": {
+    "inaturalist-observations": {
+      "rootRecords": 622,
+      "tenantRecords": 626,
+      "identicalRecords": 0,
+      "rootOnlyRecords": 0,
+      "tenantOnlyRecords": 4,
+      "changedFields": {
+        "importedAt": 622,
+        "syncedAt": 622,
+        "lastSeenRunId": 622,
+        "sourceUpdatedAt": 3
+      }
+    },
+    "inaturalist-guide-profiles": {
+      "rootRecords": 62,
+      "tenantRecords": 62,
+      "identicalRecords": 0,
+      "rootOnlyRecords": 0,
+      "tenantOnlyRecords": 0,
+      "changedFields": {
+        "lastSeenRunId": 62,
+        "importedAt": 62,
+        "linkedLocalCatalogId": 46,
+        "syncedAt": 62,
+        "matchStatus": 46
+      },
+      "relationshipAudit": {
+        "rootExplicitLinks": 46,
+        "missingLocalTargets": 0,
+        "notLinkedStatus": 0,
+        "conflictingTenantLinks": 0,
+        "distinctLocalTargets": 46
+      }
+    }
+  }
+}

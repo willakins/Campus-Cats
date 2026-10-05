@@ -169,6 +169,10 @@ their corresponding service configuration. Start with the
 ### Documentation
 
 - [System design](docs/architecture/system-design.md)
+- [Data inventory, SQL/NoSQL choices, service costs, and switching thresholds](docs/data-storage-and-costs.md)
+- [Query performance, index coverage, diagnostics, and release steps](docs/query-performance.md)
+- [Supabase Free relational core setup and migration plan](docs/architecture/0004-supabase-relational-core.md)
+- [Supabase setup steps and implementation status](docs/supabase-setup.md)
 - [Multi-club subscription architecture](docs/architecture/0003-multi-club-subscription-tenancy.md)
 - [University onboarding](docs/university-onboarding.md)
 - [Club subscriptions and tenant migration](docs/billing-operations.md)
