@@ -1,0 +1,18 @@
+{
+  "measuredOn": "2026-10-05",
+  "projectRef": "pxhopyutjuggdmzzpies",
+  "capacity": {
+    "comments": 100,
+    "sightings": 680,
+    "database_bytes": 18970291,
+    "catalog_entries": 113,
+    "media_references": 1594,
+    "postgres_version": "17.11",
+    "memberships_enabled": 0,
+    "linked_catalog_entries": 46,
+    "schema_migration_count": 4,
+    "application_index_bytes": 2793472,
+    "effective_catalog_entries": 67,
+    "application_table_and_index_bytes": 7159808
+  }
+}

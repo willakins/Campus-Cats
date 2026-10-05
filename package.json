@@ -8,6 +8,9 @@
   },
   "packageManager": "npm@10.9.8",
   "scripts": {
+    "db:export": "node scripts/database/export-firestore.cjs",
+    "db:prepare": "node scripts/database/prepare-import.cjs",
+    "db:test": "node --test scripts/database/*.test.cjs && node scripts/database/test-local.cjs",
     "start": "expo start",
     "start:dev": "EXPO_PUBLIC_APP_ENV=development expo start --dev-client",
     "android": "expo run:android",

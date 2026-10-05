@@ -13,3 +13,5 @@ export * from './communityVoting';
 export * from './clubBilling';
 export * from './universityOnboarding';
 export * from './chat';
+export * from './relationalReads';
+export * from './catalogDiscovery';

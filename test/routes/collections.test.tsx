@@ -1,6 +1,11 @@
 import React from 'react';
 
-import { render, screen, userEvent, waitFor } from '@testing-library/react-native';
+import {
+  render,
+  screen,
+  userEvent,
+  waitFor,
+} from '@testing-library/react-native';
 
 import Catalog from '../../app/(app)/(tabs)/catalog';
 import Stations from '../../app/(app)/(tabs)/stations';
@@ -44,8 +49,36 @@ jest.mock('expo-router', () => {
 jest.mock('../../composition/appModules', () => ({
   appModules: {
     catalog: {
+      usesPagedDiscovery: false,
+      discover: async (actor: unknown) => {
+        const entries = await mockCatalogList(actor);
+        if (!entries.ok) return entries;
+        const [sightings, favorites, tags, assignments] = await Promise.all([
+          mockSightingsList(actor),
+          mockCatalogFavoriteSummary(actor),
+          mockCatalogTagsList(actor),
+          mockCatalogTagAssignments(actor),
+        ]);
+        const { buildCatalogItems } = jest.requireActual(
+          '../../features/catalog/catalogDiscovery',
+        );
+        const { localCatalogRecord } = jest.requireActual('../../core/domain');
+        const items = buildCatalogItems(
+          entries.value.map(localCatalogRecord),
+          sightings.value,
+          favorites.value,
+          tags.value,
+          assignments.value,
+        );
+        return {
+          ok: true,
+          value: { items, total: items.length, availableTags: tags.value },
+          warnings: entries.warnings,
+        };
+      },
       list: (...args: unknown[]) => mockCatalogList(...args),
-      favoriteSummary: (...args: unknown[]) => mockCatalogFavoriteSummary(...args),
+      favoriteSummary: (...args: unknown[]) =>
+        mockCatalogFavoriteSummary(...args),
       setFavorite: (...args: unknown[]) => mockCatalogSetFavorite(...args),
     },
     catalogTags: {
@@ -66,7 +99,11 @@ jest.mock('../../presentation/providers', () => ({
 
 jest.mock('../../presentation/patterns/catalog/CatalogListItem', () => {
   const mockReact = require('react');
-  const { Pressable: MockPressable, Text: MockText, View: MockView } = require('react-native');
+  const {
+    Pressable: MockPressable,
+    Text: MockText,
+    View: MockView,
+  } = require('react-native');
   return {
     CatalogListItem: ({
       cat,
@@ -76,36 +113,44 @@ jest.mock('../../presentation/patterns/catalog/CatalogListItem', () => {
       cat: { name: string };
       heartCount: number;
       onToggleFavorite: () => void;
-    }) => mockReact.createElement(
-      MockView,
-      null,
-      mockReact.createElement(MockText, null, cat.name),
-      mockReact.createElement(MockText, null, `${heartCount} route hearts`),
+    }) =>
       mockReact.createElement(
-        MockPressable,
-        {
-          accessibilityRole: 'button',
-          accessibilityLabel: `Favorite ${cat.name}`,
-          onPress: onToggleFavorite,
-        },
-        mockReact.createElement(MockText, null, 'Favorite'),
+        MockView,
+        null,
+        mockReact.createElement(MockText, null, cat.name),
+        mockReact.createElement(MockText, null, `${heartCount} route hearts`),
+        mockReact.createElement(
+          MockPressable,
+          {
+            accessibilityRole: 'button',
+            accessibilityLabel: `Favorite ${cat.name}`,
+            onPress: onToggleFavorite,
+          },
+          mockReact.createElement(MockText, null, 'Favorite'),
+        ),
       ),
-    ),
   };
 });
 
-jest.mock('../../presentation/screens/stations/components/StationListItem', () => {
-  const mockReact = require('react');
-  const { Text: MockText } = require('react-native');
-  return {
-    StationListItem: ({ station }: { station: { name: string } }) =>
-      mockReact.createElement(MockText, null, station.name),
-  };
-});
+jest.mock(
+  '../../presentation/screens/stations/components/StationListItem',
+  () => {
+    const mockReact = require('react');
+    const { Text: MockText } = require('react-native');
+    return {
+      StationListItem: ({ station }: { station: { name: string } }) =>
+        mockReact.createElement(MockText, null, station.name),
+    };
+  },
+);
 
 jest.mock('@expo/vector-icons', () => ({ Ionicons: () => null }));
 
-const actor = parseUser({ id: 'admin-1', email: 'admin@gatech.edu', role: Role.Officer });
+const actor = parseUser({
+  id: 'admin-1',
+  email: 'admin@gatech.edu',
+  role: Role.Officer,
+});
 const catalogEntry = parseCatalogEntry({
   id: 'catalog-1',
   cat: {
@@ -169,7 +214,9 @@ const unstocked = parseStation({
 });
 
 const renderRoute = async (route: React.ReactElement) =>
-  await render(<AppThemeProvider colorScheme="light">{route}</AppThemeProvider>);
+  await render(
+    <AppThemeProvider colorScheme="light">{route}</AppThemeProvider>,
+  );
 
 describe('catalog collection route', () => {
   beforeEach(() => {
@@ -182,7 +229,11 @@ describe('catalog collection route', () => {
       value: { counts: {} },
       warnings: [],
     });
-    mockCatalogSetFavorite.mockResolvedValue({ ok: true, value: {}, warnings: [] });
+    mockCatalogSetFavorite.mockResolvedValue({
+      ok: true,
+      value: {},
+      warnings: [],
+    });
     mockCatalogTagsList.mockResolvedValue({
       ok: true,
       value: configuredCatalogTags,
@@ -202,31 +253,49 @@ describe('catalog collection route', () => {
 
   it('renders loading, empty, success, and authorized creation states', async () => {
     let finish: ((value: unknown) => void) | undefined;
-    mockCatalogList.mockImplementation(() => new Promise((resolve) => { finish = resolve; }));
+    mockCatalogList.mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          finish = resolve;
+        }),
+    );
     const user = userEvent.setup();
     await renderRoute(<Catalog />);
 
     expect(screen.getByText('Cat-alog')).toBeOnTheScreen();
     expect(screen.queryByText('Catalog access')).not.toBeOnTheScreen();
-    expect(screen.getByRole('progressbar', { name: 'Loading cat cards' })).toBeOnTheScreen();
+    expect(
+      screen.getByRole('progressbar', { name: 'Loading cat cards' }),
+    ).toBeOnTheScreen();
     finish?.({ ok: true, value: [], warnings: [] });
     expect(await screen.findByText('No cats yet')).toBeOnTheScreen();
-    await user.press(screen.getByRole('button', { name: 'Create catalog entry' }));
+    await user.press(
+      screen.getByRole('button', { name: 'Create catalog entry' }),
+    );
     expect(mockPush).toHaveBeenCalledWith('/catalog/new');
   });
 
   it('renders catalog results and module errors', async () => {
-    mockCatalogList.mockResolvedValue({ ok: true, value: [catalogEntry], warnings: [] });
+    mockCatalogList.mockResolvedValue({
+      ok: true,
+      value: [catalogEntry],
+      warnings: [],
+    });
     const { unmount } = await renderRoute(<Catalog />);
     expect(await screen.findByText('Goldie')).toBeOnTheScreen();
     await unmount();
 
     mockCatalogList.mockResolvedValue({
       ok: false,
-      error: { code: 'dependency_failure', message: 'Could not load the catalog' },
+      error: {
+        code: 'dependency_failure',
+        message: 'Could not load the catalog',
+      },
     });
     await renderRoute(<Catalog />);
-    expect(await screen.findByText('Could not load the catalog')).toBeOnTheScreen();
+    expect(
+      await screen.findByText('Could not load the catalog'),
+    ).toBeOnTheScreen();
   });
 
   it('hides catalog creation from members', async () => {
@@ -236,7 +305,9 @@ describe('catalog collection route', () => {
 
     expect(await screen.findByText('No cats yet')).toBeOnTheScreen();
     expect(screen.queryByText('Catalog access')).not.toBeOnTheScreen();
-    expect(screen.queryByRole('button', { name: 'Create catalog entry' })).not.toBeOnTheScreen();
+    expect(
+      screen.queryByRole('button', { name: 'Create catalog entry' }),
+    ).not.toBeOnTheScreen();
   });
 
   it('filters catalog profiles and moves the account favorite', async () => {
@@ -260,20 +331,26 @@ describe('catalog collection route', () => {
     expect(screen.queryByText('Mimi')).not.toBeOnTheScreen();
     expect(screen.getByText('2 route hearts')).toBeOnTheScreen();
 
-    await user.press(screen.getByRole('button', { name: 'Clear catalog search' }));
+    await user.press(
+      screen.getByRole('button', { name: 'Clear catalog search' }),
+    );
     await user.press(screen.getByRole('button', { name: 'Filter catalog' }));
     await user.press(screen.getByRole('button', { name: 'Rehomed' }));
     await user.press(screen.getByRole('button', { name: 'Show cats' }));
     expect(screen.queryByText('Goldie')).not.toBeOnTheScreen();
     expect(screen.getByText('Mimi')).toBeOnTheScreen();
 
-    await user.press(screen.getByRole('button', { name: 'Filter catalog. 1 selected' }));
+    await user.press(
+      screen.getByRole('button', { name: 'Filter catalog. 1 selected' }),
+    );
     await user.press(screen.getByRole('button', { name: 'Needs medication' }));
     await user.press(screen.getByRole('button', { name: 'Rehomed' }));
     await user.press(screen.getByRole('button', { name: 'Show cats' }));
     expect(screen.getByText('Mimi')).toBeOnTheScreen();
 
-    await user.press(screen.getByRole('button', { name: 'Filter catalog. 1 selected' }));
+    await user.press(
+      screen.getByRole('button', { name: 'Filter catalog. 1 selected' }),
+    );
     await user.press(screen.getByRole('button', { name: 'Clear filters' }));
     await user.press(screen.getByRole('button', { name: 'Show cats' }));
     expect(screen.getByText('Goldie')).toBeOnTheScreen();
@@ -334,7 +411,11 @@ describe('station collection route', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     mockRole = Role.Officer;
-    mockStationsList.mockResolvedValue({ ok: true, value: [stocked, unstocked], warnings: [] });
+    mockStationsList.mockResolvedValue({
+      ok: true,
+      value: [stocked, unstocked],
+      warnings: [],
+    });
     mockStockStatus.mockImplementation((station: { id: string }) => ({
       isStocked: station.id === 'station-1',
       nextDueAt: new Date('2026-08-11T12:00:00.000Z'),
@@ -351,7 +432,9 @@ describe('station collection route', () => {
     ).toBeOnTheScreen();
     expect(screen.queryByText('Officer-only page')).not.toBeOnTheScreen();
     expect(screen.getByRole('button', { name: 'Stocked' })).toBeOnTheScreen();
-    expect(screen.getByRole('button', { name: 'Create station' })).toBeOnTheScreen();
+    expect(
+      screen.getByRole('button', { name: 'Create station' }),
+    ).toBeOnTheScreen();
     expect(
       screen.getByRole('progressbar', { name: 'Loading feeding stations' }),
     ).toBeOnTheScreen();
@@ -420,7 +503,11 @@ describe('station collection route', () => {
     });
     await renderRoute(<Stations />);
 
-    expect(await screen.findByText('Could not load stations')).toBeOnTheScreen();
-    expect(screen.getByRole('button', { name: 'Create station' })).toBeOnTheScreen();
+    expect(
+      await screen.findByText('Could not load stations'),
+    ).toBeOnTheScreen();
+    expect(
+      screen.getByRole('button', { name: 'Create station' }),
+    ).toBeOnTheScreen();
   });
 });

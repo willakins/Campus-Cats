@@ -9,6 +9,9 @@ export interface InaturalistSyncRunResult {
 
 export interface InaturalistReader {
   listObservations(includeHidden: boolean): Promise<readonly StoredDocument[]>;
+  listObservationsByObserver(
+    observerId: number,
+  ): Promise<readonly StoredDocument[]>;
   getObservation(id: number): Promise<StoredDocument | undefined>;
   listCatalog(includeHidden: boolean): Promise<readonly StoredDocument[]>;
   getCatalog(id: number): Promise<StoredDocument | undefined>;

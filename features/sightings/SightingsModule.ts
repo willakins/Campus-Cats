@@ -66,22 +66,32 @@ export class SightingsModule {
   constructor(private readonly dependencies: SightingsDependencies) {}
 
   async list(actor?: User): Promise<Outcome<readonly SightingRecord[]>> {
+    const [localAttempt, importedAttempt] = await Promise.allSettled([
+      Promise.all([
+        this.dependencies.documents.list(COLLECTIONS.sightings),
+        this.dependencies.contributors.listVisible(actor, 'sighting'),
+      ]),
+      // Resolve synchronous adapter failures inside the settled branch too.
+      Promise.resolve().then(() =>
+        this.dependencies.imports?.reader.listObservations(false),
+      ),
+    ]);
+    if (localAttempt.status === 'rejected') {
+      return failure('dependency_failure', 'Could not load sightings');
+    }
     let local: readonly SightingRecord[];
     try {
-      const canViewContributors = await this.dependencies.contributors.canView(actor);
-      const [documents, contributors] = await Promise.all([
-        this.dependencies.documents.list(COLLECTIONS.sightings),
-        canViewContributors
-          ? this.dependencies.contributors.visibleByContentId(actor, 'sighting')
-          : Promise.resolve(new Map<string, User>()),
-      ]);
+      const [
+        documents,
+        { canView: canViewContributors, byContentId: contributors },
+      ] = localAttempt.value;
       local = documents.map(({ id, data }) => {
         const decoded = this.dependencies.codecs.sighting.decode(id, data);
         return localSightingRecord(
           withSightingContributor(
             decoded,
             canViewContributors
-              ? contributors.get(id) ?? decoded.createdBy
+              ? (contributors.get(id) ?? decoded.createdBy)
               : undefined,
           ),
         );
@@ -92,9 +102,8 @@ export class SightingsModule {
 
     if (!this.dependencies.imports) return success(local);
     try {
-      const imported = await this.dependencies.imports.reader.listObservations(
-        false,
-      );
+      if (importedAttempt.status === 'rejected') throw importedAttempt.reason;
+      const imported = importedAttempt.value ?? [];
       const importedRecords: SightingRecord[] = [];
       let invalidImportedCount = 0;
 
@@ -139,7 +148,8 @@ export class SightingsModule {
     requestedUserId?: string,
   ): Promise<Outcome<readonly SightingRecord[]>> {
     const actor = typeof actorOrUserId === 'string' ? undefined : actorOrUserId;
-    const userId = typeof actorOrUserId === 'string' ? actorOrUserId : requestedUserId;
+    const userId =
+      typeof actorOrUserId === 'string' ? actorOrUserId : requestedUserId;
     if (!userId) return failure('validation', 'Missing member profile ID');
     let local: readonly SightingRecord[] = [];
     try {
@@ -167,9 +177,7 @@ export class SightingsModule {
         const byId = new Map(
           [
             ...legacyDocuments,
-            ...migratedDocuments.filter(
-              (document) => document !== undefined,
-            ),
+            ...migratedDocuments.filter((document) => document !== undefined),
           ].map((document) => [document.id, document]),
         );
         local = [...byId.values()].map(({ id, data }) =>
@@ -191,6 +199,7 @@ export class SightingsModule {
     if (!actor || !this.dependencies.imports) {
       return success(sortSightings(local));
     }
+    const imports = this.dependencies.imports;
     try {
       const linkDocuments = await this.dependencies.documents.listWhereEqual(
         COLLECTIONS.inaturalistPublicLinks,
@@ -198,15 +207,19 @@ export class SightingsModule {
         userId,
       );
       const linkedObserverIds = new Set(
-        linkDocuments.map(({ id, data }) =>
-          this.dependencies.imports?.publicLinkCodec.decode(id, data)
-            .inaturalistUserId,
+        linkDocuments.map(
+          ({ id, data }) =>
+            imports.publicLinkCodec.decode(id, data).inaturalistUserId,
         ),
       );
       if (linkedObserverIds.size === 0) return success(sortSightings(local));
-      const documents = await this.dependencies.imports.reader.listObservations(
-        false,
-      );
+      const documents = (
+        await Promise.all(
+          [...linkedObserverIds].map((observerId) =>
+            imports.reader.listObservationsByObserver(observerId),
+          ),
+        )
+      ).flat();
       const imported: SightingRecord[] = [];
       for (const { id, data } of documents) {
         try {

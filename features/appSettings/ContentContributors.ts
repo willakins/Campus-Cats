@@ -27,16 +27,32 @@ export class ContentContributors {
     actor: User | undefined,
     kind: ContributionKind,
   ): Promise<ReadonlyMap<string, User>> {
-    if (!(await this.canView(actor))) return new Map();
-    const documents = await this.dependencies.documents.list(
+    return (await this.listVisible(actor, kind)).byContentId;
+  }
+
+  async listVisible(
+    actor: User | undefined,
+    kind: ContributionKind,
+  ): Promise<{
+    readonly canView: boolean;
+    readonly byContentId: ReadonlyMap<string, User>;
+  }> {
+    const canView = await this.canView(actor);
+    if (!canView) return { canView, byContentId: new Map() };
+    const documents = await this.dependencies.documents.listWhereEqual(
       COLLECTIONS.contentContributors,
+      'kind',
+      kind,
     );
-    return new Map(
-      documents
-        .map(({ id, data }) => this.dependencies.codec.decode(id, data))
-        .filter((contributor) => contributor.kind === kind)
-        .map((contributor) => [contributor.contentId, contributor.user]),
-    );
+    return {
+      canView,
+      byContentId: new Map(
+        documents
+          .map(({ id, data }) => this.dependencies.codec.decode(id, data))
+          .filter((contributor) => contributor.kind === kind)
+          .map((contributor) => [contributor.contentId, contributor.user]),
+      ),
+    };
   }
 
   async visibleForContent(

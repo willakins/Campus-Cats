@@ -9,6 +9,7 @@ import {
 
 type ReadOperation =
   | 'listObservations'
+  | 'listObservationsByObserver'
   | 'getObservation'
   | 'listCatalog'
   | 'getCatalog'
@@ -32,6 +33,23 @@ export class InMemoryInaturalistReader implements InaturalistReader {
   listObservations(includeHidden: boolean): Promise<readonly StoredDocument[]> {
     this.maybeFail('listObservations');
     return Promise.resolve(this.list(this.observations, includeHidden));
+  }
+
+  listObservationsByObserver(
+    observerId: number,
+  ): Promise<readonly StoredDocument[]> {
+    this.maybeFail('listObservationsByObserver');
+    return Promise.resolve(
+      this.list(this.observations, false).filter(({ data }) => {
+        const observer = data.observer;
+        return (
+          typeof observer === 'object' &&
+          observer !== null &&
+          'id' in observer &&
+          observer.id === observerId
+        );
+      }),
+    );
   }
 
   getObservation(id: number): Promise<StoredDocument | undefined> {
