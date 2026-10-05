@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { plainText, httpUrlSchema, httpsUrlSchema } from './inputValidation';
 
 const HEX_COLOR_PATTERN = /^#[0-9A-Fa-f]{6}$/;
 
@@ -14,21 +15,15 @@ export const hexColorSchema = z
 export const donationMethodSchema = z.enum(['external', 'direct']);
 
 const donationImageSchema = z.object({
-  id: z.string().trim().min(1).max(2048),
-  url: z.string().url().max(2048),
+  id: plainText.trim().min(1).max(2048),
+  url: httpUrlSchema,
 });
 
-const secureExternalUrlSchema = z
-  .string()
-  .url()
-  .max(2048)
-  .refine((value) => /^https:\/\//i.test(value), {
-    message: 'Use a secure HTTPS donation website',
-  });
+const secureExternalUrlSchema = httpsUrlSchema;
 
 export const donationPageSchema = z.object({
-  title: z.string().trim().max(120).default(''),
-  description: z.string().trim().max(5000).default(''),
+  title: plainText.trim().max(120).default(''),
+  description: plainText.trim().max(5000).default(''),
   images: z.array(donationImageSchema).max(10).default([]),
   method: donationMethodSchema.default('external'),
   externalUrl: z.union([z.literal(''), secureExternalUrlSchema]).default(''),
@@ -67,7 +62,7 @@ export const DEFAULT_DONATION_PAGE: DonationPage = Object.freeze({
 });
 
 export const appSettingsSchema = z.object({
-  logoUrl: z.union([z.literal(''), z.string().url().max(2048)]).default(''),
+  logoUrl: z.union([z.literal(''), httpUrlSchema]).default(''),
   primaryColor: hexColorSchema.default('#18314F'),
   accentColor: hexColorSchema.default('#B58A16'),
   sightingsAnonymous: z.boolean().default(true),

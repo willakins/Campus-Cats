@@ -155,3 +155,40 @@ it.each(['put', 'remove', 'commit'] as const)(
     await Promise.all([beforeRead, duringRead]);
   },
 );
+
+
+it('routes new surveys through server validation and leaves survey closing to rules', async () => {
+  const create = jest.fn().mockResolvedValue(undefined);
+  const store = new FirebaseDocumentStore(db, () => 'officer', { createSurvey: create, saveTags: jest.fn(), createContest: jest.fn() });
+  const data = { status: 'open', title: 'Survey', questions: [] };
+  await store.put('clubs/a/community-surveys', 'survey', data);
+  expect(create).toHaveBeenCalledWith('a', 'survey', data);
+  expect(setDoc).not.toHaveBeenCalled();
+  await store.put('clubs/a/community-surveys', 'survey', { status: 'closed' });
+  expect(setDoc).toHaveBeenCalledTimes(1);
+  await expect(new FirebaseDocumentStore(db).put('clubs/a/community-surveys', 'survey', data)).rejects.toThrow('validated server writer');
+});
+
+
+it('routes tag configuration and related assignment writes in a single server call', async () => {
+  const saveTags = jest.fn().mockResolvedValue(undefined);
+  const store = new FirebaseDocumentStore(db, () => 'officer', { createSurvey: jest.fn(), saveTags, createContest: jest.fn() });
+  const settings = { operation: 'put' as const, collection: 'clubs/a/catalog-tag-settings', id: 'catalog', data: { tags: [] } };
+  const assignment = { operation: 'put' as const, collection: 'clubs/a/catalog-tag-assignments', id: 'cat', data: { tagIds: [] } };
+  await store.put(settings.collection, settings.id, settings.data);
+  expect(saveTags).toHaveBeenCalledWith('a', []);
+  await store.commit([settings, assignment]);
+  expect(saveTags).toHaveBeenLastCalledWith('a', [], [assignment]);
+  expect(writeBatch).not.toHaveBeenCalled();
+  await expect(new FirebaseDocumentStore(db).commit([settings])).rejects.toThrow('validated server writer');
+});
+
+
+it('uses server validation for contest creation', async () => {
+  const createContest = jest.fn().mockResolvedValue(undefined);
+  const store = new FirebaseDocumentStore(db, () => 'officer', { createSurvey: jest.fn(), saveTags: jest.fn(), createContest });
+  const contest = { kind: 'contest', options: [] };
+  await store.put('clubs/a/community-votes', 'contest', contest);
+  expect(createContest).toHaveBeenCalledWith('a', 'contest', contest);
+  expect(setDoc).not.toHaveBeenCalled();
+});

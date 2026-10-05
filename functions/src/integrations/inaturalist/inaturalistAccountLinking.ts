@@ -140,6 +140,7 @@ export async function handleInaturalistAccountCallback(
   let oauthToken: string | undefined;
   let revocationAttempted = false;
   try {
+    await requireAttemptMember(attempt, dependencies);
     requireProviderConfiguration(dependencies);
     oauthToken = await dependencies.oauth.exchangeCode(
       query.code,
@@ -151,6 +152,7 @@ export async function handleInaturalistAccountCallback(
     );
     revocationAttempted = true;
     await dependencies.oauth.revoke(oauthToken);
+    await requireAttemptMember(attempt, dependencies);
     await dependencies.repository.completeAttempt(
       stateHash,
       identity,
@@ -175,6 +177,16 @@ export async function handleInaturalistAccountCallback(
     return {
       redirectUrl: callbackRedirect(dependencies, 'error', attempt.attemptId),
     };
+  }
+}
+
+async function requireAttemptMember(
+  attempt: InaturalistLinkAttempt,
+  dependencies: InaturalistAccountLinkingDependencies,
+): Promise<void> {
+  const member = await requireActiveUser(attempt.firebaseUid, dependencies);
+  if (member.clubId !== attempt.clubId || attempt.expiresAt <= dependencies.now()) {
+    throw new HandlerError('permission-denied', 'Link attempt is no longer valid');
   }
 }
 

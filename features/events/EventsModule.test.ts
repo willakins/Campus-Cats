@@ -94,7 +94,7 @@ describe('EventsModule', () => {
       value: {
         id: 'event-1',
         title: draft.title,
-        imageUrl: 'memory://community-events/event-1/profile-image-1.jpg',
+        imageUrl: 'https://media.example.test/community-events/event-1/profile-image-1.jpg',
         createdBy: { id: officer.id },
       },
     });

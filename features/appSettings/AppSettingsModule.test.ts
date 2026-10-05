@@ -115,7 +115,7 @@ describe('AppSettingsModule', () => {
       module.save(president, DEFAULT_APP_SETTINGS, 'file://new-logo.png'),
     ).resolves.toMatchObject({
       ok: true,
-      value: { logoUrl: 'memory://app-branding/profile-logo-1.jpg' },
+      value: { logoUrl: 'https://media.example.test/app-branding/profile-logo-1.jpg' },
     });
     expect(media.ids()).toEqual(['app-branding/profile-logo-1.jpg']);
   });
@@ -216,7 +216,7 @@ describe('AppSettingsModule', () => {
           images: [
             {
               id: 'donations/logo-1.jpg',
-              url: 'memory://donations/logo-1.jpg',
+              url: 'https://media.example.test/donations/logo-1.jpg',
             },
           ],
         },

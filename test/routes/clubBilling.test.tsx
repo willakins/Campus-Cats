@@ -1,13 +1,21 @@
 import React from 'react';
 import { Linking, Platform } from 'react-native';
 
-import { render, screen, userEvent, waitFor } from '@testing-library/react-native';
+import {
+  act,
+  render,
+  screen,
+  userEvent,
+  waitFor,
+} from '@testing-library/react-native';
 
 import ClubBilling from '../../app/(app)/settings/club-billing';
 import { Role } from '../../core/domain';
 import { AppThemeProvider } from '../../theme';
 
 let mockRole: Role = Role.President;
+let mockUserId = 'president-1';
+let mockClubId = 'campus-cats';
 let mockAccess: Record<string, unknown>;
 const mockBack = jest.fn();
 const mockSummary = jest.fn();
@@ -26,10 +34,10 @@ jest.mock('expo-router', () => {
 jest.mock('../../presentation/providers', () => ({
   useAuth: () => ({
     user: {
-      id: 'president-1',
+      id: mockUserId,
       email: 'president@example.com',
       role: mockRole,
-      clubId: 'campus-cats',
+      clubId: mockClubId,
       platformAdmin: false,
     },
   }),
@@ -104,8 +112,13 @@ describe('club billing route', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    mockSummary.mockReset();
+    mockPay.mockReset();
+    mockSetCollectionMethod.mockReset();
     process.env.EXPO_PUBLIC_APP_ENV = 'production';
     mockRole = Role.President;
+    mockUserId = 'president-1';
+    mockClubId = 'campus-cats';
     mockAccess = {
       clubId: 'campus-cats',
       clubName: 'Campus Cats',
@@ -159,6 +172,65 @@ describe('club billing route', () => {
     expect(screen.getByLabelText('Billing contact email')).toBeOnTheScreen();
   });
 
+  it('clears the previous club invoice when the same account changes clubs', async () => {
+    await renderRoute();
+    expect(await screen.findByText('CC-001')).toBeOnTheScreen();
+    mockClubId = 'another-club';
+    mockSummary.mockReturnValueOnce(new Promise(() => undefined));
+    await screen.rerender(
+      <AppThemeProvider colorScheme="light">
+        <ClubBilling />
+      </AppThemeProvider>,
+    );
+    expect(screen.queryByText('CC-001')).toBeNull();
+    expect(mockSummary).toHaveBeenCalledTimes(2);
+  });
+
+  it('does not open a payment link that arrives after the account changes', async () => {
+    let finish!: (value: unknown) => void;
+    mockPay.mockReturnValueOnce(
+      new Promise((resolve) => {
+        finish = resolve;
+      }),
+    );
+    await renderRoute();
+    await userEvent
+      .setup()
+      .press(
+        await screen.findByRole('button', { name: 'Pay Outstanding Invoice' }),
+      );
+    mockUserId = 'president-2';
+    mockClubId = 'another-club';
+    mockSummary.mockResolvedValueOnce({
+      ok: true,
+      warnings: [],
+      value: billingSummary({ clubId: mockClubId, invoices: [] }),
+    });
+    await screen.rerender(
+      <AppThemeProvider colorScheme="light">
+        <ClubBilling />
+      </AppThemeProvider>,
+    );
+    await act(async () => {
+      finish({
+        ok: true,
+        warnings: [],
+        value: { url: 'https://invoice.stripe.com/i/previous-club' },
+      });
+    });
+    expect(Linking.openURL).not.toHaveBeenCalled();
+  });
+
+  it('does not render a billing response for a different club', async () => {
+    mockSummary.mockResolvedValueOnce({
+      ok: true,
+      warnings: [],
+      value: billingSummary({ clubId: 'another-club' }),
+    });
+    await renderRoute();
+    expect(screen.queryByText('CC-001')).toBeNull();
+  });
+
   it('opens Stripe-hosted invoice payment from the accessible action', async () => {
     const user = userEvent.setup();
     await renderRoute();
@@ -191,7 +263,9 @@ describe('club billing route', () => {
 
     expect(await screen.findByText('Free trial')).toBeOnTheScreen();
     expect(
-      screen.getByText(/Your free trial ends .* Paid usage begins automatically afterward/),
+      screen.getByText(
+        /Your free trial ends .* Paid usage begins automatically afterward/,
+      ),
     ).toBeOnTheScreen();
     expect(
       screen.queryByRole('button', { name: 'Switch to Manual Invoices' }),
@@ -237,7 +311,9 @@ describe('club billing route', () => {
 
     expect(screen.getByText('Access restricted')).toBeOnTheScreen();
     expect(screen.getByText('👑')).toBeOnTheScreen();
-    expect(screen.queryByText('Billing disabled in development')).not.toBeOnTheScreen();
+    expect(
+      screen.queryByText('Billing disabled in development'),
+    ).not.toBeOnTheScreen();
     expect(mockSummary).not.toHaveBeenCalled();
   });
 

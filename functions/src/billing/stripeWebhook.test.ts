@@ -50,4 +50,37 @@ describe('Stripe webhook signature boundary', () => {
     );
     assert.equal(invoked, false);
   });
+
+  it('rejects modified payloads and expired signatures without invoking billing', async () => {
+    const stripe = new Stripe('sk_test_not_used');
+    for (const input of [
+      {
+        payload: payload.replace('evt_test_signed', 'evt_replaced'),
+        signature: Stripe.webhooks.generateTestHeaderString({
+          payload,
+          secret,
+        }),
+      },
+      {
+        payload,
+        signature: Stripe.webhooks.generateTestHeaderString({
+          payload,
+          secret,
+          timestamp: Math.floor(Date.now() / 1000) - 600,
+        }),
+      },
+    ]) {
+      let invoked = false;
+      await assert.rejects(() =>
+        handleSignedStripeWebhook(
+          { ...input, secret },
+          stripe.webhooks,
+          async () => {
+            invoked = true;
+          },
+        ),
+      );
+      assert.equal(invoked, false);
+    }
+  });
 });

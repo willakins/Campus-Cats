@@ -61,6 +61,8 @@ const ref = (storage: unknown, path: string) =>
     storage as FirebaseStorage,
     path.startsWith('clubs/') ? path : `clubs/${CLUB_ID}/${path}`,
   );
+const validSightingData = () => ({ name: 'Goldie', info: '', fed: false, health: true,
+  spotted_time: Timestamp.now(), location: { latitude: 33, longitude: -84 }, timeofDay: 'Morning' });
 const userSnapshot = (id: string, email: string, role: number) => ({
   id,
   email,
@@ -237,9 +239,9 @@ describe('Firebase authorization matrix', () => {
     await environment.cleanup();
   });
 
-  it('allows anonymous users only to submit validated whitelist applications', async () => {
+  it('requires the callable for anonymous whitelist applications', async () => {
     const firestore = environment.unauthenticatedContext().firestore();
-    await assertSucceeds(
+    await assertFails(
       setDoc(doc(firestore, 'whitelist', 'application-1'), {
         name: 'Alex Applicant',
         graduationYear: '',
@@ -361,6 +363,21 @@ describe('Firebase authorization matrix', () => {
     await assertFails(getDoc(firebaseDoc(member, 'billing-accounts', CLUB_ID)));
   });
 
+  it.each(['member-1', 'admin-1', 'super-1', 'president-1', 'developer-1'])('denies %s direct access to private Stripe records and billing identity changes', async (uid) => {
+    const db = environment.authenticatedContext(uid).firestore();
+    for (const name of ['billing-accounts', 'stripe-events', 'billing-invoice-reconciliations', 'billing-usage-events']) {
+      await environment.withSecurityRulesDisabled(async (admin) => {
+        await setDoc(firebaseDoc(admin.firestore(), name, CLUB_ID), { customerId: 'cus_private', hostedInvoiceUrl: 'https://invoice.stripe.com/i/private' });
+      });
+      await assertFails(getDoc(firebaseDoc(db, name, CLUB_ID)));
+      await assertFails(getDoc(firebaseDoc(db, name, 'other-club')));
+      await assertFails(getDocs(firebaseCollection(db, name)));
+      await assertFails(setDoc(firebaseDoc(db, name, CLUB_ID), { customerId: 'cus_other' }));
+    }
+    await assertFails(updateDoc(firebaseDoc(db, 'users', uid), { clubId: 'other-club' }));
+    await assertFails(updateDoc(firebaseDoc(db, 'users', uid), { role: 4, customerId: 'cus_other' }));
+  });
+
   it('allows members to read content and mutate only their own sightings', async () => {
     const member = environment
       .authenticatedContext('member-1', {
@@ -426,7 +443,7 @@ describe('Firebase authorization matrix', () => {
       ),
     );
     const createSighting = writeBatch(member);
-    createSighting.set(sighting, { name: 'Goldie' });
+    createSighting.set(sighting, validSightingData());
     createSighting.set(
       doc(member, 'content-contributors', 'sighting__sighting-1'),
       {
@@ -713,9 +730,7 @@ describe('Firebase authorization matrix', () => {
       'sighting__private-sighting',
     );
     const batch = writeBatch(member);
-    batch.set(doc(member, 'cat-sightings', 'private-sighting'), {
-      name: 'Goldie',
-    });
+    batch.set(doc(member, 'cat-sightings', 'private-sighting'), validSightingData());
     batch.set(contributor, {
       kind: 'sighting',
       contentId: 'private-sighting',
@@ -1211,7 +1226,7 @@ describe('Firebase authorization matrix', () => {
     const settings = doc(admin, 'catalog-tag-settings', 'catalog');
     const assignment = doc(admin, 'catalog-tag-assignments', 'cat-1');
 
-    await assertSucceeds(
+    await assertFails(
       setDoc(settings, {
         tags: [
           { id: 'feral', label: 'Feral' },
@@ -1219,6 +1234,9 @@ describe('Firebase authorization matrix', () => {
         ],
       }),
     );
+    await environment.withSecurityRulesDisabled(async (context) => {
+      await setDoc(doc(context.firestore(), 'catalog-tag-settings', 'catalog'), { tags: [{ id: 'feral', label: 'Feral' }] });
+    });
     await assertSucceeds(setDoc(assignment, { tagIds: ['feral', 'medical'] }));
 
     await assertSucceeds(
@@ -1616,9 +1634,12 @@ describe('Firebase authorization matrix', () => {
     await assertFails(
       setDoc(doc(member, 'community-surveys', 'anonymous'), anonymousSurvey),
     );
-    await assertSucceeds(
+    await assertFails(
       setDoc(doc(admin, 'community-surveys', 'anonymous'), anonymousSurvey),
     );
+    await environment.withSecurityRulesDisabled(async (context) => {
+      await setDoc(doc(context.firestore(), 'community-surveys', 'anonymous'), anonymousSurvey);
+    });
     await assertFails(
       setDoc(doc(admin, 'community-surveys', 'invalid-survey'), {
         ...anonymousSurvey,
@@ -1692,12 +1713,11 @@ describe('Firebase authorization matrix', () => {
     );
     await assertFails(duplicate.commit());
 
-    await assertSucceeds(
-      setDoc(doc(admin, 'community-surveys', 'named'), {
-        ...anonymousSurvey,
-        anonymous: false,
-      }),
-    );
+    await environment.withSecurityRulesDisabled(async (context) => {
+      await setDoc(doc(context.firestore(), 'community-surveys', 'named'), {
+        ...anonymousSurvey, anonymous: false,
+      });
+    });
     const directNamed = writeBatch(other);
     directNamed.set(doc(other, 'survey-responses', 'response-3'), {
       surveyId: 'named',
@@ -1776,9 +1796,12 @@ describe('Firebase authorization matrix', () => {
     await assertFails(
       setDoc(doc(member, 'community-votes', 'contest'), contest),
     );
-    await assertSucceeds(
+    await assertFails(
       setDoc(doc(officer, 'community-votes', 'contest'), contest),
     );
+    await environment.withSecurityRulesDisabled(async (context) => {
+      await setDoc(doc(context.firestore(), 'community-votes', 'contest'), contest);
+    });
     await assertSucceeds(getDoc(doc(member, 'community-votes', 'contest')));
 
     const nominationEndsAt = Timestamp.fromDate(

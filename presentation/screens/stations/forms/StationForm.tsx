@@ -135,7 +135,7 @@ const StationForm: React.FC<StationFormProps> = ({
           }
         >
           <FormTextInput
-            label="Station name"
+            label="Station name" maxLength={120}
             required
             error={errors.name}
             value={formData.name}
@@ -224,7 +224,7 @@ const StationForm: React.FC<StationFormProps> = ({
       </FormSection>
       <FormSection title="Notes">
         <FormTextInput
-          label="Known cats"
+          label="Known cats" maxLength={1000}
           helper="Optional—list cats that frequent this station."
           value={formData.knownCats}
           placeholder="Common cats seen here"

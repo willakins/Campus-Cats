@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 
-import { HandlerError, ManagedUser } from '../shared/handlers';
+import { HandlerError, ManagedUser, stringValue, validDocumentId } from '../shared/handlers';
 
 export interface SurveyAnswerInput {
   readonly questionId: string;
@@ -63,8 +63,10 @@ function parseAnswers(value: unknown): readonly SurveyAnswerInput[] {
       throw new HandlerError('invalid-argument', 'Survey answers are invalid');
     }
     return {
-      questionId: answer.questionId,
-      value: answer.value as string | readonly string[],
+      questionId: validDocumentId(answer.questionId, 'question ID'),
+      value: typeof answer.value === 'string'
+        ? stringValue(answer.value, 'answer')
+        : (answer.value as string[]).map((id) => validDocumentId(id, 'option ID')),
     };
   });
 }

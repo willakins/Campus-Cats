@@ -1,4 +1,4 @@
-import { HandlerError, ManagedUser, PushMessage } from '../shared/handlers';
+import { HandlerError, ManagedUser, PushMessage, stringValue } from '../shared/handlers';
 
 export interface ChatMessageRecord {
   readonly id: string;
@@ -321,7 +321,7 @@ const requiredString = (value: unknown, label: string): string => {
   if (typeof value !== 'string' || !value.trim()) {
     throw new HandlerError('invalid-argument', `${label} is required`);
   }
-  return value.trim();
+  return stringValue(value, label, 1000).trim();
 };
 
 const validId = (value: unknown, label: string): string => {
