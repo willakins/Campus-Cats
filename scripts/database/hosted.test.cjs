@@ -1,5 +1,6 @@
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
+const { randomUUID } = require('node:crypto');
 const {
   connectionEnvironment,
   schemaSql,
@@ -9,19 +10,30 @@ const {
 const { fixture } = require('./migration-fixture.cjs');
 
 test('connection configuration pins the target project and keeps credentials out of argv', () => {
+  // Synthetic, never provisioned credentials. Include reserved characters to
+  // exercise password encoding without committing a credential-bearing URI.
+  const password = `${randomUUID()}$@:`;
+  const databaseUrl = (host, username) => {
+    const url = new URL(`postgresql://${host}:5432/postgres?sslmode=require`);
+    url.username = username;
+    url.password = password;
+    return url.toString();
+  };
   const env = {
     SUPABASE_URL: 'https://example.supabase.co',
     SUPABASE_SECRET_KEY: 'sb_secret_test',
-    SUPABASE_DB_URL:
-      'postgresql://postgres.example:a%24b@aws-0-us-east-1.pooler.supabase.com:5432/postgres?sslmode=require',
+    SUPABASE_DB_URL: databaseUrl(
+      'aws-0-us-east-1.pooler.supabase.com',
+      'postgres.example',
+    ),
     SUPABASE_FIREBASE_PROJECT_ID: 'demo-test',
   };
-  assert.equal(connectionEnvironment(env, 'example').PGPASSWORD, 'a$b');
+  assert.equal(connectionEnvironment(env, 'example').PGPASSWORD, password);
   const direct = {
     ...env,
-    SUPABASE_DB_URL:
-      'postgresql://postgres:a%24b@db.example.supabase.co:5432/postgres?sslmode=require',
+    SUPABASE_DB_URL: databaseUrl('db.example.supabase.co', 'postgres'),
   };
+  assert.equal(connectionEnvironment(direct, 'example').PGPASSWORD, password);
   assert.equal(
     connectionEnvironment(direct, 'example').PGHOST,
     'db.example.supabase.co',
