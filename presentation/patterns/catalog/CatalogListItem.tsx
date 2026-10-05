@@ -20,6 +20,7 @@ import {
 import { ProgressiveImage } from '@/presentation/ui/ProgressiveImage';
 
 interface CatalogListItemMetrics {
+  readonly cover?: DisplayMediaAsset | null;
   readonly sightingCount?: number;
   readonly heartCount?: number;
   readonly firstSighting?: Date;
@@ -35,6 +36,7 @@ interface CatalogListItemMetrics {
 type CatalogListItemProps = CatalogRecord & CatalogListItemMetrics;
 
 export const CatalogListItem = React.memo(function CatalogListItem({
+  cover,
   sightingCount = 0,
   heartCount = 0,
   firstSighting,
@@ -55,7 +57,8 @@ export const CatalogListItem = React.memo(function CatalogListItem({
     ({ id }) => id === 'feral' || id === 'adopted',
   );
   const recordedStatus = entry.cat.currentStatus?.trim().toLowerCase();
-  const status = assignedStatus ??
+  const status =
+    assignedStatus ??
     (recordedStatus === 'feral' || recordedStatus === 'adopted'
       ? {
           id: recordedStatus,
@@ -64,6 +67,11 @@ export const CatalogListItem = React.memo(function CatalogListItem({
       : undefined);
 
   useEffect(() => {
+    if (cover !== undefined) {
+      setProfile(cover ?? undefined);
+      setMediaLoading(false);
+      return;
+    }
     let active = true;
     setMediaLoading(true);
     void appModules.catalog.media(entry.id).then((result) => {
@@ -75,19 +83,21 @@ export const CatalogListItem = React.memo(function CatalogListItem({
     return () => {
       active = false;
     };
-  }, [entry.id]);
+  }, [entry.id, cover]);
 
   return (
     <Card padded={false} style={{ flex: 1 }}>
       <Pressable
         accessibilityRole="button"
         accessibilityLabel={accessibilityLabel ?? `View cat: ${entry.cat.name}`}
-        accessibilityState={
-          selected === undefined ? undefined : { selected }
-        }
+        accessibilityState={selected === undefined ? undefined : { selected }}
         onPress={
-          onPress ?? (() =>
-            router.push({ pathname: '/catalog/[id]', params: { id: entry.id } }))
+          onPress ??
+          (() =>
+            router.push({
+              pathname: '/catalog/[id]',
+              params: { id: entry.id },
+            }))
         }
         style={({ pressed }) => ({ flex: 1, opacity: pressed ? 0.86 : 1 })}
       >
@@ -117,7 +127,9 @@ export const CatalogListItem = React.memo(function CatalogListItem({
             }}
           >
             <Ionicons name="paw-outline" size={36} color={theme.colors.teal} />
-            <AppText variant="caption" color="muted">No profile photo</AppText>
+            <AppText variant="caption" color="muted">
+              No profile photo
+            </AppText>
           </View>
         )}
         <CardContent
@@ -125,10 +137,7 @@ export const CatalogListItem = React.memo(function CatalogListItem({
         >
           <ListItemHeader title={entry.cat.name} />
           {status ? (
-            <StatusPill
-              label={status.label}
-              tone={catalogTagTone(status.id)}
-            />
+            <StatusPill label={status.label} tone={catalogTagTone(status.id)} />
           ) : null}
           <View
             accessibilityLabel={`${entry.cat.name} catalog metrics`}
@@ -141,7 +150,13 @@ export const CatalogListItem = React.memo(function CatalogListItem({
               icon="eye-outline"
               label={`${sightingCount} ${sightingCount === 1 ? 'sighting' : 'sightings'}`}
             />
-            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: theme.spacing.sm }}>
+            <View
+              style={{
+                flexDirection: 'row',
+                flexWrap: 'wrap',
+                gap: theme.spacing.sm,
+              }}
+            >
               <Metric
                 icon="heart"
                 label={`${heartCount} ${heartCount === 1 ? 'heart' : 'hearts'}`}
@@ -153,11 +168,14 @@ export const CatalogListItem = React.memo(function CatalogListItem({
                     month: 'short',
                     day: 'numeric',
                   })}
-                  accessibilityLabel={`First sighting: ${firstSighting.toLocaleDateString(undefined, {
-                    year: 'numeric',
-                    month: 'long',
-                    day: 'numeric',
-                  })}`}
+                  accessibilityLabel={`First sighting: ${firstSighting.toLocaleDateString(
+                    undefined,
+                    {
+                      year: 'numeric',
+                      month: 'long',
+                      day: 'numeric',
+                    },
+                  )}`}
                 />
               ) : null}
             </View>
@@ -211,9 +229,19 @@ const Metric = ({
 }) => {
   const theme = useAppTheme();
   return (
-    <View accessible={!!accessibilityLabel} accessibilityLabel={accessibilityLabel} style={{ flexDirection: 'row', alignItems: 'center', gap: theme.spacing.xxs }}>
+    <View
+      accessible={!!accessibilityLabel}
+      accessibilityLabel={accessibilityLabel}
+      style={{
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: theme.spacing.xxs,
+      }}
+    >
       <Ionicons name={icon} size={15} color={theme.colors.textMuted} />
-      <AppText variant="caption" color="muted">{label}</AppText>
+      <AppText variant="caption" color="muted">
+        {label}
+      </AppText>
     </View>
   );
 };

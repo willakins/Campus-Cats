@@ -50,10 +50,12 @@ describe('Firebase iNaturalist reader adapter', () => {
         setDoc(doc(firestore, 'clubs', 'campus-cats', 'inaturalist-observations', '1001'), {
           visible: true,
           displayName: 'Goldie',
+          observer: { id: 42 },
         }),
         setDoc(doc(firestore, 'clubs', 'campus-cats', 'inaturalist-observations', '1002'), {
           visible: false,
           displayName: 'Hidden cat',
+          observer: { id: 42 },
         }),
         setDoc(doc(firestore, 'clubs', 'campus-cats', 'inaturalist-guide-profiles', '2001'), {
           visible: true,

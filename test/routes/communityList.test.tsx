@@ -151,6 +151,36 @@ describe('community route', () => {
     mockSettings = DEFAULT_APP_SETTINGS;
   });
 
+  it('shows alerts while voting and participation reads remain pending', async () => {
+    mockSection = 'alerts';
+    mockList.mockResolvedValue({
+      ok: true,
+      value: [{ ...alert, read: false }],
+      warnings: [],
+    });
+    let resolveVotes!: (value: unknown) => void;
+    let resolveAttention!: (value: unknown) => void;
+    mockVoteList.mockReturnValue(
+      new Promise((yes) => {
+        resolveVotes = yes;
+      }),
+    );
+    mockSurveyAttention.mockReturnValue(
+      new Promise((yes) => {
+        resolveAttention = yes;
+      }),
+    );
+    await renderAlerts();
+    await waitFor(() =>
+      expect(screen.getByText(alert.title)).toBeOnTheScreen(),
+    );
+    expect(mockVoteList).toHaveBeenCalled();
+    expect(mockSurveyAttention).toHaveBeenCalled();
+    resolveVotes({ ok: true, value: [], warnings: [] });
+    resolveAttention({ ok: true, value: false, warnings: [] });
+    await waitFor(() => expect(mockVoteAttention).toHaveBeenCalled());
+  });
+
   it('renders an empty result and limits creation to administrators', async () => {
     mockList.mockResolvedValue({ ok: true, value: [], warnings: [] });
     const { rerender } = await renderAlerts();
