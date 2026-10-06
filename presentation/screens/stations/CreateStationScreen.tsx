@@ -1,3 +1,5 @@
+import { localMedia } from '@/core/media';
+import { useRecordFields } from '@/presentation/customFields/CustomFields';
 import React, { useEffect, useRef, useState } from 'react';
 
 import { useRouter } from 'expo-router';
@@ -18,6 +20,7 @@ import {
 import { useAuth } from '@/presentation/providers';
 
 const CreateStation = () => {
+  const recordFields = useRecordFields('station');
   const router = useRouter();
   const { user } = useAuth();
   const [busy, setBusy] = useState(false);
@@ -72,7 +75,7 @@ const CreateStation = () => {
     }
     setValidationErrors({});
     setBusy(true);
-    const result = await appModules.stations.create(parseUser(user), { ...formData, photos });
+    const result = await recordFields.saveRecord(() => appModules.stations.create(parseUser(user), { ...formData, photos }), (recordId) => appModules.stations.update(parseUser(user), recordId, { ...formData, profile: localMedia(photos[0]), gallery: photos.slice(1).map(localMedia) }));
     setBusy(false);
     if (!result.ok) {
       setError(result.error.message);
@@ -108,6 +111,7 @@ const CreateStation = () => {
           requiredFieldOffsets.current[field] = { section, y };
         }}
       />
+      {recordFields.content}
     </FormScreen>
   );
 };

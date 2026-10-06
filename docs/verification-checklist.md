@@ -24,6 +24,22 @@ ready.
 - [x] The opt-in read-only endpoint contract validates all 62 current guide profiles
       and the first 200-observation v2 page.
 
+## Browser layout verification — October 6, 2026
+
+The actual screen components were rendered in an isolated browser harness with
+fictional club data. Seventeen primary, detail, settings, and create/edit screens
+were checked at tablet portrait and landscape widths (768, 820, 1024, 1180, and
+1366 points), plus a 390-point phone width. Dark appearance and simulated 200-percent
+text scaling were checked separately, including enlarged form inputs and Community
+sections. Field creation, archiving, edit/save/detail rendering, and map pagination,
+age filtering, panning, and navigation were exercised. No horizontal overflow or
+runtime errors remained in the final checked cases. The harness uses an offline map
+fixture; it does not validate live map tiles or native providers.
+
+These browser checks do not complete the physical-device checks below. Native
+keyboard behavior, OS text scaling, safe-area differences, and real map-provider
+behavior still require iOS/Android tablet hardware or simulators.
+
 ## Native and manual — required before ready for review
 
 - [ ] Verify automatic light and dark appearance on iOS, Android, and web; confirm no

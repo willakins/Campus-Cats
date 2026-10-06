@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useMemo, useRef, useState } from 'react';
 import { View } from 'react-native';
 
 import { useFocusEffect, useRouter } from 'expo-router';
@@ -6,6 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { SightingMapView } from '@/presentation/screens/map/components/SightingMapView';
 import {
+  Button,
   FeedbackBanner,
   FloatingActionButton,
   GlassSurface,
@@ -17,7 +18,7 @@ import { createCampusOverviewViewport } from '@/presentation/maps/mapViewport';
 import { floatingTabBarContentInset } from '@/presentation/navigation/floatingTabBar';
 import { appModules } from '@/composition/appModules';
 import { SightingRecord, SystemClock } from '@/core/domain';
-import { filterSightingsByAge } from '@/features/sightings';
+import { MapBounds } from '@/core/ports';
 import { useAuth } from '@/presentation/providers';
 import { useAppTheme } from '@/theme';
 
@@ -32,35 +33,106 @@ const HomeScreen = () => {
     'all',
   );
   const [pins, setPins] = useState<readonly SightingRecord[]>([]);
+  const [bounds, setBounds] = useState<MapBounds>({
+    south: 33.746077,
+    north: 33.806077,
+    west: -84.426199,
+    east: -84.366199,
+  });
+  const [cursor, setCursor] = useState<string>();
+  const generation = useRef(0);
+  const pending = useRef(false);
+  const [referenceTime, setReferenceTime] = useState(() => clock.now());
+  useFocusEffect(
+    useCallback(() => {
+      setReferenceTime(clock.now());
+    }, []),
+  );
+  const since = useMemo(
+    () =>
+      filter === 'all'
+        ? undefined
+        : new Date(referenceTime.getTime() - Number(filter) * 86400000),
+    [filter, referenceTime],
+  );
+  const onBoundsChange = useCallback((next: MapBounds) => {
+    setBounds((previous) =>
+      JSON.stringify(previous) === JSON.stringify(next) ? previous : next,
+    );
+  }, []);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string>();
+  const [warning, setWarning] = useState<string>();
 
   useFocusEffect(
     useCallback(() => {
+      const current = ++generation.current;
       let active = true;
+      pending.current = true;
       setLoading(true);
+      setPins([]);
+      setCursor(undefined);
       setError(undefined);
-      void appModules.sightings.list(currentUser).then((result) => {
-        if (!active) return;
-        if (result.ok) {
-          setPins(result.value);
-        } else {
-          setError(result.error.message);
-        }
-        setLoading(false);
-      });
+      setWarning(undefined);
+      // Coalesce region changes while panning instead of querying every movement.
+      const timer = setTimeout(() => {
+        void appModules.sightingMap.page({ bounds, since }).then((result) => {
+          if (!active || current !== generation.current) return;
+          if (result.ok) {
+            setPins(result.value.sightings);
+            setCursor(result.value.nextCursor);
+            setWarning(
+              result.warnings.map(({ message }) => message).join(' ') ||
+                undefined,
+            );
+          } else setError(result.error.message);
+          pending.current = false;
+          setLoading(false);
+        });
+      }, 250);
       return () => {
         active = false;
+        clearTimeout(timer);
+        ++generation.current;
       };
-    }, [currentUser?.id, currentUser?.role]),
+    }, [
+      currentUser?.id,
+      currentUser?.role,
+      currentUser?.clubId,
+      bounds,
+      since,
+    ]),
   );
 
-  const visiblePins = filterSightingsByAge(
-    pins,
-    filter === 'all' ? undefined : Number(filter),
-    clock,
-  );
-  const mappablePins = visiblePins.filter(({ location }) => location !== null);
+  const loadMore = async () => {
+    if (pending.current) return;
+    pending.current = true;
+    const current = generation.current;
+    setLoading(true);
+    setError(undefined);
+    setWarning(undefined);
+    const result = await appModules.sightingMap.page({ bounds, since, cursor });
+    if (current !== generation.current) return;
+    if (result.ok) {
+      setPins((previous) =>
+        Array.from(
+          new Map(
+            [...previous, ...result.value.sightings].map((item) => [
+              item.id,
+              item,
+            ]),
+          ).values(),
+        ),
+      );
+      setCursor(result.value.nextCursor);
+      setWarning(
+        result.warnings.map(({ message }) => message).join(' ') || undefined,
+      );
+    } else setError(result.error.message);
+    pending.current = false;
+    setLoading(false);
+  };
+  const mappablePins = pins.filter(({ location }) => location !== null);
 
   return (
     <Screen
@@ -84,6 +156,7 @@ const HomeScreen = () => {
           filter={() => true}
           style={{ flex: 1 }}
           appearance={theme.dark ? 'dark' : 'light'}
+          onBoundsChange={onBoundsChange}
           initialViewport={createCampusOverviewViewport()}
           onPerMarkerPress={(pin) =>
             router.push({
@@ -144,13 +217,21 @@ const HomeScreen = () => {
             label={
               loading
                 ? 'Loading sightings'
-                : `${mappablePins.length} ${mappablePins.length === 1 ? 'sighting' : 'sightings'}`
+                : `${mappablePins.length} ${mappablePins.length === 1 ? 'sighting' : 'sightings'} loaded in this area${cursor ? ' · more available' : ''}`
             }
             tone="neutral"
             icon="paw"
             loading={loading}
           />
+          {cursor || error ? (
+            <Button
+              label={error ? 'Retry map loading' : 'Load more sightings'}
+              loading={loading}
+              onPress={() => void loadMore()}
+            />
+          ) : null}
           {error ? <FeedbackBanner message={error} tone="danger" /> : null}
+          {warning ? <FeedbackBanner message={warning} tone="warning" /> : null}
         </View>
       </View>
     </Screen>

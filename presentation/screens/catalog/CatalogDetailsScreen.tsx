@@ -1,3 +1,4 @@
+import { CustomFieldDetails } from '@/presentation/customFields/CustomFields';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
@@ -213,6 +214,7 @@ const ViewEntry = () => {
                 : undefined
             }
           />
+          <CustomFieldDetails kind="catalog" id={entry.id} />
           <CommentsSection
             actor={actor}
             target={{ kind: 'catalog', id: entry.id }}

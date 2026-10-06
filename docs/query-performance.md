@@ -1,6 +1,6 @@
 # Query and page-loading performance
 
-Updated October 5, 2026. This records the current performance changes, measured SQL diagnostics, release requirements, and the next work in order of likely impact.
+Updated October 6, 2026. This records the current performance changes, measured SQL diagnostics, release requirements, and the next work in order of likely impact.
 
 The accepted storage direction is documented in [data-storage-and-costs.md](data-storage-and-costs.md). **Live application traffic still uses Firebase; PostgreSQL is a staged relational copy.** These changes improve existing Firebase paths without enabling an incomplete SQL cutover.
 
@@ -18,7 +18,27 @@ The accepted storage direction is documented in [data-storage-and-costs.md](data
 
 These are request-structure improvements, not a measured promise of a particular percentage reduction in page-load time. Sharing SDK calls does not by itself establish the exact reduction in billable reads; Firebase may perform its own caching and rule checks.
 
-The profile query still loads all of the selected member's observations. It is narrower, but not yet paginated. The main map and Firebase catalog metrics still use broad sighting lists.
+The profile query still loads all of the selected member's observations. It is narrower, but not yet paginated. Firebase catalog metrics still use broad sighting lists. The main map now uses the bounded reader described below.
+
+### Bounded map loading
+
+The main map now queries the visible geographic area and selected age on the server.
+Each local/imported stream loads at most 100 records per page, with a one-record
+lookahead to identify more results. Viewports crossing the antimeridian use two
+longitude intervals per source. Null/private imported coordinates and hidden imports
+are excluded by the query. Local map pins omit contributor identities.
+
+Map movement is debounced for 250 ms. Provider bounds are reported on map readiness,
+panning, and web zoom/resize. Cursors are scoped to account, club, bounds, and date;
+changing those inputs starts a fresh result set and discards old responses. Counts
+explicitly describe loaded sightings in the current area, and **Load more sightings**
+exposes remaining pages. **All** means all ages within that area, not a global total.
+
+The geographic/date composite indexes are checked into `firestore.indexes.json`.
+Queries use latitude, longitude, date, and document ID for stable pagination; imported
+queries also require `visible == true`. This bounds document transfer and avoids the
+previous full-collection map fetch. Index-entry scan costs and production page-load
+latency still need representative measurement; no percentage improvement is claimed.
 
 ### Freshness and privacy
 
@@ -107,7 +127,7 @@ The narrower observer query maps an unavailable index/backend failure to the exi
 | 1        | Capture end-to-end timings for Map, Catalog, Cat Details, Profile and Community                        | Separates auth, network, queries, photos and rendering; establishes which page is actually slow                                                                        | Record navigation-to-first-content and usable-page times, request counts and bytes on cold/warm loads; use enough samples for p50/p95                                          |
 | 2        | Finish the relational gateways/writers, then enable bounded SQL catalog discovery and cover references | Current Firebase catalog discovery still reads catalog, sightings, favorites, tags and assignments; local cards can list Storage and resolve URLs individually         | Verify one bounded discovery response per page and no per-card Storage listing; preserve favorites, privacy, filters and linked local/imported behavior                        |
 | 3        | Connect cat-detail sighting history to the bounded SQL query                                           | Current cat details fetch the entire sightings list and filter it on the client                                                                                        | Count requests/documents as other cats' histories grow; show more pages without dropping history or changing matching behavior                                                 |
-| 4        | Make map reads follow the viewport/date filter with pagination and a deliberate overview strategy      | Current map loads all visible sightings and applies date filtering on the client                                                                                       | Verify viewport coverage, antimeridian behavior, date changes and pagination; preserve an honest “All” overview/count rather than silently truncating                          |
+| 4        | Verify the bounded map reader and index readiness on the deployed backend                              | Implemented: viewport/date queries, independent cursors, and explicit loaded counts                                                                                    | Verify viewport coverage, antimeridian behavior, date changes and pagination; preserve an honest “All” overview/count rather than silently truncating                          |
 | 5        | Debounce remote catalog search and retain useful content during refresh                                | The staged SQL screen's `useDeferredValue` prioritizes rendering but does not impose a network debounce                                                                | Type a search quickly and count requests; reject stale responses and prevent paging with an obsolete search cursor                                                             |
 | 6        | Return summaries/projections needed by list cards instead of full entities and histories               | Catalog counts, covers and first/recent dates should not require downloading underlying collections                                                                    | Compare payload bytes and request counts; update summaries transactionally or through tested outbox handling                                                                   |
 | 7        | Paginate comments, profile histories and community lists; batch author/profile lookup where necessary  | Narrow filters can still return unlimited history and many author reads                                                                                                | Test ties in ordering, deletions between pages, duplicate-free cursors, and continued access to older records                                                                  |
