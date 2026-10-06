@@ -559,6 +559,10 @@ const Settings = () => {
                 }}
               />
             ) : null}
+            {canManageSettings ? (
+              <ListRow title="Additional Fields" subtitle="Configure cat, sighting, and station information" icon="list-outline"
+                onPress={() => { setMoreActionsOpen(false); router.push('/settings/custom-fields' as never); }} />
+            ) : null}
             {canViewInfrastructureCosts ? (
               <>
                 <AppText variant="caption" color="muted">

@@ -1,3 +1,5 @@
+import { localMedia } from '@/core/media';
+import { useRecordFields } from '@/presentation/customFields/CustomFields';
 import React, { useEffect, useRef, useState } from 'react';
 
 import { useRouter } from 'expo-router';
@@ -24,6 +26,7 @@ const timeItems = [
 ];
 
 const SightingCreateScreen = () => {
+  const recordFields = useRecordFields('sighting');
   const router = useRouter();
   const { user } = useAuth();
   const [busy, setBusy] = useState(false);
@@ -119,11 +122,11 @@ const SightingCreateScreen = () => {
     setValidationErrors({});
     setBusy(true);
     const actor = parseUser(user);
-    const result = await appModules.sightings.create(actor, {
+    const result = await recordFields.saveRecord(() => appModules.sightings.create(actor, {
       ...formData,
       timeOfDay: value,
       photos,
-    });
+    }), (recordId) => appModules.sightings.update(actor, recordId, { ...formData, timeOfDay: value, profile: localMedia(photos[0]), gallery: photos.slice(1).map(localMedia) }));
     setBusy(false);
     if (!result.ok) {
       setError(result.error.message);
@@ -172,6 +175,7 @@ const SightingCreateScreen = () => {
         }}
         isCreate
       />
+      {recordFields.content}
     </FormScreen>
   );
 };

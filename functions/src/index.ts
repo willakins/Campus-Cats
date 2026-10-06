@@ -1,3 +1,4 @@
+export { saveCustomFieldDefinitions, saveCustomFieldValues } from './community/customFields';
 import { firebaseClubAccessAllowed } from './shared/firebaseClubAccess';
 import {
   authorizedMemberRequest,
@@ -409,6 +410,7 @@ async function deleteAccountData(user: ManagedUser): Promise<void> {
     const data = contributor.data();
     if (data.kind === 'sighting' && typeof data.contentId === 'string') {
       remove(tenantCollection(clubId, 'cat-sightings').doc(data.contentId));
+      remove(tenantCollection(clubId, 'custom-field-values').doc(`sighting__${data.contentId}`));
       mediaPrefixesToDelete.add(
         `clubs/${clubId}/cat-sightings/${data.contentId}/`,
       );
@@ -430,6 +432,7 @@ async function deleteAccountData(user: ManagedUser): Promise<void> {
   const legacySightings = await query('cat-sightings', 'createdBy.id', userId);
   for (const sighting of legacySightings.docs) {
     remove(sighting.ref);
+    remove(tenantCollection(clubId, 'custom-field-values').doc(`sighting__${sighting.id}`));
     mediaPrefixesToDelete.add(`clubs/${clubId}/cat-sightings/${sighting.id}/`);
     const comments = await query('sighting-comments', 'target.id', sighting.id);
     comments.docs.forEach((comment) => remove(comment.ref));

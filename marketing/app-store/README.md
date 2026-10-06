@@ -1,4 +1,53 @@
-# Campus Cats app previews
+# Campus Cats App Store assets
+
+For reusable listing copy and metadata answers, see [App Store listing answers](../app-store-listing.md).
+
+## Header and search results
+
+The following static creative assets are ready to select in App Store Connect's
+**Header** and **Search Results** panels:
+
+| Placement           | File                                                     | Dimensions         | Format               |
+| ------------------- | -------------------------------------------------------- | ------------------ | -------------------- |
+| Product page header | [header.png](creative-assets/header.png)                 | 3840 × 1646 (21:9) | Opaque 8-bit RGB PNG |
+| Search results      | [search-results.png](creative-assets/search-results.png) | 3840 × 2560 (3:2)  | Opaque 8-bit RGB PNG |
+
+The exports match Apple's [creative asset specifications](https://developer.apple.com/help/app-store-connect/reference/app-information/creative-assets-specifications),
+checked October 6, 2026. They contain no alpha or transparency chunk. They are separate
+from device screenshots and app-preview videos; they are not SVG uploads.
+
+The header extends the existing graduation-cap cat mascot into a campus-garden
+illustration with a feeding station and two companion cats. Its main subjects stay
+near the center, with scenery at the edges to allow cropping. The search asset uses
+the same illustration, Campus Field Guide colors, and the existing illustrative
+Cat-alog interface. Its copy is “Know the cats. Care together.” Fictional UI content
+is labeled as demo data. Neither asset advertises deferred features or includes
+prices, URLs, awards, or other platforms' branding.
+
+Review each composition in App Store Connect's Preview tool before submission;
+Apple can crop placements differently by device and orientation. The assets have
+been generated locally and have not been uploaded or submitted for review.
+
+### Regenerate the creative exports
+
+```bash
+bash marketing/app-store/render-creative-assets.sh
+```
+
+This needs Chromium and ImageMagick. The editable composition is
+[source/creative-assets.html](source/creative-assets.html); it reuses the Cat-alog
+view in `source/preview.html`. The renderer writes the exact upload dimensions and
+exports opaque RGB PNGs. Changes to the shared preview source can change the search
+creative, so inspect regenerated exports.
+
+The new illustration was created with the built-in image-generation tool using the
+app icon as a style/character reference. The original 1915 × 821 image is preserved
+in [source/creative/campus-cats-header-art.png](source/creative/campus-cats-header-art.png)
+and is scaled during the header export. The exact prompt and provenance are recorded
+in [source/creative/header-prompt.txt](source/creative/header-prompt.txt). All final
+marketing typography and placement are rendered from HTML/CSS.
+
+## Portrait app previews
 
 Eight portrait marketing previews are in `../../assets/images/app_previews/`.
 Each PNG is 1320 × 2868 pixels, rendered at 3× from a 440 × 956 layout.
