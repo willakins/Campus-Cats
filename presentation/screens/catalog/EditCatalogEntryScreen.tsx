@@ -1,3 +1,4 @@
+import { useRecordFields } from '@/presentation/customFields/CustomFields';
 import React, { useEffect, useState } from 'react';
 import { Alert } from 'react-native';
 
@@ -86,6 +87,7 @@ const EditEntry = () => {
   const router = useRouter();
   const { queueSuccessToast } = useAppToast();
   const { id } = useLocalSearchParams<{ id?: string }>();
+  const recordFields = useRecordFields('catalog', id);
   const { user } = useAuth();
   const [entry, setEntry] = useState<CatalogRecord>();
   const [storedAssets, setStoredAssets] = useState<readonly StoredMediaAsset[]>(
@@ -301,7 +303,8 @@ const EditEntry = () => {
       gallery: photos.map(selectionFor),
       ...(entry.source === 'campus-cats' ? { tagIds: resolvedTagIds } : {}),
     };
-    const result =
+    const result = await recordFields.saveRecord(async () => {
+      const mainResult =
       entry.source === 'campus-cats'
         ? await appModules.catalog.update(actor, entry.id, localUpdate)
         : entry.linkedLocalCatalogId
@@ -315,6 +318,8 @@ const EditEntry = () => {
               entry.sourceId,
               overrides,
             );
+      return mainResult.ok ? { ok: true as const, value: { id: entry.id }, warnings: mainResult.warnings } : mainResult;
+    });
     if (!result.ok) {
       setBusy(false);
       setError(result.error.message);
@@ -443,6 +448,7 @@ const EditEntry = () => {
         onSectionLayout={validation.onSectionLayout}
         onRequiredFieldLayout={validation.onRequiredFieldLayout}
       />
+      {recordFields.content}
     </FormScreen>
   );
 };

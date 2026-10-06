@@ -1,0 +1,222 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Campus Cats — App Store creative assets</title>
+    <style>
+      * {
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        margin: 0;
+        overflow: hidden;
+        background: #fff9f0;
+      }
+      body {
+        font-family: 'Arial', 'Noto Sans', sans-serif;
+        color: #18314f;
+      }
+      .header {
+        width: 3840px;
+        height: 1646px;
+        position: relative;
+        overflow: hidden;
+      }
+      .header > img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        object-position: center;
+      }
+      .search {
+        width: 3840px;
+        height: 2560px;
+        position: relative;
+        overflow: hidden;
+        background: radial-gradient(
+          ellipse at 82% 46%,
+          #dcece5 0,
+          #edf3e8 34%,
+          #fff9f0 70%
+        );
+      }
+      .search::before {
+        content: '';
+        position: absolute;
+        width: 1700px;
+        height: 1700px;
+        border: 3px solid #b58a1630;
+        border-radius: 50%;
+        right: -430px;
+        top: 430px;
+      }
+      .wordmark {
+        display: flex;
+        align-items: center;
+        gap: 42px;
+        position: absolute;
+        left: 350px;
+        top: 270px;
+        font-size: 62px;
+        line-height: 1;
+        font-weight: 750;
+        letter-spacing: 9px;
+      }
+      .wordmark img {
+        width: 140px;
+        height: 140px;
+        border-radius: 34px;
+      }
+      .copy {
+        position: absolute;
+        left: 350px;
+        top: 595px;
+        width: 1660px;
+        z-index: 2;
+      }
+      h1 {
+        font-size: 174px;
+        font-weight: 800;
+        line-height: 1.04;
+        letter-spacing: -7px;
+        margin: 0;
+      }
+      .accent {
+        color: #287d78;
+      }
+      .description {
+        font-size: 64px;
+        line-height: 1.38;
+        margin: 64px 0 0;
+        max-width: 1370px;
+        color: #526156;
+      }
+      .features {
+        display: flex;
+        gap: 40px;
+        align-items: center;
+        margin-top: 55px;
+        font-size: 45px;
+        color: #18314f;
+        font-weight: 650;
+      }
+      .features i {
+        width: 12px;
+        height: 12px;
+        background: #b58a16;
+        border-radius: 50%;
+      }
+      .art-inset {
+        position: absolute;
+        left: 350px;
+        top: 1480px;
+        width: 1590px;
+        height: 690px;
+        border-radius: 52px;
+        overflow: hidden;
+        background: #9fd8ed;
+        box-shadow: 0 30px 70px #18314f13;
+      }
+      .art-inset img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        object-position: center;
+      }
+      .phone-window {
+        position: absolute;
+        right: 355px;
+        top: 260px;
+        width: 1050px;
+        height: 2028px;
+        overflow: hidden;
+        border-radius: 132px;
+        background: #fff9f0;
+        filter: drop-shadow(0 44px 68px #18314f30);
+      }
+      .phone-window iframe {
+        width: 440px;
+        height: 956px;
+        border: 0;
+        position: absolute;
+        left: -135px;
+        top: -774px;
+        transform: scale(3);
+        transform-origin: top left;
+      }
+      .demo-note {
+        position: absolute;
+        right: 355px;
+        width: 1050px;
+        top: 2325px;
+        margin: 0;
+        font-size: 36px;
+        color: #526156;
+        text-align: center;
+      }
+      .signature {
+        position: absolute;
+        left: 350px;
+        top: 2275px;
+        font-size: 48px;
+        letter-spacing: 1px;
+        color: #526156;
+      }
+    </style>
+  </head>
+  <body>
+    <template id="header">
+      <main class="header" aria-label="Campus Cats product page header">
+        <img
+          src="./creative/campus-cats-header-art.png"
+          alt="Three friendly campus cats beside a feeding station in a leafy university garden"
+        />
+      </main>
+    </template>
+    <template id="search">
+      <main class="search" aria-label="Campus Cats search results creative">
+        <div class="wordmark">
+          <img src="../../../assets/images/default-app-icon.png" alt="" />CAMPUS
+          CATS
+        </div>
+        <div class="copy">
+          <h1>
+            Know the cats.<br /><span class="accent">Care together.</span>
+          </h1>
+          <p class="description">A home for your campus<br />cat community.</p>
+          <div class="features">
+            <span>Sightings</span><i></i><span>Cat-alog</span><i></i
+            ><span>Community</span>
+          </div>
+        </div>
+        <div class="art-inset">
+          <img
+            src="./creative/campus-cats-header-art.png"
+            alt="Campus Cats mascot and two friends"
+          />
+        </div>
+        <div class="signature">Every campus. Every familiar face.</div>
+        <div class="phone-window">
+          <iframe
+            src="./preview.html?slide=5"
+            title="Illustrative Campus Cats Cat-alog with fictional demo data"
+          ></iframe>
+        </div>
+        <p class="demo-note">Illustrative interface · Demo community data</p>
+      </main>
+    </template>
+    <script>
+      const kind =
+        new URLSearchParams(location.search).get('asset') === 'search'
+          ? 'search'
+          : 'header';
+      document.body.append(
+        document.getElementById(kind).content.cloneNode(true),
+      );
+      document.documentElement.style.width = '3840px';
+      document.documentElement.style.height =
+        kind === 'search' ? '2560px' : '1646px';
+    </script>
+  </body>
+</html>

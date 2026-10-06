@@ -32,7 +32,7 @@ jest.mock('expo-router', () => {
 
 jest.mock('../../composition/appModules', () => ({
   appModules: {
-    sightings: { list: (...args: unknown[]) => mockList(...args) },
+    sightingMap: { page: (...args: unknown[]) => mockList(...args) },
   },
 }));
 
@@ -154,21 +154,30 @@ describe('sightings map route', () => {
   it('shows a result count, filters markers, and navigates by ID', async () => {
     mockList.mockResolvedValue({
       ok: true,
-      value: [recent, old],
+      value: { sightings: [recent, old] },
       warnings: [],
     });
     const user = userEvent.setup();
     await renderMap();
 
-    expect(await screen.findByText('2 sightings')).toBeOnTheScreen();
+    expect(
+      await screen.findByText('2 sightings loaded in this area'),
+    ).toBeOnTheScreen();
     expect(screen.getByTestId('sighting-age-glass-bar')).toHaveStyle({
       alignSelf: 'stretch',
     });
     expect(screen.getByLabelText('Sighting age')).toHaveStyle({
       justifyContent: 'center',
     });
+    mockList.mockResolvedValue({
+      ok: true,
+      value: { sightings: [recent] },
+      warnings: [],
+    });
     await user.press(screen.getByRole('button', { name: '7D' }));
-    expect(screen.getByText('1 sighting')).toBeOnTheScreen();
+    expect(
+      await screen.findByText('1 sighting loaded in this area'),
+    ).toBeOnTheScreen();
     expect(screen.queryByText('Einstein')).not.toBeOnTheScreen();
     await user.press(
       screen.getByRole('button', { name: 'View sighting: Goldie' }),
@@ -210,13 +219,15 @@ describe('sightings map route', () => {
   it('shows imported markers by stable ID and omits non-public coordinates', async () => {
     mockList.mockResolvedValue({
       ok: true,
-      value: [recent, imported, importedWithoutCoordinates],
+      value: { sightings: [recent, imported, importedWithoutCoordinates] },
       warnings: [],
     });
     const user = userEvent.setup();
     await renderMap();
 
-    expect(await screen.findByText('2 sightings')).toBeOnTheScreen();
+    expect(
+      await screen.findByText('2 sightings loaded in this area'),
+    ).toBeOnTheScreen();
     expect(screen.queryByText('Private location')).not.toBeOnTheScreen();
     await user.press(
       screen.getByRole('button', { name: 'View sighting: Mimi' }),
@@ -236,8 +247,39 @@ describe('sightings map route', () => {
     await waitFor(() => expect(mockList).toHaveBeenCalledTimes(1));
   });
 
+  it('ignores an old query response after the age filter changes', async () => {
+    let completeOld!: (value: unknown) => void;
+    mockList.mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          completeOld = resolve;
+        }),
+    );
+    await renderMap();
+    await waitFor(() => expect(mockList).toHaveBeenCalledTimes(1));
+    mockList.mockResolvedValue({
+      ok: true,
+      value: { sightings: [recent] },
+      warnings: [],
+    });
+    await userEvent.setup().press(screen.getByRole('button', { name: '7D' }));
+    await screen.findByText('1 sighting loaded in this area');
+    completeOld({
+      ok: true,
+      value: { sightings: [recent, old] },
+      warnings: [],
+    });
+    await waitFor(() =>
+      expect(screen.queryByText('Einstein')).not.toBeOnTheScreen(),
+    );
+  });
+
   it('starts at a campus-level view centered on Georgia Tech', async () => {
-    mockList.mockResolvedValue({ ok: true, value: [], warnings: [] });
+    mockList.mockResolvedValue({
+      ok: true,
+      value: { sightings: [] },
+      warnings: [],
+    });
     await renderMap();
 
     expect(mockSightingMapProps).toHaveBeenCalledWith(

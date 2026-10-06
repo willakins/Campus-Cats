@@ -1,3 +1,4 @@
+import { CustomFieldDetails } from '@/presentation/customFields/CustomFields';
 import React, { useCallback, useState } from 'react';
 
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
@@ -138,6 +139,7 @@ const SightingScreen = () => {
                 : undefined
             }
           />
+          {sighting.source === 'campus-cats' ? <CustomFieldDetails kind="sighting" id={sighting.id} /> : null}
           <CommentsSection
             actor={actor}
             target={{ kind: 'sighting', id: sighting.id }}

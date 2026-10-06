@@ -675,6 +675,28 @@ service cloud.firestore {
           && !existsAfter(contentPath(clubId, resource.data.kind, resource.data.contentId));
       }
 
+      match /custom-field-definitions/{kind} {
+        allow read: if isActiveUser(clubId) && kind in ['catalog', 'sighting', 'station'];
+        allow write: if false;
+      }
+      match /custom-field-values/{valueId} {
+        function parentPath() {
+          return /databases/$(database)/documents/clubs/$(clubId)/$(resource.data.recordCollection)/$(resource.data.parentId);
+        }
+        function readableParent() {
+          return resource.data.parentId is string
+            && ((resource.data.kind == 'catalog' && resource.data.recordCollection in ['catalog', 'inaturalist-guide-profiles'])
+              || (resource.data.kind == 'sighting' && resource.data.recordCollection == 'cat-sightings')
+              || (resource.data.kind == 'station' && resource.data.recordCollection == 'stations' && isAdmin(clubId)))
+            && exists(parentPath())
+            && (resource.data.recordCollection != 'inaturalist-guide-profiles' || get(parentPath()).data.visible == true || isAdmin(clubId));
+        }
+        allow get: if isActiveUser(clubId)
+          && (valueId.matches('catalog__.*') || valueId.matches('sighting__.*') || (valueId.matches('station__.*') && isAdmin(clubId)))
+          && (!exists(/databases/$(database)/documents/clubs/$(clubId)/custom-field-values/$(valueId)) || readableParent());
+        allow list, write: if false;
+      }
+
       match /app-settings/{settingsId} {
         allow read: if settingsId == 'public'
           && (!signedIn() || isActiveUser(clubId));

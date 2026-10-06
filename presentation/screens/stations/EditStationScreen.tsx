@@ -1,3 +1,4 @@
+import { useRecordFields } from '@/presentation/customFields/CustomFields';
 import React, { useEffect, useState } from 'react';
 import { Alert } from 'react-native';
 
@@ -42,6 +43,7 @@ const EditStation = () => {
   const router = useRouter();
   const { queueSuccessToast } = useAppToast();
   const { id } = useLocalSearchParams<{ id?: string }>();
+  const recordFields = useRecordFields('station', id);
   const { user } = useAuth();
   const [station, setStation] = useState<Station>();
   const [storedAssets, setStoredAssets] = useState<readonly StoredMediaAsset[]>([]);
@@ -114,11 +116,11 @@ const EditStation = () => {
     setError(undefined);
     if (!validation.validate()) return;
     setBusy(true);
-    const result = await appModules.stations.update(parseUser(user), station.id, {
+    const result = await recordFields.saveRecord(() => appModules.stations.update(parseUser(user), station.id, {
       ...formData,
       profile: selectionFor(profile),
       gallery: photos.map(selectionFor),
-    });
+    }));
     setBusy(false);
     if (!result.ok) {
       setError(result.error.message);
@@ -192,6 +194,7 @@ const EditStation = () => {
         onSectionLayout={validation.onSectionLayout}
         onRequiredFieldLayout={validation.onRequiredFieldLayout}
       />
+      {recordFields.content}
     </FormScreen>
   );
 };
