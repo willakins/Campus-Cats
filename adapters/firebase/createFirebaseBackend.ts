@@ -11,6 +11,8 @@ import {
   storage,
 } from '../../config/firebase';
 import { ExpoSamlCredentialProvider } from './ExpoSamlCredentialProvider';
+import { FirebaseCustomFields } from './FirebaseCustomFields';
+import { FirebaseSightingMapReader } from './FirebaseSightingMapReader';
 import { FirebaseBillingReader } from './FirebaseBillingReader';
 import { FirebaseClubBilling } from './FirebaseClubBilling';
 import { FirebaseChatGateway } from './FirebaseChatGateway';
@@ -56,7 +58,11 @@ export function createFirebaseBackend(
   const firebaseClubBilling = new FirebaseClubBilling(db, functions);
   const tenantScope = new FirebaseTenantScope();
   const documents = new TenantDocumentStore(
-    new FirebaseDocumentStore(db, () => auth.currentUser?.uid ?? 'signed-out', new FirebaseValidatedContentWriter(functions)),
+    new FirebaseDocumentStore(
+      db,
+      () => auth.currentUser?.uid ?? 'signed-out',
+      new FirebaseValidatedContentWriter(functions),
+    ),
     tenantScope,
   );
   const media = new TenantMediaStore(
@@ -73,6 +79,12 @@ export function createFirebaseBackend(
           },
         }
       : {}),
+    customFieldsGateway: new FirebaseCustomFields(functions, tenantScope),
+    sightingMapReader: new FirebaseSightingMapReader(
+      db,
+      tenantScope,
+      () => auth.currentUser?.uid ?? '',
+    ),
     documents,
     media,
     chat: new FirebaseChatGateway(db, functions, tenantScope, {

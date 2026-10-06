@@ -1,3 +1,5 @@
+import { localMedia } from '@/core/media';
+import { useRecordFields } from '@/presentation/customFields/CustomFields';
 import { useEffect, useRef, useState } from 'react';
 
 import { useRouter } from 'expo-router';
@@ -25,6 +27,7 @@ const sexItems = ['Male', 'Female', 'Unknown'].map((value) => ({ label: value, v
 const furItems = ['Short', 'Medium', 'Long', 'Unknown'].map((value) => ({ label: value, value }));
 
 const CreateEntry = () => {
+  const recordFields = useRecordFields('catalog');
   const router = useRouter();
   const { user } = useAuth();
   const [busy, setBusy] = useState(false);
@@ -132,12 +135,12 @@ const CreateEntry = () => {
       return;
     }
     setBusy(true);
-    const result = await appModules.catalog.create(parseUser(user), {
+    const result = await recordFields.saveRecord(() => appModules.catalog.create(parseUser(user), {
       cat: cat(),
       credits: formData.credits,
       photos,
       tagIds: resolvedTagIds,
-    });
+    }), (recordId) => appModules.catalog.update(parseUser(user), recordId, { cat: cat(), credits: formData.credits, tagIds: resolvedTagIds, profile: localMedia(photos[0]), gallery: photos.slice(1).map(localMedia) }));
     setBusy(false);
     if (!result.ok) {
       setError(result.error.message);
@@ -177,6 +180,7 @@ const CreateEntry = () => {
           requiredFieldOffsets.current[field] = { section, y };
         }}
       />
+      {recordFields.content}
     </FormScreen>
   );
 };

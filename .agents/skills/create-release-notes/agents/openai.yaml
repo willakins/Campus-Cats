@@ -1,0 +1,4 @@
+interface:
+  display_name: "Create release notes"
+  short_description: "Write consistent, user-focused Campus Cats release notes"
+  default_prompt: "Use $create-release-notes to create Campus Cats release notes for the specified release range."

@@ -175,6 +175,7 @@ export const StatusPill = ({
       style={[
         {
           alignSelf: 'flex-start',
+          maxWidth: '100%',
           minHeight: 32,
           flexDirection: 'row',
           alignItems: 'center',
@@ -192,7 +193,7 @@ export const StatusPill = ({
       ) : icon ? (
         <Ionicons name={icon} size={16} color={foreground} />
       ) : null}
-      <AppText variant="label" style={{ color: foreground }}>
+      <AppText variant="label" style={{ color: foreground, flexShrink: 1 }}>
         {label}
       </AppText>
     </View>

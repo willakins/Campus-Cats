@@ -1,3 +1,4 @@
+import { useRecordFields } from '@/presentation/customFields/CustomFields';
 import React, { useEffect, useState } from 'react';
 import { Alert } from 'react-native';
 
@@ -52,6 +53,7 @@ const SightingEditScreen = () => {
   const router = useRouter();
   const { queueSuccessToast } = useAppToast();
   const { id } = useLocalSearchParams<{ id?: string }>();
+  const recordFields = useRecordFields('sighting', id);
   const { user } = useAuth();
   const [sighting, setSighting] = useState<Sighting>();
   const [storedAssets, setStoredAssets] = useState<readonly StoredMediaAsset[]>([]);
@@ -146,12 +148,12 @@ const SightingEditScreen = () => {
     setError(undefined);
     if (!validation.validate()) return;
     setBusy(true);
-    const result = await appModules.sightings.update(parseUser(user), sighting.id, {
+    const result = await recordFields.saveRecord(() => appModules.sightings.update(parseUser(user), sighting.id, {
       ...formData,
       timeOfDay: value,
       profile: selectionFor(profile),
       gallery: photos.map(selectionFor),
-    });
+    }));
     setBusy(false);
     if (!result.ok) {
       setError(result.error.message);
@@ -236,6 +238,7 @@ const SightingEditScreen = () => {
         onSectionLayout={validation.onSectionLayout}
         onRequiredFieldLayout={validation.onRequiredFieldLayout}
       />
+      {recordFields.content}
     </FormScreen>
   );
 };

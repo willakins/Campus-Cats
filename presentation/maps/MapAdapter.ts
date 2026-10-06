@@ -1,6 +1,7 @@
 import type { ComponentType, PropsWithChildren, ReactNode } from 'react';
 import type { AccessibilityRole, StyleProp, ViewStyle } from 'react-native';
 
+import type { MapBounds } from '@/core/ports';
 import type { Coordinates } from '@/core/domain';
 
 export type MapAppearance = 'light' | 'dark';
@@ -17,6 +18,7 @@ export interface AppMapViewProps {
   readonly accessibilityLabel?: string;
   readonly appearance?: MapAppearance;
   readonly initialViewport: MapViewport;
+  readonly onBoundsChange?: (bounds: MapBounds) => void;
   readonly onCenterChange?: (center: Coordinates) => void;
 }
 

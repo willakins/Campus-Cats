@@ -9,6 +9,8 @@ import {
   CommunityVotingGateway,
   ClubBillingPort,
   DocumentStore,
+  CustomFieldsGateway,
+  SightingMapReader,
   ImageSelectionPort,
   InaturalistEffects,
   InaturalistReader,
@@ -20,6 +22,8 @@ import {
   UniversityOnboardingPort,
   UniversitySelectionStore,
 } from '../core/ports';
+import { CustomFieldsModule } from '../features/customFields/CustomFieldsModule';
+import { SightingMapModule } from '../features/sightingMap/SightingMapModule';
 import { AlertsModule } from '../features/alerts';
 import {
   AppSettingsModule,
@@ -47,6 +51,8 @@ import { WhitelistModule } from '../features/whitelist';
 import { UniversityOnboardingModule } from '../features/universityOnboarding';
 
 export interface AppBackend {
+  readonly customFieldsGateway?: CustomFieldsGateway;
+  readonly sightingMapReader?: SightingMapReader;
   readonly relationalCatalog?: RelationalCatalogBackend;
   readonly documents: DocumentStore;
   readonly media: MediaStore;
@@ -80,6 +86,8 @@ export interface AppRuntime {
 export interface AppInfrastructure extends AppBackend, AppRuntime {}
 
 export interface AppModules {
+  readonly customFields: CustomFieldsModule;
+  readonly sightingMap: SightingMapModule;
   readonly alerts: AlertsModule;
   readonly appSettings: AppSettingsModule;
   readonly billing: BillingModule;
@@ -157,6 +165,14 @@ export function createAppModules(
   });
 
   return Object.freeze({
+    customFields: new CustomFieldsModule(
+      documents,
+      infrastructure.customFieldsGateway,
+    ),
+    sightingMap: new SightingMapModule(
+      infrastructure.sightingMapReader,
+      codecs,
+    ),
     alerts: new AlertsModule({
       documents,
       media,

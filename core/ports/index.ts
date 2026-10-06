@@ -15,3 +15,5 @@ export * from './universityOnboarding';
 export * from './chat';
 export * from './relationalReads';
 export * from './catalogDiscovery';
+export * from './sightingMap';
+export * from './customFields';

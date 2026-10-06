@@ -60,6 +60,7 @@ const cleanup = (
         firestoreCommentStore(),
         event.params.clubId,
       );
+      await getFirestore().doc(`clubs/${event.params.clubId}/custom-field-values/${kind}__${id}`).delete();
       await Promise.all(
         [commentCollection, ...relatedCollections].map((collection) =>
           cleanupCommentThread(store, collection, `${kind}:${id}`),
