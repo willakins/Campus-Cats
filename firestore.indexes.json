@@ -1,6 +1,14 @@
 {
   "indexes": [
     {
+      "collectionGroup": "safety-reports",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "status", "order": "ASCENDING" },
+        { "fieldPath": "createdAtMs", "order": "DESCENDING" }
+      ]
+    },
+    {
       "collectionGroup": "inaturalist-observations",
       "queryScope": "COLLECTION",
       "fields": [

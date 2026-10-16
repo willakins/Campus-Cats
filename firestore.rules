@@ -998,6 +998,16 @@ service cloud.firestore {
       allow delete: if false;
     }
 
+    // Safety case data and audit history are available only through verified
+    // platform-administrator callables, never through client Firestore access.
+    match /safety-reports/{document=**} {
+      allow read, write: if false;
+    }
+
+    match /safety-report-limits/{userId} {
+      allow read, write: if false;
+    }
+
     match /platform-admins/{userId} {
       allow get: if signedIn() && request.auth.uid == userId
         && exists(userPath()) && sessionIsCurrent(userDocument().data);

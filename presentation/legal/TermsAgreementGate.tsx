@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { View } from 'react-native';
+import { useRouter } from 'expo-router';
 
 import { AppText, Button, Dialog, FeedbackBanner } from '@/presentation/ui';
 import {
@@ -20,6 +21,7 @@ export const TermsAgreementGate = ({
   onAgree,
 }: TermsAgreementGateProps) => {
   const theme = useAppTheme();
+  const router = useRouter();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string>();
   const [document, setDocument] = useState<LegalDocument>();
@@ -57,7 +59,7 @@ export const TermsAgreementGate = ({
           <View style={{ gap: theme.spacing.xs }}>
             <AppText variant="section">{document.title}</AppText>
             <AppText variant="caption" color="muted">
-              Effective {LEGAL_EFFECTIVE_DATE}
+              Effective {document.effectiveDate ?? LEGAL_EFFECTIVE_DATE}
             </AppText>
             <AppText>{document.summary}</AppText>
           </View>
@@ -117,6 +119,8 @@ export const TermsAgreementGate = ({
             />
           </View>
 
+          <Button label="Report a safety concern" variant="tertiary"
+            onPress={() => router.push('/safety/report' as never)} />
           <AppText variant="caption" color="muted">
             By selecting “I agree,” you confirm that you have read and agree to
             the Terms of Service and acknowledge the Privacy Policy.

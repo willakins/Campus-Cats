@@ -454,6 +454,10 @@ const Settings = () => {
           )}
         </View>
 
+        <ListRow title="Report a safety concern" subtitle="Contact the Campus Cats safety team privately"
+          icon="shield-outline" onPress={() => router.push('/safety/report' as never)} />
+        {user.platformAdmin ? <ListRow title="Safety inbox" subtitle="Review private platform safety reports"
+          icon="shield-checkmark-outline" onPress={() => router.push('/safety/inbox' as never)} /> : null}
         <LegalLinks returnTo="/settings" />
       </View>
 

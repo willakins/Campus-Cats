@@ -95,6 +95,16 @@ describe('authenticated terms agreement gate', () => {
     );
   });
 
+  it('lets a member report a safety concern before accepting terms', async () => {
+    const user = userEvent.setup();
+    await renderLayout();
+    await user.press(
+      screen.getByRole('button', { name: 'Report a safety concern' }),
+    );
+    expect(mockPush).toHaveBeenCalledWith('/safety/report');
+    expect(mockAcceptTerms).not.toHaveBeenCalled();
+  });
+
   it('does not show the gate for the current recorded agreement', async () => {
     mockCurrentUser = parseUser({
       id: 'member-1',

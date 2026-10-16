@@ -8,12 +8,14 @@ export interface LegalSection {
 
 export interface LegalDocument {
   readonly title: string;
+  readonly effectiveDate?: string;
   readonly summary: string;
   readonly sections: readonly LegalSection[];
 }
 
 export const privacyPolicy: LegalDocument = {
   title: 'Privacy Policy',
+  effectiveDate: 'October 16, 2026',
   summary:
     'This Privacy Policy explains how Campus Cats collects, uses, discloses, and protects personal information when you use our mobile applications, hosted pages, and related services (the “Service”).',
   sections: [
@@ -31,6 +33,7 @@ export const privacyPolicy: LegalDocument = {
         'Profile information you choose to provide, including display name, biography, profile photo, achievements, and displayed title.',
         'Precise location and field-report information, including the coordinates, date, time, health and feeding details, notes, and photos you submit for cat sightings or feeding stations. Device location is accessed only with operating-system permission.',
         'Community content, including chat messages and reactions, comments, alerts, events, surveys, nominations, ballots, read status, and other material you submit or administer.',
+        'Safety reports, including the description and content references you provide, your account ID and email, club, submission time, and restricted investigation and enforcement records. The safety reporting form does not accept attachments.',
         'Access-request and club-setup information, including name, email, graduation year, optional security word, university, club branding, and President verification information.',
         'Billing and transaction information for club administrators, including billing email, subscription state, usage totals, invoices, and provider identifiers. Stripe processes payment-card and billing-address details; Campus Cats does not store full payment-card numbers.',
         'Integration information, including a linked iNaturalist numeric user ID and public profile metadata. Campus Cats does not store your iNaturalist password and revokes the one-time OAuth token after verification.',
@@ -61,6 +64,7 @@ export const privacyPolicy: LegalDocument = {
       title: '5. How we disclose information',
       bullets: [
         'Within your club: authorized members and officers receive access according to their role. Officers may review membership applications, named survey responses, moderation records, and operational content. Other members may see profiles, attributed content, and club communications.',
+        'Safety reports: report details are restricted to designated platform administrators and authorized infrastructure operators, not ordinary club members or officers. We may contact reporters and disclose information to competent authorities when required by law or necessary for safety. Email notifications to our safety contact contain a case reference, not the report contents.',
         'Service providers: Google Firebase and Google Cloud provide authentication, databases, storage, functions, hosting, maps, and infrastructure; Expo supports app delivery and push notifications; SendGrid delivers email; Stripe handles billing; and iNaturalist supports public imports and optional account linking.',
         'Universities and external services: information is sent to a university identity provider when you choose single sign-on, and to an external donation or other link when you choose to open it.',
         'Legal and safety: we may disclose information when reasonably necessary to comply with law, respond to valid process, investigate abuse, protect rights and safety, or address threats to people or animals.',
@@ -73,6 +77,7 @@ export const privacyPolicy: LegalDocument = {
     {
       title: '6. Retention',
       paragraphs: [
+        'Safety reports and investigation records may be retained separately from an account, including after account deletion, while needed to investigate abuse, fulfill legal reporting or preservation obligations, or protect users. Access remains restricted. Contact us to request review of retention or deletion; legal obligations may limit deletion.',
         'We retain information for as long as reasonably necessary to provide and secure the Service, preserve club operations, comply with law, resolve disputes, and enforce agreements. Retention varies by record: account and profile data generally remain while an account is active; chat and club operational history remain until removed or de-identified; pending verification records expire or are deleted after their operational window; and billing, security, and provider logs may be retained for legal, fraud-prevention, and audit needs.',
         'When you delete your account, Campus Cats removes your authentication account, profile, personal media, authored sightings, chat messages, comments, reactions, participation receipts, linked iNaturalist identity, push token, and other account-linked personal records from active systems. Responses linked through anonymous survey or voting receipts are also removed. Shared club records that must remain coherent may be retained only after your embedded user ID and email are replaced with a generic “deleted account” identity. Residual copies may remain temporarily in restricted backups or provider logs until they are overwritten under ordinary retention schedules.',
       ],

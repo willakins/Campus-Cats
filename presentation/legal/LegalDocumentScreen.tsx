@@ -26,7 +26,7 @@ export const LegalDocumentScreen = ({ document }: { readonly document: LegalDocu
       <AppHeader title={document.title} eyebrow="Legal" onBack={goBack} />
       <View style={{ gap: theme.spacing.lg }}>
         <Card accent={theme.colors.primary} style={{ gap: theme.spacing.xs }}>
-          <AppText variant="label">Effective {LEGAL_EFFECTIVE_DATE}</AppText>
+          <AppText variant="label">Effective {document.effectiveDate ?? LEGAL_EFFECTIVE_DATE}</AppText>
           <AppText>{document.summary}</AppText>
         </Card>
 
@@ -48,6 +48,8 @@ export const LegalDocumentScreen = ({ document }: { readonly document: LegalDocu
           </View>
         ))}
 
+        <Button label="Report a safety concern" icon="shield-outline" variant="secondary"
+          onPress={() => router.push('/safety/report' as never)} />
         <Button
           label={`Email ${LEGAL_CONTACT_EMAIL}`}
           icon="mail-outline"

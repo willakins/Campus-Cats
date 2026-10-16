@@ -216,6 +216,8 @@ const SubscriptionRequired = () => {
               void Linking.openURL(`mailto:${PLATFORM_INFO.supportEmail}`)
             }
           />
+          <Button label="Report a safety concern" variant="secondary"
+            onPress={() => router.push('/safety/report' as never)} />
         </View>
         <Button
           label="Sign Out"
