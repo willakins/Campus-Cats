@@ -9,7 +9,7 @@
     "userInterfaceStyle": "automatic",
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.gatech.CampusCats",
+      "bundleIdentifier": "com.codecrate.campuscats",
       "infoPlist": {
         "NSLocationWhenInUseUsageDescription": "Campus Cats uses your location to help volunteers find nearby feeding stations and cat sightings.",
         "ITSAppUsesNonExemptEncryption": false
@@ -24,10 +24,8 @@
         "foregroundImage": "./assets/images/default-app-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "permissions": [
-        "android.permission.CAMERA"
-      ],
-      "package": "com.gatech.CampusCats"
+      "permissions": ["android.permission.CAMERA"],
+      "package": "com.codecrate.campuscats"
     },
     "web": {
       "bundler": "metro",
@@ -50,6 +48,12 @@
           "photosPermission": "Allow $(PRODUCT_NAME) to select cat photos.",
           "cameraPermission": "Allow $(PRODUCT_NAME) to take cat photos.",
           "microphonePermission": false
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "defaultChannel": "default"
         }
       ],
       "expo-font",

@@ -3,6 +3,12 @@
 English (U.S.) copy and reusable answers for App Store Connect. Updated October 6, 2026. The current repository version is **1.3.1**. This document provides listing
 copy; it does not establish that a build or backend change has shipped.
 
+The owner requested a separate Codecrate iOS listing on October 15, 2026. The
+repository now targets `com.codecrate.campuscats`; the previous listing and Apple
+ID are retained below only as historical references. The owner reports that the
+individual-to-organization membership conversion is still pending. A new Apple
+record, signing setup, and submission have not been verified.
+
 Use the text inside each code block as the field value. Character counts include
 spaces and internal line breaks, excluding the final newline after each block.
 
@@ -148,7 +154,7 @@ Campus Cats now supports university cat clubs beyond Georgia Tech.
 - View club subscription status in the app, with billing management available to club presidents on the web.
 ```
 
-For the initial 1.0.0 release, Apple does not provide a What's New field. On later
+For a new app's first release, Apple does not provide a What's New field. On later
 releases, replace the previous version's notes with the changes in that specific
 version. The old announcement-notification and SSO text should not be reused for
 1.3.0.
@@ -266,12 +272,69 @@ Use this section for **General → App Information**, including Localizable Info
 Values supplied from the existing App Store Connect page are recorded below; this
 work did not change the live account. Recommendations reflect the current repository.
 
+### New Codecrate iOS listing
+
+Create a separate app record for `com.codecrate.campuscats`. This does not update
+the old app or carry over its ratings, reviews, or installed-user update path.
+The Firebase production project remains `campuscats-d7a5e`; the new listing alone
+does not create new user accounts or a separate database.
+
+1. Select the intended membership in Apple Developer and App Store Connect. The
+   owner reports that conversion to Codecrate is pending. A record created under
+   that membership now belongs to the current individual account; do not describe
+   the organization conversion as approved. If the listing must be created under
+   an already verified organization, wait for Apple to finish that conversion.
+2. In Apple Developer **Certificates, Identifiers & Profiles → Identifiers → +**,
+   register an **App ID → App** with an explicit bundle ID
+   `com.codecrate.campuscats` and description `Campus Cats Codecrate`. Enable
+   **Push Notifications** for the app's notification capability. EAS can also
+   perform this registration during interactive iOS signing setup.
+3. In App Store Connect **Apps → + → New App**, use:
+
+   | Field | Proposed value |
+   | --- | --- |
+   | Platform | iOS |
+   | Name | `Campus Cats by Codecrate` (subject to availability) |
+   | Primary language | English (U.S.) |
+   | Bundle ID | `com.codecrate.campuscats` |
+   | SKU | `campus-cats-codecrate` |
+   | User access | Full Access, unless the owner wants to restrict app managers |
+
+   Apple permits an app name for only one app per localization. The existing
+   listing already uses `Campus Cats`, so the proposed name distinguishes the
+   new record without changing or removing the old listing. The installed app's
+   display name in Expo remains `Campus Cats`.
+4. Copy the new record's numeric **Apple ID** from **General → App Information**
+   into `submit.production.ios.ascAppId` in `eas.json`. The old value
+   `6744487550` has been removed; do not reuse it for this bundle. Build and
+   submit instructions are in the [README](../README.md#build-and-upload-to-testflight).
+5. Use the maintained description, subtitle, keywords, privacy guidance, and
+   review instructions in this document for the new record, after checking the
+   actual build and deployed services. Keep the app version aligned with the
+   build (`1.3.1` currently). An initial listing does not need the update-only
+   What's New copy, even if its first version is numbered `1.3.1`.
+
+Before distribution, configure signing and the Expo APNs credential for the new
+bundle and check any iOS Maps API-key restrictions against it. The app currently
+uses the Firebase JavaScript SDK, so preserve the existing production JS
+configuration; changing the bundle alone does not require replacing those values
+with a new native Firebase app ID.
+
+The legacy app and new app currently share the `campuscats` custom URL scheme.
+Test SSO and other callbacks with both apps installed, and resolve callback
+collisions before distributing them together. Registration of a new listing is
+not proof that these device checks or the backend rollout are complete.
+
+References: [Register an App ID](https://developer.apple.com/help/account/identifiers/register-an-app-id/),
+[add a new app and app-name availability](https://developer.apple.com/help/app-store-connect/create-an-app-record/add-a-new-app/),
+and [EAS iOS submission configuration](https://docs.expo.dev/submit/ios/).
+
 ### Localizable Information: English (U.S.)
 
-**Name: 11 / 30 characters**
+**Proposed name for the new listing: 24 / 30 characters**
 
 ```text
-Campus Cats
+Campus Cats by Codecrate
 ```
 
 **Subtitle: 28 / 30 characters**
@@ -287,9 +350,9 @@ endorsement. Apple permits up to 30 characters for each field. See [App informat
 
 | Field              | Answer                             | Evidence or action                                                                                                                           |
 | ------------------ | ---------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
-| Bundle ID          | `com.gatech.CampusCats`            | Matches `expo.ios.bundleIdentifier` in [app.json](../app.json). Preserve the identifier for this existing app, including its capitalization. |
-| SKU                | `campus-cats`                      | Existing App Store Connect value supplied by the owner; internal tracking identifier.                                                        |
-| Apple ID           | `6744487550`                       | Existing Apple-assigned value supplied by the owner; not an editable marketing field.                                                        |
+| Bundle ID          | `com.codecrate.campuscats`         | Current production bundle in [app.json](../app.json); requires the separate record described above. |
+| SKU                | `campus-cats-codecrate`            | Proposed unique internal identifier for the new record; creation is not verified. |
+| Apple ID           | Pending new record                | Copy Apple's new numeric ID after creation; do not use the old listing's ID. |
 | Primary Language   | English (U.S.)                     | Keep for this English listing.                                                                                                               |
 | License Agreement  | Apple's Standard License Agreement | Keep the existing selection unless the owner adopts a reviewed custom EULA. The app's service Terms remain a separate document.              |
 | Primary Category   | Social Networking                  | Recommended: club chat, member profiles, events, surveys, and community participation are central features.                                  |
@@ -299,6 +362,10 @@ Category choices are recommendations for the owner to enter, not existing accoun
 settings verified remotely. Compare with [Apple's category guidance](https://developer.apple.com/app-store/categories/).
 Do not select Games, Medical, or Health & Fitness simply because the app has contests
 or records a cat's condition.
+
+Historical listing reference: bundle `com.gatech.CampusCats`, SKU `campus-cats`,
+Apple ID `6744487550`. These were supplied by the owner for the original listing;
+they are not the new submission target. Its live status has not been rechecked.
 
 ### Content Rights
 

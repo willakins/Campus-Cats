@@ -7,8 +7,7 @@ const developmentEnvironment = {
   EXPO_PUBLIC_AUTH_DOMAIN: 'campus-cats-development.firebaseapp.com',
   EXPO_PUBLIC_MESSAGING_SENDER_ID: '811658613482',
   EXPO_PUBLIC_PROJECT_ID: 'campus-cats-development',
-  EXPO_PUBLIC_STORAGE_BUCKET:
-    'campus-cats-development.firebasestorage.app',
+  EXPO_PUBLIC_STORAGE_BUCKET: 'campus-cats-development.firebasestorage.app',
   EXPO_PUBLIC_WEB_API_KEY: 'web-api-key',
   EXPO_PUBLIC_WEB_APP_ID: '1:811658613482:web:webfixture',
 };
@@ -39,7 +38,8 @@ describe('Expo app variants', () => {
     expect(config.ios.googleServicesFile).toBe(
       './GoogleService-Info.development.plist',
     );
-    expect(config.android.package).toBe('com.gatech.CampusCats.dev');
+    expect(config.android.package).toBe('com.codecrate.campuscats.dev');
+    expect(config.android.googleServicesFile).toBeUndefined();
   });
 
   it('rejects a development app identity pointed at production Firebase', () => {
@@ -74,10 +74,10 @@ describe('Expo app variants', () => {
 
     expect(config.name).toBe('Campus Cats Dev');
     expect(config.ios.bundleIdentifier).toBe('com.gatech.CampusCats.dev');
-    expect(config.android.package).toBe('com.gatech.CampusCats.dev');
+    expect(config.android.package).toBe('com.codecrate.campuscats.dev');
   });
 
-  it('preserves the existing production app identity', () => {
+  it('uses the Codecrate identity for both production store apps', () => {
     const resolveAppConfig = require('../app.config');
 
     const config = resolveAppConfig({
@@ -86,10 +86,33 @@ describe('Expo app variants', () => {
     });
 
     expect(config.name).toBe('Campus Cats');
-    expect(config.ios.bundleIdentifier).toBe('com.gatech.CampusCats');
-    expect(config.ios.googleServicesFile).toBeUndefined();
-    expect(config.android.package).toBe('com.gatech.CampusCats');
+    expect(config.ios.bundleIdentifier).toBe('com.codecrate.campuscats');
+    expect(config.ios.googleServicesFile).toBe(
+      './GoogleService-Info.production.plist',
+    );
+    expect(config.android.package).toBe('com.codecrate.campuscats');
+    expect(config.android.googleServicesFile).toBe(
+      './google-services.production.json',
+    );
   });
+
+  it.each([developmentEnvironment, productionEnvironment])(
+    'uses the Android Firebase file supplied for $EXPO_PUBLIC_APP_ENV',
+    (environment) => {
+      const resolveAppConfig = require('../app.config');
+      const config = resolveAppConfig({
+        config: baseConfig,
+        environment: {
+          ...environment,
+          GOOGLE_SERVICES_JSON: '/eas/files/google-services.json',
+        },
+      });
+
+      expect(config.android.googleServicesFile).toBe(
+        '/eas/files/google-services.json',
+      );
+    },
+  );
 
   it('loads internal EAS builds from the development EAS environment', () => {
     const eas = require('../eas.json');
@@ -111,19 +134,22 @@ describe('Expo app variants', () => {
     });
   });
 
-  it('uses the EAS file variable for the development Firebase plist', () => {
-    const resolveAppConfig = require('../app.config');
+  it.each([developmentEnvironment, productionEnvironment])(
+    'uses the iOS Firebase file supplied for $EXPO_PUBLIC_APP_ENV',
+    (environment) => {
+      const resolveAppConfig = require('../app.config');
 
-    const config = resolveAppConfig({
-      config: baseConfig,
-      environment: {
-        ...developmentEnvironment,
-        GOOGLE_SERVICES_PLIST: '/eas/files/GoogleService-Info.plist',
-      },
-    });
+      const config = resolveAppConfig({
+        config: baseConfig,
+        environment: {
+          ...environment,
+          GOOGLE_SERVICES_PLIST: '/eas/files/GoogleService-Info.plist',
+        },
+      });
 
-    expect(config.ios.googleServicesFile).toBe(
-      '/eas/files/GoogleService-Info.plist',
-    );
-  });
+      expect(config.ios.googleServicesFile).toBe(
+        '/eas/files/GoogleService-Info.plist',
+      );
+    },
+  );
 });
