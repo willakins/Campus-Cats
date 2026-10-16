@@ -3,12 +3,21 @@
 The development and preview EAS profiles are isolated from the App Store app.
 They use a different app identity and a different Firebase project.
 
-| Setting            | Development                 | Production              |
-| ------------------ | --------------------------- | ----------------------- |
-| App name           | Campus Cats Dev             | Campus Cats             |
-| iOS bundle ID      | `com.gatech.CampusCats.dev` | `com.gatech.CampusCats` |
-| Firebase project   | `campus-cats-development`   | `campuscats-d7a5e`      |
-| Firebase CLI alias | `dev`                       | `prod`                  |
+| Setting            | Development                    | Production                 |
+| ------------------ | ------------------------------ | -------------------------- |
+| App name           | Campus Cats Dev                | Campus Cats                |
+| iOS bundle ID      | `com.gatech.CampusCats.dev`    | `com.codecrate.campuscats` |
+| Android package    | `com.codecrate.campuscats.dev` | `com.codecrate.campuscats` |
+| Firebase project   | `campus-cats-development`      | `campuscats-d7a5e`         |
+| Firebase CLI alias | `dev`                          | `prod`                     |
+
+Both production store apps use the Codecrate identifier. The production iOS bundle
+belongs to a separate App Store listing; see the [new iOS listing setup](../marketing/app-store-listing.md#new-codecrate-ios-listing).
+The development iOS bundle keeps its existing Firebase registration and plist.
+Use the production Android package for the Google Play app record and its matching
+Firebase Android registration, signing credentials, and Maps API key restrictions.
+Register the development Android package separately in the development Firebase
+project. Changing these identifiers requires a new native build.
 
 ## Development data
 
@@ -183,6 +192,19 @@ to enable chat.
    The ignored `.env.development` file supplies the development Firebase client
    identifiers to Metro. The `npm run start:dev` shortcut is also available when
    you want to force Expo's development-client target explicitly.
+
+## Android Firebase configuration
+
+The development Android package is `com.codecrate.campuscats.dev`. Register it in
+`campus-cats-development`, download its own `google-services.json`, and set the
+`GOOGLE_SERVICES_JSON` file variable in EAS's `development` environment. For local
+Android builds, set the same variable to the path of that development file.
+Root-level `google-services*.json` files are ignored by Git.
+
+Development builds never fall back to the production Android Firebase file. Until
+the development file and its FCM V1 credential are configured, Android development
+push notifications are not ready. See the [Android release instructions](../README.md#build-android-for-google-play)
+for the separate production configuration.
 
 ## Safety rules
 

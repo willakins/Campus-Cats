@@ -1,10 +1,20 @@
 import * as Device from 'expo-device';
 import * as Notifications from 'expo-notifications';
+import { Platform } from 'react-native';
 
-export const requestPushNotificationToken = async (): Promise<string | null> => {
+export const requestPushNotificationToken = async (): Promise<
+  string | null
+> => {
   if (!Device.isDevice) {
     alert('Must use a physical device for Push Notifications');
     return null;
+  }
+
+  if (Platform.OS === 'android') {
+    await Notifications.setNotificationChannelAsync('default', {
+      name: 'Campus Cats notifications',
+      importance: Notifications.AndroidImportance.DEFAULT,
+    });
   }
 
   const { status: existingStatus } = await Notifications.getPermissionsAsync();

@@ -1,13 +1,30 @@
 describe('Native app environment', () => {
   const { validateNativeAppEnvironment } = require('./nativeAppEnvironment');
 
-  it('accepts the development bundle ID for development', () => {
+  it.each(['com.gatech.CampusCats.dev', 'com.codecrate.campuscats.dev'])(
+    'accepts %s for development',
+    (applicationId) => {
+      expect(() =>
+        validateNativeAppEnvironment('development', applicationId),
+      ).not.toThrow();
+    },
+  );
+
+  it.each(['com.gatech.CampusCats', 'com.codecrate.campuscats'])(
+    'accepts %s for production',
+    (applicationId) => {
+      expect(() =>
+        validateNativeAppEnvironment('production', applicationId),
+      ).not.toThrow();
+    },
+  );
+
+  it('rejects an unrelated application ID', () => {
     expect(() =>
-      validateNativeAppEnvironment(
-        'development',
-        'com.gatech.CampusCats.dev',
-      ),
-    ).not.toThrow();
+      validateNativeAppEnvironment('production', 'com.example.unrelated'),
+    ).toThrow(
+      'com.example.unrelated cannot run the production Firebase environment',
+    );
   });
 
   it('accepts Expo Go for the development environment', () => {
@@ -24,22 +41,25 @@ describe('Native app environment', () => {
     );
   });
 
-  it('rejects a production Firebase bundle served to the development app', () => {
-    expect(() =>
-      validateNativeAppEnvironment(
-        'production',
-        'com.gatech.CampusCats.dev',
-      ),
-    ).toThrow(
-      'com.gatech.CampusCats.dev cannot run the production Firebase environment',
-    );
-  });
+  it.each(['com.gatech.CampusCats.dev', 'com.codecrate.campuscats.dev'])(
+    'rejects production Firebase in %s',
+    (applicationId) => {
+      expect(() =>
+        validateNativeAppEnvironment('production', applicationId),
+      ).toThrow(
+        `${applicationId} cannot run the production Firebase environment`,
+      );
+    },
+  );
 
-  it('rejects a development Firebase bundle served to the production app', () => {
-    expect(() =>
-      validateNativeAppEnvironment('development', 'com.gatech.CampusCats'),
-    ).toThrow(
-      'com.gatech.CampusCats cannot run the development Firebase environment',
-    );
-  });
+  it.each(['com.gatech.CampusCats', 'com.codecrate.campuscats'])(
+    'rejects development Firebase in %s',
+    (applicationId) => {
+      expect(() =>
+        validateNativeAppEnvironment('development', applicationId),
+      ).toThrow(
+        `${applicationId} cannot run the development Firebase environment`,
+      );
+    },
+  );
 });

@@ -94,7 +94,7 @@ Browse [Apple previews](assets/images/app_previews/apple/),
 | **Sightings**        | Photo-backed reports with location, condition, date, discussion, and map filters from the last seven days through all time.         |
 | **Cat-alog**         | A visual directory of known cats with identifying details, favorites, tags, photos, and recent sighting history.                    |
 | **Feeding stations** | Shared station locations, known cats, restocking details, and stocked or unstocked views for faster volunteer coordination.         |
-| **Community**        | Alerts, push notifications, events, surveys, contests, elections, donations, and a live club chat in one place.              |
+| **Community**        | Alerts, push notifications, events, surveys, contests, elections, donations, and a live club chat in one place.                     |
 | **Membership**       | University discovery, club-specific sign-in, email access workflows, role-aware navigation, and deliberate presidential succession. |
 | **Moderation**       | Officer pings, chat restrictions, disciplinary notices, account bans, and protected read-only access for restricted members.        |
 
@@ -172,14 +172,45 @@ their corresponding service configuration. Start with the
 
 ### Build and upload to TestFlight
 
-From the repository root, run:
+Production iOS builds now use `com.codecrate.campuscats` for a **separate** App Store
+listing. The old listing (`6744487550`, bundle `com.gatech.CampusCats`) is not the
+submission destination. Follow the [new Codecrate iOS listing setup](marketing/app-store-listing.md#new-codecrate-ios-listing)
+to register the bundle and create the new record. Then set
+`submit.production.ios.ascAppId` in `eas.json` to its new numeric Apple ID. That
+field is currently unset because the new record has not been verified.
+
+The Firebase iOS registration for this bundle belongs to the existing production
+project, `campuscats-d7a5e`. Save its `GoogleService-Info.plist` locally as
+`GoogleService-Info.production.plist`; Git ignores the file. Upload it to the
+project's EAS `production` environment as a file variable for cloud builds:
 
 ```bash
-npm run deploy:ios
+EXPO_NO_DOTENV=1 EXPO_PUBLIC_APP_ENV=production npx --yes eas-cli@latest env:set \
+  --name GOOGLE_SERVICES_PLIST --type file \
+  --value ./GoogleService-Info.production.plist --environment production \
+  --visibility secret --scope project --non-interactive
+```
+
+Expo uses the supplied EAS file path, or the local production file when the variable
+is absent. Development builds retain their separate development plist. The native
+plist does not replace the Firebase JavaScript environment variables or configure
+Apple signing and APNs credentials.
+
+To build without uploading while the new listing is being set up:
+
+```bash
+EXPO_NO_DOTENV=1 EXPO_PUBLIC_APP_ENV=production npx --yes eas-cli@latest build \
+  --platform ios --profile production
+```
+
+Once the destination is configured, run from the repository root:
+
+```bash
+EXPO_NO_DOTENV=1 EXPO_PUBLIC_APP_ENV=production npm run deploy:ios
 ```
 
 This builds the production iOS app using EAS Build and automatically uploads it
-to App Store Connect app `6744487550`. EAS increments the build number for each
+to the new App Store Connect app. EAS increments the build number for each
 production build. After Apple processes the upload, use TestFlight to test it,
 then select that build in App Store Connect and submit it for App Review when
 ready. Uploading does not automatically publish the app.
@@ -189,6 +220,50 @@ setup. Configure the app's production environment variables in the EAS
 `production` environment; the cloud build does not receive the gitignored local
 `.env.production.local` file. The cloud build works from Linux, macOS, or Windows.
 This command uploads the mobile app; backend deployments are managed separately.
+
+### Build Android for Google Play
+
+The production Android package is `com.codecrate.campuscats`. Register that package
+in the existing production Firebase project, `campuscats-d7a5e`, and download its
+Android app configuration from Firebase Project settings. Save a local copy as
+`google-services.production.json` at the repository root; Git ignores this file.
+
+For cloud builds, upload that file to the Campus Cats EAS project's `production`
+environment as the **file** variable `GOOGLE_SERVICES_JSON`:
+
+```bash
+EXPO_NO_DOTENV=1 EXPO_PUBLIC_APP_ENV=production npx --yes eas-cli@latest env:set \
+  --name GOOGLE_SERVICES_JSON --type file \
+  --value ./google-services.production.json --environment production \
+  --visibility secret --scope project --non-interactive
+```
+
+The app config uses the EAS file path when supplied and the ignored production
+file for local builds. The Firebase JavaScript client variables must also be set
+in EAS's `production` environment, as described above.
+
+Build the Android App Bundle:
+
+```bash
+EXPO_NO_DOTENV=1 EXPO_PUBLIC_APP_ENV=production npx --yes eas-cli@latest build \
+  --platform android --profile production
+```
+
+Download the resulting `.aab` and upload it to the matching Google Play app's
+**Internal testing** track. Use this production profile for Play testing of the
+production app; the `development` and `preview` profiles use the separate `.dev`
+package and development Firebase project.
+
+Android push delivery additionally requires an FCM V1 service-account credential
+assigned to this Android package in EAS Credentials. That private credential is
+separate from `google-services.json`. The app creates its default Android
+notification channel before requesting permission. Verify notification delivery
+on the installed Android build before release.
+
+Configure the Android Maps key for the package and Google Play app-signing
+certificate fingerprint, and test maps on the Play-installed build. Cloud
+credentials, signing setup, and a successful Play release are separate from this
+repository configuration.
 
 ### Documentation
 

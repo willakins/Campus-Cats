@@ -20,19 +20,20 @@ module.exports = ({ config, environment = process.env }) => {
       bundleIdentifier: development
         ? 'com.gatech.CampusCats.dev'
         : config.ios.bundleIdentifier,
-      ...(development
-        ? {
-            googleServicesFile:
-              environment.GOOGLE_SERVICES_PLIST ??
-              './GoogleService-Info.development.plist',
-          }
-        : {}),
+      googleServicesFile:
+        environment.GOOGLE_SERVICES_PLIST ??
+        (development
+          ? './GoogleService-Info.development.plist'
+          : './GoogleService-Info.production.plist'),
     },
     android: {
       ...config.android,
       package: development
-        ? 'com.gatech.CampusCats.dev'
+        ? 'com.codecrate.campuscats.dev'
         : config.android.package,
+      googleServicesFile:
+        environment.GOOGLE_SERVICES_JSON ??
+        (development ? undefined : './google-services.production.json'),
     },
     plugins: [
       ...(config.plugins ?? []),
