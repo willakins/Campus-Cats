@@ -23,6 +23,10 @@ test('all protected callable entry points reject revoked sessions before doing w
   const app = await import('../index');
   const core = await import('../community/coreCallables');
   const endpoints = [
+    app.submitSafetyReport,
+    app.listSafetyReports,
+    app.updateSafetyReport,
+    app.moderateSafetyReport,
     app.sendWhitelistEmail,
     app.getBillingSummary,
     app.getClubBillingSummary,

@@ -26,6 +26,8 @@ export const LegalLinks = ({ returnTo }: { readonly returnTo: string }) => {
           router.push({ pathname: '/legal/privacy', params: { returnTo } } as never)
         }
       />
+      <Button label="Child Safety Standards" variant="tertiary" size="small"
+        onPress={() => router.push({ pathname: '/legal/child-safety', params: { returnTo } } as never)} />
     </View>
   );
 };

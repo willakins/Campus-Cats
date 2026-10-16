@@ -1,4 +1,6 @@
 import { ApplicationCodecs, Clock, IdGenerator } from '../core/domain';
+import { SafetyReportsGateway } from '../core/ports/safetyReports';
+import { SafetyReportsModule } from '../features/safety/SafetyReportsModule';
 import { MediaCoordinator } from '../core/media';
 import {
   ApplicationEffects,
@@ -51,6 +53,7 @@ import { WhitelistModule } from '../features/whitelist';
 import { UniversityOnboardingModule } from '../features/universityOnboarding';
 
 export interface AppBackend {
+  readonly safetyReports?: SafetyReportsGateway;
   readonly customFieldsGateway?: CustomFieldsGateway;
   readonly sightingMapReader?: SightingMapReader;
   readonly relationalCatalog?: RelationalCatalogBackend;
@@ -86,6 +89,7 @@ export interface AppRuntime {
 export interface AppInfrastructure extends AppBackend, AppRuntime {}
 
 export interface AppModules {
+  readonly safetyReports: SafetyReportsModule;
   readonly customFields: CustomFieldsModule;
   readonly sightingMap: SightingMapModule;
   readonly alerts: AlertsModule;
@@ -165,6 +169,7 @@ export function createAppModules(
   });
 
   return Object.freeze({
+    safetyReports: new SafetyReportsModule(infrastructure.safetyReports, ids),
     customFields: new CustomFieldsModule(
       documents,
       infrastructure.customFieldsGateway,

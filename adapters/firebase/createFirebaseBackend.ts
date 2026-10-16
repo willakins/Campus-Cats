@@ -1,4 +1,5 @@
 import { Timestamp } from 'firebase/firestore';
+import { FirebaseSafetyReports } from './FirebaseSafetyReports';
 import { getFunctions } from 'firebase/functions';
 
 import { createPersistenceCodecs } from '../../core/domain';
@@ -70,6 +71,7 @@ export function createFirebaseBackend(
     tenantScope,
   );
   return {
+    safetyReports: new FirebaseSafetyReports(functions),
     ...(options.catalogDiscovery === 'postgres'
       ? {
           relationalCatalog: {
