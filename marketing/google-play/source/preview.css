@@ -1,89 +1,160 @@
-/* Full-screen Android compositions. These are illustrations, not native captures. */
+/* Device-framed marketing compositions, rendered from the shared preview source. */
 html,
 body,
-#root,
+#root {
+  width: 100%;
+  height: 100%;
+}
+
 .slide {
   width: 100%;
   height: 100%;
-  padding: 0;
-  font-family: 'Roboto', 'Noto Sans', Arial, sans-serif;
-  background: var(--cream);
+  padding: 22px 26px 0;
 }
-.brand,
-.kicker,
-.slide > h1,
-.dek,
-.slide::after {
-  display: none;
+
+.brand {
+  gap: 8px;
+  font-size: 10px;
+  letter-spacing: 1.7px;
 }
-.phone {
-  inset: 0 0 28px;
-  width: 100%;
-  height: calc(100% - 28px);
-  padding: 0;
-  border: 0;
-  border-radius: 0;
-  box-shadow: none;
-  background: var(--cream);
+
+.brand img {
+  width: 26px;
+  height: 26px;
+  border-radius: 7px;
 }
-.screen {
-  border-radius: 0;
+
+.kicker {
+  margin-top: 14px;
+  font-size: 10px;
+  letter-spacing: 1.4px;
 }
-.statusbar {
-  height: 32px;
-  padding: 10px 22px 0;
+
+.slide > h1 {
+  margin: 6px 0 8px;
+  max-width: 100%;
+  font-size: 34px;
+  line-height: 1;
+  letter-spacing: -1.4px;
+}
+
+.dek {
+  max-width: 375px;
   font-size: 12px;
+  line-height: 1.4;
+}
+
+/* A complete Android handset: metal rim, side keys, and a punch-hole camera. */
+.phone {
+  top: 198px;
+  left: calc(50% - 175px);
+  width: 350px;
+  height: 676px;
+  padding: 8px;
+  border: 2px solid #5b6774;
+  border-radius: 39px;
+  background: linear-gradient(
+    135deg,
+    #334354,
+    #101b2a 38%,
+    #233449 80%,
+    #526171
+  );
+  box-shadow:
+    inset 0 0 0 2px #101b2a,
+    0 22px 40px #18314f2e,
+    0 4px 10px #18314f1a;
+  transform: scale(0.8);
+  transform-origin: top center;
+}
+
+.phone::before,
+.phone::after {
+  content: '';
+  position: absolute;
+  right: -5px;
+  width: 3px;
+  border-radius: 0 3px 3px 0;
+  background: linear-gradient(90deg, #102033, #677582);
+}
+
+.phone::before {
+  top: 116px;
+  height: 60px;
+}
+
+.phone::after {
+  top: 201px;
+  height: 34px;
+}
+
+.screen {
+  border-radius: 29px;
+  font-family: 'Roboto', 'Noto Sans', Arial, sans-serif;
+}
+
+.device-camera {
+  position: absolute;
+  z-index: 50;
+  top: 21px;
+  left: calc(50% - 5px);
+  width: 10px;
+  height: 10px;
+  border: 2px solid #101923;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle at 65% 35%,
+    #40566d 0,
+    #102033 35%,
+    #060b11 70%
+  );
+  box-shadow: 0 0 0 1px #53606c40;
+}
+
+.statusbar {
+  height: 36px;
+  padding: 13px 20px 0;
+  font-size: 10px;
   font-weight: 600;
 }
+
 .android-status {
   display: flex;
-  gap: 7px;
-  height: 14px;
+  gap: 6px;
+  height: 12px;
 }
+
 .android-status svg {
-  height: 14px;
   width: auto;
+  height: 12px;
   fill: currentColor;
 }
+
 .android-gesture {
   position: absolute;
-  bottom: 6px;
-  left: calc(50% - 44px);
-  width: 88px;
-  height: 4px;
+  bottom: 7px;
+  left: calc(50% - 40px);
+  width: 80px;
+  height: 3px;
   border-radius: 3px;
   background: #22241f;
   z-index: 40;
 }
+
 .sample-note {
-  bottom: 8px;
-  font-size: 10px;
+  bottom: 10px;
+  font-size: 8px;
   letter-spacing: 0;
 }
+
 .app-content {
-  height: calc(100% - 32px);
-  padding-bottom: 24px;
+  height: calc(100% - 36px);
 }
-.app-pad,
-.detail-pad {
-  padding: 22px;
-}
-.app-title {
-  font-size: 30px;
-  margin: 8px 0 20px;
-}
-.detail-pad .app-title {
-  font-size: 29px;
-  margin-bottom: 18px;
-}
-.eyebrow {
-  font-size: 11px;
-}
+
 .bottom-nav {
-  bottom: 23px;
-  left: 24px;
-  right: 24px;
+  bottom: 22px;
 }
+
 .bottom-nav,
 .search,
 .map-toolbar,
@@ -92,531 +163,525 @@ body,
 .glass-action,
 .tool-button,
 .report-btn {
-  background: #ffffffcc;
+  background: #ffffffed;
   backdrop-filter: none;
 }
-.tool-button.primary {
-  background: var(--navy);
-}
+
 .bottom-nav {
   border-color: #ddd4c3;
 }
-.cat-grid,
-.community-grid {
-  gap: 16px;
+
+.tool-button.primary {
+  background: var(--navy);
 }
-.cat-card > img {
-  height: 145px;
-}
-.cat-body {
-  padding: 12px;
-}
-.cat-desc {
-  font-size: 12px;
-  height: 34px;
-}
-.metrics {
-  font-size: 10px;
-}
-.community-card {
-  height: 155px;
-  padding: 18px;
-}
-.community-name {
-  font-size: 18px;
-}
-.community-desc {
-  font-size: 11px;
-}
-.community-intro {
-  font-size: 14px;
-  margin-bottom: 20px;
-}
-.station-list {
-  gap: 18px;
-}
-.station {
-  padding: 18px;
-  grid-template-columns: 86px 1fr;
-  gap: 18px;
-}
-.station-art {
-  height: 86px;
-}
-.station-name {
-  font-size: 17px;
-}
-.status,
-.known {
-  font-size: 11px;
-}
+
 .map {
-  inset: 32px 0 0;
-  background-size: cover;
+  inset: 36px 0 0;
 }
+
 .map-toolbar {
-  top: 50px;
-  left: 22px;
-  right: 22px;
+  top: 51px;
 }
-.filter-chip {
-  font-size: 13px;
-}
+
 .count-pill {
-  top: 108px;
-  left: 24px;
-  font-size: 12px;
+  top: 109px;
 }
+
 .pin.one {
-  top: 26%;
+  top: 28%;
   left: 48%;
 }
+
 .pin.two {
-  top: 50%;
+  top: 52%;
   left: 18%;
 }
+
 .pin.three {
-  top: 67%;
+  top: 69%;
   right: 20%;
 }
+
 .report-btn,
 .fab {
-  bottom: 99px;
-  right: 24px;
+  bottom: 96px;
 }
+
 .map-credit {
   position: absolute;
-  left: 18px;
-  bottom: 96px;
-  padding: 3px 6px;
+  left: 15px;
+  bottom: 99px;
+  padding: 3px 5px;
   border-radius: 4px;
   background: #ffffffde;
   color: #526156;
-  font-size: 9px;
+  font-size: 8px;
 }
-.history-map {
-  background-size: cover;
-}
+
 .history-map .map-credit {
-  font-size: 9px;
-}
-.slide[data-slide='6'] .history-map {
-  height: 225px;
-}
-.slide[data-slide='5'] .panel,
-.slide[data-slide='6'] .panel,
-.slide[data-slide='7'] .panel {
-  padding: 16px;
-  margin-bottom: 14px;
-}
-.panel h2 {
-  font-size: 20px;
-}
-.panel p,
-.slide[data-slide='5'] .panel.gold p {
-  font-size: 13px;
-}
-.slide[data-slide='5'] .candidate p {
-  font-size: 12px;
-}
-.pill {
-  font-size: 11px;
-}
-.solid-action {
-  font-size: 14px;
-}
-.slide[data-slide='7'] .achievement {
-  padding: 13px 0;
-}
-.achievement strong {
-  font-size: 13px;
-}
-.slide[data-slide='7'] .profile-head img {
-  width: 64px !important;
-  height: 64px !important;
-}
-.donation-sections {
-  font-size: 12px;
-}
-.donation-cover {
-  height: 225px;
-}
-.donation-story h2 {
-  font-size: 26px;
-}
-.donation-story p {
-  font-size: 13px;
+  font-size: 8px;
 }
 
-/* Keep complete phone cards and actions above the floating navigation. */
-html[data-android='phone'] .app-pad,
-html[data-android='phone'] .detail-pad {
-  padding: 18px;
-}
+/* Leave breathing room above the handset's navigation and gesture bar. */
 html[data-android='phone'] .community-card {
-  height: 143px;
-}
-html[data-android='phone'] .station {
-  padding: 16px;
-}
-html[data-android='phone'] .cat-card > img {
-  height: 96px;
-}
-html[data-android='phone'] .cat-body {
-  padding: 10px;
-}
-html[data-android='phone'] .cat-desc {
-  font-size: 11px;
-  height: 30px;
-}
-html[data-android='phone'] .slide[data-slide='5'] .panel {
-  padding: 14px;
-  margin-bottom: 12px;
-}
-html[data-android='phone'] .slide[data-slide='6'] .history-map {
-  height: 160px;
-}
-html[data-android='phone'] .slide[data-slide='7'] .panel {
-  padding: 12px;
-  margin-bottom: 10px;
-}
-html[data-android='phone'] .slide[data-slide='7'] .profile-head {
-  padding: 10px;
-}
-html[data-android='phone'] .slide[data-slide='7'] .profile-head img {
-  width: 56px !important;
-  height: 56px !important;
-}
-html[data-android='phone'] .slide[data-slide='7'] .achievement {
-  padding: 6px 0;
-}
-html[data-android='phone'] .donation-cover {
-  height: 215px;
+  height: 130px;
 }
 
-/* Reflow the same demo content for a wider portrait tablet screen. */
-html[data-android='tablet'] .phone {
-  bottom: 36px;
-  height: calc(100% - 36px);
+html[data-android='phone'] .station {
+  padding: 11px;
 }
-html[data-android='tablet'] .sample-note {
-  font-size: 13px;
-  bottom: 11px;
+
+html[data-android='phone'] .cat-card > img {
+  height: 72px;
 }
-html[data-android='tablet'] .statusbar {
+
+html[data-android='phone'] .cat-body {
+  padding: 8px;
+}
+
+html[data-android='phone'] .metrics {
+  font-size: 8px;
+  gap: 4px 6px;
+}
+
+html[data-android='phone'] .slide[data-slide='5'] .panel {
+  padding: 9px;
+  margin-bottom: 7px;
+}
+
+html[data-android='phone'] .slide[data-slide='5'] .panel p {
+  font-size: 11px;
+}
+
+html[data-android='phone'] .slide[data-slide='5'] .candidate p {
+  font-size: 10px;
+}
+
+html[data-android='phone'] .slide[data-slide='6'] .history-map {
+  height: 132px;
+}
+
+html[data-android='phone'] .slide[data-slide='6'] .panel {
+  padding: 10px;
+}
+
+html[data-android='phone'] .slide[data-slide='6'] .mini-hero img {
+  width: 60px;
+  height: 60px;
+}
+
+html[data-android='phone'] .slide[data-slide='7'] .detail-pad {
+  padding-top: 12px;
+}
+
+html[data-android='phone'] .slide[data-slide='7'] .panel {
+  padding: 10px;
+  margin-bottom: 7px;
+}
+
+html[data-android='phone'] .slide[data-slide='7'] .panel h2 {
+  font-size: 17px;
+  margin-bottom: 6px;
+}
+
+html[data-android='phone'] .slide[data-slide='7'] .profile-head h2 {
+  font-size: 21px;
+  margin: 4px 0;
+}
+
+html[data-android='phone'] .slide[data-slide='7'] .profile-head {
+  padding: 8px;
+}
+
+html[data-android='phone'] .slide[data-slide='7'] .profile-head img {
+  width: 40px !important;
+  height: 40px !important;
+}
+
+html[data-android='phone'] .slide[data-slide='7'] .profile-head p {
+  font-size: 10px;
+  line-height: 1.35;
+}
+
+html[data-android='phone'] .slide[data-slide='7'] .achievement {
+  padding: 5px 0;
+}
+
+html[data-android='phone'] .donation-cover {
+  height: 185px;
+}
+
+/* Wider tablet hardware and reflowed content, inside the same 9:16 export. */
+html[data-android='tablet'] .slide {
+  padding: 44px 48px 0;
+}
+
+html[data-android='tablet'] .brand {
+  gap: 13px;
+  font-size: 17px;
+  letter-spacing: 2.6px;
+}
+
+html[data-android='tablet'] .brand img {
+  width: 44px;
   height: 44px;
-  padding: 15px 36px 0;
-  font-size: 16px;
+  border-radius: 11px;
 }
+
+html[data-android='tablet'] .kicker {
+  margin-top: 24px;
+  font-size: 16px;
+  letter-spacing: 2px;
+}
+
+html[data-android='tablet'] .slide > h1 {
+  margin: 10px 0 15px;
+  font-size: 58px;
+  letter-spacing: -2.4px;
+}
+
+html[data-android='tablet'] .dek {
+  max-width: 615px;
+  font-size: 19px;
+  line-height: 1.4;
+}
+
+html[data-android='tablet'] .slide::after {
+  width: 380px;
+  height: 380px;
+  top: 260px;
+  right: -200px;
+}
+
+html[data-android='tablet'] .phone {
+  top: 354px;
+  left: 50px;
+  width: 620px;
+  height: 870px;
+  padding: 20px 16px;
+  border-radius: 32px;
+  transform: none;
+  box-shadow:
+    inset 0 0 0 2px #101b2a,
+    0 28px 50px #18314f30,
+    0 5px 12px #18314f1a;
+}
+
+html[data-android='tablet'] .screen {
+  border-radius: 13px;
+}
+
+html[data-android='tablet'] .device-camera {
+  top: 7px;
+  left: calc(50% - 4px);
+  width: 8px;
+  height: 8px;
+}
+
+html[data-android='tablet'] .phone::before {
+  top: 98px;
+  height: 66px;
+}
+
+html[data-android='tablet'] .phone::after {
+  top: 192px;
+  height: 35px;
+}
+
+html[data-android='tablet'] .sample-note {
+  bottom: 20px;
+  font-size: 12px;
+}
+
+html[data-android='tablet'] .statusbar {
+  height: 36px;
+  padding: 12px 24px 0;
+  font-size: 12px;
+}
+
 html[data-android='tablet'] .android-status,
 html[data-android='tablet'] .android-status svg {
-  height: 19px;
+  height: 14px;
 }
+
 html[data-android='tablet'] .android-gesture {
-  width: 132px;
-  left: calc(50% - 66px);
-  height: 5px;
-  bottom: 9px;
+  bottom: 8px;
+  left: calc(50% - 55px);
+  width: 110px;
+  height: 4px;
 }
-html[data-android='tablet'] .app-content {
-  height: calc(100% - 44px);
-}
+
 html[data-android='tablet'] .app-pad,
 html[data-android='tablet'] .detail-pad {
-  padding: 38px;
+  padding: 22px 26px;
 }
+
 html[data-android='tablet'] .eyebrow {
-  font-size: 16px;
-  letter-spacing: 1.8px;
+  font-size: 12px;
+  letter-spacing: 1.5px;
 }
+
 html[data-android='tablet'] .app-title,
 html[data-android='tablet'] .detail-pad .app-title {
-  font-size: 44px;
-  margin: 12px 0 28px;
+  margin: 7px 0 18px;
+  font-size: 34px;
 }
+
 html[data-android='tablet'] .search {
-  height: 64px;
-  font-size: 19px;
-  padding: 0 20px;
-  border-radius: 22px;
-}
-html[data-android='tablet'] .tool-button {
-  width: 58px;
-  height: 58px;
-  font-size: 26px;
-}
-html[data-android='tablet'] .search-row {
-  gap: 12px;
-}
-html[data-android='tablet'] .toolbar-meta {
-  padding: 16px 0 24px;
-  font-size: 15px;
-}
-html[data-android='tablet'] .cat-grid,
-html[data-android='tablet'] .community-grid {
-  gap: 24px;
-}
-html[data-android='tablet'] .cat-card {
-  border-radius: 24px;
-}
-html[data-android='tablet'] .cat-card > img {
-  height: 230px;
-}
-html[data-android='tablet'] .cat-body {
-  padding: 20px;
-}
-html[data-android='tablet'] .cat-name {
-  font-size: 27px;
-}
-html[data-android='tablet'] .cat-desc {
-  font-size: 17px;
-  height: 48px;
-  margin: 8px 0 12px;
-}
-html[data-android='tablet'] .metrics {
+  height: 49px;
   font-size: 14px;
-  gap: 8px 12px;
 }
-html[data-android='tablet'] .metrics .ion {
-  font-size: 16px;
+
+html[data-android='tablet'] .tool-button {
+  width: 44px;
+  height: 44px;
+  font-size: 22px;
 }
-html[data-android='tablet'] .heart {
-  width: 46px;
-  height: 46px;
-  font-size: 23px;
-  top: 14px;
-  right: 14px;
-}
-html[data-android='tablet'] .community-intro {
-  font-size: 19px;
-  line-height: 1.5;
-  margin-bottom: 28px;
-}
-html[data-android='tablet'] .community-card {
-  height: 245px;
-  padding: 28px;
-  border-radius: 24px;
-}
-html[data-android='tablet'] .community-icon {
-  width: 62px;
-  height: 62px;
-  font-size: 31px;
-}
-html[data-android='tablet'] .community-name {
-  font-size: 27px;
-}
-html[data-android='tablet'] .community-desc {
-  font-size: 16px;
-  line-height: 1.4;
-  margin-top: 8px;
-}
-html[data-android='tablet'] .dot {
-  width: 12px;
-  height: 12px;
-  top: 26px;
-  right: 26px;
-}
-html[data-android='tablet'] .segments {
-  padding: 7px;
-  margin-top: 18px;
-  border-radius: 20px;
-}
-html[data-android='tablet'] .segment {
-  padding: 14px 7px;
-  font-size: 16px;
-  border-radius: 14px;
-}
-html[data-android='tablet'] .result-count {
-  font-size: 16px;
-  margin: 20px 0;
-}
-html[data-android='tablet'] .station-list {
-  gap: 24px;
-}
-html[data-android='tablet'] .station {
-  padding: 28px;
-  grid-template-columns: 130px 1fr;
-  gap: 28px;
-  border-radius: 24px;
-}
-html[data-android='tablet'] .station-art {
-  height: 130px;
-  font-size: 48px;
-  border-radius: 20px;
-}
-html[data-android='tablet'] .station-name {
-  font-size: 26px;
-  margin: 4px 0 12px;
-}
-html[data-android='tablet'] .status {
-  padding: 8px 12px;
-  font-size: 15px;
-}
-html[data-android='tablet'] .known {
-  font-size: 16px;
-  margin-top: 14px;
-}
-html[data-android='tablet'] .bottom-nav {
-  left: 70px;
-  right: 70px;
-  height: 76px;
-  bottom: 35px;
-  border-radius: 40px;
-}
-html[data-android='tablet'] .nav-item {
-  width: 60px;
-  height: 60px;
-  font-size: 31px;
-}
-html[data-android='tablet'] .map {
-  inset: 44px 0 0;
-}
-html[data-android='tablet'] .map-toolbar {
-  top: 72px;
-  left: 38px;
-  right: 38px;
-  padding: 11px;
-  border-radius: 34px;
-}
-html[data-android='tablet'] .filter-chip {
-  padding: 12px 4px;
-  font-size: 18px;
-  border-radius: 20px;
-}
-html[data-android='tablet'] .count-pill {
-  top: 161px;
-  left: 42px;
-  font-size: 17px;
-  padding: 13px 18px;
-  border-radius: 26px;
-}
-html[data-android='tablet'] .pin {
-  width: 78px;
-  height: 78px;
-  border-width: 4px;
-  padding: 4px;
-}
-html[data-android='tablet'] .report-btn,
-html[data-android='tablet'] .fab {
-  width: 72px;
-  height: 72px;
-  bottom: 151px;
-  right: 42px;
-  font-size: 36px;
-}
-html[data-android='tablet'] .map-credit {
-  left: 36px;
-  bottom: 151px;
-  font-size: 13px;
-}
-html[data-android='tablet'] .panel {
-  padding: 26px;
-  margin-bottom: 22px;
-  border-radius: 25px;
-}
-html[data-android='tablet'] .panel h2 {
-  font-size: 28px !important;
-}
-html[data-android='tablet'] .panel p,
-html[data-android='tablet'] .candidate p {
-  font-size: 18px !important;
-  line-height: 1.5;
-}
-html[data-android='tablet'] .pill-row {
-  gap: 8px;
-  margin: 14px 0;
-}
-html[data-android='tablet'] .pill {
-  padding: 8px 13px;
-  font-size: 15px;
-}
-html[data-android='tablet'] .candidate {
-  gap: 18px;
-}
-html[data-android='tablet'] .candidate strong {
-  font-size: 23px;
-}
-html[data-android='tablet'] .avatar {
-  width: 60px;
-  height: 60px;
-  font-size: 23px;
-}
-html[data-android='tablet'] .radio {
-  font-size: 28px;
-}
-html[data-android='tablet'] .solid-action {
-  padding: 22px;
-  font-size: 19px;
-  border-radius: 32px;
-}
-html[data-android='tablet'] .mini-hero {
-  gap: 22px;
-  margin-bottom: 24px;
-}
-html[data-android='tablet'] .mini-hero img {
-  width: 120px !important;
-  height: 120px !important;
-  border-radius: 24px !important;
-}
-html[data-android='tablet'] .mini-hero h2 {
-  font-size: 38px;
-}
-html[data-android='tablet'] .mini-hero p {
-  font-size: 18px;
-}
-html[data-android='tablet'] .history-map {
-  height: 355px !important;
-  margin-top: 18px;
-  border-radius: 22px;
-}
-html[data-android='tablet'] .history-map .map-credit {
-  bottom: 8px;
-  left: 8px;
+
+html[data-android='tablet'] .toolbar-meta {
+  padding: 12px 0 16px;
   font-size: 12px;
 }
-html[data-android='tablet'] .timeline {
-  margin: 28px 8px 18px;
+
+html[data-android='tablet'] .cat-grid,
+html[data-android='tablet'] .community-grid {
+  gap: 18px;
 }
-html[data-android='tablet'] .timeline-labels {
+
+html[data-android='tablet'] .cat-card > img {
+  height: 120px;
+}
+
+html[data-android='tablet'] .cat-body {
+  padding: 13px;
+}
+
+html[data-android='tablet'] .cat-name {
+  font-size: 22px;
+}
+
+html[data-android='tablet'] .cat-desc {
+  height: 35px;
+  font-size: 13px;
+}
+
+html[data-android='tablet'] .metrics {
+  font-size: 11px;
+}
+
+html[data-android='tablet'] .community-intro {
+  margin-bottom: 18px;
+  font-size: 15px;
+}
+
+html[data-android='tablet'] .community-card {
+  height: 170px;
+  padding: 20px;
+}
+
+html[data-android='tablet'] .community-icon {
+  width: 46px;
+  height: 46px;
+  font-size: 25px;
+}
+
+html[data-android='tablet'] .community-name {
+  font-size: 22px;
+}
+
+html[data-android='tablet'] .community-desc {
+  font-size: 13px;
+}
+
+html[data-android='tablet'] .segment {
+  padding: 12px 6px;
+  font-size: 13px;
+}
+
+html[data-android='tablet'] .result-count {
+  margin: 16px 0;
+  font-size: 13px;
+}
+
+html[data-android='tablet'] .station-list {
+  gap: 18px;
+}
+
+html[data-android='tablet'] .station {
+  padding: 16px;
+  grid-template-columns: 100px 1fr;
+  gap: 22px;
+}
+
+html[data-android='tablet'] .station-art {
+  height: 94px;
+  font-size: 40px;
+}
+
+html[data-android='tablet'] .station-name {
+  margin: 3px 0 10px;
+  font-size: 20px;
+}
+
+html[data-android='tablet'] .status,
+html[data-android='tablet'] .known {
+  font-size: 12px;
+}
+
+html[data-android='tablet'] .bottom-nav {
+  left: 45px;
+  right: 45px;
+  bottom: 26px;
+  height: 62px;
+  border-radius: 34px;
+}
+
+html[data-android='tablet'] .nav-item {
+  width: 49px;
+  height: 49px;
+  font-size: 27px;
+}
+
+html[data-android='tablet'] .map-toolbar {
+  top: 58px;
+  left: 26px;
+  right: 26px;
+  padding: 8px;
+  border-radius: 30px;
+}
+
+html[data-android='tablet'] .filter-chip {
+  padding: 10px 4px;
   font-size: 16px;
 }
-html[data-android='tablet'] .profile-head {
-  padding: 28px !important;
+
+html[data-android='tablet'] .count-pill {
+  top: 132px;
+  left: 28px;
+  padding: 11px 15px;
+  font-size: 15px;
 }
-html[data-android='tablet'] .profile-head img {
-  width: 90px !important;
-  height: 90px !important;
-  margin-bottom: 14px !important;
+
+html[data-android='tablet'] .pin {
+  width: 66px;
+  height: 66px;
 }
-html[data-android='tablet'] .profile-head h2 {
-  font-size: 34px !important;
-  margin: 14px 0 !important;
-}
-html[data-android='tablet'] .achievement {
-  padding: 22px 0 !important;
-  gap: 17px;
-}
-html[data-android='tablet'] .achievement strong {
-  font-size: 18px;
-}
-html[data-android='tablet'] .achievement p {
-  font-size: 16px !important;
-}
-html[data-android='tablet'] .award {
+
+html[data-android='tablet'] .report-btn,
+html[data-android='tablet'] .fab {
+  right: 30px;
+  bottom: 111px;
+  width: 60px;
+  height: 60px;
   font-size: 32px;
 }
+
+html[data-android='tablet'] .map-credit {
+  left: 26px;
+  bottom: 114px;
+  font-size: 10px;
+}
+
+html[data-android='tablet'] .panel {
+  padding: 18px;
+  margin-bottom: 14px;
+  border-radius: 20px;
+}
+
+html[data-android='tablet'] .panel h2 {
+  font-size: 23px !important;
+}
+
+html[data-android='tablet'] .panel p,
+html[data-android='tablet'] .candidate p {
+  font-size: 14px !important;
+}
+
+html[data-android='tablet'] .pill {
+  font-size: 12px;
+}
+
+html[data-android='tablet'] .candidate {
+  gap: 16px;
+}
+
+html[data-android='tablet'] .candidate strong {
+  font-size: 18px;
+}
+
+html[data-android='tablet'] .avatar {
+  width: 48px;
+  height: 48px;
+  font-size: 18px;
+}
+
+html[data-android='tablet'] .solid-action {
+  padding: 17px;
+  font-size: 15px;
+}
+
+html[data-android='tablet'] .mini-hero {
+  gap: 18px;
+  margin-bottom: 16px;
+}
+
+html[data-android='tablet'] .mini-hero img {
+  width: 90px !important;
+  height: 90px !important;
+}
+
+html[data-android='tablet'] .mini-hero h2 {
+  font-size: 30px;
+}
+
+html[data-android='tablet'] .mini-hero p {
+  font-size: 14px;
+}
+
+html[data-android='tablet'] .history-map {
+  height: 205px !important;
+  margin-top: 12px;
+}
+
+html[data-android='tablet'] .history-map .map-credit {
+  bottom: 6px;
+  left: 6px;
+  font-size: 9px;
+}
+
+html[data-android='tablet'] .timeline-labels {
+  font-size: 12px;
+}
+
+html[data-android='tablet'] .profile-head img {
+  width: 62px !important;
+  height: 62px !important;
+  margin-bottom: 8px !important;
+}
+
+html[data-android='tablet'] .achievement {
+  padding: 12px 0;
+  gap: 14px;
+}
+
+html[data-android='tablet'] .achievement strong {
+  font-size: 15px;
+}
+
+html[data-android='tablet'] .achievement p {
+  font-size: 12px !important;
+}
+
 html[data-android='tablet'] .donation-sections {
-  font-size: 17px;
-  margin-bottom: 24px;
+  font-size: 12px;
+  margin-bottom: 16px;
 }
-html[data-android='tablet'] .donation-sections span {
-  padding: 13px 8px;
-}
+
 html[data-android='tablet'] .donation-cover {
-  height: 350px;
-  border-radius: 25px;
-  margin-bottom: 24px;
+  height: 250px;
+  margin-bottom: 16px;
 }
+
 html[data-android='tablet'] .donation-story h2 {
-  font-size: 35px !important;
+  font-size: 27px !important;
 }

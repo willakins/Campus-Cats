@@ -42,6 +42,10 @@
         );
         doc.head.append(stylesheet);
         doc.querySelector('.island').remove();
+        const camera = doc.createElement('div');
+        camera.className = 'device-camera';
+        camera.setAttribute('aria-hidden', 'true');
+        doc.querySelector('.phone').append(camera);
         doc.querySelector('.statusbar').innerHTML =
           `<span>9:41</span><span class="android-status" aria-label="Full Wi-Fi and battery"><svg viewBox="0 0 24 24"><path d="M2 8a16 16 0 0 1 20 0L12 20Z"/></svg><svg viewBox="0 0 14 24"><path d="M5 1h4v2h3v20H2V3h3Z"/></svg></span>`;
         const gesture = doc.createElement('div');
