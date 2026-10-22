@@ -245,8 +245,7 @@ in EAS's `production` environment, as described above.
 Build the Android App Bundle:
 
 ```bash
-EXPO_NO_DOTENV=1 EXPO_PUBLIC_APP_ENV=production npx --yes eas-cli@latest build \
-  --platform android --profile production
+npm run build:android
 ```
 
 Download the resulting `.aab` and upload it to the matching Google Play app's
