@@ -3,7 +3,8 @@
 Prepared October 16, 2026 for **Google Play Console → Store presence → Store
 listings → Default store listing → Assets**.
 
-[View all eight tablet previews](preview-sheet.jpg). This overview is not an upload file.
+[View all eight phone previews](phone-preview-sheet.jpg) or
+[all eight tablet previews](preview-sheet.jpg). These overviews are not upload files.
 
 ## Upload files
 
@@ -28,7 +29,8 @@ ratio than these Google Play exports.
 
 The icon is below 1 MB, the feature graphic below 15 MB, and every device image
 below 8 MB. Icon dimensions, image dimensions, RGB/alpha formats, and file sizes
-were checked locally. No assets have been uploaded or submitted to Google Play.
+were checked locally. The revised device-framed assets have not been uploaded or
+submitted by this work; the owner must replace any earlier uploads in Play Console.
 
 Specifications checked against Google's [preview asset guidance](https://support.google.com/googleplay/android-developer/answer/9866151?hl=en)
 and [icon design specifications](https://developer.android.com/distribute/google-play/resources/icon-design-specifications).
@@ -42,15 +44,23 @@ data, not screenshots captured from a running Android build.** The owner explici
 chose generated previews instead of emulator captures. Each image includes that
 disclosure. Meeting pixel and file-size requirements does not establish native
 rendering accuracy or Google Play review acceptance. Google's guidance recommends
-actual app captures for screenshot-based promotional eligibility.
+actual app captures for screenshot-based promotional eligibility and recommends
+avoiding device imagery. These framed compositions follow the owner's requested
+marketing style; they do not establish promotional eligibility.
 
 The editable HTML reuses the maintained [App Store preview content](../app-store/source/preview.html)
-and cat photos. The Android styles remove the iPhone device frame and Dynamic
-Island, use Android-style status and gesture bars, and approximate the app's
-Android tinted surfaces without iOS glass blur. Tablet layouts reflow the content
-at a wider viewport with larger cards and readable text. The two tablet exports
-share a composition at different pixel resolutions; they are not captures of two
-physical devices. There are no external marketing headlines or device frames.
+and cat photos. At the owner's request, all three Android sets now match the
+iPhone previews' cream background, brand lockup, feature headings, and centered
+device presentation. The phone has a complete dark metal frame, side buttons,
+and a centered punch-hole camera. The tablet has a wider portrait body, visible
+bezel, side buttons, and a camera in its top bezel. Both use Android-style status
+and gesture bars and tinted surfaces without iOS glass blur or a Dynamic Island.
+
+Tablet layouts reflow the content at a wider viewport with larger cards and
+readable text. The two tablet exports share a composition at different pixel
+resolutions; they are not captures of two physical devices. Browser checks cover
+all eight phone and tablet compositions, including space around the device and
+content clearance above navigation and gesture bars.
 
 The maps use our own clearly labeled [campus schematic](source/campus-map.svg),
 not Apple or Google map tiles. No third-party map attribution was removed from
@@ -67,7 +77,8 @@ YouTube URL.
 ## Order and suggested alt text
 
 The filenames are identical in all three device folders. These alt descriptions
-stay below Google's recommended 140-character limit.
+stay below Google's recommended 140-character limit. Each scene appears inside a
+visible Android phone or tablet frame beneath its feature heading.
 
 | Filename                       | Suggested alt text                                                                                            |
 | ------------------------------ | ------------------------------------------------------------------------------------------------------------- |
@@ -98,9 +109,10 @@ To export one device set, pass `phone`, `tablet-7-inch`, or `tablet-10-inch` to
 changes. The renderer uses a temporary browser profile, exports opaque RGB device
 images, and checks their dimensions and file-size limits.
 
-To refresh the tablet overview after regenerating its source images:
+To refresh both overviews after regenerating their source images:
 
 ```bash
+magick montage assets/images/app_previews/android/phone/*.png -thumbnail 360x640 -tile 4x2 -geometry +8+8 -quality 90 marketing/google-play/phone-preview-sheet.jpg
 magick montage assets/images/app_previews/android/tablet-10-inch/*.png -thumbnail 360x640 -tile 4x2 -geometry +8+8 -quality 90 marketing/google-play/preview-sheet.jpg
 ```
 
