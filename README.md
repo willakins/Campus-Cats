@@ -253,6 +253,35 @@ Download the resulting `.aab` and upload it to the matching Google Play app's
 production app; the `development` and `preview` profiles use the separate `.dev`
 package and development Firebase project.
 
+Android release builds enable R8 minification and resource shrinking through
+`expo-build-properties`. This also applies to the release APK produced by the
+`preview` profile; the development client's debug build is not minified.
+The Android Gradle plugin embeds the generated deobfuscation mapping in the `.aab`,
+where Google Play can read it automatically. The production EAS profile also saves
+`android/app/build/outputs/mapping/release/mapping.txt` as a build artifact.
+
+Before uploading a new optimized bundle, save it under the ignored `bin/` directory
+and verify that its mapping is present and nonempty:
+
+```bash
+unzip -p bin/campus-cats.aab \
+  BUNDLE-METADATA/com.android.tools.build.obfuscation/proguard.map \
+  > bin/campus-cats-mapping.txt
+test -s bin/campus-cats-mapping.txt
+```
+
+Keep the bundle and mapping together, labeled with their version code. Use only the
+mapping from that exact build to decode crashes. An older bundle, including version
+code 3, will not gain a mapping from rebuilding the app. See
+[Google Play's deobfuscation guide](https://support.google.com/googleplay/android-developer/answer/9848633).
+
+Test the optimized, Play-installed release before promoting it: cold launch,
+email and university sign-in (including cancellation/retry), map rendering and
+location selection, camera and photo-library uploads, and notification permission
+and delivery. JavaScript tests and a debug build do not exercise R8. Record the
+version code, device/Android version, and results; investigate any release-only
+crash before promotion.
+
 Android push delivery additionally requires an FCM V1 service-account credential
 assigned to this Android package in EAS Credentials. That private credential is
 separate from `google-services.json`. The app creates its default Android

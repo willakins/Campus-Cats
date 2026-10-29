@@ -24,6 +24,11 @@
     "production": {
       "autoIncrement": true,
       "environment": "production",
+      "android": {
+        "buildArtifactPaths": [
+          "android/app/build/outputs/mapping/release/mapping.txt"
+        ]
+      },
       "env": {
         "EXPO_PUBLIC_APP_ENV": "production"
       }
